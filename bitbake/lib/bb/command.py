@@ -68,9 +68,10 @@ class Command:
                 if not hasattr(command_method, 'readonly') or not getattr(command_method, 'readonly'):
                     return None, "Not able to execute not readonly commands in readonly mode"
             try:
-                self.cooker.process_inotify_updates()
-                if getattr(command_method, 'needconfig', True):
-                    self.cooker.updateCacheSync()
+                # MobiAqua: disable inotify
+                #self.cooker.process_inotify_updates()
+                #if getattr(command_method, 'needconfig', True):
+                self.cooker.updateCacheSync()
                 result = command_method(self, commandline)
             except CommandError as exc:
                 return None, exc.args[0]
@@ -89,7 +90,8 @@ class Command:
 
     def runAsyncCommand(self):
         try:
-            self.cooker.process_inotify_updates()
+            # MobiAqua: disable inotify
+            #self.cooker.process_inotify_updates()
             if self.cooker.state in (bb.cooker.state.error, bb.cooker.state.shutdown, bb.cooker.state.forceshutdown):
                 # updateCache will trigger a shutdown of the parser
                 # and then raise BBHandledException triggering an exit
