@@ -614,8 +614,9 @@ python sstate_hardcode_path () {
     sstate_filelist_relative_cmd = "sed -i -e 's:^%s::g' %s" % (sstate_builddir, fixmefn)
 
     xargs_no_empty_run_cmd = '--no-run-if-empty'
-    if platform.system() == 'Darwin':
-        xargs_no_empty_run_cmd = ''
+    # MobiAqua: GNU xargs used
+    #if platform.system() == 'Darwin':
+    #    xargs_no_empty_run_cmd = ''
 
     # Limit the fixpaths and sed operations based on the initial grep search
     # This has the side effect of making sure the vfs cache is hot
