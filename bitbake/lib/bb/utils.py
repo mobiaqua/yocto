@@ -1518,9 +1518,11 @@ def signal_on_parent_exit(signame):
     """
     signum = getattr(signal, signame)
     # http://linux.die.net/man/2/prctl
-    result = cdll['libc.so.6'].prctl(PR_SET_PDEATHSIG, signum)
-    if result != 0:
-        raise PrCtlError('prctl failed with error code %s' % result)
+    # MobiAqua: disabled start here -->
+    #result = cdll['libc.so.6'].prctl(PR_SET_PDEATHSIG, signum)
+    #if result != 0:
+    #    raise PrCtlError('prctl failed with error code %s' % result)
+    # MobiAqua: disabled ends here <--
 
 #
 # Manually call the ioprio syscall. We could depend on other libs like psutil
