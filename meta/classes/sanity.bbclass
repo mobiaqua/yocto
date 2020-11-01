@@ -354,8 +354,9 @@ def check_not_nfs(path, name):
 def check_case_sensitive(path, name):
     import tempfile
     with tempfile.NamedTemporaryFile(prefix='TmP', dir=path) as tmp_file:
-        if os.path.exists(tmp_file.name.lower()):
-            return "The %s (%s) can't be on a case-insensitive file system.\n" % (name, path)
+# MobiAqua: disabled check on macOS
+#        if os.path.exists(tmp_file.name.lower()):
+#            return "The %s (%s) can't be on a case-insensitive file system.\n" % (name, path)
         return ""
 
 # Check that path isn't a broken symlink
