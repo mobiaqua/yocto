@@ -61,7 +61,8 @@ def process_file_darwin(cmd, fpath, rootdir, baseprefix, tmpdir, d, break_hardli
     # If returned successfully, process stdout for results
     if p.returncode != 0:
         return
-    for l in out.split("\n"):
+    # MobiAqua: convert 'out' to string first
+    for l in str(out).split("\n"):
         if "(compatibility" not in l:
             continue
         rpath = l.partition("(compatibility")[0].strip()
