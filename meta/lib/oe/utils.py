@@ -398,7 +398,10 @@ def get_host_compiler_version(d, taskcontextonly=False):
 
     match = re.match(r".* (\d+\.\d+)\.\d+.*", output.split('\n')[0])
     if not match:
-        bb.fatal("Can't get compiler version from %s --version output" % compiler)
+        # MobiAqua: try find Apple Clang version
+        match = re.match(r".* (\d+\.\d+)\.\d+.*", output.split('\n')[1])
+        if not match:
+            bb.fatal("Can't get compiler version from %s --version output" % compiler)
 
     version = match.group(1)
     return compiler, version
@@ -424,7 +427,10 @@ def host_gcc_version(d, taskcontextonly=False):
 
     match = re.match(r".* (\d+\.\d+)\.\d+.*", output.split('\n')[0])
     if not match:
-        bb.fatal("Can't get compiler version from %s --version output" % compiler)
+        # MobiAqua: try find Apple Clang version
+        match = re.match(r".* (\d+\.\d+)\.\d+.*", output.split('\n')[1])
+        if not match:
+            bb.fatal("Can't get compiler version from %s --version output" % compiler)
 
     version = match.group(1)
     return "-%s" % version if version in ("4.8", "4.9") else ""
