@@ -518,13 +518,18 @@ def check_make_version(sanity_data):
 # More information on installing WSLv2 at:
 # https://docs.microsoft.com/en-us/windows/wsl/wsl2-install
 def check_wsl(d):
-    with open("/proc/version", "r") as f:
-        verdata = f.readlines()
-    for l in verdata:
-        if "Microsoft" in l:
-            return "OpenEmbedded doesn't work under WSLv1, please upgrade to WSLv2 if you want to run builds on Windows"
-        elif "microsoft" in l:
-            bb.warn("You are running bitbake under WSLv2, this works properly but you should optimize your VHDX file eventually to avoid running out of storage space")
+    # MobiAqua: not present "/proc/version" on macOS
+    try:
+        with open("/proc/version", "r") as f:
+            verdata = f.readlines()
+        for l in verdata:
+            if "Microsoft" in l:
+                return "OpenEmbedded doesn't work under WSLv1, please upgrade to WSLv2 if you want to run builds on Windows"
+            elif "microsoft" in l:
+                bb.warn("You are running bitbake under WSLv2, this works properly but you should optimize your VHDX file eventually to avoid running out of storage space")
+    except FileNotFoundError:
+        pass
+
     return None
 
 # Require at least gcc version 5.0.
