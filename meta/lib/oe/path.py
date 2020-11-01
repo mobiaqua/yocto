@@ -128,7 +128,8 @@ def copyhardlinktree(src, dst):
         else:
             source = src
             s_dir = os.getcwd()
-        cmd = 'cp -afl --preserve=xattr %s %s' % (source, os.path.realpath(dst))
+        # MobiAqua: remove "--preserve=xattr". xattr not enabled in 'cp'
+        cmd = 'cp -afl %s %s' % (source, os.path.realpath(dst))
         subprocess.check_output(cmd, shell=True, cwd=s_dir, stderr=subprocess.STDOUT)
     else:
         copytree(src, dst)
