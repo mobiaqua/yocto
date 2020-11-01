@@ -157,6 +157,8 @@ def remove(path, recurse=True):
         except OSError as exc:
             if recurse and exc.errno == errno.EISDIR:
                 shutil.rmtree(name)
+            elif recurse and exc.errno == errno.EPERM: # MobiAqua: W/A, EPERM instead EISDIR on remove folder on macOS
+                shutil.rmtree(name)
             elif exc.errno != errno.ENOENT:
                 raise
 
