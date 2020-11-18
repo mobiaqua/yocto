@@ -1,3 +1,4 @@
+.DS_Store
 *.pyc
 *.pyo
 /*.patch
@@ -8,6 +9,7 @@ pstage/
 scripts/oe-git-proxy-socks
 sources/
 meta-*/
+/bin/*
 buildtools/
 !meta-skeleton
 !meta-selftest
@@ -20,6 +22,8 @@ hob-image-*.bb
 !meta-yocto
 !meta-yocto-bsp
 !meta-yocto-imported
+!meta-bsp-*
+!meta-mobiaqua
 /documentation/*/eclipse/
 /documentation/*/*.html
 /documentation/*/*.pdf
