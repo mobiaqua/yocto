@@ -822,9 +822,10 @@ python fixup_perms () {
             os.chmod(path, mode)
         # -1 is a special value that means don't change the uid/gid
         # if they are BOTH -1, don't bother to lchown
-        if not (uid == -1 and gid == -1):
+        # MobiAqua: disable chown files
+        #if not (uid == -1 and gid == -1):
             #bb.note("Fixup Perms: lchown %d:%d %s" % (uid, gid, dir))
-            os.lchown(path, uid, gid)
+            #os.lchown(path, uid, gid)
 
     # Return a list of configuration files based on either the default
     # files/fs-perms.txt or the contents of FILESYSTEM_PERMS_TABLES
@@ -875,7 +876,8 @@ python fixup_perms () {
         dir = d.getVar(path) or ""
         if dir == "":
             continue
-        fs_perms_table[dir] = fs_perms_entry(d.expand("%s 0755 root root false - - -" % (dir)))
+        # MobiAqua: changed 'root root' to '0 0'
+        fs_perms_table[dir] = fs_perms_entry(d.expand("%s 0755 0 0 false - - -" % (dir)))
 
     # Now we actually load from the configuration files
     for conf in get_fs_perms_list(d).split():

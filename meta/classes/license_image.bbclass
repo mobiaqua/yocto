@@ -160,12 +160,14 @@ def write_license_files(d, license_manifest, pkg_dic, rootfs=True):
             for walkroot, dirs, files in os.walk(rootfs_license_dir):
                 for f in files:
                     p = os.path.join(walkroot, f)
-                    os.lchown(p, 0, 0)
+                    # MobiAqua: disable chown
+                    #os.lchown(p, 0, 0)
                     if not os.path.islink(p):
                         os.chmod(p, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
                 for dir in dirs:
                     p = os.path.join(walkroot, dir)
-                    os.lchown(p, 0, 0)
+                    # MobiAqua: disable chown
+                    #os.lchown(p, 0, 0)
                     os.chmod(p, stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH)
 
 

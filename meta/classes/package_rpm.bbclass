@@ -120,8 +120,9 @@ python write_specfile () {
                 # The rpmbuild doesn't need the root permission, but it needs
                 # to know the file's user and group name, the only user and
                 # group in fakeroot is "root" when working in fakeroot.
-                f = os.path.join(ar_outdir, source)
-                os.chown(f, 0, 0)
+                # MobiAqua: disable chown to root
+                #f = os.path.join(ar_outdir, source)
+                #os.chown(f, 0, 0)
                 spec_preamble_top.append('Source%s: %s' % (source_number, source))
                 source_number += 1
 
