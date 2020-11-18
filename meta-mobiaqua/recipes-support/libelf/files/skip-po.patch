@@ -1,0 +1,14 @@
+diff -urp old/Makefile.in new/Makefile.in
+--- old/Makefile.in	2008-05-23 10:17:56.000000000 +0200
++++ new/Makefile.in	2020-11-18 17:58:04.000000000 +0100
+@@ -48,8 +48,8 @@ SHELL = /bin/sh
+ srcdir = @srcdir@
+ VPATH = @srcdir@
+ 
+-SUBDIRS = lib @POSUB@
+-DISTSUBDIRS = lib po
++SUBDIRS = lib
++DISTSUBDIRS = lib
+ 
+ DISTFILES = \
+ 	acconfig.h aclocal.m4 ChangeLog config.guess config.h.in \
