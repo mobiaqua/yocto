@@ -348,23 +348,25 @@ def parse_debugsources_from_dwarfsrcfiles_output(dwarfsrcfiles_output):
 def source_info(file, d, fatal=True):
     import subprocess
 
-    cmd = ["dwarfsrcfiles", file]
-    try:
-        output = subprocess.check_output(cmd, universal_newlines=True, stderr=subprocess.STDOUT)
-        retval = 0
-    except subprocess.CalledProcessError as exc:
-        output = exc.output
-        retval = exc.returncode
+# MobiAqua: TODO: implement 'dwarfsrcfiles' replacement. start here ->
+    #cmd = ["dwarfsrcfiles", file]
+    #try:
+    #    output = subprocess.check_output(cmd, universal_newlines=True, stderr=subprocess.STDOUT)
+    #    retval = 0
+    #except subprocess.CalledProcessError as exc:
+    #    output = exc.output
+    #    retval = exc.returncode
 
     # 255 means a specific file wasn't fully parsed to get the debug file list, which is not a fatal failure
-    if retval != 0 and retval != 255:
-        msg = "dwarfsrcfiles failed with exit code %s (cmd was %s)%s" % (retval, cmd, ":\n%s" % output if output else "")
-        if fatal:
-            bb.fatal(msg)
-        bb.note(msg)
+    #if retval != 0 and retval != 255:
+    #    msg = "dwarfsrcfiles failed with exit code %s (cmd was %s)%s" % (retval, cmd, ":\n%s" % output if output else "")
+    #    if fatal:
+    #        bb.fatal(msg)
+    #    bb.note(msg)
 
-    debugsources = parse_debugsources_from_dwarfsrcfiles_output(output)
-
+    #debugsources = parse_debugsources_from_dwarfsrcfiles_output(output)
+    debugsources = []
+# MobiAqua: ends here <-
     return list(debugsources)
 
 def splitdebuginfo(file, dvar, debugdir, debuglibdir, debugappend, debugsrcdir, d):
