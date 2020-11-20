@@ -1,0 +1,23 @@
+diff -urp old/ncurses/tinfo/access.c new/ncurses/tinfo/access.c
+--- old/ncurses/tinfo/access.c	2003-07-05 21:31:28.000000000 +0200
++++ new/ncurses/tinfo/access.c	2020-11-20 17:29:52.000000000 +0100
+@@ -33,6 +33,7 @@
+ #include <curses.priv.h>
+ #include <tic.h>
+ #include <nc_alloc.h>
++#include <ctype.h>
+ 
+ MODULE_ID("$Id: access.c,v 1.10 2003/07/05 19:31:28 tom Exp $")
+ 
+diff -urp old/progs/tset.c new/progs/tset.c
+--- old/progs/tset.c	2003-12-06 18:21:01.000000000 +0100
++++ new/progs/tset.c	2020-11-20 17:52:37.000000000 +0100
+@@ -88,7 +88,7 @@ char *ttyname(int fd);
+ #endif
+ 
+ /* this is just to stifle a missing-prototype warning */
+-#ifdef linux
++#if defined(linux) || defined(__APPLE__)
+ # include <sys/ioctl.h>
+ #endif
+ 

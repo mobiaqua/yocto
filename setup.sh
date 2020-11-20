@@ -455,13 +455,13 @@ MACHINE = \"${MACHINE}\"
 DISTRO = \"${DISTRO}\"
 INHERIT = \"rm_work\"
 BUILD_DEBUG = \"${BUILD_DEBUG}\"
-ASSUME_PROVIDED += \" git-native perl-native python-native desktop-file-utils-native \
+ASSUME_PROVIDED += \" git-native perl-native python-native python3-native desktop-file-utils-native \
 linux-libc-headers-native glib-2.0-native intltool-native xz-native gzip-native \
 findutils-native bison-native flex-native help2man-native \
 m4-native unzip-native texinfo-native texinfo-dummy-native patch-replacement-native \"
 SANITY_REQUIRED_UTILITIES_remove = \"chrpath\"
 PACKAGE_DEPENDS_remove = \"dwarfsrcfiles-native pseudo-native\"
-HOSTTOOLS += \"otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep\"
+HOSTTOOLS += \"otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep tic\"
 HOSTTOOLS_remove = \"chrpath flock ldd\"
 PARALLEL_MAKE = \"-j 8\"
 BB_NUMBER_THREADS = \"8\"
