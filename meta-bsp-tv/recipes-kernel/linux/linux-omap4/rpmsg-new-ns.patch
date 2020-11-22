@@ -1,0 +1,131 @@
+diff -urp old/drivers/rpmsg/virtio_rpmsg_bus.c new/drivers/rpmsg/virtio_rpmsg_bus.c
+--- old/drivers/rpmsg/virtio_rpmsg_bus.c	2020-04-16 22:48:31.000000000 +0200
++++ new/drivers/rpmsg/virtio_rpmsg_bus.c	2020-07-03 21:14:57.000000000 +0200
+@@ -43,11 +43,13 @@ EXPORT_SYMBOL(get_virtproc_id);
+ /**
+  * struct rpmsg_channel_info - internal channel info representation
+  * @name: name of service
++ * @desc: description of service
+  * @src: local address
+  * @dst: destination address
+  */
+ struct rpmsg_channel_info {
+ 	char name[RPMSG_NAME_SIZE];
++	char desc[RPMSG_NAME_SIZE];
+ 	u32 src;
+ 	u32 dst;
+ };
+@@ -101,6 +103,7 @@ field##_show(struct device *dev,					\
+ rpmsg_show_attr(name, id.name, "%s\n");
+ rpmsg_show_attr(src, src, "0x%x\n");
+ rpmsg_show_attr(dst, dst, "0x%x\n");
++rpmsg_show_attr(desc, desc, "%s\n");
+ rpmsg_show_attr(announce, announce ? "true" : "false", "%s\n");
+ 
+ /*
+@@ -131,6 +134,7 @@ static ssize_t modalias_show(struct devi
+ 
+ static struct device_attribute rpmsg_dev_attrs[] = {
+ 	__ATTR_RO(name),
++	__ATTR_RO(desc),
+ 	__ATTR_RO(modalias),
+ 	__ATTR_RO(dst),
+ 	__ATTR_RO(src),
+@@ -470,6 +474,9 @@ static int rpmsg_channel_match(struct de
+ 	if (strncmp(chinfo->name, rpdev->id.name, RPMSG_NAME_SIZE))
+ 		return 0;
+ 
++	if (strncmp(chinfo->desc, rpdev->desc, RPMSG_NAME_SIZE))
++		return 0;
++
+ 	/* found a match ! */
+ 	return 1;
+ }
+@@ -491,8 +498,9 @@ static struct rpmsg_channel *__rpmsg_cre
+ 	if (tmp) {
+ 		/* decrement the matched device's refcount back */
+ 		put_device(tmp);
+-		dev_err(dev, "channel %s:%x:%x already exist\n",
+-				chinfo->name, chinfo->src, chinfo->dst);
++		dev_err(dev, "channel %s:%s:%x:%x already exist\n",
++				chinfo->name, chinfo->desc,
++				chinfo->src, chinfo->dst);
+ 		return NULL;
+ 	}
+ 
+@@ -505,6 +513,7 @@ static struct rpmsg_channel *__rpmsg_cre
+ 	rpdev->vrp = vrp;
+ 	rpdev->src = chinfo->src;
+ 	rpdev->dst = chinfo->dst;
++	strncpy(rpdev->desc, chinfo->desc, RPMSG_NAME_SIZE);
+ 
+ 	/*
+ 	 * rpmsg server channels has predefined local address (for now),
+@@ -863,13 +872,15 @@ static void rpmsg_xmit_done(struct virtq
+ 	wake_up_interruptible(&vrp->sendq);
+ }
+ 
+-struct rpmsg_channel *rpmsg_create_channel(int vrp_id, const char *name,
+-							int src, int dst)
++struct rpmsg_channel *rpmsg_create_channel(int vrp_id,
++					   const char *name, const char *desc,
++					   int src, int dst)
+ {
+ 	struct rpmsg_channel_info chinfo;
+ 	struct virtproc_info *vrp;
+ 
+ 	strncpy(chinfo.name, name, sizeof(chinfo.name));
++	strncpy(chinfo.desc, desc, sizeof(chinfo.desc));
+ 	chinfo.src = src;
+ 	chinfo.dst = dst;
+ 
+@@ -923,6 +934,7 @@ static void rpmsg_ns_cb(struct rpmsg_cha
+ 			msg->name, msg->addr);
+ 
+ 	strncpy(chinfo.name, msg->name, sizeof(chinfo.name));
++	strncpy(chinfo.desc, msg->desc, sizeof(chinfo.desc));
+ 	chinfo.src = RPMSG_ADDR_ANY;
+ 	chinfo.dst = msg->addr;
+ 
+diff -urp old/include/linux/rpmsg.h new/include/linux/rpmsg.h
+--- old/include/linux/rpmsg.h	2020-07-01 08:08:39.000000000 +0200
++++ new/include/linux/rpmsg.h	2020-07-03 21:15:13.000000000 +0200
+@@ -79,6 +79,7 @@ struct rpmsg_hdr {
+  */
+ struct rpmsg_ns_msg {
+ 	char name[RPMSG_NAME_SIZE];
++	char desc[RPMSG_NAME_SIZE];
+ 	u32 addr;
+ 	u32 flags;
+ } __packed;
+@@ -150,6 +151,7 @@ struct rpmsg_channel {
+ 	struct virtproc_info *vrp;
+ 	struct device dev;
+ 	struct rpmsg_device_id id;
++	char desc[RPMSG_NAME_SIZE];
+ 	u32 src;
+ 	u32 dst;
+ 	struct rpmsg_endpoint *ept;
+@@ -369,7 +371,8 @@ int rpmsg_trysend_offchannel(struct rpms
+ }
+ 
+ int get_virtproc_id(struct virtproc_info *vrp);
+-struct rpmsg_channel *rpmsg_create_channel(int vrp_id, const char *name,
+-							int src, int dst);
++struct rpmsg_channel *rpmsg_create_channel(int vrp_id,
++					   const char *name, const char *desc,
++					   int src, int dst);
+ 
+ #endif /* _LINUX_RPMSG_H */
+diff -urp old/net/rpmsg/rpmsg_proto.c new/net/rpmsg/rpmsg_proto.c
+--- old/net/rpmsg/rpmsg_proto.c	2020-07-03 21:29:39.000000000 +0200
++++ new/net/rpmsg/rpmsg_proto.c	2020-07-03 21:29:08.000000000 +0200
+@@ -340,7 +340,7 @@ rpmsg_sock_bind(struct socket *sock, str
+ 	if (sk->sk_state != RPMSG_OPEN)
+ 		return -EINVAL;
+ 
+-	rpdev = rpmsg_create_channel(sa->vproc_id, "rpmsg-proto", sa->addr,
++	rpdev = rpmsg_create_channel(sa->vproc_id, "rpmsg-proto", "", sa->addr,
+ 							RPMSG_ADDR_ANY);
+ 	if (!rpdev)
+ 		return -EINVAL;

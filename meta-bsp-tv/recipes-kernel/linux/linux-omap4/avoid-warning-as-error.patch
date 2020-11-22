@@ -1,0 +1,12 @@
+diff -urp old/drivers/staging/omapdce/Makefile new/drivers/staging/omapdce/Makefile
+--- old/drivers/staging/omapdce/Makefile	2020-11-22 15:23:53.000000000 +0100
++++ new/drivers/staging/omapdce/Makefile	2020-11-22 15:34:58.000000000 +0100
+@@ -3,7 +3,7 @@
+ # support for hw accellerated video decode/encode.
+ #
+ 
+-ccflags-y := -Iinclude/drm -Werror
++ccflags-y := -Iinclude/drm
+ omapdce-y := dce.o
+ 
+ obj-$(CONFIG_DRM_OMAP_DCE)	+= omapdce.o

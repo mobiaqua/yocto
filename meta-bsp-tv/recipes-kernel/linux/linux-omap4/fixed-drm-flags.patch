@@ -1,0 +1,39 @@
+diff -urp old/drivers/gpu/drm/drm_prime.c new/drivers/gpu/drm/drm_prime.c
+--- old/drivers/gpu/drm/drm_prime.c	2020-03-21 23:20:18.000000000 +0100
++++ new/drivers/gpu/drm/drm_prime.c	2020-04-02 01:21:11.000000000 +0200
+@@ -208,7 +208,6 @@ int drm_prime_handle_to_fd_ioctl(struct 
+ 				 struct drm_file *file_priv)
+ {
+ 	struct drm_prime_handle *args = data;
+-	uint32_t flags;
+ 
+ 	if (!drm_core_check_feature(dev, DRIVER_PRIME))
+ 		return -EINVAL;
+@@ -217,14 +216,11 @@ int drm_prime_handle_to_fd_ioctl(struct 
+ 		return -ENOSYS;
+ 
+ 	/* check flags are valid */
+-	if (args->flags & ~DRM_CLOEXEC)
++	if (args->flags & ~(DRM_CLOEXEC | DRM_RDWR))
+ 		return -EINVAL;
+ 
+-	/* we only want to pass DRM_CLOEXEC which is == O_CLOEXEC */
+-	flags = args->flags & DRM_CLOEXEC;
+-
+ 	return dev->driver->prime_handle_to_fd(dev, file_priv,
+-			args->handle, flags, &args->fd);
++			args->handle, args->flags, &args->fd);
+ }
+ 
+ int drm_prime_fd_to_handle_ioctl(struct drm_device *dev, void *data,
+diff -urp old/include/drm/drm.h new/include/drm/drm.h
+--- old/include/drm/drm.h	2020-03-21 23:20:23.000000000 +0100
++++ new/include/drm/drm.h	2020-04-02 01:16:18.000000000 +0200
+@@ -617,6 +617,7 @@ struct drm_get_cap {
+ 	__u64 value;
+ };
+ 
++#define DRM_RDWR O_RDWR
+ #define DRM_CLOEXEC O_CLOEXEC
+ struct drm_prime_handle {
+ 	__u32 handle;

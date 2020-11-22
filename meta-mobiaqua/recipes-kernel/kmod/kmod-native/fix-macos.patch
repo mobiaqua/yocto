@@ -1,0 +1,393 @@
+diff -urp old/Makefile.am new/Makefile.am
+--- old/Makefile.am	2020-11-18 18:06:32.000000000 +0100
++++ new/Makefile.am	2020-11-18 18:08:35.000000000 +0100
+@@ -82,8 +82,7 @@ EXTRA_DIST += libkmod/README \
+ 	libkmod/COPYING testsuite/COPYING tools/COPYING COPYING
+ 
+ libkmod_libkmod_la_LDFLAGS = $(AM_LDFLAGS) \
+-	-version-info $(LIBKMOD_CURRENT):$(LIBKMOD_REVISION):$(LIBKMOD_AGE) \
+-	-Wl,--version-script=$(top_srcdir)/libkmod/libkmod.sym
++	-version-info $(LIBKMOD_CURRENT):$(LIBKMOD_REVISION):$(LIBKMOD_AGE)
+ libkmod_libkmod_la_DEPENDENCIES = \
+ 	shared/libshared.la \
+ 	${top_srcdir}/libkmod/libkmod.sym
+@@ -93,8 +92,7 @@ libkmod_libkmod_la_LIBADD = \
+ 
+ noinst_LTLIBRARIES += libkmod/libkmod-internal.la
+ libkmod_libkmod_internal_la_SOURCES = $(libkmod_libkmod_la_SOURCES)
+-libkmod_libkmod_internal_la_LDFLAGS = $(AM_LDFLAGS) \
+-	-Wl,--version-script=$(top_srcdir)/libkmod/libkmod.sym
++libkmod_libkmod_internal_la_LDFLAGS = $(AM_LDFLAGS)
+ libkmod_libkmod_internal_la_DEPENDENCIES  = $(libkmod_libkmod_la_DEPENDENCIES)
+ libkmod_libkmod_internal_la_LIBADD = $(libkmod_libkmod_la_LIBADD)
+ 
+diff -urp old/libkmod/libkmod-config.c new/libkmod/libkmod-config.c
+--- old/libkmod/libkmod-config.c	2020-11-18 10:56:54.000000000 +0100
++++ new/libkmod/libkmod-config.c	2020-11-18 11:00:53.000000000 +0100
+@@ -30,6 +30,10 @@
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ 
++#ifdef __APPLE__
++#include <libgen.h>
++#endif
++
+ #include <shared/util.h>
+ 
+ #include "libkmod.h"
+diff -urp old/libkmod/libkmod-elf.c new/libkmod/libkmod-elf.c
+--- old/libkmod/libkmod-elf.c	2020-11-18 17:33:40.000000000 +0100
++++ new/libkmod/libkmod-elf.c	2020-11-18 18:06:18.000000000 +0100
+@@ -18,7 +18,7 @@
+  */
+ 
+ #include <assert.h>
+-#include <elf.h>
++#include <libelf.h>
+ #include <errno.h>
+ #include <stdlib.h>
+ #include <string.h>
+diff -urp old/libkmod/libkmod-module.c new/libkmod/libkmod-module.c
+--- old/libkmod/libkmod-module.c	2020-11-18 18:09:28.000000000 +0100
++++ new/libkmod/libkmod-module.c	2020-11-18 18:13:35.000000000 +0100
+@@ -760,7 +760,7 @@ KMOD_EXPORT const char *kmod_module_get_
+ }
+ 
+ 
+-extern long delete_module(const char *name, unsigned int flags);
++long delete_module(const char *name, unsigned int flags) { return 0; }
+ 
+ /**
+  * kmod_module_remove_module:
+@@ -796,7 +796,7 @@ KMOD_EXPORT int kmod_module_remove_modul
+ 	return err;
+ }
+ 
+-extern long init_module(const void *mem, unsigned long len, const char *args);
++long init_module(const void *mem, unsigned long len, const char *args) { return 0; }
+ 
+ /**
+  * kmod_module_insert_module:
+diff -urp old/libkmod/libkmod-signature.c new/libkmod/libkmod-signature.c
+--- old/libkmod/libkmod-signature.c	2020-11-18 09:08:30.000000000 +0100
++++ new/libkmod/libkmod-signature.c	2020-11-18 09:53:20.000000000 +0100
+@@ -17,7 +17,11 @@
+  * License along with this library; if not, see <http://www.gnu.org/licenses/>.
+  */
+ 
++#ifdef __APPLE__
++#include <machine/endian.h>
++#else
+ #include <endian.h>
++#endif
+ #include <inttypes.h>
+ #ifdef ENABLE_OPENSSL
+ #include <openssl/cms.h>
+diff -urp old/shared/missing.h new/shared/missing.h
+--- old/shared/missing.h	2020-11-18 09:08:30.000000000 +0100
++++ new/shared/missing.h	2020-11-18 17:31:18.000000000 +0100
+@@ -45,6 +45,15 @@ static inline int finit_module(int fd, c
+ #endif
+ 
+ #if !HAVE_DECL_BE32TOH
++#ifdef __APPLE__
++#include <machine/endian.h>
++#include <libkern/OSByteOrder.h>
++#if defined(__BIG_ENDIAN__)
++#define be32toh(x) OSSwapInt32 (x)
++#else
++#define be32toh(x) (x)
++#endif
++#else
+ #include <endian.h>
+ #include <byteswap.h>
+ #if __BYTE_ORDER == __LITTLE_ENDIAN
+@@ -53,3 +62,12 @@ static inline int finit_module(int fd, c
+ #define be32toh(x) (x)
+ #endif
+ #endif
++#endif
++
++#undef GET_PROGRAM_NAME
++#ifdef __GLIBC__
++#define GET_PROGRAM_NAME() program_invocation_short_name
++#else /* *BSD and OS X */
++#include <stdlib.h>
++#define GET_PROGRAM_NAME() getprogname()
++#endif
+diff -urp old/shared/util.c new/shared/util.c
+--- old/shared/util.c	2020-11-18 10:56:54.000000000 +0100
++++ new/shared/util.c	2020-11-18 17:33:33.000000000 +0100
+@@ -29,6 +29,13 @@
+ #include <string.h>
+ #include <unistd.h>
+ 
++#ifdef __APPLE__
++#include <libgen.h>
++#include <sys/syslimits.h>
++#else
++#include <limits.h>
++#endif
++
+ #include <shared/missing.h>
+ #include <shared/util.h>
+ 
+@@ -367,9 +374,14 @@ char *path_make_absolute_cwd(const char 
+ 	if (path_is_absolute(p))
+ 		return strdup(p);
+ 
+-	cwd = get_current_dir_name();
++	cwd = (char *)malloc(PATH_MAX);
+ 	if (!cwd)
+ 		return NULL;
++	if (!getcwd(cwd, PATH_MAX))
++	{
++		free(cwd);
++		return NULL;
++	}
+ 
+ 	plen = strlen(p);
+ 	cwdlen = strlen(cwd);
+diff -urp old/tools/depmod.c new/tools/depmod.c
+--- old/tools/depmod.c	2020-11-18 09:54:34.000000000 +0100
++++ new/tools/depmod.c	2020-11-18 10:59:23.000000000 +0100
+@@ -32,11 +32,16 @@
+ #include <sys/time.h>
+ #include <sys/utsname.h>
+ 
++#ifdef __APPLE__
++#include <libgen.h>
++#endif
++
+ #include <shared/array.h>
+ #include <shared/hash.h>
+ #include <shared/macro.h>
+ #include <shared/util.h>
+ #include <shared/scratchbuf.h>
++#include <shared/missing.h>
+ 
+ #include <libkmod/libkmod-internal.h>
+ 
+@@ -107,7 +112,7 @@ static void help(void)
+ 		"\t                     current kernel symbols.\n"
+ 		"\t-E, --symvers=FILE   Use Module.symvers file to check\n"
+ 		"\t                     symbol versions.\n",
+-		program_invocation_short_name);
++		GET_PROGRAM_NAME());
+ }
+ 
+ _printf_format_(1, 2)
+diff -urp old/tools/insert.c new/tools/insert.c
+--- old/tools/insert.c	2020-11-18 09:54:34.000000000 +0100
++++ new/tools/insert.c	2020-11-18 10:09:50.000000000 +0100
+@@ -23,6 +23,8 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
++#include <shared/missing.h>
++
+ #include <libkmod/libkmod.h>
+ 
+ #include "kmod.h"
+@@ -39,7 +41,7 @@ static void help(void)
+ 	       "\t%s insert [options] module\n"
+ 	       "Options:\n"
+ 	       "\t-h, --help        show this help\n",
+-	       program_invocation_short_name);
++	       GET_PROGRAM_NAME());
+ }
+ 
+ static const char *mod_strerror(int err)
+diff -urp old/tools/insmod.c new/tools/insmod.c
+--- old/tools/insmod.c	2020-11-18 09:54:34.000000000 +0100
++++ new/tools/insmod.c	2020-11-18 10:09:46.000000000 +0100
+@@ -24,6 +24,7 @@
+ #include <string.h>
+ 
+ #include <shared/util.h>
++#include <shared/missing.h>
+ 
+ #include <libkmod/libkmod.h>
+ 
+@@ -43,7 +44,7 @@ static void help(void)
+ 		"Options:\n"
+ 		"\t-V, --version     show version\n"
+ 		"\t-h, --help        show this help\n",
+-		program_invocation_short_name);
++		GET_PROGRAM_NAME());
+ }
+ 
+ static const char *mod_strerror(int err)
+diff -urp old/tools/kmod.c new/tools/kmod.c
+--- old/tools/kmod.c	2020-11-18 09:54:34.000000000 +0100
++++ new/tools/kmod.c	2020-11-18 10:59:36.000000000 +0100
+@@ -23,7 +23,12 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
++#ifdef __APPLE__
++#include <libgen.h>
++#endif
++
+ #include <shared/util.h>
++#include <shared/missing.h>
+ 
+ #include <libkmod/libkmod.h>
+ 
+@@ -170,7 +175,7 @@ int main(int argc, char *argv[])
+ {
+ 	int err;
+ 
+-	if (streq(program_invocation_short_name, "kmod"))
++	if (streq(GET_PROGRAM_NAME(), "kmod"))
+ 		err = handle_kmod_commands(argc, argv);
+ 	else
+ 		err = handle_kmod_compat_commands(argc, argv);
+diff -urp old/tools/log.c new/tools/log.c
+--- old/tools/log.c	2020-11-18 09:54:34.000000000 +0100
++++ new/tools/log.c	2020-11-18 10:56:46.000000000 +0100
+@@ -22,6 +22,8 @@
+ #include <stdlib.h>
+ #include <syslog.h>
+ 
++#include <shared/missing.h>
++
+ #include <libkmod/libkmod.h>
+ 
+ #include "kmod.h"
+@@ -85,10 +87,10 @@ static void log_kmod(void *data, int pri
+ 	} else {
+ #ifdef ENABLE_DEBUG
+ 		fprintf(stderr, "%s: %s: %s:%d %s() %s",
+-			program_invocation_short_name, prioname, file, line,
++			GET_PROGRAM_NAME(), prioname, file, line,
+ 			fn, str);
+ #else
+-		fprintf(stderr, "%s: %s: %s", program_invocation_short_name,
++		fprintf(stderr, "%s: %s: %s", GET_PROGRAM_NAME(),
+ 			prioname, str);
+ #endif
+ 	}
+@@ -101,7 +103,7 @@ void log_open(bool use_syslog)
+ 	log_use_syslog = use_syslog;
+ 
+ 	if (log_use_syslog)
+-		openlog(program_invocation_short_name, LOG_CONS, LOG_DAEMON);
++		openlog(GET_PROGRAM_NAME(), LOG_CONS, LOG_DAEMON);
+ }
+ 
+ void log_close(void)
+@@ -132,7 +134,7 @@ void log_printf(int prio, const char *fm
+ 	if (log_use_syslog)
+ 		syslog(prio, "%s: %s", prioname, msg);
+ 	else
+-		fprintf(stderr, "%s: %s: %s", program_invocation_short_name,
++		fprintf(stderr, "%s: %s: %s", GET_PROGRAM_NAME(),
+ 			prioname, msg);
+ 	free(msg);
+ 
+diff -urp old/tools/modinfo.c new/tools/modinfo.c
+--- old/tools/modinfo.c	2020-11-18 09:54:34.000000000 +0100
++++ new/tools/modinfo.c	2020-11-18 10:10:05.000000000 +0100
+@@ -28,6 +28,7 @@
+ #include <sys/utsname.h>
+ 
+ #include <shared/util.h>
++#include <shared/missing.h>
+ 
+ #include <libkmod/libkmod.h>
+ 
+@@ -343,7 +344,7 @@ static void help(void)
+ 		"\t-b, --basedir=DIR           Use DIR as filesystem root for /lib/modules\n"
+ 		"\t-V, --version               Show version\n"
+ 		"\t-h, --help                  Show this help\n",
+-		program_invocation_short_name);
++		GET_PROGRAM_NAME());
+ }
+ 
+ static bool is_module_filename(const char *name)
+diff -urp old/tools/modprobe.c new/tools/modprobe.c
+--- old/tools/modprobe.c	2020-11-18 09:54:34.000000000 +0100
++++ new/tools/modprobe.c	2020-11-18 10:10:09.000000000 +0100
+@@ -33,6 +33,7 @@
+ 
+ #include <shared/array.h>
+ #include <shared/macro.h>
++#include <shared/missing.h>
+ 
+ #include <libkmod/libkmod.h>
+ 
+@@ -140,9 +141,9 @@ static void help(void)
+ 		"\t-v, --verbose               enables more messages\n"
+ 		"\t-V, --version               show version\n"
+ 		"\t-h, --help                  show this help\n",
+-		program_invocation_short_name, program_invocation_short_name,
+-		program_invocation_short_name, program_invocation_short_name,
+-		program_invocation_short_name, program_invocation_short_name);
++		GET_PROGRAM_NAME(), GET_PROGRAM_NAME(),
++		GET_PROGRAM_NAME(), GET_PROGRAM_NAME(),
++		GET_PROGRAM_NAME(), GET_PROGRAM_NAME());
+ }
+ 
+ _printf_format_(1, 2)
+diff -urp old/tools/remove.c new/tools/remove.c
+--- old/tools/remove.c	2020-11-18 09:54:34.000000000 +0100
++++ new/tools/remove.c	2020-11-18 10:10:13.000000000 +0100
+@@ -23,6 +23,8 @@
+ #include <stdlib.h>
+ #include <string.h>
+ 
++#include <shared/missing.h>
++
+ #include <libkmod/libkmod.h>
+ 
+ #include "kmod.h"
+@@ -39,7 +41,7 @@ static void help(void)
+ 	       "\t%s remove [options] module\n"
+ 	       "Options:\n"
+ 	       "\t-h, --help        show this help\n",
+-	       program_invocation_short_name);
++	       GET_PROGRAM_NAME());
+ }
+ 
+ static int check_module_inuse(struct kmod_module *mod) {
+diff -urp old/tools/rmmod.c new/tools/rmmod.c
+--- old/tools/rmmod.c	2020-11-18 09:54:34.000000000 +0100
++++ new/tools/rmmod.c	2020-11-18 10:10:17.000000000 +0100
+@@ -27,6 +27,7 @@
+ #include <sys/types.h>
+ 
+ #include <shared/macro.h>
++#include <shared/missing.h>
+ 
+ #include <libkmod/libkmod.h>
+ 
+@@ -58,7 +59,7 @@ static void help(void)
+ 		"\t-v, --verbose     enables more messages\n"
+ 		"\t-V, --version     show version\n"
+ 		"\t-h, --help        show this help\n",
+-		program_invocation_short_name);
++		GET_PROGRAM_NAME());
+ }
+ 
+ static int check_module_inuse(struct kmod_module *mod) {
+diff -urp old/tools/static-nodes.c new/tools/static-nodes.c
+--- old/tools/static-nodes.c	2020-11-18 09:54:34.000000000 +0100
++++ new/tools/static-nodes.c	2020-11-18 10:10:21.000000000 +0100
+@@ -32,6 +32,7 @@
+ #include <sys/utsname.h>
+ 
+ #include <shared/util.h>
++#include <shared/missing.h>
+ 
+ #include "kmod.h"
+ 
+@@ -142,7 +143,7 @@ static void help(void)
+ 	       "\t-h, --help           show this help\n"
+ 	       "\n"
+ 	       "Formats:\n",
+-	 program_invocation_short_name);
++	 GET_PROGRAM_NAME());
+ 
+ 	for (i = 0; i < ARRAY_SIZE(static_nodes_formats); i++) {
+ 		if (static_nodes_formats[i]->description != NULL) {

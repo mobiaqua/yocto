@@ -1,0 +1,35 @@
+From 7b425f264fc2572bea8b15fe97948659507c6a45 Mon Sep 17 00:00:00 2001
+From: Jyri Sarha <jsarha@ti.com>
+Date: Wed, 1 Apr 2015 20:35:57 +0300
+Subject: ASoC: omap-hdmi: No not use IEC958_AES1_PRO_MODE_NOTID
+
+No IEC958_AES?_PRO_* macros should be used in HDMI consumer audio mode
+and IEC958_AES1_PRO_MODE_NOTID should be applied to byte 1 when
+applicable. However IEC958_AES1_PRO_MODE_NOTID is defined as 0 so this
+fix does not affect the functionality in any way.
+
+Reported-by: Russell King <linux@arm.linux.org.uk>
+Signed-off-by: Jyri Sarha <jsarha@ti.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
+---
+ sound/soc/omap/omap-hdmi.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+(limited to 'sound/soc/omap/omap-hdmi.c')
+
+diff --git a/sound/soc/omap/omap-hdmi.c b/sound/soc/omap/omap-hdmi.c
+index ccfb41c22e53..1822578bbc2c 100644
+--- a/sound/soc/omap/omap-hdmi.c
++++ b/sound/soc/omap/omap-hdmi.c
+@@ -142,8 +142,6 @@ static int hdmi_dai_hw_params(struct snd_pcm_substream *substream,
+ 
+ 	iec->status[0] |= IEC958_AES0_CON_EMPHASIS_NONE;
+ 
+-	iec->status[0] |= IEC958_AES1_PRO_MODE_NOTID;
+-
+ 	iec->status[1] = IEC958_AES1_CON_GENERAL;
+ 
+ 	iec->status[2] |= IEC958_AES2_CON_SOURCE_UNSPEC;
+-- 
+cgit 1.2-0.3.lf.el7
+

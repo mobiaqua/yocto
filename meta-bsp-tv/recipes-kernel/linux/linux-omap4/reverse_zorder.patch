@@ -1,0 +1,15 @@
+diff -urp old/drivers/staging/omapdrm/omap_plane.c new/drivers/staging/omapdrm/omap_plane.c
+--- old/drivers/staging/omapdrm/omap_plane.c	2020-01-02 16:10:17.000000000 +0100
++++ new/drivers/staging/omapdrm/omap_plane.c	2020-01-02 20:42:50.000000000 +0100
+@@ -540,9 +540,9 @@ struct drm_plane *omap_plane_init(struct
+ 	 * will come in a subsequent patch.
+ 	 */
+ 	if (priv)
+-		omap_plane->info.zorder = 0;
++		omap_plane->info.zorder = 3;
+ 	else
+-		omap_plane->info.zorder = ovl->id;
++		omap_plane->info.zorder = 3 - ovl->id;
+ 
+ 	update_manager(plane);
+ 
