@@ -17,13 +17,9 @@ do_compile() {
 	:
 }
 
-do_install_virtclass-native() {
+do_install() {
 	install -d ${D}${includedir}/
 	install -m 0644 ${WORKDIR}/elf.h ${D}${includedir}/
-}
-
-do_install() {
-	:
 }
 
 BBCLASSEXTEND = "native"
