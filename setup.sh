@@ -194,6 +194,18 @@ prepare_tools() {
 	fi
 
 	if [ "$OS" = "Darwin" ]; then
+		/bin/rm -f ${OE_BASE}/bin/bc
+		/bin/rm -f ${OE_BASE}/bin/dc
+		if [ -e /opt/local/bin/bc ]; then
+			/bin/ln -s /opt/local/bin/bc ${OE_BASE}/bin/bc
+			/bin/ln -s /opt/local/bin/dc ${OE_BASE}/bin/dc
+		else
+			echo "* ERROR *  Missing GNU bc package"
+			return 1
+		fi
+	fi
+
+	if [ "$OS" = "Darwin" ]; then
 		/bin/rm -f ${OE_BASE}/bin/python
 		/bin/rm -f ${OE_BASE}/bin/python3
 		if [ -e /opt/local/bin/python3 ]; then
@@ -457,11 +469,11 @@ INHERIT = \"rm_work\"
 BUILD_DEBUG = \"${BUILD_DEBUG}\"
 ASSUME_PROVIDED += \" git-native perl-native python-native python3-native desktop-file-utils-native \
 linux-libc-headers-native glib-2.0-native intltool-native xz-native gzip-native \
-findutils-native bison-native flex-native help2man-native \
+findutils-native bison-native flex-native help2man-native bc-native \
 m4-native unzip-native texinfo-native texinfo-dummy-native patch-replacement-native \"
 SANITY_REQUIRED_UTILITIES_remove = \"chrpath\"
 PACKAGE_DEPENDS_remove = \"dwarfsrcfiles-native pseudo-native\"
-HOSTTOOLS += \"otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep tic\"
+HOSTTOOLS += \"otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep tic bc dc\"
 HOSTTOOLS_remove = \"chrpath flock ldd\"
 PARALLEL_MAKE = \"-j 8\"
 BB_NUMBER_THREADS = \"8\"
