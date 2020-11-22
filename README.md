@@ -2,6 +2,8 @@
 
 **Only macOS 10.15 and later on Intel CPU host supported.**
 
+**Only MacPorts with GNU prefix tools supported.**
+
   Targets list:
 
   - "tv"
