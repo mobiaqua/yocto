@@ -25,22 +25,27 @@ SRC_URI = "git://dev.omapzoom.org/pub/scm/integration/kernel-ubuntu.git;protocol
 S = "${WORKDIR}/git"
 
 do_configure() {
-	cd ${S}
-	oe_runmake allnoconfig ARCH=$ARCH
+    cd ${S}
+    oe_runmake allnoconfig ARCH=$ARCH
 }
 
 do_install() {
-	oe_runmake headers_install INSTALL_HDR_PATH=${D}${exec_prefix} ARCH=$ARCH
+    oe_runmake headers_install INSTALL_HDR_PATH=${D}${exec_prefix} ARCH=$ARCH
 
-	# The ..install.cmd conflicts between various configure runs
-	find ${D}${includedir} -name ..install.cmd | xargs rm -f
-	find ${D}${includedir} -name ..install | xargs rm -f
-	find ${D}${includedir} -name .install | xargs rm -f
+    # The ..install.cmd conflicts between various configure runs
+    find ${D}${includedir} -name ..install.cmd | xargs rm -f
+    find ${D}${includedir} -name ..install | xargs rm -f
+    find ${D}${includedir} -name .install | xargs rm -f
+
+    install -d ${D}/${includedir}/omap
+    cp -L ${S}/drivers/staging/omapdrm/omap_drv.h ${D}/${includedir}/omap/
+    cp -L ${S}/drivers/staging/omapdce/omap_dce.h ${D}/${includedir}/omap/
+    cp -L ${S}/drivers/staging/omapdce/dce_rpc.h ${D}/${includedir}/omap/
 }
 
 do_install_armmultilib () {
-	oe_multilib_header asm/auxvec.h asm/bitsperlong.h asm/byteorder.h asm/fcntl.h asm/hwcap.h asm/ioctls.h asm/mman.h asm/param.h
-	oe_multilib_header asm/posix_types.h asm/ptrace.h  asm/setup.h  asm/sigcontext.h asm/siginfo.h asm/signal.h asm/stat.h asm/statfs.h asm/swab.h asm/types.h asm/unistd.h
+    oe_multilib_header asm/auxvec.h asm/bitsperlong.h asm/byteorder.h asm/fcntl.h asm/hwcap.h asm/ioctls.h asm/mman.h asm/param.h
+    oe_multilib_header asm/posix_types.h asm/ptrace.h asm/setup.h asm/sigcontext.h asm/siginfo.h asm/signal.h asm/stat.h asm/statfs.h asm/swab.h asm/types.h asm/unistd.h
 }
 
 DEPENDS_remove = "rsync-native"
