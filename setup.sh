@@ -68,6 +68,13 @@ prepare_tools() {
 " > ${OE_BASE}/bin/chown
 	/bin/chmod +x ${OE_BASE}/bin/chown
 
+	/bin/rm -f ${OE_BASE}/bin/sw_vers
+	echo "#!/bin/bash
+
+echo -n \"10.15.0\"
+" > ${OE_BASE}/bin/sw_vers
+	/bin/chmod +x ${OE_BASE}/bin/sw_vers
+
 	get_os
 	case $OS in
 	Darwin)
@@ -473,7 +480,7 @@ findutils-native bison-native flex-native help2man-native bc-native \
 m4-native unzip-native texinfo-native texinfo-dummy-native patch-replacement-native \"
 SANITY_REQUIRED_UTILITIES_remove = \"chrpath\"
 PACKAGE_DEPENDS_remove = \"dwarfsrcfiles-native pseudo-native\"
-HOSTTOOLS += \"otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep tic bc dc\"
+HOSTTOOLS += \"otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep tic bc dc sw_vers\"
 HOSTTOOLS_remove = \"chrpath flock ldd\"
 PARALLEL_MAKE = \"-j 8\"
 BB_NUMBER_THREADS = \"8\"
