@@ -28,8 +28,8 @@ PACKAGES += "${PN}-codegen ${PN}-utils"
 
 LEAD_SONAME = "libglib-2.0.*"
 
-# MobiAqua: removed 'meson', 'bash-completion', 'gio-module-cache'
-inherit gettext gtk-doc pkgconfig ptest-gnome upstream-version-is-even manpages features_check
+# MobiAqua: removed 'meson', 'gio-module-cache'
+inherit gettext gtk-doc pkgconfig ptest-gnome upstream-version-is-even manpages bash-completion features_check
 
 GTKDOC_MESON_OPTION = "gtk_doc"
 
