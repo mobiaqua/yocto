@@ -53,7 +53,7 @@ sha384sum sha512sum shred shuf sleep sort split stat stdbuf stty sum sync tac ta
 timeout touch tr true truncate tsort tty uname unexpand uniq unlink uptime users vdir wc who \
 whoami yes"
 
-tools="bison perl git wget gzip texi2html file bison flex help2man unzip xz"
+tools="bison perl git wget gzip texi2html file bison flex help2man unzip xz dos2unix"
 
 prepare_tools() {
 	OE_BASE=`pwd -P`
@@ -480,7 +480,7 @@ findutils-native bison-native flex-native help2man-native bc-native \
 m4-native unzip-native texinfo-native texinfo-dummy-native patch-replacement-native \"
 SANITY_REQUIRED_UTILITIES_remove = \"chrpath\"
 PACKAGE_DEPENDS_remove = \"dwarfsrcfiles-native pseudo-native\"
-HOSTTOOLS += \"otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep tic bc dc sw_vers\"
+HOSTTOOLS += \"otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep tic bc dc dos2unix sw_vers xcrun glib-genmarshal glib-compile-schemas\"
 HOSTTOOLS_remove = \"chrpath flock ldd\"
 PARALLEL_MAKE = \"-j 8\"
 BB_NUMBER_THREADS = \"8\"
