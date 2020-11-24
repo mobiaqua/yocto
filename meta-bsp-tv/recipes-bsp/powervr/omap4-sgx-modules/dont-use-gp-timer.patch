@@ -1,0 +1,14 @@
+diff -urp old/sgx/eurasiacon/build/linux2/omap4430_linux/Makefile new/sgx/eurasiacon/build/linux2/omap4430_linux/Makefile
+--- old/sgx/eurasiacon/build/linux2/omap4430_linux/Makefile	2020-04-21 22:24:00.000000000 +0200
++++ new/sgx/eurasiacon/build/linux2/omap4430_linux/Makefile	2020-04-22 15:17:00.376833310 +0200
+@@ -184,6 +184,10 @@ else
+ KERNEL_COMPONENTS += $(DISPLAY_CONTROLLER_COMPONENT)
+ endif
+ 
++ifeq ($(BUILD),debug)
++PVR_NO_OMAP_TIMER := 1
++endif
++
+ SUPPORT_V4L2_GFX ?= 0
+ 
+ SUPPORT_MEMINFO_IDS ?= 1
