@@ -1,8 +1,10 @@
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 
-SRC_URI += "file://fix-compilation.patch"
+SRC_URI += "file://fix-compilation.patch \
+            file://fixed-attr.patch \
+            "
 
-DEPENDS_remove = "python3 python3-native dbus elfutils bzip2 xz"
+DEPENDS_remove = "python3 python3-native dbus elfutils xz"
 
 EXTRA_OECONF_remove = "--enable-python"
 
