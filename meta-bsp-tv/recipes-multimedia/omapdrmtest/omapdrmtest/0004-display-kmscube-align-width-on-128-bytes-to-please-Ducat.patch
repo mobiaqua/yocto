@@ -1,0 +1,29 @@
+From ade51c95707e925cbe6c96a45326121b16543cf0 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Herv=C3=A9=20Fache?= <h-fache@ti.com>
+Date: Tue, 15 Jan 2013 02:44:11 +0100
+Subject: [PATCH 4/4] display kms: align width on 128 bytes to please Ducati
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Signed-off-by: Hervé Fache <h-fache@ti.com>
+---
+ util/display-kmscube.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/util/display-kms.c b/util/display-kms.c
+index b9cdc4e..26ec275 100644
+--- a/util/display-kmscude.c
++++ b/util/display-kmscube.c
+@@ -85,7 +85,7 @@ alloc_bo(struct display *disp, uint32_t bpp, uint32_t width, uint32_t height,
+ 	bo_flags |= OMAP_BO_WC;
+ 
+ 	if (bo_flags & OMAP_BO_TILED) {
+-		bo = omap_bo_new_tiled(disp->dev, width, height, bo_flags);
++		bo = omap_bo_new_tiled(disp->dev, ALIGN2(width,7), height, bo_flags);
+ 	} else {
+ 		bo = omap_bo_new(disp->dev, width * height * bpp / 8, bo_flags);
+ 	}
+-- 
+1.7.0.4
+

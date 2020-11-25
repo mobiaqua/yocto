@@ -1,0 +1,375 @@
+diff -urp old/util/display-kmscube.c new/util/display-kmscube.c
+--- old/util/display-kmscube.c	2020-04-03 19:26:59.000000000 +0200
++++ new/util/display-kmscube.c	2020-04-03 19:22:26.000000000 +0200
+@@ -125,6 +125,8 @@ struct display_kmscube {
+ 	//user specified connector id
+ 	uint32_t user_connector_id;
+ 
++	uint32_t x, y, src_w, src_h, dst_w, dst_h;
++
+ 	int num_faces;
+ 	struct buffer *current_buffers[MAX_FACES];
+ 	pthread_t renderThread;
+@@ -259,46 +261,27 @@ static int init_gl(struct display_kmscub
+ 	};
+ 
+ 	static const char *vertex_shader_source =
+-			"uniform mat4 modelviewMatrix;      \n"
+-			"uniform mat4 modelviewprojectionMatrix;\n"
+-			"uniform mat3 normalMatrix;         \n"
+-			"                                   \n"
+-			"attribute vec4 in_position;        \n"
+-			"attribute vec3 in_normal;          \n"
+-			"attribute vec4 in_color;           \n"
+-			"attribute vec2 in_texuv;           \n"
+-			"\n"
+-			"vec4 lightSource = vec4(2.0, 2.0, 20.0, 0.0);\n"
+-			"                                   \n"
+-			"varying float VaryingLight;        \n"
+-			"varying vec2 vVaryingTexUV;        \n"
+-			"                                   \n"
+-			"void main()                        \n"
+-			"{                                  \n"
+-			"    gl_Position = modelviewprojectionMatrix * in_position;\n"
+-			"    vec3 vEyeNormal = normalMatrix * in_normal;\n"
+-			"    vec4 vPosition4 = modelviewMatrix * in_position;\n"
+-			"    vec3 vPosition3 = vPosition4.xyz / vPosition4.w;\n"
+-			"    vec3 vLightDir = normalize(lightSource.xyz - vPosition3);\n"
+-			"    VaryingLight = max(0.0, dot(vEyeNormal, vLightDir));\n"
+-			"    vVaryingTexUV = in_texuv;      \n"
+-			"}                                  \n";
++			"attribute vec2 in_position;              \n"
++			"attribute vec2 in_texuv;                 \n"
++			"varying vec2 vVaryingTexUV;              \n"
++			"                                         \n"
++			"void main()                              \n"
++			"{                                        \n"
++			"    gl_Position = vec4(in_position, 0.0, 1.0);\n"
++			"    vVaryingTexUV = in_texuv;            \n"
++			"}                                        \n";
+ 
+ 	static const char *fragment_shader_source =
+-			"#extension GL_OES_EGL_image_external : require\n"
+-			"                                   \n"
+-			"precision mediump float;           \n"
+-			"                                   \n"
+-			"uniform samplerExternalOES texture;\n"
+-			"                                   \n"
+-			"varying float VaryingLight;        \n"
+-			"varying vec2 vVaryingTexUV;        \n"
+-			"                                   \n"
+-			"void main()                        \n"
+-			"{                                  \n"
+-			"    vec4 t = texture2D(texture, vVaryingTexUV);\n"
+-			"    gl_FragColor = vec4(VaryingLight * t.rgb, 1.0);\n"
+-			"}                                  \n";
++			"#extension GL_OES_EGL_image_external : require        \n"
++			"precision mediump float;                              \n"
++			"                                                      \n"
++			"uniform samplerExternalOES texture;                   \n"
++			"varying vec2 vVaryingTexUV;                           \n"
++			"                                                      \n"
++			"void main()                                           \n"
++			"{                                                     \n"
++			"    gl_FragColor = texture2D(texture, vVaryingTexUV); \n"
++			"}                                                     \n";
+ 
+ 	disp_kmsc->gl.display = eglGetDisplay(disp_kmsc->gbm.dev);
+ 
+@@ -413,9 +396,7 @@ static int init_gl(struct display_kmscub
+ 	glAttachShader(disp_kmsc->gl.program, fragment_shader);
+ 
+ 	glBindAttribLocation(disp_kmsc->gl.program, 0, "in_position");
+-	glBindAttribLocation(disp_kmsc->gl.program, 1, "in_normal");
+-	glBindAttribLocation(disp_kmsc->gl.program, 2, "in_color");
+-	glBindAttribLocation(disp_kmsc->gl.program, 3, "in_texuv");
++	glBindAttribLocation(disp_kmsc->gl.program, 1, "in_texuv");
+ 
+ 	glLinkProgram(disp_kmsc->gl.program);
+ 
+@@ -437,12 +418,6 @@ static int init_gl(struct display_kmscub
+ 
+ 	glUseProgram(disp_kmsc->gl.program);
+ 
+-	disp_kmsc->gl.modelviewmatrix = glGetUniformLocation(disp_kmsc->gl.program, "modelviewMatrix");
+-	disp_kmsc->gl.modelviewprojectionmatrix =
+-		glGetUniformLocation(disp_kmsc->gl.program, "modelviewprojectionMatrix");
+-	disp_kmsc->gl.normalmatrix = glGetUniformLocation(disp_kmsc->gl.program, "normalMatrix");
+-	disp_kmsc->gl.uniform_texture = glGetUniformLocation(disp_kmsc->gl.program, "uniform_texture");
+-
+ 	glViewport(0, 0, disp_kmsc->drm.mode->hdisplay, disp_kmsc->drm.mode->vdisplay);
+ 
+ 	/* Textures would be created at runtime by render thread */
+@@ -452,205 +427,68 @@ static int init_gl(struct display_kmscub
+ 
+ static void draw(struct display_kmscube *disp_kmsc)
+ {
+-	int face, tex_name;
+-	ESMatrix modelview;
+-	static const GLfloat vVertices[] = {
+-			// front
+-			-1.0f, -1.0f, +1.0f, // point blue
+-			+1.0f, -1.0f, +1.0f, // point magenta
+-			-1.0f, +1.0f, +1.0f, // point cyan
+-			+1.0f, +1.0f, +1.0f, // point white
+-			// back
+-			+1.0f, -1.0f, -1.0f, // point red
+-			-1.0f, -1.0f, -1.0f, // point black
+-			+1.0f, +1.0f, -1.0f, // point yellow
+-			-1.0f, +1.0f, -1.0f, // point green
+-			// right
+-			+1.0f, -1.0f, +1.0f, // point magenta
+-			+1.0f, -1.0f, -1.0f, // point red
+-			+1.0f, +1.0f, +1.0f, // point white
+-			+1.0f, +1.0f, -1.0f, // point yellow
+-			// left
+-			-1.0f, -1.0f, -1.0f, // point black
+-			-1.0f, -1.0f, +1.0f, // point blue
+-			-1.0f, +1.0f, -1.0f, // point green
+-			-1.0f, +1.0f, +1.0f, // point cyan
+-			// top
+-			-1.0f, +1.0f, +1.0f, // point cyan
+-			+1.0f, +1.0f, +1.0f, // point white
+-			-1.0f, +1.0f, -1.0f, // point green
+-			+1.0f, +1.0f, -1.0f, // point yellow
+-			// bottom
+-			-1.0f, -1.0f, -1.0f, // point black
+-			+1.0f, -1.0f, -1.0f, // point red
+-			-1.0f, -1.0f, +1.0f, // point blue
+-			+1.0f, -1.0f, +1.0f  // point magenta
++	int tex_name;
++	static GLfloat vVertices[8];
++	static GLfloat vTexUVs[] = {
++		0.0f,  1.0f,
++		1.0f,  1.0f,
++		0.0f,  0.0f,
++		1.0f,  0.0f,
+ 	};
+ 
+-	static const GLfloat vColors[] = {
+-			// front
+-			0.0f,  0.0f,  1.0f, // blue
+-			1.0f,  0.0f,  1.0f, // magenta
+-			0.0f,  1.0f,  1.0f, // cyan
+-			1.0f,  1.0f,  1.0f, // white
+-			// back
+-			1.0f,  0.0f,  0.0f, // red
+-			0.0f,  0.0f,  0.0f, // black
+-			1.0f,  1.0f,  0.0f, // yellow
+-			0.0f,  1.0f,  0.0f, // green
+-			// right
+-			1.0f,  0.0f,  1.0f, // magenta
+-			1.0f,  0.0f,  0.0f, // red
+-			1.0f,  1.0f,  1.0f, // white
+-			1.0f,  1.0f,  0.0f, // yellow
+-			// left
+-			0.0f,  0.0f,  0.0f, // black
+-			0.0f,  0.0f,  1.0f, // blue
+-			0.0f,  1.0f,  0.0f, // green
+-			0.0f,  1.0f,  1.0f, // cyan
+-			// top
+-			0.0f,  1.0f,  1.0f, // cyan
+-			1.0f,  1.0f,  1.0f, // white
+-			0.0f,  1.0f,  0.0f, // green
+-			1.0f,  1.0f,  0.0f, // yellow
+-			// bottom
+-			0.0f,  0.0f,  0.0f, // black
+-			1.0f,  0.0f,  0.0f, // red
+-			0.0f,  0.0f,  1.0f, // blue
+-			1.0f,  0.0f,  1.0f  // magenta
+-	};
++	/* clear the color buffer */
++	glClearColor(0.0, 0.0, 0.0, 1.0);
++	glClear(GL_COLOR_BUFFER_BIT);
+ 
+-	static const GLfloat vNormals[] = {
+-			// front
+-			+0.0f, +0.0f, +1.0f, // forward
+-			+0.0f, +0.0f, +1.0f, // forward
+-			+0.0f, +0.0f, +1.0f, // forward
+-			+0.0f, +0.0f, +1.0f, // forward
+-			// back
+-			+0.0f, +0.0f, -1.0f, // backbard
+-			+0.0f, +0.0f, -1.0f, // backbard
+-			+0.0f, +0.0f, -1.0f, // backbard
+-			+0.0f, +0.0f, -1.0f, // backbard
+-			// right
+-			+1.0f, +0.0f, +0.0f, // right
+-			+1.0f, +0.0f, +0.0f, // right
+-			+1.0f, +0.0f, +0.0f, // right
+-			+1.0f, +0.0f, +0.0f, // right
+-			// left
+-			-1.0f, +0.0f, +0.0f, // left
+-			-1.0f, +0.0f, +0.0f, // left
+-			-1.0f, +0.0f, +0.0f, // left
+-			-1.0f, +0.0f, +0.0f, // left
+-			// top
+-			+0.0f, +1.0f, +0.0f, // up
+-			+0.0f, +1.0f, +0.0f, // up
+-			+0.0f, +1.0f, +0.0f, // up
+-			+0.0f, +1.0f, +0.0f, // up
+-			// bottom
+-			+0.0f, -1.0f, +0.0f, // down
+-			+0.0f, -1.0f, +0.0f, // down
+-			+0.0f, -1.0f, +0.0f, // down
+-			+0.0f, -1.0f, +0.0f  // down
+-	};
++	if (disp_kmsc->dst_w == 0)
++		return;
+ 
+-	static const GLfloat vTexUVs[] = {
+-			// front
+-			0.1f,  0.9f,
+-			0.9f,  0.9f,
+-			0.1f,  0.1f,
+-			0.9f,  0.1f,
+-			// back
+-			0.1f,  0.9f,
+-			0.9f,  0.9f,
+-			0.1f,  0.1f,
+-			0.9f,  0.1f,
+-			// right
+-			0.1f,  0.9f,
+-			0.9f,  0.9f,
+-			0.1f,  0.1f,
+-			0.9f,  0.1f,
+-			// left
+-			0.1f,  0.9f,
+-			0.9f,  0.9f,
+-			0.1f,  0.1f,
+-			0.9f,  0.1f,
+-			// top
+-			0.1f,  0.9f,
+-			0.9f,  0.9f,
+-			0.1f,  0.1f,
+-			0.9f,  0.1f,
+-			// bottom
+-			0.1f,  0.9f,
+-			0.9f,  0.9f,
+-			0.1f,  0.1f,
+-			0.9f,  0.1f,
+-	};
++	float x = (float)(disp_kmsc->dst_w) / disp_kmsc->drm.mode->hdisplay;
++	float y = (float)(disp_kmsc->dst_h) / disp_kmsc->drm.mode->vdisplay;
++	if (x > y) {
++		y /= x;
++		x = 1;
++	} else {
++		x /= y;
++		y = 1;
++	}
+ 
+-	/* clear the color buffer */
+-	glClearColor(0.5, 0.5, 0.5, 1.0);
+-	glClear(GL_COLOR_BUFFER_BIT);
++	vVertices[0] = -x;
++	vVertices[1] = -y;
++	vVertices[2] = +x;
++	vVertices[3] = -y;
++	vVertices[4] = -x;
++	vVertices[5] = +y;
++	vVertices[6] = +x;
++	vVertices[7] = +y;
++
++	float crop_left = ((float)disp_kmsc->x / disp_kmsc->src_w);
++	float crop_right = ((float)disp_kmsc->dst_w / disp_kmsc->src_w);
++	float crop_top = ((float)disp_kmsc->y / disp_kmsc->src_h);
++	float crop_bottom = ((float)disp_kmsc->dst_h / disp_kmsc->src_h);
++	vTexUVs[0] = vTexUVs[4] = crop_left;
++	vTexUVs[2] = vTexUVs[6] = crop_right;
++	vTexUVs[5] = vTexUVs[7] = crop_top;
++	vTexUVs[1] = vTexUVs[3] = crop_bottom;
+ 
+-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, vVertices);
++	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, vVertices);
+ 	glEnableVertexAttribArray(0);
+ 
+-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, vNormals);
++	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, vTexUVs);
+ 	glEnableVertexAttribArray(1);
+ 
+-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, vColors);
+-	glEnableVertexAttribArray(2);
+-
+-	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 0, vTexUVs);
+-	glEnableVertexAttribArray(3);
++	tex_name = get_texture(disp_kmsc, 0);
++	glBindTexture(GL_TEXTURE_EXTERNAL_OES, tex_name);
++	if (glGetError() != GL_NO_ERROR)
++		printf("glBindTexture failed!\n");
+ 
+-	esMatrixLoadIdentity(&modelview);
+-	esTranslate(&modelview, 0.0f, 0.0f, -disp_kmsc->gl.distance);
+-	esRotate(&modelview, 45.0f + (0.25f * disp_kmsc->i), 1.0f, 0.0f, 0.0f);
+-	esRotate(&modelview, 45.0f - (0.5f * disp_kmsc->i), 0.0f, 1.0f, 0.0f);
+-	esRotate(&modelview, 10.0f + (0.15f * disp_kmsc->i), 0.0f, 0.0f, 1.0f);
+-
+-	GLfloat aspect = (GLfloat)(disp_kmsc->drm.mode->hdisplay) / (GLfloat)(disp_kmsc->drm.mode->vdisplay);
+-
+-	ESMatrix projection;
+-	esMatrixLoadIdentity(&projection);
+-	esPerspective(&projection, disp_kmsc->gl.fov, aspect, 1.0f, 10.0f);
+-
+-	ESMatrix modelviewprojection;
+-	esMatrixLoadIdentity(&modelviewprojection);
+-	esMatrixMultiply(&modelviewprojection, &modelview, &projection);
+-
+-	float normal[9];
+-	normal[0] = modelview.m[0][0];
+-	normal[1] = modelview.m[0][1];
+-	normal[2] = modelview.m[0][2];
+-	normal[3] = modelview.m[1][0];
+-	normal[4] = modelview.m[1][1];
+-	normal[5] = modelview.m[1][2];
+-	normal[6] = modelview.m[2][0];
+-	normal[7] = modelview.m[2][1];
+-	normal[8] = modelview.m[2][2];
+-
+-	glUniformMatrix4fv(disp_kmsc->gl.modelviewmatrix, 1, GL_FALSE, &modelview.m[0][0]);
+-	glUniformMatrix4fv(disp_kmsc->gl.modelviewprojectionmatrix, 1, GL_FALSE, &modelviewprojection.m[0][0]);
+-	glUniformMatrix3fv(disp_kmsc->gl.normalmatrix, 1, GL_FALSE, normal);
+-
+-	glEnable(GL_CULL_FACE);
+-
+-	for(face=0; face<MAX_FACES; face++) {
+-		glActiveTexture(GL_TEXTURE0);
+-		tex_name = get_texture(disp_kmsc, face);
+-		glBindTexture(GL_TEXTURE_EXTERNAL_OES, tex_name);
+-		if (glGetError() != GL_NO_ERROR)
+-			printf("glBindTexture failed render for face %d!\n", face);
+-		glUniform1i(disp_kmsc->gl.uniform_texture, 0);
+-		glDrawArrays(GL_TRIANGLE_STRIP, face * 4, 4);
+-	}
++	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+ }
+ 
+ static void
+ drm_fb_destroy_callback(struct gbm_bo *bo, void *data)
+ {
+ 	struct drm_fb *fb = data;
+-//	struct gbm_device *gbm = gbm_bo_get_device(bo);
+ 	struct display_kmscube *disp_kmsc = fb->disp_kmsc;
+ 
+ 	if (fb->fb_id)
+@@ -906,6 +744,12 @@ post_vid_buffer(struct display *disp, st
+ 	 */
+ 
+ 	pthread_mutex_lock(&disp_kmsc->lock[face]);
++	disp_kmsc->x = x;
++	disp_kmsc->y = y;
++	disp_kmsc->src_w = buf->width;
++	disp_kmsc->src_h = buf->height;
++	disp_kmsc->dst_w = w;
++	disp_kmsc->dst_h = h;
+ 	disp_kmsc->current_buffers[face] = buf;
+ 	pthread_mutex_unlock(&disp_kmsc->lock[face]);
+ 
+@@ -938,7 +782,7 @@ render_thread(void *data)
+ 	}
+ 
+ 	/* clear the color buffer */
+-	glClearColor(0.5, 0.5, 0.5, 1.0);
++	glClearColor(0.0, 0.0, 0.0, 1.0);
+ 	glClear(GL_COLOR_BUFFER_BIT);
+ 	eglSwapBuffers(disp_kmsc->gl.display, disp_kmsc->gl.surface);
+ 	bo = gbm_surface_lock_front_buffer(disp_kmsc->gbm.surface);

@@ -1,0 +1,80 @@
+From 368aeb6a7e6b1848a1f60dac4f8578536a6f08f8 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Vincent=20Stehl=C3=A9?= <v-stehle@ti.com>
+Date: Thu, 11 Oct 2012 09:22:03 +0200
+Subject: [PATCH] Hack! disp-kmscube: reduce u/v by 10%
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Signed-off-by: Vincent Stehlé <v-stehle@ti.com>
+---
+ util/display-kmscube.c |   48 ++++++++++++++++++++++++------------------------
+ 1 file changed, 24 insertions(+), 24 deletions(-)
+
+diff --git a/util/display-kmscube.c b/util/display-kmscube.c
+index 755205e..97aac4d 100644
+--- a/util/display-kmscube.c
++++ b/util/display-kmscube.c
+@@ -565,35 +565,35 @@ static void draw(struct display_kmscube *disp_kmsc)
+ 
+ 	static const GLfloat vTexUVs[] = {
+ 			// front
+-			0.0f,  1.0f,
+-			1.0f,  1.0f,
+-			0.0f,  0.0f,
+-			1.0f,  0.0f,
++			0.1f,  0.9f,
++			0.9f,  0.9f,
++			0.1f,  0.1f,
++			0.9f,  0.1f,
+ 			// back
+-			0.0f,  1.0f,
+-			1.0f,  1.0f,
+-			0.0f,  0.0f,
+-			1.0f,  0.0f,
++			0.1f,  0.9f,
++			0.9f,  0.9f,
++			0.1f,  0.1f,
++			0.9f,  0.1f,
+ 			// right
+-			0.0f,  1.0f,
+-			1.0f,  1.0f,
+-			0.0f,  0.0f,
+-			1.0f,  0.0f,
++			0.1f,  0.9f,
++			0.9f,  0.9f,
++			0.1f,  0.1f,
++			0.9f,  0.1f,
+ 			// left
+-			0.0f,  1.0f,
+-			1.0f,  1.0f,
+-			0.0f,  0.0f,
+-			1.0f,  0.0f,
++			0.1f,  0.9f,
++			0.9f,  0.9f,
++			0.1f,  0.1f,
++			0.9f,  0.1f,
+ 			// top
+-			0.0f,  1.0f,
+-			1.0f,  1.0f,
+-			0.0f,  0.0f,
+-			1.0f,  0.0f,
++			0.1f,  0.9f,
++			0.9f,  0.9f,
++			0.1f,  0.1f,
++			0.9f,  0.1f,
+ 			// bottom
+-			0.0f,  1.0f,
+-			1.0f,  1.0f,
+-			0.0f,  0.0f,
+-			1.0f,  0.0f,
++			0.1f,  0.9f,
++			0.9f,  0.9f,
++			0.1f,  0.1f,
++			0.9f,  0.1f,
+ 	};
+ 
+ 	/* clear the color buffer */
+-- 
+1.7.9.5
+

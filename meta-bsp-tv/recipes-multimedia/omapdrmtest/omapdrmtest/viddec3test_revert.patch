@@ -1,0 +1,11 @@
+--- a/viddec3test.c	2019-12-18 01:25:45.000000000 +0100
++++ a/viddec3test-revert.c	2019-12-18 01:30:07.000000000 +0100
+@@ -422,7 +422,7 @@ decoder_process(struct decoder *decoder)
+ 			if (err) {
+ 				ERROR("%p: process returned error: %d", decoder, err);
+ 				ERROR("%p: extendedError: %08x", decoder, outArgs->extendedError);
+-				if (XDM_ISFATALERROR(outArgs->extendedError) || ( err == DCE_EXDM_UNSUPPORTED ) || ( err == DCE_EIPC_CALL_FAIL ) || ( err == DCE_EINVALID_INPUT ))
++				if (XDM_ISFATALERROR(outArgs->extendedError))
+ 					return -1;
+ 			}
+ 		}

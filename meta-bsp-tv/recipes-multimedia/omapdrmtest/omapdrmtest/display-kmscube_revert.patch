@@ -1,0 +1,213 @@
+--- a/util/display-kmscube.c	2019-12-18 00:55:50.000000000 +0100
++++ b/util/display-kmscube-old.c	2015-08-03 06:56:18.000000000 +0200
+@@ -57,7 +57,6 @@
+ 
+ #include "util.h"
+ 
+-#include <linux/videodev2.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
+@@ -66,7 +65,6 @@
+ #include <stdlib.h>
+ #include <errno.h>
+ 
+-#include <drm_fourcc.h>
+ #include <xf86drm.h>
+ #include <xf86drmMode.h>
+ #include <gbm.h>
+@@ -113,7 +111,6 @@ struct display_kmscube {
+ 	struct {
+ 		struct gbm_device *dev;
+ 		struct gbm_surface *surface;
+-		struct gbm_bo *bo;
+ 	} gbm;
+ 
+ 	// DRM.
+@@ -204,38 +201,10 @@ static int init_drm(struct display_kmscu
+ 	}
+ 
+ 	/* find encoder: */
+-	for (i = 0; i < connector->count_encoders; i++) {
+-		encoder = drmModeGetEncoder(disp_kmsc->base.fd, connector->encoders[i]);
+-		/* Take the fisrt one, if none is assigned */
+-		if (!connector->encoder_id)
+-		{
+-			connector->encoder_id = encoder->encoder_id;
+-		}
+-
+-		if (encoder->encoder_id == connector->encoder_id) {
+-			/* find the first valid CRTC if not assigned */
+-			if (!encoder->crtc_id)
+-			{
+-				int k;
+-				for (k = 0; k < resources->count_crtcs; ++k) {
+-					/* check whether this CRTC works with the encoder */
+-					if (!(encoder->possible_crtcs & (1 << k)))
+-						continue;
+-
+-					encoder->crtc_id = resources->crtcs[k];
+-					break;
+-				}
+-
+-				if (!encoder->crtc_id)
+-				{
+-					ERROR("Encoder(%d): no CRTC find!\n", encoder->encoder_id);
+-					drmModeFreeEncoder(encoder);
+-					encoder = NULL;
+-					continue;
+-				}
+-			}
++	for (i = 0; i < resources->count_encoders; i++) {
++		encoder = drmModeGetEncoder(disp_kmsc->base.fd, resources->encoders[i]);
++		if (encoder->encoder_id == connector->encoder_id)
+ 			break;
+-		}
+ 		drmModeFreeEncoder(encoder);
+ 		encoder = NULL;
+ 	}
+@@ -392,8 +361,8 @@ static int init_gl(struct display_kmscub
+ 	const char *exts = glGetString(GL_EXTENSIONS);
+ 	printf("GL Extensions \"%s\"\n", exts);
+ 
+-	if (!strstr(eglQueryString(disp_kmsc->gl.display, EGL_EXTENSIONS), "EGL_EXT_image_dma_buf_import")) {
+-		ERROR("No EGL_EXT_image_dma_buf_import extension?!");
++	if (!strstr(exts, "GL_TI_image_external_raw_video")) {
++		ERROR("No GL_TI_image_external_raw_video extension?!");
+ 		return -1;
+ 	}
+ 
+@@ -780,18 +749,7 @@ alloc_buffer(struct display *disp, uint3
+ 		return NULL;
+ 	}
+ 	buf = &buf_kmsc->base;
+-	switch(fourcc) {
+-		case V4L2_PIX_FMT_RGB24:
+-		case V4L2_PIX_FMT_BGR24:
+-			fourcc = FOURCC('R','G','2','4');
+-			break;
+-		case V4L2_PIX_FMT_BGR32:
+-		case V4L2_PIX_FMT_RGB32:
+-			fourcc = FOURCC('A','R','2','4');
+-			break;
+-		default:
+-			break;
+-	}
++
+ 	buf->fourcc = fourcc;
+ 	buf->width = w;
+ 	buf->height = h;
+@@ -808,12 +766,6 @@ alloc_buffer(struct display *disp, uint3
+ 		buf->bo[0] = alloc_bo(disp, 32, buf->width, buf->height,
+ 				&bo_handles[0], &buf->pitches[0]);
+ 		break;
+-	case FOURCC('R','G','2','4'):
+-		buf->nbo = 1;
+-		buf->bo[0] = alloc_bo(disp, 24, buf->width, buf->height,
+-				&bo_handles[0], &buf->pitches[0]);
+-		break;
+-
+ 	case FOURCC('U','Y','V','Y'):
+ 	case FOURCC('Y','U','Y','V'):
+ 		buf->nbo = 1;
+@@ -1091,86 +1043,23 @@ create_texture(struct display_kmscube *d
+ 	struct buffer_kmscube *buf_kmsc = to_buffer_kmscube(buf);
+ 	// Create EGLImage and return.
+ 	// TODO: cropping attributes when this will be supported.
+-	EGLint attr[20];
+-	bool isRGB;
+-	int dfd = omap_bo_dmabuf(buf->bo[0]);
+-	struct gbm_import_fd_data gbm_dmabuf = {
+-		.fd     = dfd,
+-		.width  = buf->width,
+-		.height = buf->height,
+-		.stride = buf->pitches[0],
+-		.format = GBM_FORMAT_ARGB8888
++	EGLint attr[] = {
++	    EGL_GL_VIDEO_FOURCC_TI,      buf->fourcc,
++	    EGL_GL_VIDEO_WIDTH_TI,       buf->width,
++	    EGL_GL_VIDEO_HEIGHT_TI,      buf->height,
++	    EGL_GL_VIDEO_BYTE_SIZE_TI,   omap_bo_size(buf->bo[0]),
++	    EGL_GL_VIDEO_BYTE_STRIDE_TI,   buf->pitches[0],
++	    // TODO: pick proper YUV flags..
++	    EGL_GL_VIDEO_YUV_FLAGS_TI,   EGLIMAGE_FLAGS_YUV_CONFORMANT_RANGE | EGLIMAGE_FLAGS_YUV_BT601,
++	    EGL_NONE
+ 	};
+ 
+-	if(buf->fourcc == FOURCC('Y','U','Y','V')) {
+-		EGLint __attr[] = {
+-			EGL_WIDTH,			buf->width,
+-			EGL_HEIGHT,			buf->height,
+-			EGL_LINUX_DRM_FOURCC_EXT,	DRM_FORMAT_YUYV,
+-			EGL_DMA_BUF_PLANE0_FD_EXT,	dfd,
+-			EGL_DMA_BUF_PLANE0_OFFSET_EXT,	0,
+-			EGL_DMA_BUF_PLANE0_PITCH_EXT,	buf->pitches[0],
+-			EGL_NONE
+-		};
+-		memcpy(attr, __attr, sizeof(__attr));
+-		isRGB = false;
+-	} else if(buf->fourcc == FOURCC('U','Y','V','Y')) {
+-		EGLint __attr[] = {
+-			EGL_WIDTH,			buf->width,
+-			EGL_HEIGHT,			buf->height,
+-			EGL_LINUX_DRM_FOURCC_EXT,	DRM_FORMAT_UYVY,
+-			EGL_DMA_BUF_PLANE0_FD_EXT,	dfd,
+-			EGL_DMA_BUF_PLANE0_OFFSET_EXT,	0,
+-			EGL_DMA_BUF_PLANE0_PITCH_EXT,	buf->pitches[0],
+-			EGL_NONE
+-		};
+-		memcpy(attr, __attr, sizeof(__attr));
+-		isRGB = false;
+-	} else if(buf->fourcc == FOURCC('N','V','1','2')) {
+-		/*
+-		 * Please note that multiple dmabuf fds are not supported,
+-		 * and therefore, for NV12,
+-		 * - fd[0] must be equal to fd[1] and
+-		 * - pitch[0] must be equal to pitch[1]
+-		 * In this example, a single buffer of size (W * H * 3) / 2
+-		 * is allocated, and a single DMABuf fd is generated.
+-		 */
+-		EGLint __attr[] = {
+-			EGL_WIDTH,			buf->width,
+-			EGL_HEIGHT,			buf->height,
+-			EGL_LINUX_DRM_FOURCC_EXT,	DRM_FORMAT_NV12,
+-			EGL_DMA_BUF_PLANE0_FD_EXT,	dfd,
+-			EGL_DMA_BUF_PLANE0_OFFSET_EXT,	0,
+-			EGL_DMA_BUF_PLANE0_PITCH_EXT,	buf->pitches[0],
+-			EGL_DMA_BUF_PLANE1_FD_EXT,	dfd,
+-			EGL_DMA_BUF_PLANE1_OFFSET_EXT,	0,
+-			EGL_DMA_BUF_PLANE1_PITCH_EXT,	buf->pitches[0],
+-			EGL_NONE
+-		};
+-		memcpy(attr, __attr, sizeof(__attr));
+-		isRGB = false;
+-	} else if(buf->fourcc == FOURCC('A','R','2','4')) {
+-		disp_kmsc->gbm.bo  = gbm_bo_import(disp_kmsc->gbm.dev, GBM_BO_IMPORT_FD, &gbm_dmabuf,
+-				GBM_BO_USE_SCANOUT);
+-		if(!disp_kmsc->gbm.bo){
+-			ERROR("gbm_bo_import failed\n");
+-			return -1;
+-		}
++	int fd = omap_bo_dmabuf(buf->bo[0]);
++
++	buf_kmsc->egl_img =
++	disp_kmsc->gl.eglCreateImageKHR(disp_kmsc->gl.display, EGL_NO_CONTEXT,
++					EGL_RAW_VIDEO_TI_DMABUF, (EGLClientBuffer)fd, attr);
+ 
+-		isRGB = true;
+-	} else {
+-		return -1;
+-	}
+-	if(isRGB == false) {
+-		buf_kmsc->egl_img =
+-			disp_kmsc->gl.eglCreateImageKHR(disp_kmsc->gl.display, EGL_NO_CONTEXT,
+-					EGL_LINUX_DMA_BUF_EXT, NULL, attr);
+-	} else {
+-		EGLint attrib_list = EGL_NONE;
+-		buf_kmsc->egl_img =
+-			disp_kmsc->gl.eglCreateImageKHR(disp_kmsc->gl.display, EGL_NO_CONTEXT,
+-					EGL_NATIVE_PIXMAP_KHR, disp_kmsc->gbm.bo, &attrib_list);
+-	}
+ 	if (buf_kmsc->egl_img == EGL_NO_IMAGE_KHR) {
+ 		ERROR("eglCreateImageKHR failed!\n");
+ 		goto fail;
