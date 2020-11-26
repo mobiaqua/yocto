@@ -7,6 +7,9 @@ LIC_FILES_CHKSUM = "file://cdjpeg.h;endline=13;md5=8184bcc7c4ac7b9edc6a7bc00f231
                     file://djpeg.c;endline=11;md5=c59e19811c006cb38f82d6477134d314 \
 "
 
+# MobiAqua: older version without cmake
+DEFAULT_PREFERENCE = "99"
+
 PV = "8d+git-${SRCREV}"
 
 SRCREV = "1309ccb485789b3ce8a7d8513b83d824a4922e28"
