@@ -36,6 +36,8 @@ FILES_ntpdate = "${bindir}/ntpdate ${sysconfdir}/network/if-up.d/ntpdate"
 # with wonky clocks (e.g. OpenSlug)
 RDEPENDS_${PN} = "${PN}-tickadj"
 
+INSANE_SKIP_${PN} += "installed-vs-shipped"
+
 pkg_postinst_ntpdate() {
 if test "x$D" != "x"; then
         exit 1
