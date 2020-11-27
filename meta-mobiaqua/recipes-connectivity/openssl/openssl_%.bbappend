@@ -1,3 +1,7 @@
+FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+
+SRC_URI += "file://fix-ver.patch"
+
 do_configure () {
 	os=${HOST_OS}
 	case $os in

@@ -1,0 +1,15 @@
+diff -urp old/util/mkdef.pl new/util/mkdef.pl
+--- old/util/mkdef.pl	2020-04-21 14:22:39.000000000 +0200
++++ new/util/mkdef.pl	2020-11-27 22:08:11.000000000 +0100
+@@ -1498,8 +1498,10 @@ sub get_openssl_version()
+ 
+ 	while(<IN>) {
+ 		if (/OPENSSL_VERSION_TEXT\s+"OpenSSL (\d\.\d\.)(\d[a-z]*)(-| )/) {
++			my $basev = $1;
+ 			my $suffix = $2;
+-			(my $baseversion = $1) =~ s/\./_/g;
++			$basev =~ s/\./_/g;
++			my $baseversion = $basev;
+ 			close IN;
+ 			return ($baseversion."0", $baseversion.$suffix);
+ 		}
