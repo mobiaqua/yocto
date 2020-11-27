@@ -9,7 +9,8 @@ ROOTFS_BOOTSTRAP_INSTALL = "run-postinsts"
 IMGCLASSES = "rootfs_${IMAGE_PKGTYPE} image_types ${IMAGE_CLASSES}"
 # Only Linux SDKs support populate_sdk_ext, fall back to populate_sdk_base
 # in the non-Linux SDK_OS case, such as mingw32
-IMGCLASSES += "${@['populate_sdk_base', 'populate_sdk_ext']['linux' in d.getVar("SDK_OS")]}"
+# MobiAqua: removed 'populate_sdk_base', 'populate_sdk_ext'
+#IMGCLASSES += "${@['populate_sdk_base', 'populate_sdk_ext']['linux' in d.getVar("SDK_OS")]}"
 IMGCLASSES += "${@bb.utils.contains_any('IMAGE_FSTYPES', 'live iso hddimg', 'image-live', '', d)}"
 IMGCLASSES += "${@bb.utils.contains('IMAGE_FSTYPES', 'container', 'image-container', '', d)}"
 IMGCLASSES += "image_types_wic"
@@ -23,7 +24,8 @@ POPULATE_SDK_POST_TARGET_COMMAND += "rootfs_sysroot_relativelinks; "
 
 LICENSE ?= "MIT"
 PACKAGES = ""
-DEPENDS += "${@' '.join(["%s-qemuwrapper-cross" % m for m in d.getVar("MULTILIB_VARIANTS").split()])} qemuwrapper-cross depmodwrapper-cross cross-localedef-native"
+# MobiAqua: removed 'qemuwrapper-cross cross-localedef-native'
+DEPENDS += "depmodwrapper-cross"
 RDEPENDS += "${PACKAGE_INSTALL} ${LINGUAS_INSTALL} ${IMAGE_INSTALL_DEBUGFS}"
 RRECOMMENDS += "${PACKAGE_INSTALL_ATTEMPTONLY}"
 PATH_prepend = "${@":".join(all_multilib_tune_values(d, 'STAGING_BINDIR_CROSS').split())}:"
@@ -56,7 +58,8 @@ FEATURE_PACKAGES_package-management = "${ROOTFS_PKGMANAGE}"
 SPLASH ?= "psplash"
 FEATURE_PACKAGES_splash = "${SPLASH}"
 
-IMAGE_INSTALL_COMPLEMENTARY = '${@complementary_globs("IMAGE_FEATURES", d)}'
+# MobiAqua: removed: 'IMAGE_INSTALL_COMPLEMENTARY'
+#IMAGE_INSTALL_COMPLEMENTARY = '${@complementary_globs("IMAGE_FEATURES", d)}'
 
 def check_image_features(d):
     valid_features = (d.getVarFlag('IMAGE_FEATURES', 'validitems') or "").split()
@@ -94,7 +97,8 @@ PID = "${@os.getpid()}"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-LDCONFIGDEPEND ?= "ldconfig-native:do_populate_sysroot"
+# MobiAqua: removed 'ldconfig-native:do_populate_sysroot'
+LDCONFIGDEPEND ?= ""
 LDCONFIGDEPEND_libc-musl = ""
 
 # This is needed to have depmod data in PKGDATA_DIR,
@@ -115,7 +119,8 @@ def rootfs_command_variables(d):
             'IMAGE_PREPROCESS_COMMAND','RPM_PREPROCESS_COMMANDS','RPM_POSTPROCESS_COMMANDS','DEB_PREPROCESS_COMMANDS','DEB_POSTPROCESS_COMMANDS']
 
 python () {
-    variables = rootfs_command_variables(d) + sdk_command_variables(d)
+    # MobiAqua: removed 'sdk_command_variables(d)'
+    variables = rootfs_command_variables(d)
     for var in variables:
         if d.getVar(var, False):
             d.setVarFlag(var, 'func', '1')
