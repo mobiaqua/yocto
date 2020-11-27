@@ -25,7 +25,7 @@ S = "${WORKDIR}/git"
 
 EXTRA_OECONF = "LDFLAGS='${LDFLAGS} -lm -lavcodec'"
 
-ERROR_QA_remove = "ldflags"
+WARN_QA_remove = "ldflags"
 
 DEBUG_BUILD = "${@['no','yes'][d.getVar('BUILD_DEBUG', d, 1) == '1']}"
 CFLAGS_append = "${@['',' -O0 -g3'][d.getVar('BUILD_DEBUG', d, 1) == '1']}"
