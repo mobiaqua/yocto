@@ -1,0 +1,22 @@
+diff -urp old/libopkg/opkg_archive.c new/libopkg/opkg_archive.c
+--- old/libopkg/opkg_archive.c	2019-12-17 00:18:50.000000000 +0100
++++ new/libopkg/opkg_archive.c	2020-11-27 19:22:52.000000000 +0100
+@@ -23,6 +23,7 @@
+ #include <stdlib.h>
+ #include <stdio.h>
+ #include <string.h>
++#include <libgen.h>
+ 
+ #include "opkg_conf.h"
+ #include "opkg_message.h"
+diff -urp old/libopkg/opkg_remove.c new/libopkg/opkg_remove.c
+--- old/libopkg/opkg_remove.c	2019-12-17 00:18:50.000000000 +0100
++++ new/libopkg/opkg_remove.c	2020-11-27 19:23:06.000000000 +0100
+@@ -25,6 +25,7 @@
+ #include <unistd.h>
+ #include <stdlib.h>
+ #include <sys/stat.h>
++#include <libgen.h>
+ 
+ #include "opkg_message.h"
+ #include "opkg_remove.h"
