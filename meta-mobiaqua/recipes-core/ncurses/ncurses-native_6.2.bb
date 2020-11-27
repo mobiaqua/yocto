@@ -5,6 +5,8 @@ LIC_FILES_CHKSUM = "file://ncurses/base/version.c;beginline=1;endline=27;md5=cf3
 SECTION = "libs"
 INC_PR = "r0"
 
+# MobiAqua: use older 5.4 version for native package
+
 inherit autotools pkgconfig native
 
 SRC_URI = "${GNU_MIRROR}/ncurses/ncurses-5.4.tar.gz \

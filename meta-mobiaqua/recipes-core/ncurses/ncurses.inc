@@ -273,7 +273,7 @@ ALTERNATIVE_PRIORITY = "100"
 
 ALTERNATIVE_ncurses-tools_class-target = "clear reset"
 
-# MobiAqua: disabled native
+# MobiAqua: disabled native to separated to native package
 #BBCLASSEXTEND = "native nativesdk"
 
 PACKAGES += " \
