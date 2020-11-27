@@ -1,1 +1,1 @@
-ERROR_QA_remove = "installed-vs-shipped"
+INSANE_SKIP_${PN} += "installed-vs-shipped"
