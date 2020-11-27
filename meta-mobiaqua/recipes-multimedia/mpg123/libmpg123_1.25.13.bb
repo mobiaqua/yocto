@@ -25,4 +25,4 @@ S = "${WORKDIR}/mpg123-${PV}"
 #MobiAqua: do not run parallel
 PARALLEL_MAKE = ""
 
-ERROR_QA_remove = "installed-vs-shipped"
+INSANE_SKIP_${PN} += "installed-vs-shipped"
