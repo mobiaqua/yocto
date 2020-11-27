@@ -106,8 +106,7 @@ def cpu(d):
             return arg[6:]
     return 'generic'
 
-FULL_OPTIMIZATION_armv7a-hf = "-fexpensive-optimizations --fomit-frame-pointer -mvectorize-with-neon-quad -O4 -ffast-math"
-BUILD_OPTIMIZATION = "${FULL_OPTIMIZATION}"
+FULL_OPTIMIZATION_append = " -fexpensive-optimizations -mvectorize-with-neon-quad -O4 -ffast-math"
 
 EXTRA_FFCONF ?= ""
 
