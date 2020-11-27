@@ -14,8 +14,6 @@ RCONFLICTS_${PN} = "mplayer"
 SRCREV = "1e24be806c955a7814ad07b6191539111a0328d3"
 SRC_URI = "git://github.com/mobiaqua/mplayer-mini.git;protocol=git"
 
-ARM_INSTRUCTION_SET = "arm"
-
 PV = "1.0+git"
 PR = "r1"
 
