@@ -7,6 +7,8 @@ RRECOMMENDS_${PN} += "font-update-common"
 # we don't need a compiler nor a c library for these fonts
 INHIBIT_DEFAULT_DEPS = "1"
 
+inherit allarch
+
 do_install() {
     install -d ${D}${datadir}/fonts/truetype/
     find ./ -name '*.tt[cf]' -exec install -m 0644 {} ${D}${datadir}/fonts/truetype/ \;
