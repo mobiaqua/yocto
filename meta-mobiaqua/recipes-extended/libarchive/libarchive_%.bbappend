@@ -1,3 +1,7 @@
+FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+
+SRC_URI += "file://ignore-owner.patch"
+
 DEPENDS_remove = "e2fsprogs-native"
 
 EXTRA_OECONF_append_class-native = " --enable-shared=no"

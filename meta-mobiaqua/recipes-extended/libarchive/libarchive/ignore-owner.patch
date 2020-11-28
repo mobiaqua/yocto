@@ -1,0 +1,14 @@
+diff -urp old/libarchive/archive_write_disk_posix.c new/libarchive/archive_write_disk_posix.c
+--- old/libarchive/archive_write_disk_posix.c	2020-02-11 18:24:57.000000000 +0100
++++ new/libarchive/archive_write_disk_posix.c	2020-11-28 18:55:24.000000000 +0100
+@@ -3301,9 +3301,7 @@ set_ownership(struct archive_write_disk 
+  * user id does not match the current user.
+  */
+ 	if (a->user_uid != 0 && a->user_uid != a->uid) {
+-		archive_set_error(&a->archive, errno,
+-		    "Can't set UID=%jd", (intmax_t)a->uid);
+-		return (ARCHIVE_WARN);
++		return (ARCHIVE_OK);
+ 	}
+ #endif
+ 
