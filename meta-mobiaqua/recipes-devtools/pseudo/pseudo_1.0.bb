@@ -1,5 +1,5 @@
 
-LICENSE = ""
+LICENSE = "PD"
 
 ERROR_QA_remove = "license-checksum"
 

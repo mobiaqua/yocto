@@ -1,7 +1,7 @@
 # Copyright Matthias Hentges <devel@hentges.net> (c) 2006
 # License: MIT (see COPYING.MIT)
 
-LICENSE = ""
+LICENSE = "PD"
 ERROR_QA_remove = "license-checksum"
 
 DESCRIPTION = "Preconfigured mplayer preferences"
