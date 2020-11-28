@@ -22,6 +22,4 @@ RDEPENDS += "ntpdate tzdata tzdata-europe"
 IMAGE_LINGUAS = " "
 IMAGE_INSTALL += "${INSTALL_PKGS} "
 
-IMAGE_PREPROCESS_COMMAND = "create_etc_timestamp"
-
 inherit image
