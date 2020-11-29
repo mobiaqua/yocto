@@ -11,7 +11,7 @@ DEPENDS_append=" virtual/kernel"
 
 INSTALL_PKGS = "\
 	kernel-modules alsa-utils alsa-state alsa-utils-alsamixer glibc-gconv-ibm850 glibc-gconv-cp1250 \
-	dropbear dbus bluez5 util-linux libstdc++ iw \
+	dropbear dbus bluez5 util-linux libstdc++ iw opkg \
 "
 
 RRECOMMENDS += ""
