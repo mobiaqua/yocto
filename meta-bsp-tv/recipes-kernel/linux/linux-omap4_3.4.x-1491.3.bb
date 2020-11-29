@@ -38,12 +38,13 @@ SRC_URI = "git://dev.omapzoom.org/pub/scm/integration/kernel-ubuntu.git;branch=$
            file://reverse_zorder.patch \
            file://fixed-drm-flags.patch \
            file://fixed-bt-mux.patch \
-           file://rpmsg-new-ns.patch \
            file://fix-log2.patch \
            file://fix-uaccess.patch \
            file://avoid-warning-as-error.patch \
            file://defconfig \
            "
+
+#           file://rpmsg-new-ns.patch
 
 do_kernel_configme() {
     :
