@@ -1,0 +1,65 @@
+diff -urp old/tools/rpcgen/Makefile.am new/tools/rpcgen/Makefile.am
+--- old/tools/rpcgen/Makefile.am	2020-11-29 21:32:51.000000000 +0100
++++ new/tools/rpcgen/Makefile.am	2020-11-29 21:48:13.000000000 +0100
+@@ -3,6 +3,13 @@ CLEANFILES = *~
+ bin_PROGRAMS = rpcgen
+ man_MANS = rpcgen.1
+ 
++CC=$(CC_FOR_BUILD)
++CFLAGS=$(CFLAGS_FOR_BUILD)
++CPPFLAGS=$(CPPFLAGS_FOR_BUILD)
++CXXFLAGS=$(CXXFLAGS_FOR_BUILD)
++LDFLAGS=$(LDFLAGS_FOR_BUILD)
++LIBTOOL = @LIBTOOL@ --tag=CC
++
+ EXTRA_DIST=${MANS}
+ 
+ noinst_HEADERS = proto.h rpc_parse.h rpc_scan.h rpc_util.h
+@@ -10,4 +17,4 @@ noinst_HEADERS = proto.h rpc_parse.h rpc
+ rpcgen_SOURCES = rpc_clntout.c rpc_cout.c rpc_hout.c rpc_main.c \
+ 	rpc_parse.c rpc_sample.c rpc_scan.c rpc_svcout.c rpc_tblout.c \
+ 	rpc_util.c
+-rpcgen_LDADD = $(LIBINTL)
++rpcgen_LDADD =
+diff -urp old/tools/rpcgen/rpc_main.c new/tools/rpcgen/rpc_main.c
+--- old/tools/rpcgen/rpc_main.c	2020-02-09 20:41:19.000000000 +0100
++++ new/tools/rpcgen/rpc_main.c	2020-11-29 22:06:18.000000000 +0100
+@@ -42,7 +42,7 @@
+ #include <stdio.h>
+ #include <string.h>
+ #include <unistd.h>
+-#include <libintl.h>
++//#include <libintl.h>
+ #include <locale.h>
+ #include <ctype.h>
+ #include <sys/types.h>
+@@ -56,7 +56,7 @@
+ #include "proto.h"
+ 
+ #ifndef _
+-#define _(String) gettext (String)
++#define _(String) (String)
+ #endif
+ 
+ #define EXTEND	1		/* alias for TRUE */
+@@ -180,7 +180,7 @@ main (int argc, const char *argv[])
+   struct commandline cmd;
+ 
+   setlocale (LC_ALL, "");
+-  textdomain (PACKAGE);
++  //textdomain (PACKAGE);
+ 
+   (void) memset ((char *) &cmd, 0, sizeof (struct commandline));
+   clear_args ();
+diff -urp old/tools/rpcgen/rpc_scan.c new/tools/rpcgen/rpc_scan.c
+--- old/tools/rpcgen/rpc_scan.c	2020-02-09 20:41:19.000000000 +0100
++++ new/tools/rpcgen/rpc_scan.c	2020-11-29 22:11:55.000000000 +0100
+@@ -44,7 +44,7 @@
+ #include "proto.h"
+ 
+ #ifndef _
+-#define _(String) gettext (String)
++#define _(String) (String)
+ #endif
+ 
+ #define startcomment(where) (where[0] == '/' && where[1] == '*')

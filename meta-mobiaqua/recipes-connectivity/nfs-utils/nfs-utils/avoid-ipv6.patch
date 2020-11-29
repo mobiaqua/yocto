@@ -1,0 +1,29 @@
+diff -urp old/utils/mount/network.c new/utils/mount/network.c
+--- old/utils/mount/network.c	2020-11-29 22:22:51.000000000 +0100
++++ new/utils/mount/network.c	2020-11-29 22:23:57.000000000 +0100
+@@ -44,7 +44,7 @@
+ # define IPV6_PREFER_SRC_PUBLIC 2
+ # define IPV6_ADDR_PREFERENCES 72
+ #else
+-# include <linux/in6.h>
++//# include <linux/in6.h>
+ #endif
+ #include <netinet/in.h>
+ #include <rpc/rpc.h>
+@@ -1138,13 +1138,13 @@ static int nfs_ca_sockname(const struct 
+ 		if (bind(sock, SAFE_SOCKADDR(&sin), sizeof(sin)) < 0)
+ 			goto out;
+ 		break;
+-	case AF_INET6:
++//	case AF_INET6:
+ 		/* Make sure the call-back address is public/permanent */
+-		val = IPV6_PREFER_SRC_PUBLIC;
++/*		val = IPV6_PREFER_SRC_PUBLIC;
+ 		setsockopt(sock, SOL_IPV6, IPV6_ADDR_PREFERENCES, &val, sizeof(val));
+ 		if (bind(sock, SAFE_SOCKADDR(&sin6), sizeof(sin6)) < 0)
+ 			goto out;
+-		break;
++		break;*/
+ 	default:
+ 		errno = EAFNOSUPPORT;
+ 		goto out;
