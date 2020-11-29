@@ -1,3 +1,7 @@
+FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+
+SRC_URI += "file://dropbear.default"
+
 do_install_append() {
 	if ${@bb.utils.contains('VIRTUAL-RUNTIME_init_manager','busybox','true','false',d)}; then
 		install -d ${D}${sysconfdir}/rcS.d
