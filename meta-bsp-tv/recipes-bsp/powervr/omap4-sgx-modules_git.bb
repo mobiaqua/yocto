@@ -25,7 +25,7 @@ SRC_URI = "git://github.com/mobiaqua/pvr-omap4-dkms.git;protocol=git \
 
 S = "${WORKDIR}/git/sgx"
 
-inherit module
+inherit module update-rc.d
 
 DEBUG = "release"
 
@@ -34,17 +34,16 @@ MACHINE_KERNEL_PR_append = "a"
 MAKE_TARGETS = "-C eurasiacon/build/linux2/omap4430_linux BUILD=${DEBUG} W=1 V=1 SUPPORT_V4L2_GFX=0 KERNELDIR=${STAGING_KERNEL_DIR}"
 
 INITSCRIPT_NAME = "pvr-init.sh"
+INITSCRIPT_PARAMS = "start 30 S ."
 
 do_install() {
 	mkdir -p ${D}/lib/modules/${KERNEL_VERSION}/kernel/drivers/gpu/pvr
 	cp eurasiacon/binary2_omap4430_linux_${DEBUG}/target/kbuild/*.ko ${D}/lib/modules/${KERNEL_VERSION}/kernel/drivers/gpu/pvr
 
-	install -d ${D}${sysconfdir}/init.d
-	install -m 0755 ${WORKDIR}/rc.pvr ${D}${sysconfdir}/init.d/${INITSCRIPT_NAME}
-	for i in 2 3 4 5; do
-		install -d ${D}${sysconfdir}/rc${i}.d
-		ln -sf ../init.d/${INITSCRIPT_NAME} ${D}${sysconfdir}/rc${i}.d/S30${INITSCRIPT_NAME}
-	done
+	if ${@bb.utils.contains('DISTRO_FEATURES','sysvinit','true','false',d)}; then
+		install -d ${D}${sysconfdir}/init.d
+		install -m 0755 ${WORKDIR}/rc.pvr ${D}${sysconfdir}/init.d/${INITSCRIPT_NAME}
+	fi
 }
 
 PACKAGE_STRIP = "no"
