@@ -1171,6 +1171,8 @@ class OpkgPM(OpkgDpkgPM):
         self.pkg_archs = archs
         self.task_name = task_name
 
+        # MobiAqua: create missing 'ipktemp' sub directory
+        bb.utils.mkdirhier(self.d.expand('${T}/ipktemp/'))
         self.deploy_dir = oe.path.join(self.d.getVar('WORKDIR'), ipk_repo_workdir)
         self.deploy_lock_file = os.path.join(self.deploy_dir, "deploy.lock")
         self.opkg_cmd = bb.utils.which(os.getenv('PATH'), "opkg")
