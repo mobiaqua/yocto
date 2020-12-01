@@ -42,3 +42,6 @@ PACKAGES =+ "${PN}-drivers ${PN}-omap"
 RRECOMMENDS_${PN}-drivers = "${PN}-omap"
 
 FILES_${PN}-omap = "${libdir}/libdrm_omap.so.*"
+
+RM_WORK_EXCLUDE += "${@['','${PN}'][d.getVar('BUILD_DEBUG') == '1']}"
+DEBUG_BUILD = "${@['no','yes'][d.getVar('BUILD_DEBUG', d, 1) == '1']}"

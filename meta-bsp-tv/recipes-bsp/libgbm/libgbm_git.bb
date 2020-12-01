@@ -14,3 +14,7 @@ SRC_URI = "git://github.com/mobiaqua/libgbm.git;protocol=git \
           "
 
 S = "${WORKDIR}/git"
+
+DEBUG_BUILD = "${@['no','yes'][d.getVar('BUILD_DEBUG') == '1']}"
+
+RM_WORK_EXCLUDE += "${@['','${PN}'][d.getVar('BUILD_DEBUG') == '1']}"

@@ -22,3 +22,7 @@ do_configure() {
     ( cd ${S}; autoreconf -f -i -s )
     oe_runconf
 }
+
+DEBUG_BUILD = "${@['no','yes'][d.getVar('BUILD_DEBUG') == '1']}"
+
+RM_WORK_EXCLUDE += "${@['','${PN}'][d.getVar('BUILD_DEBUG') == '1']}"

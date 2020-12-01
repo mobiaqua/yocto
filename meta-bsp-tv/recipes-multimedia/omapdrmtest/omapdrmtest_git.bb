@@ -27,19 +27,7 @@ EXTRA_OECONF = "LDFLAGS='${LDFLAGS} -lm -lavcodec'"
 
 WARN_QA_remove = "ldflags"
 
-DEBUG_BUILD = "${@['no','yes'][d.getVar('BUILD_DEBUG', d, 1) == '1']}"
-CFLAGS_append = "${@['',' -O0 -g3'][d.getVar('BUILD_DEBUG', d, 1) == '1']}"
+DEBUG_BUILD = "${@['no','yes'][d.getVar('BUILD_DEBUG') == '1']}"
+CFLAGS_append = "${@['',' -O0 -g3'][d.getVar('BUILD_DEBUG') == '1']}"
 
-do_rm_work() {
-        if [ "${DEBUG_BUILD}" == "no" ]; then
-                cd ${WORKDIR}
-                for dir in *
-                do
-                        if [ `basename ${dir}` = "temp" ]; then
-                                echo "Not removing temp"
-                        else
-                                echo "Removing $dir" ; rm -rf $dir
-                        fi
-                done
-        fi
-}
+RM_WORK_EXCLUDE += "${@['','${PN}'][d.getVar('BUILD_DEBUG') == '1']}"
