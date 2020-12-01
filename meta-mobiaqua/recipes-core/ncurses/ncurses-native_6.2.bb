@@ -1,29 +1,29 @@
 DESCRIPTION = "Ncurses library"
 HOMEPAGE = "http://www.gnu.org/software/ncurses/ncurses.html"
 LICENSE = "MIT"
-LIC_FILES_CHKSUM = "file://ncurses/base/version.c;beginline=1;endline=27;md5=cf3c7ab00720a1b83391f49ea9956277"
+LIC_FILES_CHKSUM = "file://ncurses/base/version.c;beginline=1;endline=27;md5=5526f2f3a29edc95538b368a4771edda"
 SECTION = "libs"
 INC_PR = "r0"
 
-# MobiAqua: use older 5.4 version for native package
+inherit pkgconfig native binconfig-disabled
 
-inherit autotools pkgconfig native
-
-SRC_URI = "${GNU_MIRROR}/ncurses/ncurses-5.4.tar.gz \
-           file://makefile_tweak.patch \
-           file://use_ldflags.patch \
-           file://visibility.patch \
-           file://fix-macos.patch \
+SRC_URI = "${GNU_MIRROR}/ncurses/ncurses-6.2.tar.gz \
+           file://0001-tic-hang.patch \
+           file://0002-configure-reproducible.patch \
            "
 
-SRC_URI[md5sum] = "069c8880072060373290a4fefff43520"
-SRC_URI[sha256sum] = "5abce063cf431790f4e6a801a96c7eea0b33a41ecd0970f6312f52575c083b36"
+SRC_URI[md5sum] = "e812da327b1c2214ac1aed440ea3ae8d"
+SRC_URI[sha256sum] = "30306e0c76e0f9f1f0de987cf1c82a5c21e1ce6568b9227f7da5b71cbea86c9d"
 
-S = "${WORKDIR}/ncurses-5.4"
+S = "${WORKDIR}/ncurses-6.2"
 
 PR = "${INC_PR}.0"
 
 EXTRA_OECONF = "\
+  --prefix=${prefix} \
+  --disable-lp64 \
+  --with-chtype='long' \
+  --with-mmask-t='long' \
   --enable-static \
   --without-shared \
   --enable-overwrite \
@@ -32,6 +32,7 @@ EXTRA_OECONF = "\
   --disable-rpath \
   --without-profile \
   --without-cxx-binding \
+  --disable-mixed-case \
   --with-terminfo-dirs=${sysconfdir}/terminfo:${datadir}/terminfo \
 "
 
@@ -41,17 +42,18 @@ export BUILD_CCFLAGS = "-I${S}/ncurses -I${S}/include -I${B}/ncurses -I${B}/incl
 export BUILD_LDFLAGS = ""
 export EXTRA_OEMAKE = '"BUILD_LDFLAGS=" "BUILD_CCFLAGS=${BUILD_CCFLAGS}" "CFLAGS=-D_DARWIN_C_SOURCE"'
 
+do_configure() {
+    install -m 0755 ${STAGING_DATADIR_NATIVE}/gnu-config/config.guess ${S}
+    install -m 0755 ${STAGING_DATADIR_NATIVE}/gnu-config/config.sub ${S}
+    ./configure ${EXTRA_OECONF}
+}
+
 do_install() {
-	autotools_do_install
+	oe_runmake install DESTDIR=${D}
 
 	# our ncurses has termcap support
 	ln -sf libncurses.a ${D}${libdir}/libtermcap.a
 	ln -sf curses.h ${D}${includedir}/ncurses.h
-
-	for i in tput tset tic toe infotocap captoinfo infocmp clear reset tack
-	do
-		rm ${D}${bindir}/${i}
-	done
 
 	# include some basic terminfo files
 	# stolen ;) from gentoo and modified a bit
@@ -73,6 +75,4 @@ do_install() {
 	then
 		ln -sf xterm-color ${D}${sysconfdir}/terminfo/x/xterm
 	fi
-        install -d ${D}${sysconfdir}/terminfo/r
-	ln -sf rxvt ${D}${sysconfdir}/terminfo/r/rxvt-unicode
 }
