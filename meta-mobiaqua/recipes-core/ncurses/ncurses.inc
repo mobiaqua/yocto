@@ -64,6 +64,7 @@ EX_TERMLIB ?= "tinfo"
 # Helper function for do_configure to allow multiple configurations
 # $1 the directory to run configure in
 # $@ the arguments to pass to configure
+# MobiAqua: added '--disable-mixed-case' to match native
 ncurses_configure() {
 	mkdir -p $1
 	cd $1
@@ -89,6 +90,7 @@ ncurses_configure() {
 	        --with-manpage-format=normal \
 	        --without-manpage-renames \
 	        --disable-stripping \
+	        --disable-mixed-case \
 	        "$@" || return 1
 	cd ..
 }
