@@ -7,15 +7,14 @@ INC_PR = "r0"
 
 inherit pkgconfig native binconfig-disabled
 
-SRC_URI = "${GNU_MIRROR}/ncurses/ncurses-6.2.tar.gz \
+SRCREV = "a669013cd5e9d6434e5301348ea51baf306c93c4"
+
+SRC_URI = "git://salsa.debian.org/debian/ncurses.git;protocol=https \
            file://0001-tic-hang.patch \
            file://0002-configure-reproducible.patch \
            "
 
-SRC_URI[md5sum] = "e812da327b1c2214ac1aed440ea3ae8d"
-SRC_URI[sha256sum] = "30306e0c76e0f9f1f0de987cf1c82a5c21e1ce6568b9227f7da5b71cbea86c9d"
-
-S = "${WORKDIR}/ncurses-6.2"
+S = "${WORKDIR}/git"
 
 PR = "${INC_PR}.0"
 
@@ -33,6 +32,7 @@ EXTRA_OECONF = "\
   --without-profile \
   --without-cxx-binding \
   --disable-mixed-case \
+  --with-abi-version=5 \
   --with-terminfo-dirs=${sysconfdir}/terminfo:${datadir}/terminfo \
 "
 
