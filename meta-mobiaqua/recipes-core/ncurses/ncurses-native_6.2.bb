@@ -70,9 +70,4 @@ do_install() {
                                 ${D}${datadir}/terminfo/$basedir/${x}
                 fi
         done
-	# i think we can use xterm-color as default xterm
-	if [ -e ${D}${sysconfdir}/terminfo/x/xterm-color ]
-	then
-		ln -sf xterm-color ${D}${sysconfdir}/terminfo/x/xterm
-	fi
 }
