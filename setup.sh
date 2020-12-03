@@ -365,7 +365,7 @@ setup() {
 	export BUILDDIR=$OE_BASE
 
 	export DISTRO=mobiaqua
-	TARGET=$1
+	export TARGET=$1
 
 	if [ "$TARGET" = "tv" ]; then
 		export MACHINE=board-tv
@@ -503,21 +503,16 @@ for newpath in \"\${OE_BASE}/bitbake/bin\" \"\${OE_BASE}/bin\" \"\${OE_BASE}/scr
     PATH=\"\$newpath:\$PATH\"
 done
 unset newpath LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=
 export PYTHONPATH=\${OE_BASE}/bitbake/lib
 export LANG=C
 unset TERMINFO
-unset GCONF_SCHEMA_INSTALL_SOURCE
 export MA_JTAG_ADAPTER=${MA_JTAG_ADAPTER}
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/env.source
 
 
 
 		echo "source ${OE_BASE}/build-${DISTRO}-${TARGET}/env.source
-if [ ! \`echo \${PATH} | grep ${ARMDIR}/bin\` ]; then
-	export PATH=${OE_BASE}/${PATH_TO_TOOLS}/${ARMDIR}/bin:${OE_BASE}/${PATH_TO_TOOLS}/bin:\${PATH}
-fi
-export CROSS_COMPILE=arm-linux-gnueabi-
+export CROSS_COMPILE=arm-${DISTRO}-linux-gnueabi-
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/crosstools-setup
 
 
