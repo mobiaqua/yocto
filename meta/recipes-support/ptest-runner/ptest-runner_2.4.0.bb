@@ -4,14 +4,15 @@ program which loops through all installed ptest test suites and \
 runs them in sequence."
 HOMEPAGE = "http://git.yoctoproject.org/cgit/cgit.cgi/ptest-runner2/about/"
 
-LICENSE = "GPLv2"
+LICENSE = "GPLv2+"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=751419260aa954499f7abaabaa882bbe"
 
-SRCREV = "7015e9199ce748c0717addeebe7a8c47448bab03"
-PV = "2.3.2+git${SRCPV}"
+SRCREV = "834670317bd3f6e427e1ac461c07ada6b8936dfd"
+PV .= "+git${SRCPV}"
 
 SRC_URI = "git://git.yoctoproject.org/ptest-runner2 \
 "
+UPSTREAM_VERSION_UNKNOWN = "1"
 
 S = "${WORKDIR}/git"
 
