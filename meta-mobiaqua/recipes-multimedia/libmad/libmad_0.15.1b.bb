@@ -34,5 +34,3 @@ do_configure_prepend () {
 #   damn picky automake...
     touch NEWS AUTHORS ChangeLog
 }
-
-ARM_INSTRUCTION_SET = "arm"
