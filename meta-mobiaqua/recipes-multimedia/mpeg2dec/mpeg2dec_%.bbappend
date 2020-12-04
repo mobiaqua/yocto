@@ -1,0 +1,3 @@
+LICENSE_FLAGS = ""
+
+PACKAGECONFIG_remove = "x11"
