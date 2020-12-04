@@ -20,7 +20,7 @@ SRC_URI = "git://github.com/mobiaqua/pvr-omap4.git;protocol=git \
 	   "
 
 COMPATIBLE_MACHINE = "board-tv"
-PROVIDES += "virtual/egl"
+PROVIDES += "virtual/egl virtual/libgles virtual/libgles2"
 DEPENDS = "libdrm libgbm pkgconfig-native"
 
 DEFAULT_PREFERENCE = "10"

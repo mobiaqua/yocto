@@ -6,6 +6,8 @@ PR = "r0"
 
 DEPENDS = "udev libdrm"
 
+PROVIDES += "virtual/libgbm"
+
 inherit autotools lib_package pkgconfig
 
 SRCREV = "7c469a6d7a92ee702c5852d35564b3942878b5b2"
