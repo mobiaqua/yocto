@@ -1,3 +1,5 @@
+PACKAGECONFIG_remove = "disable-weak-ciphers"
+
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += "file://dropbear.default"
