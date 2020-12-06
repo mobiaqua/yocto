@@ -365,7 +365,7 @@ setup() {
 	export BUILDDIR=$OE_BASE
 
 	export DISTRO=mobiaqua
-	export TARGET=$1
+	TARGET=$1
 
 	if [ "$TARGET" = "tv" ]; then
 		export MACHINE=board-tv
@@ -503,6 +503,7 @@ for newpath in \"\${OE_BASE}/bitbake/bin\" \"\${OE_BASE}/bin\" \"\${OE_BASE}/scr
     PATH=\"\$newpath:\$PATH\"
 done
 unset newpath LD_LIBRARY_PATH
+TARGET=${TARGET}
 export PYTHONPATH=\${OE_BASE}/bitbake/lib
 export LANG=C
 unset TERMINFO
