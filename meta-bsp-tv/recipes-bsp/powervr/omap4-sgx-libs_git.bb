@@ -33,6 +33,8 @@ RM_WORK_EXCLUDE += "${@['','${PN}'][d.getVar('BUILD_DEBUG') == '1']}"
 
 CLEANBROKEN = "1"
 
+ASNEEDED = ""
+
 do_configure() {
 	install -d ${D}${includedir}
 	cp -pR ${WORKDIR}/includes/* ${STAGING_DIR_TARGET}${includedir}/
@@ -108,7 +110,7 @@ do_install() {
 	cp -pPr ${WORKDIR}/includes/* ${D}${includedir}
 }
 
-INSANE_SKIP_${PN} += "already-stripped dev-so useless-rpaths"
+INSANE_SKIP_${PN} += "already-stripped dev-so useless-rpaths ldflags dev-deps"
 
 PACKAGES = "${PN} ${PN}-dev ${PN}-dbg"
 
