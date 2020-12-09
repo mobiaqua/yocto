@@ -1,0 +1,77 @@
+diff -urp old/drivers/usb/eth/Makefile new/drivers/usb/eth/Makefile
+--- old/drivers/usb/eth/Makefile	2020-05-16 10:04:19.000000000 +0200
++++ new/drivers/usb/eth/Makefile	2020-06-05 08:23:40.000000000 +0200
+@@ -9,6 +9,7 @@ obj-$(CONFIG_USB_ETHER_ASIX) += asix.o
+ obj-$(CONFIG_USB_ETHER_ASIX88179) += asix88179.o
+ obj-$(CONFIG_USB_ETHER_MCS7830) += mcs7830.o
+ obj-$(CONFIG_USB_ETHER_SMSC95XX) += smsc95xx.o
++obj-$(CONFIG_USB_ETHER_SMSC75XX) += smsc75xx.o
+ obj-$(CONFIG_USB_ETHER_LAN75XX) += lan7x.o lan75xx.o
+ obj-$(CONFIG_USB_ETHER_LAN78XX) += lan7x.o lan78xx.o
+ obj-$(CONFIG_USB_ETHER_RTL8152) += r8152.o r8152_fw.o
+diff -urp old/drivers/usb/eth/usb_ether.c new/drivers/usb/eth/usb_ether.c
+--- old/drivers/usb/eth/usb_ether.c	2020-05-16 10:04:19.000000000 +0200
++++ new/drivers/usb/eth/usb_ether.c	2020-06-05 08:23:13.000000000 +0200
+@@ -179,6 +179,13 @@ static const struct usb_eth_prob_dev pro
+ 		.get_info = smsc95xx_eth_get_info,
+ 	},
+ #endif
++#ifdef CONFIG_USB_ETHER_SMSC75XX
++	{
++		.before_probe = smsc75xx_eth_before_probe,
++		.probe = smsc75xx_eth_probe,
++		.get_info = smsc75xx_eth_get_info,
++	},
++#endif
+ #ifdef CONFIG_USB_ETHER_RTL8152
+ 	{
+ 		.before_probe = r8152_eth_before_probe,
+diff -urp old/drivers/usb/host/ehci-omap.c new/drivers/usb/host/ehci-omap.c
+--- old/drivers/usb/host/ehci-omap.c	2020-05-16 10:04:19.000000000 +0200
++++ new/drivers/usb/host/ehci-omap.c	2020-06-05 08:21:06.000000000 +0200
+@@ -148,6 +148,11 @@ static inline void omap_ehci_phy_reset(i
+ 	gpio_direction_output(CONFIG_OMAP_EHCI_PHY3_RESET_GPIO, !on);
+ #endif
+ 
++	/* Lan7500 Reset */
++#ifdef CONFIG_USB_ETHER_SMSC75XX
++	gpio_direction_output(CONFIG_OMAP_USBLAN_RESET_GPIO, !on);
++#endif
++
+ 	/* Hold the PHY in RESET for enough time till DIR is high */
+ 	/* Refer: ISSUE1 */
+ 	if (delay && on)
+diff -urp old/include/usb_ether.h new/include/usb_ether.h
+--- old/include/usb_ether.h	2020-05-16 10:04:20.000000000 +0200
++++ new/include/usb_ether.h	2020-06-05 08:20:14.000000000 +0200
+@@ -128,4 +128,13 @@ int r8152_eth_get_info(struct usb_device
+ 		       struct eth_device *eth);
+ #endif
+ 
++#ifdef CONFIG_USB_ETHER_SMSC75XX
++void smsc75xx_eth_before_probe(void);
++int smsc75xx_eth_probe(struct usb_device *dev, unsigned int ifnum,
++	    struct ueth_data *ss);
++int smsc75xx_eth_get_info(struct usb_device *dev, struct ueth_data *ss,
++	    struct eth_device *eth);
++#endif
++
++
+ #endif /* __USB_ETHER_H__ */
+diff -urp old/drivers/usb/eth/Kconfig new/drivers/usb/eth/Kconfig
+--- old/drivers/usb/eth/Kconfig	2020-05-16 10:04:19.000000000 +0200
++++ new/drivers/usb/eth/Kconfig	2020-06-10 19:56:04.000000000 +0200
+@@ -55,6 +55,13 @@ config USB_ETHER_RTL8152
+ 	  USB Ethernet Devices. This driver also supports compatible devices
+ 	  from Samsung, Lenovo, TP-LINK and Nvidia.
+ 
++config USB_ETHER_SMSC75XX
++	bool "SMSC LAN75x support"
++	depends on USB_HOST_ETHER
++	---help---
++	  Say Y here if you would like to support SMSC LAN75xx based USB 2.0
++	  Ethernet Devices.
++
+ config USB_ETHER_SMSC95XX
+ 	bool "SMSC LAN95x support"
+ 	depends on USB_HOST_ETHER

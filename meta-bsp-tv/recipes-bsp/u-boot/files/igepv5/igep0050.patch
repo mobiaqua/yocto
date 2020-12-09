@@ -1,0 +1,95 @@
+diff -urp old/arch/arm/mach-omap2/omap5/Kconfig new/arch/arm/mach-omap2/omap5/Kconfig
+--- old/arch/arm/mach-omap2/omap5/Kconfig	2020-05-16 10:04:16.000000000 +0200
++++ new/arch/arm/mach-omap2/omap5/Kconfig	2020-06-05 08:54:16.000000000 +0200
+@@ -15,6 +15,10 @@ config TARGET_CM_T54
+ config TARGET_OMAP5_UEVM
+ 	bool "TI OMAP5 uEVM board"
+ 
++config TARGET_OMAP5_IGEP0050
++	bool "ISSE IGEPv5 board"
++
++
+ config TARGET_DRA7XX_EVM
+ 	bool "TI DRA7XX"
+ 	select BOARD_LATE_INIT
+diff -urp old/arch/arm/Kconfig new/arch/arm/Kconfig
+--- old/arch/arm/Kconfig	2020-06-05 11:44:56.000000000 +0200
++++ new/arch/arm/Kconfig	2020-06-05 11:44:38.000000000 +0200
+@@ -1859,6 +1859,7 @@ source "board/hisilicon/hikey/Kconfig"
+ source "board/hisilicon/hikey960/Kconfig"
+ source "board/hisilicon/poplar/Kconfig"
+ source "board/isee/igep003x/Kconfig"
++source "board/isee/igep0050/Kconfig"
+ source "board/phytec/pcm051/Kconfig"
+ source "board/silica/pengwyn/Kconfig"
+ source "board/spear/spear300/Kconfig"
+diff -urp old/scripts/config_whitelist.txt new/scripts/config_whitelist.txt
+--- old/scripts/config_whitelist.txt	2020-05-16 10:04:20.000000000 +0200
++++ new/scripts/config_whitelist.txt	2020-06-10 20:03:02.000000000 +0200
+@@ -854,6 +854,7 @@ CONFIG_IDE_RESET
+ CONFIG_IDE_SWAP_IO
+ CONFIG_IDT8T49N222A
+ CONFIG_ID_EEPROM
++CONFIG_IGEPV5_CFG_EEPROM
+ CONFIG_IMA
+ CONFIG_IMX
+ CONFIG_IMX6_PWM_PER_CLK
+@@ -1233,11 +1234,14 @@ CONFIG_ODROID_REV_AIN
+ CONFIG_OFF_PADCONF
+ CONFIG_OF_
+ CONFIG_OF_STDOUT_PATH
++CONFIG_OMAP5_IGEPv5
+ CONFIG_OMAP_EHCI_PHY1_RESET_GPIO
+ CONFIG_OMAP_EHCI_PHY2_RESET_GPIO
+ CONFIG_OMAP_EHCI_PHY3_RESET_GPIO
+ CONFIG_OMAP_USB2PHY2_HOST
+ CONFIG_OMAP_USB3PHY1_HOST
++CONFIG_OMAP_USBLAN_ENABLE_GPIO
++CONFIG_OMAP_USBLAN_RESET_GPIO
+ CONFIG_ORIGEN
+ CONFIG_OS1_ENV_ADDR
+ CONFIG_OS2_ENV_ADDR
+@@ -2776,6 +2780,8 @@ CONFIG_SYS_I2C_G762_ADDR
+ CONFIG_SYS_I2C_GENERIC_MAC
+ CONFIG_SYS_I2C_IDT6V49205B
+ CONFIG_SYS_I2C_IFDR_DIV
++CONFIG_SYS_I2C_IGEPV5_CFG_BUS_ADDR
++CONFIG_SYS_I2C_IGEPV5_CFG_BUS_NUM
+ CONFIG_SYS_I2C_IHS_CH0
+ CONFIG_SYS_I2C_IHS_CH0_1
+ CONFIG_SYS_I2C_IHS_CH1
+@@ -4031,6 +4037,7 @@ CONFIG_SYS_ZYNQ_QSPI_WAIT
+ CONFIG_SYS_ZYNQ_SPI_WAIT
+ CONFIG_SYS_i2C_FSL
+ CONFIG_TAM3517_SETTINGS
++CONFIG_TCA641X
+ CONFIG_TCA642X
+ CONFIG_TEGRA_BOARD_STRING
+ CONFIG_TEGRA_CLOCK_SCALING
+diff -urp old/arch/arm/mach-omap2/hwinit-common.c new/arch/arm/mach-omap2/hwinit-common.c
+--- old/arch/arm/mach-omap2/hwinit-common.c	2020-05-16 10:04:16.000000000 +0200
++++ new/arch/arm/mach-omap2/hwinit-common.c	2020-06-08 15:28:26.000000000 +0200
+@@ -222,6 +222,11 @@ void early_system_init(void)
+ 	debug_uart_init();
+ #endif
+ 	prcm_init();
++#ifdef CONFIG_SPL_BUILD
++#ifdef CONFIG_OMAP5_IGEPv5
++	board_s_init();
++#endif
++#endif
+ }
+ 
+ #ifdef CONFIG_SPL_BUILD
+diff -urp old/include/environment/ti/boot.h new/include/environment/ti/boot.h
+--- old/include/environment/ti/boot.h	2020-05-16 10:04:19.000000000 +0200
++++ new/include/environment/ti/boot.h	2020-06-08 19:46:12.000000000 +0200
+@@ -189,6 +189,8 @@
+ 	"findfdt="\
+ 		"if test $board_name = omap5_uevm; then " \
+ 			"setenv fdtfile omap5-uevm.dtb; fi; " \
++		"if test $board_name = igep0050; then " \
++			"setenv fdtfile omap5-igep0050.dtb; fi; " \
+ 		"if test $board_name = dra7xx; then " \
+ 			"setenv fdtfile dra7-evm.dtb; fi;" \
+ 		"if test $board_name = dra72x-revc; then " \

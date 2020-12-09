@@ -1,0 +1,14 @@
+if TARGET_OMAP5_IGEP0050
+
+config SYS_BOARD
+	default "igep0050"
+
+config SYS_VENDOR
+	default "isee"
+
+config SYS_CONFIG_NAME
+	default "omap5_igep0050"
+
+source "board/ti/common/Kconfig"
+
+endif
