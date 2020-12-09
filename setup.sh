@@ -369,22 +369,22 @@ setup() {
 
 	if [ "$TARGET" = "tv" ]; then
 		export MACHINE=board-tv
-		image=rootfs-devel-tv
+		image=rootfs-devel
 		ARMDIR=armv7a-hf
 		BSP_LAYER=meta-bsp-tv
 	elif [ "$TARGET" = "car" ]; then
 		export MACHINE=igep0030
-		image=rootfs-devel-car
+		image=rootfs-devel
 		ARMDIR=armv7a-hf
 		BSP_LAYER=meta-bsp-car
 	elif [ "$TARGET" = "pda-sa1110" ]; then
 		export MACHINE=pda-sa1110
-		image=rootfs-pda-sa1110
+		image=rootfs-pda
 		ARMDIR=armv4
 		BSP_LAYER=meta-bsp-sa1110
 	elif [ "$TARGET" = "pda-pxa250" ]; then
 		export MACHINE=pda-pxa250
-		image=rootfs-pda-pxa250
+		image=rootfs-pda
 		ARMDIR=armv5te
 		BSP_LAYER=meta-bsp-pxa250
 	fi
