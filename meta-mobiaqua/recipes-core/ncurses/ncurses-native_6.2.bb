@@ -57,7 +57,7 @@ do_install() {
 
 	# include some basic terminfo files
 	# stolen ;) from gentoo and modified a bit
-	for x in ansi console dumb linux rxvt screen sun vt{52,100,102,200,220} xterm-color xterm-xfree86
+	for x in ansi console dumb linux rxvt screen sun vt{52,100,102,200,220} xterm-color xterm-256color xterm-xfree86
         do
                 local termfile="$(find "${D}${datadir}/terminfo/" -name "${x}" 2>/dev/null)"
                 local basedir="$(basename $(dirname "$termfile"))"
