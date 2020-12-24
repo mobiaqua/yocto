@@ -1,0 +1,20 @@
+diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+index 5d3b86a..0d533b0 100644
+--- a/drivers/staging/Kconfig
++++ b/drivers/staging/Kconfig
+@@ -110,4 +110,6 @@ source "drivers/staging/wilc1000/Kconfig"
+ 
+ source "drivers/staging/most/Kconfig"
+ 
++source "drivers/staging/omapdce/Kconfig"
++
+ endif # STAGING
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index 30918ed..2624f71 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -47,3 +47,4 @@ obj-$(CONFIG_FB_TFT)		+= fbtft/
+ obj-$(CONFIG_FSL_MC_BUS)	+= fsl-mc/
+ obj-$(CONFIG_WILC1000)		+= wilc1000/
+ obj-$(CONFIG_MOST)		+= most/
++obj-$(CONFIG_DRM_OMAP_DCE)	+= omapdce/

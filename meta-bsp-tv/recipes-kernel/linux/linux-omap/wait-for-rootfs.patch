@@ -1,0 +1,72 @@
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index 3bf1cde..2fccd38 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -29,6 +29,7 @@
+ #include <linux/syscore_ops.h>
+ #include <linux/reboot.h>
+ #include <linux/security.h>
++#include <linux/init.h>
+ 
+ #include <generated/utsrelease.h>
+ 
+@@ -333,6 +334,8 @@ static int fw_get_filesystem_firmware(struct device *device,
+ 	if (!path)
+ 		return -ENOMEM;
+ 
++	wait_for_rootfs();
++
+ 	for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
+ 		struct file *file;
+ 
+diff --git a/include/linux/init.h b/include/linux/init.h
+index 5c4a3b7..3cbeea4 100644
+--- a/include/linux/init.h
++++ b/include/linux/init.h
+@@ -148,6 +148,7 @@ void setup_arch(char **);
+ void prepare_namespace(void);
+ void __init load_default_modules(void);
+ int __init init_rootfs(void);
++void wait_for_rootfs(void);
+ 
+ extern void (*late_time_init)(void);
+ 
+diff --git a/init/main.c b/init/main.c
+index 8815906..75c0e1b 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -978,6 +978,25 @@ static int __ref kernel_init(void *unused)
+ 	      "See Linux Documentation/init.txt for guidance.");
+ }
+ 
++static DECLARE_WAIT_QUEUE_HEAD(rootfs_waitq);
++static bool rootfs_mounted;
++
++void wait_for_rootfs(void)
++{
++	/* Avoid waiting for ourselves */
++	if (rootfs_mounted || WARN_ON(is_global_init(current)))
++		return;
++
++	wait_event(rootfs_waitq, rootfs_mounted);
++}
++EXPORT_SYMBOL(wait_for_rootfs);
++
++static inline void wake_up_rootfs_waiters(void)
++{
++	rootfs_mounted = true;
++	wake_up_all(&rootfs_waitq);
++}
++
+ static noinline void __init kernel_init_freeable(void)
+ {
+ 	/*
+@@ -1039,6 +1058,8 @@ static noinline void __init kernel_init_freeable(void)
+ 	 * and default modules
+ 	 */
+ 
++	wake_up_rootfs_waiters();
++
+ 	integrity_load_keys();
+ 	load_default_modules();
+ }
