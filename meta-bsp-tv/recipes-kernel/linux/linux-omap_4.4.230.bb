@@ -17,6 +17,7 @@ KERNEL_DEVICETREE_board-tv = "omap3-igep0030.dtb omap4-panda.dtb omap4-panda-es.
 FILESEXTRAPATHS_prepend := "${THISDIR}/linux-omap:"
 
 SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v4.x/linux-${PV}.tar.xz \
+           file://fix_nonlinux_compile.patch \
            file://0001-bootup-hacks-move-mmc-early.patch \
            file://fixed_name_hdmi_audio.patch \
            file://smsc95xx-add-macaddr-module-parameter.patch \
