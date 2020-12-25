@@ -365,7 +365,7 @@ setup() {
 	export BUILDDIR=$OE_BASE
 
 	export DISTRO=mobiaqua
-	TARGET=$1
+	export TARGET=$1
 
 	if [ "$TARGET" = "tv" ]; then
 		export MACHINE=board-tv
