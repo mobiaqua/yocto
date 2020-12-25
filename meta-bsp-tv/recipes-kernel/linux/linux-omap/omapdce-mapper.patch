@@ -1,0 +1,91 @@
+diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_drv.c
+index ebe307b0..e75df592 100644
+--- a/drivers/gpu/drm/omapdrm/omap_drv.c
++++ b/drivers/gpu/drm/omapdrm/omap_drv.c
+@@ -771,6 +771,8 @@ static int dev_open(struct drm_device *dev, struct drm_file *file)
+ {
+ 	DBG("open: dev=%p, file=%p", dev, file);
+ 
++	file->driver_priv = kzalloc(sizeof(void *) * MAX_MAPPERS, GFP_KERNEL);
++
+ 	if (sgx_plugin)
+ 		sgx_plugin->open(dev, file);
+ 
+@@ -968,15 +970,42 @@ int omap_drm_unregister_plugin(struct omap_drm_plugin *plugin)
+ }
+ EXPORT_SYMBOL(omap_drm_unregister_plugin);
+ 
+-void *omap_drm_file_priv(struct drm_file *file)
++static int nmappers = 0;
++
++/* create buffer mapper id, to access per-mapper private data.  See
++ * omap_gem_{get,set}_priv().
++ */
++int omap_drm_register_mapper(void)
+ {
+-	return file->driver_priv;
++	if (nmappers >= MAX_MAPPERS) {
++		return -ENOMEM;
++	}
++	return nmappers++;
++}
++EXPORT_SYMBOL(omap_drm_register_mapper);
++
++/* retire a mapper id, previously acquired from omap_drm_register_mapper()
++ */
++void omap_drm_unregister_mapper(int mapper_id)
++{
++	/* currently no-op.. */
++}
++EXPORT_SYMBOL(omap_drm_unregister_mapper);
++
++void *omap_drm_file_priv(struct drm_file *file, int mapper_id)
++{
++	BUG_ON((mapper_id >= MAX_MAPPERS) || (mapper_id < 0));
++	if (file->driver_priv) {
++		return ((void **)file->driver_priv)[mapper_id];
++	}
++	return NULL;
+ }
+ EXPORT_SYMBOL(omap_drm_file_priv);
+ 
+-void omap_drm_file_set_priv(struct drm_file *file, void *priv)
++void omap_drm_file_set_priv(struct drm_file *file, int mapper_id, void *priv)
+ {
+-	file->driver_priv = priv;
++	BUG_ON((mapper_id >= MAX_MAPPERS) || (mapper_id < 0));
++	((void **)file->driver_priv)[mapper_id] = priv;
+ }
+ EXPORT_SYMBOL(omap_drm_file_set_priv);
+ 
+diff --git a/drivers/gpu/drm/omapdrm/omap_drv.h b/drivers/gpu/drm/omapdrm/omap_drv.h
+index 48c9a7c4..b3fa8644 100644
+--- a/drivers/gpu/drm/omapdrm/omap_drv.h
++++ b/drivers/gpu/drm/omapdrm/omap_drv.h
+@@ -36,6 +36,12 @@
+ 
+ #define MODULE_NAME     "omapdrm"
+ 
++/* max # of mapper-id's that can be assigned.. todo, come up with a better
++ * (but still inexpensive) way to store/access per-buffer mapper private
++ * data..
++ */
++#define MAX_MAPPERS 2
++
+ /* parameters which describe (unrotated) coordinates of scanout within a fb: */
+ struct omap_drm_window {
+ 	uint32_t rotation;
+@@ -282,8 +288,11 @@ struct omap_drm_plugin {
+ int omap_drm_register_plugin(struct omap_drm_plugin *plugin);
+ int omap_drm_unregister_plugin(struct omap_drm_plugin *plugin);
+ 
+-void *omap_drm_file_priv(struct drm_file *file);
+-void omap_drm_file_set_priv(struct drm_file *file, void *priv);
++int omap_drm_register_mapper(void);
++void omap_drm_unregister_mapper(int id);
++
++void *omap_drm_file_priv(struct drm_file *file, int mapper_id);
++void omap_drm_file_set_priv(struct drm_file *file, int mapper_id, void *priv);
+ 
+ void *omap_gem_priv(struct drm_gem_object *obj);
+ void omap_gem_set_priv(struct drm_gem_object *obj, void *priv);

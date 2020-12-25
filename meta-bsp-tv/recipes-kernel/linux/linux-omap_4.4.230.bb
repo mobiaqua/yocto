@@ -30,6 +30,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v4.x/linux-${PV}.tar.xz \
            file://fixed-drm-flags.patch \
            file://reverse_zorder.patch \
            file://wait-for-rootfs.patch \
+           file://omapdce-mapper.patch \
            file://omapdce.patch \
            file://Kconfig \
            file://Makefile \

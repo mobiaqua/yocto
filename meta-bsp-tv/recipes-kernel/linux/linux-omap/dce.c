@@ -152,7 +152,7 @@ long t;
 
 t = mark(NULL);
 	ret = omap_gem_get_paddr(obj, &paddr, true);
-DBG("get_paddr in %ld us", mark(&t));
+	DBG("get_paddr in %ld us", mark(&t));
 	if (ret) {
 		DBG("cannot map: %d", ret);
 		return ERR_PTR(ret);
@@ -1105,13 +1105,13 @@ static int ioctl_codec_delete(struct drm_device *dev, void *data,
 /* NOTE: these are not public because the actual ioctl NR is dynamic..
  * use drmCommandXYZ(fd, dce_base + idx, ..)
  */
-#define DRM_IOCTL_OMAP_DCE_ENGINE_OPEN		DRM_IOWR(DRM_OMAP_DCE_ENGINE_OPEN, struct drm_omap_dce_engine_open)
-#define DRM_IOCTL_OMAP_DCE_ENGINE_CLOSE		DRM_IOW (DRM_OMAP_DCE_ENGINE_CLOSE, struct drm_omap_dce_engine_close)
-#define DRM_IOCTL_OMAP_DCE_CODEC_CREATE		DRM_IOWR(DRM_OMAP_DCE_CODEC_CREATE, struct drm_omap_dce_codec_create)
-#define DRM_IOCTL_OMAP_DCE_CODEC_CONTROL	DRM_IOWR(DRM_OMAP_DCE_CODEC_CONTROL, struct drm_omap_dce_codec_control)
-#define DRM_IOCTL_OMAP_DCE_CODEC_PROCESS	DRM_IOWR(DRM_OMAP_DCE_CODEC_PROCESS, struct drm_omap_dce_codec_process)
-#define DRM_IOCTL_OMAP_DCE_CODEC_DELETE		DRM_IOW (DRM_OMAP_DCE_CODEC_DELETE, struct drm_omap_dce_codec_delete)
-#define DRM_IOCTL_OMAP_DCE_CODEC_GET_VERSION	DRM_IOW (DRM_OMAP_DCE_CODEC_GET_VERSION, struct drm_omap_dce_codec_get_version)
+#define DRM_IOCTL_OMAP_DCE_ENGINE_OPEN		DRM_IOWR(DRM_COMMAND_BASE + DRM_OMAP_DCE_ENGINE_OPEN, struct drm_omap_dce_engine_open)
+#define DRM_IOCTL_OMAP_DCE_ENGINE_CLOSE		DRM_IOW (DRM_COMMAND_BASE + DRM_OMAP_DCE_ENGINE_CLOSE, struct drm_omap_dce_engine_close)
+#define DRM_IOCTL_OMAP_DCE_CODEC_CREATE		DRM_IOWR(DRM_COMMAND_BASE + DRM_OMAP_DCE_CODEC_CREATE, struct drm_omap_dce_codec_create)
+#define DRM_IOCTL_OMAP_DCE_CODEC_CONTROL	DRM_IOWR(DRM_COMMAND_BASE + DRM_OMAP_DCE_CODEC_CONTROL, struct drm_omap_dce_codec_control)
+#define DRM_IOCTL_OMAP_DCE_CODEC_PROCESS	DRM_IOWR(DRM_COMMAND_BASE + DRM_OMAP_DCE_CODEC_PROCESS, struct drm_omap_dce_codec_process)
+#define DRM_IOCTL_OMAP_DCE_CODEC_DELETE		DRM_IOW (DRM_COMMAND_BASE + DRM_OMAP_DCE_CODEC_DELETE, struct drm_omap_dce_codec_delete)
+#define DRM_IOCTL_OMAP_DCE_CODEC_GET_VERSION	DRM_IOW (DRM_COMMAND_BASE + DRM_OMAP_DCE_CODEC_GET_VERSION, struct drm_omap_dce_codec_get_version)
 
 static struct drm_ioctl_desc dce_ioctls[] = {
 		DRM_IOCTL_DEF_DRV(OMAP_DCE_ENGINE_OPEN, ioctl_engine_open, DRM_UNLOCKED|DRM_AUTH),
