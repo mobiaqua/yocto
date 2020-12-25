@@ -2,8 +2,6 @@ require recipes-kernel/linux/linux-yocto.inc
 
 INC_PR = "r0"
 
-#LIC_FILES_CHKSUM = "file://COPYING;md5=d7810fab7487fb0aad327b76f1be7cd7"
-
 DEPENDS += "openssl-native ncurses-native elf-native kmod-native"
 
 COMPATIBLE_MACHINE = "board-tv"
@@ -16,7 +14,7 @@ KERNEL_DEVICETREE_board-tv = "omap3-igep0030.dtb omap4-panda.dtb omap4-panda-es.
 
 FILESEXTRAPATHS_prepend := "${THISDIR}/linux-omap:"
 
-SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v4.x/linux-${PV}.tar.xz \
+SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v4.x/linux-${LINUX_VERSION}.tar.xz \
            file://fix_nonlinux_compile.patch \
            file://0001-bootup-hacks-move-mmc-early.patch \
            file://fixed_name_hdmi_audio.patch \
