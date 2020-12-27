@@ -3,19 +3,12 @@ KBRANCH ?= "ti-ubuntu-3.4-stable"
 require recipes-kernel/linux/linux-yocto.inc
 
 INC_PR = "r0"
-
 LIC_FILES_CHKSUM = "file://COPYING;md5=d7810fab7487fb0aad327b76f1be7cd7"
-
 DEPENDS += "openssl-native ncurses-native elf-native kmod-native"
-
 COMPATIBLE_MACHINE = "board-tv"
-
 KERNEL_VERSION_SANITY_SKIP = "1"
-
 LINUX_VERSION = "3.4.113"
-
 PV = "${LINUX_VERSION}+git${SRCPV}"
-
 SRCREV = "ti-ubuntu-3.4.0-1491.3"
 
 SRC_URI = "git://dev.omapzoom.org/pub/scm/integration/kernel-ubuntu.git;branch=${KBRANCH}; \
@@ -37,14 +30,14 @@ SRC_URI = "git://dev.omapzoom.org/pub/scm/integration/kernel-ubuntu.git;branch=$
            file://zorder.patch \
            file://reverse_zorder.patch \
            file://fixed-drm-flags.patch \
+           file://rpmsg-new-ns.patch \
+           file://remote-proc-map-fix.patch \
            file://fixed-bt-mux.patch \
            file://fix-log2.patch \
            file://fix-uaccess.patch \
            file://avoid-warning-as-error.patch \
            file://defconfig \
            "
-
-#           file://rpmsg-new-ns.patch
 
 do_kernel_configme() {
     :

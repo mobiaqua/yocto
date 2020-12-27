@@ -1,0 +1,14 @@
+diff -urp old/arch/arm/mach-omap2/remoteproc.c new/arch/arm/mach-omap2/remoteproc.c
+--- old/arch/arm/mach-omap2/remoteproc.c	2020-12-27 07:11:46.000000000 +0100
++++ new/arch/arm/mach-omap2/remoteproc.c	2020-12-27 08:15:22.000000000 +0100
+@@ -64,8 +64,8 @@
+ #define OMAP5_RPROC_CMA_BASE_IPU	(0x95800000)
+ #define OMAP5_RPROC_CMA_BASE_DSP	(0x95000000)
+ 
+-#define OMAP4_RPROC_CMA_BASE_IPU	(0x99000000)
+-#define OMAP4_RPROC_CMA_BASE_DSP	(0x98800000)
++#define OMAP4_RPROC_CMA_BASE_IPU	(0x98800000)
++#define OMAP4_RPROC_CMA_BASE_DSP	(0x98000000)
+ 
+ #ifdef CONFIG_OMAP_REMOTEPROC_DSP
+ static struct omap_rproc_timers_info dsp_timers[] = {

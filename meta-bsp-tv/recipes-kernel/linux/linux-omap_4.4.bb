@@ -1,17 +1,12 @@
 require recipes-kernel/linux/linux-yocto.inc
 
 INC_PR = "r0"
-
 DEPENDS += "openssl-native ncurses-native elf-native kmod-native"
-
 COMPATIBLE_MACHINE = "board-tv"
-
 KERNEL_VERSION_SANITY_SKIP = "1"
-
 LINUX_VERSION = "4.4.230"
-
+PV = "${LINUX_VERSION}"
 KERNEL_DEVICETREE_board-tv = "omap3-igep0030.dtb omap4-panda.dtb omap4-panda-es.dtb omap5-igep0050.dtb"
-
 FILESEXTRAPATHS_prepend := "${THISDIR}/linux-omap:"
 
 SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v4.x/linux-${LINUX_VERSION}.tar.xz \
