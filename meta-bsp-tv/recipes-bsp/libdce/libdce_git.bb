@@ -1,9 +1,7 @@
-DEPENDS = "libdce-firmware libdrm virtual/kernel"
-#libmmrpc
+DEPENDS = "libdce-firmware libdrm virtual/kernel libmmrpc"
 
 LICENSE = "BSD"
-LIC_FILES_CHKSUM = "file://libdce.c;beginline=1;endline=31;md5=faefee9f609ed62570c167e9bf6083ee"
-#LIC_FILES_CHKSUM = "file://libdce.c;beginline=1;endline=31;md5=0a398cf815b8b5f31f552266cd453dae"
+LIC_FILES_CHKSUM = "file://libdce.c;beginline=1;endline=31;md5=0a398cf815b8b5f31f552266cd453dae"
 
 inherit autotools lib_package pkgconfig
 
@@ -11,8 +9,7 @@ PV = "1.0"
 PR = "r0"
 PR_append = "+gitr-${SRCREV}"
 
-SRCREV = "36533bfb6c18e3536c84511a1e4c5a7cae1bb5bf"
-#SRCREV = "7e03a352277dd1ddb079bc59eb4434b4cafb00e8"
+SRCREV = "507464c59fa04051159e7252c9dbc0db5f45fbf3"
 SRC_URI = "git://github.com/mobiaqua/libdce.git;protocol=git"
 
 S = "${WORKDIR}/git"
