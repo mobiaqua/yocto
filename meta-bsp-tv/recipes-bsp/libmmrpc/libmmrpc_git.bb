@@ -8,7 +8,7 @@ INC_PR = "r0"
 
 DEPENDS += "virtual/kernel"
 
-SRCREV = "cc633bd24ea64eafcd51189ee1606303ee7da625"
+SRCREV = "f055cbf0e3644593a1034c6eb2b9d1126d447df2"
 
 SRC_URI = "git://github.com/mobiaqua/ti-libmmrpc.git;protocol=git"
 
