@@ -23,13 +23,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v4.x/linux-${LINUX_VERSION}.tar.xz \
            file://fixed-drm-flags.patch \
            file://reverse_zorder.patch \
            file://wait-for-rootfs.patch \
-           file://omapdce-mapper.patch \
-           file://omapdce.patch \
-           file://Kconfig \
-           file://Makefile \
-           file://dce.c \
-           file://dce_rpc.h \
-           file://omap_dce.h \
            file://defconfig \
            "
 
@@ -38,15 +31,6 @@ SRC_URI[sha256sum] = "ca3161a6278dd86633883cc48f1476f76c1f583a2fceb366164c7a1429
 S = "${WORKDIR}/linux-${PV}"
 
 KERNEL_EXTRA_ARGS += "LOADADDR=${UBOOT_LOADADDRESS}"
-
-do_configure_prepend () {
-	mkdir -p ${S}/drivers/staging/omapdce
-	cp ${WORKDIR}/Kconfig ${S}/drivers/staging/omapdce
-	cp ${WORKDIR}/Makefile ${S}/drivers/staging/omapdce
-	cp ${WORKDIR}/dce.c ${S}/drivers/staging/omapdce
-	cp ${WORKDIR}/dce_rpc.h ${S}/drivers/staging/omapdce
-	cp ${WORKDIR}/omap_dce.h ${S}/drivers/staging/omapdce
-}
 
 do_kernel_configme() {
     :

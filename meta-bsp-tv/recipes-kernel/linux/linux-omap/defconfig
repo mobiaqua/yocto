@@ -2910,41 +2910,7 @@ CONFIG_VIRTIO_MMIO=y
 #
 # Microsoft Hyper-V guest support
 #
-CONFIG_STAGING=y
-# CONFIG_PRISM2_USB is not set
-# CONFIG_COMEDI is not set
-# CONFIG_RTL8192U is not set
-# CONFIG_RTLLIB is not set
-# CONFIG_R8712U is not set
-# CONFIG_R8188EU is not set
-# CONFIG_RTS5208 is not set
-# CONFIG_VT6655 is not set
-# CONFIG_VT6656 is not set
-# CONFIG_FB_SM750 is not set
-# CONFIG_FB_XGI is not set
-
-#
-# Speakup console speech
-#
-# CONFIG_SPEAKUP is not set
-# CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4 is not set
-# CONFIG_STAGING_MEDIA is not set
-
-#
-# Android
-#
-# CONFIG_STAGING_BOARD is not set
-# CONFIG_WIMAX_GDM72XX is not set
-# CONFIG_LTE_GDM724X is not set
-# CONFIG_LUSTRE_FS is not set
-# CONFIG_DGNC is not set
-# CONFIG_DGAP is not set
-# CONFIG_GS_FPGABOOT is not set
-# CONFIG_COMMON_CLK_XLNX_CLKWZRD is not set
-# CONFIG_FB_TFT is not set
-# CONFIG_WILC1000_DRIVER is not set
-# CONFIG_MOST is not set
-CONFIG_DRM_OMAP_DCE=y
+# CONFIG_STAGING is not set
 # CONFIG_CHROME_PLATFORMS is not set
 CONFIG_CLKDEV_LOOKUP=y
 CONFIG_HAVE_CLK_PREPARE=y
