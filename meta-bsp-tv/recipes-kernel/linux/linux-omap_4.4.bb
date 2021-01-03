@@ -23,6 +23,8 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v4.x/linux-${LINUX_VERSION}.tar.xz \
            file://fixed-drm-flags.patch \
            file://reverse_zorder.patch \
            file://wait-for-rootfs.patch \
+           file://0001-clk-ti-omap5-dpll-implement-errata-i810.patch \
+           file://0001-ARM-OMAP5-DRA7-Introduce-workaround-for-801819.patch \
            file://defconfig \
            "
 

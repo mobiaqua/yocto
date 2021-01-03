@@ -1,0 +1,180 @@
+diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+index 0517f0c1..a63d3fe2 100644
+--- a/arch/arm/mach-omap2/Kconfig
++++ b/arch/arm/mach-omap2/Kconfig
+@@ -240,4 +240,12 @@ endmenu
+ 
+ endif
+ 
++config OMAP5_ERRATA_801819
++	bool "Errata 801819: An eviction from L1 data cache might stall indefinitely"
++	depends on SOC_OMAP5 || SOC_DRA7XX
++	help
++	  A livelock can occur in the L2 cache arbitration that might prevent
++	  a snoop from completing. Under certain conditions this can cause the
++	  system to deadlock.
++
+ endmenu
+diff --git a/arch/arm/mach-omap2/clock.c b/arch/arm/mach-omap2/clock.c
+index acb60ed1..d0581258 100644
+--- a/arch/arm/mach-omap2/clock.c
++++ b/arch/arm/mach-omap2/clock.c
+@@ -225,5 +225,9 @@ void __init ti_clk_init_features(void)
+ 	if (omap_rev() == OMAP3430_REV_ES1_0)
+ 		features.flags |= TI_CLK_DPLL4_DENY_REPROGRAM;
+ 
++	/* Errata I810 for omap5 / dra7 */
++	if (soc_is_omap54xx() || soc_is_dra7xx())
++		features.flags |= TI_CLK_ERRATA_I810;
++
+ 	ti_clk_setup_features(&features);
+ }
+diff --git a/arch/arm/mach-omap2/omap-secure.h b/arch/arm/mach-omap2/omap-secure.h
+index ab6ce259..c509cde7 100644
+--- a/arch/arm/mach-omap2/omap-secure.h
++++ b/arch/arm/mach-omap2/omap-secure.h
+@@ -48,6 +48,7 @@
+ 
+ #define OMAP5_DRA7_MON_SET_CNTFRQ_INDEX	0x109
+ #define OMAP5_MON_AMBA_IF_INDEX		0x108
++#define OMAP5_DRA7_MON_SET_ACR_INDEX	0x107
+ 
+ /* Secure PPA(Primary Protected Application) APIs */
+ #define OMAP4_PPA_L2_POR_INDEX		0x23
+diff --git a/arch/arm/mach-omap2/omap-smp.c b/arch/arm/mach-omap2/omap-smp.c
+index 79e1f876..aef785d0 100644
+--- a/arch/arm/mach-omap2/omap-smp.c
++++ b/arch/arm/mach-omap2/omap-smp.c
+@@ -50,6 +50,39 @@ void __iomem *omap4_get_scu_base(void)
+ 	return scu_base;
+ }
+ 
++#ifdef CONFIG_OMAP5_ERRATA_801819
++void omap5_erratum_workaround_801819(void)
++{
++	u32 acr, revidr;
++	u32 acr_mask;
++
++	/* REVIDR[3] indicates erratum fix available on silicon */
++	asm volatile ("mrc p15, 0, %0, c0, c0, 6" : "=r" (revidr));
++	if (revidr & (0x1 << 3))
++		return;
++
++	asm volatile ("mrc p15, 0, %0, c1, c0, 1" : "=r" (acr));
++	/*
++	 * BIT(27) - Disables streaming. All write-allocate lines allocate in
++	 * the L1 or L2 cache.
++	 * BIT(25) - Disables streaming. All write-allocate lines allocate in
++	 * the L1 cache.
++	 */
++	acr_mask = (0x3 << 25) | (0x3 << 27);
++	/* do we already have it done.. if yes, skip expensive smc */
++	if ((acr & acr_mask) == acr_mask)
++		return;
++
++	acr |= acr_mask;
++	omap_smc1(OMAP5_DRA7_MON_SET_ACR_INDEX, acr);
++
++	pr_debug("%s: ARM erratum workaround 801819 applied on CPU%d\n",
++		 __func__, smp_processor_id());
++}
++#else
++static inline void omap5_erratum_workaround_801819(void) { }
++#endif
++
+ static void omap4_secondary_init(unsigned int cpu)
+ {
+ 	/*
+@@ -64,12 +97,15 @@ static void omap4_secondary_init(unsigned int cpu)
+ 		omap_secure_dispatcher(OMAP4_PPA_CPU_ACTRL_SMP_INDEX,
+ 							4, 0, 0, 0, 0, 0);
+ 
+-	/*
+-	 * Configure the CNTFRQ register for the secondary cpu's which
+-	 * indicates the frequency of the cpu local timers.
+-	 */
+-	if (soc_is_omap54xx() || soc_is_dra7xx())
++	if (soc_is_omap54xx() || soc_is_dra7xx()) {
++		/*
++		 * Configure the CNTFRQ register for the secondary cpu's which
++		 * indicates the frequency of the cpu local timers.
++		 */
+ 		set_cntfreq();
++		/* Configure ACR to disable streaming WA for 801819 */
++		omap5_erratum_workaround_801819();
++	}
+ 
+ 	/*
+ 	 * Synchronise with the boot thread.
+@@ -218,6 +254,8 @@ static void __init omap4_smp_prepare_cpus(unsigned int max_cpus)
+ 
+ 	if (cpu_is_omap446x())
+ 		startup_addr = omap4460_secondary_startup;
++	if (soc_is_dra74x() || soc_is_omap54xx())
++		omap5_erratum_workaround_801819();
+ 
+ 	/*
+ 	 * Write the address of secondary startup routine into the
+diff --git a/drivers/clk/ti/dpll3xxx.c b/drivers/clk/ti/dpll3xxx.c
+index fa53bf6b..593d0d68 100644
+--- a/drivers/clk/ti/dpll3xxx.c
++++ b/drivers/clk/ti/dpll3xxx.c
+@@ -305,8 +305,9 @@ static void _lookup_sddiv(struct clk_hw_omap *clk, u8 *sd_div, u16 m, u8 n)
+ static int omap3_noncore_dpll_program(struct clk_hw_omap *clk, u16 freqsel)
+ {
+ 	struct dpll_data *dd = clk->dpll_data;
+-	u8 dco, sd_div;
++	u8 dco, sd_div, ai = 0;
+ 	u32 v;
++	bool errata_i810;
+ 
+ 	/* 3430 ES2 TRM: 4.7.6.9 DPLL Programming Sequence */
+ 	_omap3_noncore_dpll_bypass(clk);
+@@ -350,6 +351,25 @@ static int omap3_noncore_dpll_program(struct clk_hw_omap *clk, u16 freqsel)
+ 		v |= sd_div << __ffs(dd->sddiv_mask);
+ 	}
+ 
++	/*
++	 * Errata i810 - DPLL controller can get stuck while transitioning
++	 * to a power saving state. Software must ensure the DPLL can not
++	 * transition to a low power state while changing M/N values.
++	 * Easiest way to accomplish this is to prevent DPLL autoidle
++	 * before doing the M/N re-program.
++	 */
++	errata_i810 = ti_clk_get_features()->flags & TI_CLK_ERRATA_I810;
++
++	if (errata_i810) {
++		ai = omap3_dpll_autoidle_read(clk);
++		if (ai) {
++			omap3_dpll_deny_idle(clk);
++
++			/* OCP barrier */
++			omap3_dpll_autoidle_read(clk);
++		}
++	}
++
+ 	ti_clk_ll_ops->clk_writel(v, dd->mult_div1_reg);
+ 
+ 	/* Set 4X multiplier and low-power mode */
+@@ -379,6 +399,9 @@ static int omap3_noncore_dpll_program(struct clk_hw_omap *clk, u16 freqsel)
+ 
+ 	_omap3_noncore_dpll_lock(clk);
+ 
++	if (errata_i810 && ai)
++		omap3_dpll_allow_idle(clk);
++
+ 	return 0;
+ }
+ 
+diff --git a/include/linux/clk/ti.h b/include/linux/clk/ti.h
+index 223be696..75205df2 100644
+--- a/include/linux/clk/ti.h
++++ b/include/linux/clk/ti.h
+@@ -286,6 +286,7 @@ struct ti_clk_features {
+ #define TI_CLK_DPLL_HAS_FREQSEL			BIT(0)
+ #define TI_CLK_DPLL4_DENY_REPROGRAM		BIT(1)
+ #define TI_CLK_DISABLE_CLKDM_CONTROL		BIT(2)
++#define TI_CLK_ERRATA_I810			BIT(3)
+ 
+ void ti_clk_setup_features(struct ti_clk_features *features);
+ const struct ti_clk_features *ti_clk_get_features(void);
