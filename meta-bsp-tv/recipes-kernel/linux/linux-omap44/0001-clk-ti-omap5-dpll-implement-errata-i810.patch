@@ -75,26 +75,3 @@ index 223be696..75205df2 100644
  
  void ti_clk_setup_features(struct ti_clk_features *features);
  const struct ti_clk_features *ti_clk_get_features(void);
-diff --git a/include/linux/rpmsg.h b/include/linux/rpmsg.h
-index 61451a71..1a163429 100644
---- a/include/linux/rpmsg.h
-+++ b/include/linux/rpmsg.h
-@@ -196,6 +196,18 @@ int rpmsg_destroy_channel(struct rpmsg_channel *rpdev);
- #define register_rpmsg_driver(drv) \
- 	__register_rpmsg_driver(drv, THIS_MODULE)
- 
-+/**
-+ * module_rpmsg_driver() - Helper macro for registering an rpmsg driver
-+ * @__rpmsg_driver: rpmsg_driver struct
-+ *
-+ * Helper macro for rpmsg drivers which do not do anything special in module
-+ * init/exit. This eliminates a lot of boilerplate.  Each module may only
-+ * use this macro once, and calling it replaces module_init() and module_exit()
-+ */
-+#define module_rpmsg_driver(__rpmsg_driver) \
-+	module_driver(__rpmsg_driver, register_rpmsg_driver, \
-+			unregister_rpmsg_driver)
-+
- /**
-  * rpmsg_send() - send a message across to the remote processor
-  * @rpdev: the rpmsg channel
