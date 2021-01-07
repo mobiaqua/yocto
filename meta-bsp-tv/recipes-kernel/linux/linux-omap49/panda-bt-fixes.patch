@@ -1,0 +1,102 @@
+diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
+index 1673689e..8e8a972b 100644
+--- a/arch/arm/boot/dts/omap4-panda-common.dtsi
++++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
+@@ -334,13 +334,13 @@
+ 			OMAP4_IOPAD(0x066, PIN_OUTPUT | MUX_MODE3)		/* gpmc_a19.gpio_43 */
+ 			OMAP4_IOPAD(0x06c, PIN_OUTPUT | MUX_MODE3)		/* gpmc_a22.gpio_46 */
+ 			OMAP4_IOPAD(0x070, PIN_OUTPUT_PULLUP | MUX_MODE3)	/* gpmc_a24.gpio_48 */
+-			OMAP4_IOPAD(0x072, PIN_OUTPUT_PULLUP | MUX_MODE3)	/* gpmc_a25.gpio_49 */
+ 		>;
+ 	};
+ 
+ 	/* wl12xx GPIO inputs and SDIO pins */
+ 	wl12xx_pins: pinmux_wl12xx_pins {
+ 		pinctrl-single,pins = <
++			OMAP4_IOPAD(0x072, PIN_OUTPUT_PULLUP | MUX_MODE3)	/* gpmc_a25.gpio_49 */
+ 			OMAP4_IOPAD(0x078, PIN_INPUT | MUX_MODE3)		/* gpmc_ncs2.gpio_52 */
+ 			OMAP4_IOPAD(0x07a, PIN_INPUT | MUX_MODE3)		/* gpmc_ncs3.gpio_53 */
+ 			OMAP4_IOPAD(0x148, PIN_INPUT_PULLUP | MUX_MODE0)	/* sdmmc5_clk.sdmmc5_clk */
+@@ -351,6 +351,15 @@
+ 			OMAP4_IOPAD(0x152, PIN_INPUT_PULLUP | MUX_MODE0)	/* sdmmc5_dat3.sdmmc5_dat3 */
+ 		>;
+ 	};
++
++	uart2_pins: pinmux_uart2_pins {
++		pinctrl-single,pins = <
++			OMAP4_IOPAD(0x118, PIN_INPUT_PULLUP | MUX_MODE0)	/* uart2_cts.uart2_cts */
++			OMAP4_IOPAD(0x11a, PIN_OUTPUT | MUX_MODE0)		/* uart2_rts.uart2_rts */
++			OMAP4_IOPAD(0x11c, PIN_INPUT_PULLUP | MUX_MODE0)	/* uart2_rx.uart2_rx */
++			OMAP4_IOPAD(0x11e, PIN_OUTPUT | MUX_MODE0)		/* uart2_tx.uart2_tx */
++		>;
++	};
+ };
+ 
+ &omap4_pmx_wkup {
+@@ -494,8 +503,17 @@
+ };
+ 
+ &uart2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart2_pins>;
++
+ 	interrupts-extended = <&wakeupgen GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH
+ 			       &omap4_pmx_core OMAP4_UART2_RX>;
++
++	bluetooth {
++		compatible = "ti,wl1271-st";
++		enable-gpios = <&gpio2 14 GPIO_ACTIVE_HIGH>; /* gpio 46 */
++		max-speed = <3000000>;
++	};
+ };
+ 
+ &uart3 {
+diff --git a/arch/arm/mach-omap2/pdata-quirks.c b/arch/arm/mach-omap2/pdata-quirks.c
+index c3b3972c..5b1f75cd 100644
+--- a/arch/arm/mach-omap2/pdata-quirks.c
++++ b/arch/arm/mach-omap2/pdata-quirks.c
+@@ -336,6 +336,34 @@ static struct wkup_m3_platform_data wkup_m3_data = {
+ };
+ #endif
+ 
++#ifdef CONFIG_ARCH_OMAP4
++static struct ti_st_plat_data wilink_panda_pdata = {
++	.nshutdown_gpio = 46,
++	.dev_name = "/dev/ttyS1",
++	.flow_cntrl = 1,
++	.baud_rate = 300000,
++};
++
++static struct platform_device wl17xx_device = {
++	.name	= "kim",
++	.id	= -1,
++	.dev	= {
++		.platform_data = &wilink_panda_pdata,
++	}
++};
++
++static struct platform_device btwilink_panda_device = {
++	.name	= "btwilink",
++	.id	= -1,
++};
++
++static void __init omap4_panda_legacy_init(void)
++{
++	platform_device_register(&wl17xx_device);
++	platform_device_register(&btwilink_panda_device);
++}
++#endif
++
+ #ifdef CONFIG_SOC_OMAP5
+ static void __init omap5_uevm_legacy_init(void)
+ {
+@@ -495,6 +523,9 @@ static struct pdata_init pdata_quirks[] __initdata = {
+ 	{ "openpandora,omap3-pandora-600mhz", omap3_pandora_legacy_init, },
+ 	{ "openpandora,omap3-pandora-1ghz", omap3_pandora_legacy_init, },
+ #endif
++#ifdef CONFIG_ARCH_OMAP4
++	{ "ti,omap4-panda", omap4_panda_legacy_init, },
++#endif
+ #ifdef CONFIG_SOC_OMAP5
+ 	{ "ti,omap5-uevm", omap5_uevm_legacy_init, },
+ #endif
