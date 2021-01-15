@@ -1,6 +1,6 @@
 require scummvm.inc
 
-SRCREV = "dcdd9da51f863147349b7495158060a166e9499c"
+SRCREV = "46fbef1b309bc9bf39bf4996e61955777685a55d"
 SRC_URI = "git://github.com/scummvm/scummvm.git;protocol=git;branch=master"
 
 S = "${WORKDIR}/git"
