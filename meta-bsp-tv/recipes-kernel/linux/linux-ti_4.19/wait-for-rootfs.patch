@@ -1,8 +1,8 @@
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index a95e1e57..1e1ba9ca 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -30,6 +30,7 @@
+diff --git a/drivers/base/firmware_loader/main.c b/drivers/base/firmware_loader/main.c
+index 8e9213b36..8e60dbc09 100644
+--- a/drivers/base/firmware_loader/main.c
++++ b/drivers/base/firmware_loader/main.c
+@@ -33,6 +33,7 @@
  #include <linux/syscore_ops.h>
  #include <linux/reboot.h>
  #include <linux/security.h>
@@ -10,7 +10,7 @@ index a95e1e57..1e1ba9ca 100644
  
  #include <generated/utsrelease.h>
  
-@@ -334,6 +335,8 @@ fw_get_filesystem_firmware(struct device *device, struct firmware_buf *buf)
+@@ -312,6 +313,8 @@ fw_get_filesystem_firmware(struct device *device, struct fw_priv *fw_priv)
  	if (!path)
  		return -ENOMEM;
  
@@ -20,23 +20,23 @@ index a95e1e57..1e1ba9ca 100644
  		/* skip the unset customized path */
  		if (!fw_path[i][0])
 diff --git a/include/linux/init.h b/include/linux/init.h
-index 0cca4142..251e36c2 100644
+index 2538d176d..e7d3adb56 100644
 --- a/include/linux/init.h
 +++ b/include/linux/init.h
-@@ -132,6 +132,7 @@ void setup_arch(char **);
+@@ -149,6 +149,7 @@ void setup_arch(char **);
  void prepare_namespace(void);
  void __init load_default_modules(void);
  int __init init_rootfs(void);
 +void wait_for_rootfs(void);
  
- #if defined(CONFIG_DEBUG_RODATA) || defined(CONFIG_DEBUG_SET_MODULE_RONX)
+ #if defined(CONFIG_STRICT_KERNEL_RWX) || defined(CONFIG_STRICT_MODULE_RWX)
  extern bool rodata_enabled;
 diff --git a/init/main.c b/init/main.c
-index 7ad08957..3027964e 100644
+index fdfef08da..2eb639faa 100644
 --- a/init/main.c
 +++ b/init/main.c
-@@ -986,6 +986,25 @@ static int __ref kernel_init(void *unused)
- 	      "See Linux Documentation/init.txt for guidance.");
+@@ -1109,6 +1109,25 @@ static int __ref kernel_init(void *unused)
+ 	      "See Linux Documentation/admin-guide/init.rst for guidance.");
  }
  
 +static DECLARE_WAIT_QUEUE_HEAD(rootfs_waitq);
@@ -61,7 +61,7 @@ index 7ad08957..3027964e 100644
  static noinline void __init kernel_init_freeable(void)
  {
  	/*
-@@ -1047,6 +1066,8 @@ static noinline void __init kernel_init_freeable(void)
+@@ -1173,6 +1192,8 @@ static noinline void __init kernel_init_freeable(void)
  	 * and default modules
  	 */
  

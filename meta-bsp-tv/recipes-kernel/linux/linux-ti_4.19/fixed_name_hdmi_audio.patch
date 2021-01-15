@@ -1,0 +1,11 @@
+--- a/sound/soc/omap/omap-hdmi-audio.c
++++ b/sound/soc/omap/omap-hdmi-audio.c
+@@ -362,7 +362,7 @@ static int omap_hdmi_audio_probe(struct platform_device *pdev)
+ 		return -ENOMEM;
+ 
+ 	card->name = devm_kasprintf(dev, GFP_KERNEL,
+-				    "HDMI %s", dev_name(ad->dssdev));
++				    "HDMI");
+ 	if (!card->name)
+ 		return -ENOMEM;
+ 

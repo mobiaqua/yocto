@@ -1,5 +1,3 @@
-diff --git a/arch/arm/include/asm/xor.h b/arch/arm/include/asm/xor.h
-index 4ffb26d4..cea3e0c6 100644
 --- a/arch/arm/include/asm/xor.h
 +++ b/arch/arm/include/asm/xor.h
 @@ -212,3 +212,9 @@ static struct xor_block_template xor_block_neon = {

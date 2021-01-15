@@ -1,0 +1,29 @@
+--- a/drivers/gpu/drm/omapdrm/omap_plane.c
++++ b/drivers/gpu/drm/omapdrm/omap_plane.c
+@@ -98,7 +98,7 @@ static void omap_plane_atomic_disable(struct drm_plane *plane,
+ 
+ 	plane->state->rotation = DRM_MODE_ROTATE_0;
+ 	plane->state->zpos = plane->type == DRM_PLANE_TYPE_PRIMARY
+-			   ? 0 : omap_plane->id;
++			   ? 3 : 3 - omap_plane->id;
+ 
+ 	priv->dispc_ops->ovl_enable(priv->dispc, omap_plane->id, false);
+ }
+@@ -179,7 +179,7 @@ void omap_plane_install_properties(struct drm_plane *plane,
+ 						   DRM_MODE_ROTATE_0);
+ 	}
+ 
+-	drm_object_attach_property(obj, priv->zorder_prop, 0);
++	drm_object_attach_property(obj, priv->zorder_prop, 3);
+ }
+ 
+ static void omap_plane_reset(struct drm_plane *plane)
+@@ -195,7 +195,7 @@ static void omap_plane_reset(struct drm_plane *plane)
+ 	 * plane.
+ 	 */
+ 	plane->state->zpos = plane->type == DRM_PLANE_TYPE_PRIMARY
+-			   ? 0 : omap_plane->id;
++			   ? 3 : 3 - omap_plane->id;
+ }
+ 
+ static int omap_plane_atomic_set_property(struct drm_plane *plane,

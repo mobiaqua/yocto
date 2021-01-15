@@ -1,16 +1,15 @@
-diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
-index b6b8aec..ef8721c 100644
 --- a/drivers/net/usb/smsc95xx.c
 +++ b/drivers/net/usb/smsc95xx.c
-@@ -68,12 +68,19 @@ struct smsc95xx_priv {
+@@ -72,6 +72,8 @@ struct smsc95xx_priv {
  	spinlock_t mac_cr_lock;
  	u8 features;
  	u8 suspend_flags;
 +	bool mac_set_from_param;
 +	bool mac_is_random;
- };
- 
- static bool turbo_mode = true;
+ 	u8 mdix_ctrl;
+ 	bool link_ok;
+ 	struct delayed_work carrier_check;
+@@ -82,6 +84,11 @@ static bool turbo_mode = true;
  module_param(turbo_mode, bool, 0644);
  MODULE_PARM_DESC(turbo_mode, "Enable multiple frames per Rx transaction");
  
@@ -22,17 +21,24 @@ index b6b8aec..ef8721c 100644
  static int __must_check __smsc95xx_read_reg(struct usbnet *dev, u32 index,
  					    u32 *data, int in_pm)
  {
-@@ -766,8 +773,63 @@ static int smsc95xx_ioctl(struct net_device *netdev, struct ifreq *rq, int cmd)
+@@ -913,17 +920,63 @@ static int smsc95xx_ioctl(struct net_device *netdev, struct ifreq *rq, int cmd)
  	return generic_mii_ioctl(&dev->mii, if_mii(rq), cmd, NULL);
  }
  
+-static void smsc95xx_init_mac_address(struct usbnet *dev)
 +/* set mac address from the macaddr module parameter */
 +static int smsc95xx_init_mac_address_from_param(struct usbnet *dev)
-+{
+ {
+-	const u8 *mac_addr;
 +	int i, j, got_num, num;
 +	u8 mtbl[ETH_ALEN];
 +	struct smsc95xx_priv *pdata = (struct smsc95xx_priv *)(dev->data[0]);
-+
+ 
+-	/* maybe the boot loader passed the MAC address in devicetree */
+-	mac_addr = of_get_mac_address(dev->udev->dev.of_node);
+-	if (mac_addr) {
+-		memcpy(dev->net->dev_addr, mac_addr, ETH_ALEN);
+-		return;
 +	if (macaddr[0] == ':')
 +		return 0;
 +
@@ -60,8 +66,8 @@ index b6b8aec..ef8721c 100644
 +		} else {
 +			break;
 +		}
-+	}
-+
+ 	}
+ 
 +	if (j == ETH_ALEN) {
 +		netif_dbg(dev, ifup, dev->net, "Overriding MAC address with: "
 +				"%02x:%02x:%02x:%02x:%02x:%02x\n", mtbl[0], mtbl[1], mtbl[2],
@@ -79,16 +85,16 @@ index b6b8aec..ef8721c 100644
 +	}
 +}
 +
- static void smsc95xx_init_mac_address(struct usbnet *dev)
- {
++static void smsc95xx_init_mac_address(struct usbnet *dev)
++{
 +	struct smsc95xx_priv *pdata = (struct smsc95xx_priv *)(dev->data[0]);
 +
  	/* try reading mac address from EEPROM */
  	if (smsc95xx_read_eeprom(dev, EEPROM_MAC_OFFSET, ETH_ALEN,
  			dev->net->dev_addr) == 0) {
-@@ -780,16 +842,25 @@ static void smsc95xx_init_mac_address(struct usbnet *dev)
+@@ -936,16 +989,25 @@ static void smsc95xx_init_mac_address(struct usbnet *dev)
  
- 	/* no eeprom, or eeprom values are invalid. generate random MAC */
+ 	/* no useful static MAC address found. generate a random one */
  	eth_hw_addr_random(dev->net);
 +	pdata->mac_is_random = true;
  	netif_dbg(dev, ifup, dev->net, "MAC address set to eth_random_addr\n");
