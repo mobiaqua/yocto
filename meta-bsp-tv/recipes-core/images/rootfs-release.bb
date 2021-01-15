@@ -6,7 +6,7 @@ DESCRIPTION = "<description>"
 PV = "1.0.0"
 PR = "r0"
 
-INSTALL_PKGS += "u-boot-pandaboard omap4-sgx-libs omap4-sgx-pvrsrvinit \
+INSTALL_PKGS += "u-boot-pandaboard sgx-libs sgx-module sgx-pvrsrvinit \
                  libdce libdce-firmware libavcodec libavformat libavutil libavresample \
                  libswscale libswresample uim-sysfs wl127x-fw abefw scummvm \
 "
