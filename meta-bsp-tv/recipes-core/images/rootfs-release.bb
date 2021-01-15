@@ -8,7 +8,7 @@ PR = "r0"
 
 INSTALL_PKGS += "u-boot-pandaboard sgx-libs sgx-module sgx-pvrsrvinit \
                  libdce libdce-firmware libavcodec libavformat libavutil libavresample \
-                 libswscale libswresample uim-sysfs wl127x-fw abefw scummvm \
+                 libswscale libswresample wl127x-fw abefw scummvm \
 "
 
 RDEPENDS += ""
