@@ -1,3 +1,0 @@
-kernelargs=vram=40M ${kernel_mem} console=ttyO2,115200n8 root=/dev/nfs nfsroot=NFS_IP:NFS_PATH,tcp,v3 ip=::::::dhcp consoleblank=0 earlyprintk earlycon=ttyO2,115200n8 fixrtc
-bootcmd=run findmac;setenv bootargs ${kernelargs} smsc75xx.mac=${mac_addr};run findfdt;fatload mmc 0:1 0x80000000 uImage;fatload mmc 0:1 0x88000000 ${fdtfile};bootm 0x80000000 - 0x88000000
-uenvcmd=boot
