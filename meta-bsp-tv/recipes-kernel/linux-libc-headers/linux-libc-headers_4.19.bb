@@ -2,13 +2,11 @@ require recipes-kernel/linux-libc-headers/linux-libc-headers.inc
 
 DEPENDS = "unifdef-native bison-native"
 
-FILESEXTRAPATHS =. "${FILE_DIRNAME}/linux-omap4.19:"
+FILESEXTRAPATHS =. "${FILE_DIRNAME}/linux-ti-4.19:"
 
-SRC_URI += "\
-        file://omapdrm-rpmsg.patch \
-"
+SRC_URI += "file://omapdrm-rpmsg.patch"
 
-SRC_URI[sha256sum] = "312c67677c75adc4324078c5afb11411df379d5573ad0a429b3f4919f26bed01"
+SRC_URI[sha256sum] = "0c68f5655528aed4f99dae71a5b259edc93239fa899e2df79c055275c21749a1"
 
 do_install() {
     oe_runmake headers_install INSTALL_HDR_PATH=${D}${exec_prefix} ARCH=$ARCH
