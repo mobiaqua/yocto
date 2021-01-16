@@ -7,7 +7,7 @@ PR = "r0"
 
 COMPATIBLE_MACHINE = "board-tv"
 
-SRC_URI = "file://TIInit_7.2.31.bts \
+SRC_URI = "file://TIInit_7.6.15.bts \
            file://wl127x-fw-4-mr.bin \
            file://wl127x-fw-4-plt.bin \
            file://wl127x-fw-4-sr.bin \
