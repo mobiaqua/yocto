@@ -9,7 +9,7 @@ PV = "1.0"
 PR = "r0"
 PR_append = "+gitr-${SRCREV}"
 
-SRCREV = "507464c59fa04051159e7252c9dbc0db5f45fbf3"
+SRCREV = "8fef2c7a13bf8902e31a4beb62f6e2048f506305"
 SRC_URI = "git://github.com/mobiaqua/libdce.git;protocol=git"
 
 S = "${WORKDIR}/git"
@@ -17,6 +17,6 @@ S = "${WORKDIR}/git"
 WARN_QA_remove = "ldflags"
 
 DEBUG_BUILD = "${@['no','yes'][d.getVar('BUILD_DEBUG') == '1']}"
-CFLAGS_append = "${@['',' -O0 -g3'][d.getVar('BUILD_DEBUG') == '1']}"
+CFLAGS_append = "${@['',' -O0 -g3 -DDCE_DEBUG_ENABLE=1 -DDCE_DEBUG_LEVEL=1'][d.getVar('BUILD_DEBUG') == '1']}"
 
 RM_WORK_EXCLUDE += "${@['','${PN}'][d.getVar('BUILD_DEBUG') == '1']}"
