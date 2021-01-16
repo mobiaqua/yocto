@@ -17,7 +17,7 @@ PR = "r0"
 
 do_install() {
         mkdir -p ${D}/lib/firmware
-        cp ${S}/firmware/omap4_abe_new ${D}/lib/firmware/
+        install -m 644 ${S}/firmware/omap4_abe_new ${D}/lib/firmware/
 }
 
 FILES_${PN} += "/lib/firmware/omap4_abe_new"
