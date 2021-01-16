@@ -17,6 +17,6 @@ S = "${WORKDIR}/git"
 WARN_QA_remove = "ldflags"
 
 DEBUG_BUILD = "${@['no','yes'][d.getVar('BUILD_DEBUG') == '1']}"
-CFLAGS_append = "${@['',' -O0 -g3 -DDCE_DEBUG_ENABLE=1 -DDCE_DEBUG_LEVEL=1'][d.getVar('BUILD_DEBUG') == '1']}"
+CFLAGS_append = "${@['',' -O0 -g3 -DDCE_DEBUG_ENABLE=1 -DDCE_DEBUG_LEVEL=3'][d.getVar('BUILD_DEBUG') == '1']}"
 
 RM_WORK_EXCLUDE += "${@['','${PN}'][d.getVar('BUILD_DEBUG') == '1']}"
