@@ -1,0 +1,3 @@
+bootcmd=fatload mmc 0:1 0x80000000 uImage;bootm 0x80000000
+bootargs=vram=40M mem=1G@0x80000000 console=ttyS2,115200n8 root=/dev/nfs nfsroot=NFS_IP:NFS_PATH,tcp,v3 ip=::::::dhcp consoleblank=0 earlyprintk earlycon=ttyS2,115200n8 fixrtc
+uenvcmd=boot
