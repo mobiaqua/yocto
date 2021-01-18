@@ -123,6 +123,10 @@ echo -n \"10.15.0\"
 			rm -f ${OE_BASE}/bin/readlink
 			/bin/ln -s /bin/readlink ${OE_BASE}/bin/readlink
 		fi
+		if [ -e /bin/sed ]; then
+			rm -f ${OE_BASE}/bin/sed
+			/bin/ln -s /bin/sed ${OE_BASE}/bin/sed
+		fi
 	esac
 
 	if [ "$OS" = "Darwin" ]; then
