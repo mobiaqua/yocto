@@ -31,7 +31,7 @@ DEBUG = "release"
 
 MACHINE_KERNEL_PR_append = "a"
 
-MAKE_TARGETS = "-C eurasiacon/build/linux2/omap4430_linux BUILD=${DEBUG} W=1 V=1 SUPPORT_V4L2_GFX=0 KERNELDIR=${STAGING_KERNEL_DIR}"
+MAKE_TARGETS = "-C eurasiacon/build/linux2/omap4430_linux BUILD=${DEBUG} KERNELDIR=${STAGING_KERNEL_DIR}"
 
 INITSCRIPT_NAME = "pvr-init.sh"
 INITSCRIPT_PARAMS = "start 30 S ."
