@@ -127,6 +127,28 @@ echo -n \"10.15.0\"
 			rm -f ${OE_BASE}/bin/sed
 			/bin/ln -s /bin/sed ${OE_BASE}/bin/sed
 		fi
+		if [ -e /bin/grep ]; then
+			rm -f ${OE_BASE}/bin/ggrep
+			/bin/ln -s /bin/grep ${OE_BASE}/bin/ggrep
+		fi
+
+		/bin/rm -f ${OE_BASE}/bin/otool
+		echo "#!/bin/bash
+
+" > ${OE_BASE}/bin/otool
+		/bin/chmod +x ${OE_BASE}/bin/otool
+
+		/bin/rm -f ${OE_BASE}/bin/install_name_tool
+		echo "#!/bin/bash
+
+" > ${OE_BASE}/bin/install_name_tool
+		/bin/chmod +x ${OE_BASE}/bin/install_name_tool
+
+		/bin/rm -f ${OE_BASE}/bin/xcrun
+		echo "#!/bin/bash
+
+" > ${OE_BASE}/bin/xcrun
+		/bin/chmod +x ${OE_BASE}/bin/xcrun
 	esac
 
 	if [ "$OS" = "Darwin" ]; then
