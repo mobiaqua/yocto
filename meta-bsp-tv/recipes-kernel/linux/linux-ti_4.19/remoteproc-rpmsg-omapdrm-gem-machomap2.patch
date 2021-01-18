@@ -53,9 +53,6 @@ index c3afe9fab..36094fbeb 100644
 +		Reports the name of the remote processor. This can be used by
 +		userspace in exactly identifying a remote processor and ease
 +		up the usage in modifying the 'firmware' or 'state' files.
-diff --git a/_env.sh b/_env.sh
-new file mode 100755
-index 000000000..bb9268ac9
 diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
 index 27895c160..5c15d32c0 100644
 --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
