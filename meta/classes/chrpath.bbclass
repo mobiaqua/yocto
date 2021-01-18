@@ -4,6 +4,10 @@ PREPROCESS_RELOCATE_DIRS ?= ""
 def process_file_linux(cmd, fpath, rootdir, baseprefix, tmpdir, d, break_hardlinks = False):
     import subprocess, oe.qa
 
+# MobiAqua: starts here
+    return
+# MobiAqua: ends here
+
     with oe.qa.ELFFile(fpath) as elf:
         try:
             elf.open()
