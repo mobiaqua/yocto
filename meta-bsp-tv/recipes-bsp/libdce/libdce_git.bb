@@ -1,4 +1,4 @@
-DEPENDS = "libdce-firmware libdrm virtual/kernel libmmrpc"
+DEPENDS = "libdrm virtual/kernel libmmrpc"
 
 LICENSE = "BSD"
 LIC_FILES_CHKSUM = "file://libdce.c;beginline=1;endline=31;md5=0a398cf815b8b5f31f552266cd453dae"
