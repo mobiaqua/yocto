@@ -4,7 +4,7 @@ SECTION = "games"
 PRIORITY = "optional"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://COPYING;md5=b234ee4d69f5fce4486a80fdaf4a4263"
-DEPENDS = "libsdl2 libsdl2-net virtual/egl libvorbis libogg zlib curl libmad mpeg2dec flac \
+DEPENDS = "libsdl2 libsdl2-net virtual/egl virtual/libgles2 libvorbis libogg zlib curl libmad mpeg2dec flac \
 libjpeg-turbo libpng libtheora faad2 fluidsynth freetype"
 
 PR = "r0"

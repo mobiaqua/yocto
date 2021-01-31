@@ -6,8 +6,7 @@ DESCRIPTION = "<description>"
 PV = "1.0.0"
 PR = "r0"
 
-INSTALL_PKGS += "sgx-libs sgx-module sgx-pvrsrvinit \
-                 libdce libdce-firmware libavcodec libavformat libavutil libavresample \
+INSTALL_PKGS += "gles-dummy libdce libdce-firmware libavcodec libavformat libavutil libavresample \
                  libswscale libswresample wl127x-fw abefw scummvm \
 "
 

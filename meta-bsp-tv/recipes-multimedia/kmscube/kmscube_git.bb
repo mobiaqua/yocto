@@ -1,7 +1,7 @@
 LICENSE = "GPLv2+"
 LIC_FILES_CHKSUM = "file://kmscube.c;beginline=1;endline=24;md5=6a9937e46939d8c76bd08e680c30a963"
 
-DEPENDS = "libdrm libgbm virtual/egl"
+DEPENDS = "libdrm libgbm virtual/egl virtual/libgles2"
 
 inherit autotools pkgconfig
 

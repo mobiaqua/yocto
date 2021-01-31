@@ -3,7 +3,7 @@ SECTION = "multimedia"
 PRIORITY = "optional"
 HOMEPAGE = "http://www.mplayerhq.hu/"
 DEPENDS = "ffmpeg zlib freetype fontconfig alsa-lib libmpg123 ncurses"
-DEPENDS_append_board-tv = " libdce libdrm libgbm virtual/egl"
+DEPENDS_append_board-tv = " libdce libdrm libgbm virtual/egl virtual/libgles2"
 RDEPENDS_${PN} = "mplayer-common glibc-gconv-cp1250 ttf-dejavu-sans"
 
 DEPENDS_append_board-tv = " ${@['','gdb-cross-arm'][d.getVar('BUILD_DEBUG') == '1']}"
