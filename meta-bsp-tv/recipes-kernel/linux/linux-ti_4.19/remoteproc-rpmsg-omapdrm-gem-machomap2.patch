@@ -54,7 +54,7 @@ index c3afe9fab..36094fbeb 100644
 +		userspace in exactly identifying a remote processor and ease
 +		up the usage in modifying the 'firmware' or 'state' files.
 diff --git a/arch/arm/boot/dts/omap4-panda-common.dtsi b/arch/arm/boot/dts/omap4-panda-common.dtsi
-index 27895c160..5c15d32c0 100644
+index 27895c160..ead7c413e 100644
 --- a/arch/arm/boot/dts/omap4-panda-common.dtsi
 +++ b/arch/arm/boot/dts/omap4-panda-common.dtsi
 @@ -14,6 +14,46 @@
@@ -104,7 +104,7 @@ index 27895c160..5c15d32c0 100644
  	chosen {
  		stdout-path = &uart3;
  	};
-@@ -591,3 +649,17 @@
+@@ -591,3 +631,17 @@
  		};
  	};
  };
@@ -123,7 +123,7 @@ index 27895c160..5c15d32c0 100644
 +	watchdog-timers = <&timer9>, <&timer11>;
 +};
 diff --git a/arch/arm/boot/dts/omap4.dtsi b/arch/arm/boot/dts/omap4.dtsi
-index 8f907c235..f20e9757b 100644
+index 8f907c235..83cea0878 100644
 --- a/arch/arm/boot/dts/omap4.dtsi
 +++ b/arch/arm/boot/dts/omap4.dtsi
 @@ -29,6 +29,8 @@
@@ -204,28 +204,6 @@ index 8f907c235..f20e9757b 100644
  		};
  
  		aes1: aes@4b501000 {
-diff --git a/arch/arm/include/asm/cacheflush.h b/arch/arm/include/asm/cacheflush.h
-index ec1a5fd0d..cdb91e4cd 100644
---- a/arch/arm/include/asm/cacheflush.h
-+++ b/arch/arm/include/asm/cacheflush.h
-@@ -140,6 +140,8 @@ extern struct cpu_cache_fns cpu_cache;
-  * is visible to DMA, or data written by DMA to system memory is
-  * visible to the CPU.
-  */
-+#define dmac_map_area			cpu_cache.dma_map_area
-+#define dmac_unmap_area			cpu_cache.dma_unmap_area
- #define dmac_flush_range		cpu_cache.dma_flush_range
- 
- #else
-@@ -159,6 +161,8 @@ extern void __cpuc_flush_dcache_area(void *, size_t);
-  * is visible to DMA, or data written by DMA to system memory is
-  * visible to the CPU.
-  */
-+extern void dmac_map_area(const void *, size_t, int);
-+extern void dmac_unmap_area(const void *, size_t, int);
- extern void dmac_flush_range(const void *, const void *);
- 
- #endif
 diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
 index 8436f6ade..b16cfe99d 100644
 --- a/arch/arm/include/asm/dma-mapping.h
@@ -238,36 +216,6 @@ index 8436f6ade..b16cfe99d 100644
  extern const struct dma_map_ops arm_coherent_dma_ops;
  
  static inline const struct dma_map_ops *get_arch_dma_ops(struct bus_type *bus)
-diff --git a/arch/arm/include/asm/glue-cache.h b/arch/arm/include/asm/glue-cache.h
-index 8d1f498e5..112e07a30 100644
---- a/arch/arm/include/asm/glue-cache.h
-+++ b/arch/arm/include/asm/glue-cache.h
-@@ -158,6 +158,8 @@ static inline void nop_dma_unmap_area(const void *s, size_t l, int f) { }
- #define __cpuc_coherent_user_range	__glue(_CACHE,_coherent_user_range)
- #define __cpuc_flush_dcache_area	__glue(_CACHE,_flush_kern_dcache_area)
- 
-+#define dmac_map_area			__glue(_CACHE,_dma_map_area)
-+#define dmac_unmap_area			__glue(_CACHE,_dma_unmap_area)
- #define dmac_flush_range		__glue(_CACHE,_dma_flush_range)
- #endif
- 
-diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
-index 7bbaa293a..dd22f4cc4 100644
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -1321,3 +1321,12 @@ const struct seq_operations cpuinfo_op = {
- 	.stop	= c_stop,
- 	.show	= c_show
- };
-+
-+/* export the cache management functions */
-+#ifndef MULTI_CACHE
-+
-+EXPORT_SYMBOL(__glue(_CACHE, _dma_map_area));
-+EXPORT_SYMBOL(__glue(_CACHE, _dma_unmap_area));
-+EXPORT_SYMBOL(__glue(_CACHE, _dma_flush_range));
-+
-+#endif
 diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
 index 01377c292..7ca07b0c1 100644
 --- a/arch/arm/mach-omap2/Makefile
@@ -1132,20 +1080,6 @@ index 69842145c..f47fdd5b2 100644
  	/* check for offset overflow */
  	if (pgoff + vma_pages(vma) < pgoff)
  		return -EOVERFLOW;
-diff --git a/drivers/gpu/drm/drm_file.c b/drivers/gpu/drm/drm_file.c
-index 334addaca..4aa73f004 100644
---- a/drivers/gpu/drm/drm_file.c
-+++ b/drivers/gpu/drm/drm_file.c
-@@ -222,8 +222,7 @@ void drm_file_free(struct drm_file *file)
- 		  (long)old_encode_dev(file->minor->kdev->devt),
- 		  dev->open_count);
- 
--	if (drm_core_check_feature(dev, DRIVER_LEGACY) &&
--	    dev->driver->preclose)
-+	if (dev->driver->preclose)
- 		dev->driver->preclose(dev, file);
- 
- 	if (drm_core_check_feature(dev, DRIVER_LEGACY))
 diff --git a/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c b/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
 index cb5ce73f7..cce1caf40 100644
 --- a/drivers/gpu/drm/omapdrm/omap_dmm_tiler.c
@@ -1234,294 +1168,6 @@ index 835e6654f..43c1d096b 100644
  	case OMAP_BO_TILED_8:
  		return TILFMT_8BIT;
  	case OMAP_BO_TILED_16:
-diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_drv.c
-index 1b6601e9b..7424515e8 100644
---- a/drivers/gpu/drm/omapdrm/omap_drv.c
-+++ b/drivers/gpu/drm/omapdrm/omap_drv.c
-@@ -32,6 +32,15 @@
- #define DRIVER_MINOR		0
- #define DRIVER_PATCHLEVEL	0
- 
-+struct drm_device *drm_device;
-+
-+static struct omap_drm_plugin *sgx_plugin;
-+
-+/* keep track of whether we are already loaded.. we may need to call
-+ * plugin's load() if they register after we are already loaded
-+ */
-+static bool loaded;
-+
- /*
-  * mode config funcs
-  */
-@@ -399,6 +408,19 @@ static int ioctl_set_param(struct drm_device *dev, void *data,
- 
- #define OMAP_BO_USER_MASK	0x00ffffff	/* flags settable by userspace */
- 
-+static int ioctl_get_base(struct drm_device *dev, void *data,
-+		struct drm_file *file_priv)
-+{
-+	struct drm_omap_get_base *args = data;
-+
-+	if (!sgx_plugin)
-+		return -ENODEV;
-+
-+	args->ioctl_base = sgx_plugin->ioctl_base;
-+
-+	return 0;
-+}
-+
- static int ioctl_gem_new(struct drm_device *dev, void *data,
- 		struct drm_file *file_priv)
- {
-@@ -412,6 +434,53 @@ static int ioctl_gem_new(struct drm_device *dev, void *data,
- 				   &args->handle);
- }
- 
-+static int ioctl_gem_cpu_prep(struct drm_device *dev, void *data,
-+		struct drm_file *file_priv)
-+{
-+	struct drm_omap_gem_cpu_prep *args = data;
-+	struct drm_gem_object *obj;
-+	int ret;
-+
-+	VERB("%p:%p: handle=%d, op=%x", dev, file_priv, args->handle, args->op);
-+
-+	obj = drm_gem_object_lookup(file_priv, args->handle);
-+	if (!obj)
-+		return -ENOENT;
-+
-+	ret = omap_gem_op_sync(obj, args->op);
-+
-+	if (!ret)
-+		ret = omap_gem_op_start(obj, args->op);
-+
-+	drm_gem_object_unreference_unlocked(obj);
-+
-+	return ret;
-+}
-+
-+static int ioctl_gem_cpu_fini(struct drm_device *dev, void *data,
-+		struct drm_file *file_priv)
-+{
-+	struct drm_omap_gem_cpu_fini *args = data;
-+	struct drm_gem_object *obj;
-+	int ret;
-+
-+	VERB("%p:%p: handle=%d", dev, file_priv, args->handle);
-+
-+	obj = drm_gem_object_lookup(file_priv, args->handle);
-+	if (!obj)
-+		return -ENOENT;
-+
-+	/* XXX flushy, flushy */
-+	ret = 0;
-+
-+	if (!ret)
-+		ret = omap_gem_op_finish(obj, args->op);
-+
-+	drm_gem_object_unreference_unlocked(obj);
-+
-+	return ret;
-+}
-+
- static int ioctl_gem_info(struct drm_device *dev, void *data,
- 		struct drm_file *file_priv)
- {
-@@ -428,23 +497,23 @@ static int ioctl_gem_info(struct drm_device *dev, void *data,
- 	args->size = omap_gem_mmap_size(obj);
- 	args->offset = omap_gem_mmap_offset(obj);
- 
--	drm_gem_object_unreference_unlocked(obj);
-+	drm_gem_object_put_unlocked(obj);
- 
- 	return ret;
- }
- 
--static const struct drm_ioctl_desc ioctls[DRM_COMMAND_END - DRM_COMMAND_BASE] = {
-+static struct drm_ioctl_desc ioctls[DRM_COMMAND_END - DRM_COMMAND_BASE] = {
- 	DRM_IOCTL_DEF_DRV(OMAP_GET_PARAM, ioctl_get_param,
- 			  DRM_AUTH | DRM_RENDER_ALLOW),
- 	DRM_IOCTL_DEF_DRV(OMAP_SET_PARAM, ioctl_set_param,
- 			  DRM_AUTH | DRM_MASTER | DRM_ROOT_ONLY),
-+	DRM_IOCTL_DEF_DRV(OMAP_GET_BASE, ioctl_get_base,
-+			  DRM_UNLOCKED | DRM_AUTH | DRM_RENDER_ALLOW),
- 	DRM_IOCTL_DEF_DRV(OMAP_GEM_NEW, ioctl_gem_new,
- 			  DRM_AUTH | DRM_RENDER_ALLOW),
--	/* Deprecated, to be removed. */
--	DRM_IOCTL_DEF_DRV(OMAP_GEM_CPU_PREP, drm_noop,
-+	DRM_IOCTL_DEF_DRV(OMAP_GEM_CPU_PREP, ioctl_gem_cpu_prep,
- 			  DRM_AUTH | DRM_RENDER_ALLOW),
--	/* Deprecated, to be removed. */
--	DRM_IOCTL_DEF_DRV(OMAP_GEM_CPU_FINI, drm_noop,
-+	DRM_IOCTL_DEF_DRV(OMAP_GEM_CPU_FINI, ioctl_gem_cpu_fini,
- 			  DRM_AUTH | DRM_RENDER_ALLOW),
- 	DRM_IOCTL_DEF_DRV(OMAP_GEM_INFO, ioctl_gem_info,
- 			  DRM_AUTH | DRM_RENDER_ALLOW),
-@@ -456,17 +525,28 @@ static const struct drm_ioctl_desc ioctls[DRM_COMMAND_END - DRM_COMMAND_BASE] =
- 
- static int dev_open(struct drm_device *dev, struct drm_file *file)
- {
--	file->driver_priv = NULL;
-+	if (sgx_plugin)
-+		sgx_plugin->open(dev, file);
- 
- 	DBG("open: dev=%p, file=%p", dev, file);
- 
- 	return 0;
- }
- 
-+static void dev_preclose(struct drm_device *dev, struct drm_file *file)
-+{
-+	DBG("preclose: dev=%p, file=%p", dev, file);
-+
-+	if (sgx_plugin)
-+		sgx_plugin->release(dev, file);
-+
-+	kfree(file->driver_priv);
-+}
-+
- static const struct vm_operations_struct omap_gem_vm_ops = {
- 	.fault = omap_gem_fault,
--	.open = drm_gem_vm_open,
--	.close = drm_gem_vm_close,
-+	.open = omap_gem_vm_open,
-+	.close = omap_gem_vm_close,
- };
- 
- static const struct file_operations omapdriver_fops = {
-@@ -486,6 +566,7 @@ static struct drm_driver omap_drm_driver = {
- 		DRIVER_ATOMIC | DRIVER_RENDER,
- 	.open = dev_open,
- 	.lastclose = drm_fb_helper_lastclose,
-+	.preclose = dev_preclose,
- #ifdef CONFIG_DEBUG_FS
- 	.debugfs_init = omap_debugfs_init,
- #endif
-@@ -553,6 +634,8 @@ static int omapdrm_init(struct omap_drm_private *priv, struct device *dev)
- 	priv->ddev = ddev;
- 	ddev->dev_private = priv;
- 
-+	drm_device = ddev;
-+
- 	/* Get memory bandwidth limits */
- 	if (priv->dispc_ops->get_memory_bandwidth_limit)
- 		priv->max_bandwidth =
-@@ -589,6 +672,11 @@ static int omapdrm_init(struct omap_drm_private *priv, struct device *dev)
- 	if (ret)
- 		goto err_cleanup_helpers;
- 
-+	if (sgx_plugin)
-+		sgx_plugin->load(ddev, 0);
-+
-+	loaded = true;
-+
- 	return 0;
- 
- err_cleanup_helpers:
-@@ -616,6 +704,9 @@ static void omapdrm_cleanup(struct omap_drm_private *priv)
- 
- 	DBG("");
- 
-+	if (sgx_plugin)
-+		sgx_plugin->unload(ddev);
-+
- 	drm_dev_unregister(ddev);
- 
- 	omap_modeset_disable_external_hpd();
-@@ -636,8 +727,83 @@ static void omapdrm_cleanup(struct omap_drm_private *priv)
- 
- 	omap_disconnect_dssdevs();
- 	omap_crtc_pre_uninit();
-+
-+	loaded = false;
- }
- 
-+int omap_drm_register_plugin(struct omap_drm_plugin *plugin)
-+{
-+	struct drm_device *dev = drm_device;
-+	int i;
-+
-+	DBG("register plugin: %p (%s)", plugin, plugin->name);
-+
-+	if (sgx_plugin)
-+		return -EBUSY;
-+
-+	for (i = 0; i < plugin->num_ioctls; i++) {
-+		int nr = i + DRM_OMAP_NUM_IOCTLS;
-+
-+		/* check for out of bounds ioctl or already registered ioctl */
-+		if (nr > ARRAY_SIZE(ioctls) || ioctls[nr].func) {
-+			dev_err(dev->dev, "invalid ioctl: %d (nr=%d)\n", i, nr);
-+			return -EINVAL;
-+		}
-+	}
-+
-+	plugin->ioctl_base = DRM_OMAP_NUM_IOCTLS;
-+
-+	/* register the plugin's ioctl's */
-+	for (i = 0; i < plugin->num_ioctls; i++) {
-+		int nr = i + DRM_OMAP_NUM_IOCTLS;
-+
-+		DBG("register ioctl: %d %08x", nr, plugin->ioctls[i].cmd);
-+
-+		ioctls[nr] = plugin->ioctls[i];
-+	}
-+
-+	omap_drm_driver.num_ioctls = DRM_OMAP_NUM_IOCTLS + plugin->num_ioctls;
-+
-+	sgx_plugin = plugin;
-+
-+	if (loaded)
-+		plugin->load(dev, 0);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(omap_drm_register_plugin);
-+
-+int omap_drm_unregister_plugin(struct omap_drm_plugin *plugin)
-+{
-+	int i;
-+
-+	for (i = 0; i < plugin->num_ioctls; i++) {
-+		const struct drm_ioctl_desc empty = { 0 };
-+		int nr = i + DRM_OMAP_NUM_IOCTLS;
-+
-+		ioctls[nr] = empty;
-+	}
-+
-+	omap_drm_driver.num_ioctls = DRM_OMAP_NUM_IOCTLS;
-+
-+	sgx_plugin = NULL;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(omap_drm_unregister_plugin);
-+
-+void *omap_drm_file_priv(struct drm_file *file)
-+{
-+	return file->driver_priv;
-+}
-+EXPORT_SYMBOL(omap_drm_file_priv);
-+
-+void omap_drm_file_set_priv(struct drm_file *file, void *priv)
-+{
-+	file->driver_priv = priv;
-+}
-+EXPORT_SYMBOL(omap_drm_file_set_priv);
-+
- static int pdev_probe(struct platform_device *pdev)
- {
- 	struct omap_drm_private *priv;
-@@ -724,6 +890,8 @@ static int omap_drm_suspend(struct device *dev)
- 	omap_drm_suspend_all_displays();
- 	drm_modeset_unlock_all(drm_dev);
- 
-+	loaded = false;
-+
- 	return 0;
- }
- 
 diff --git a/drivers/gpu/drm/omapdrm/omap_fb.c b/drivers/gpu/drm/omapdrm/omap_fb.c
 index 9f1e3d8f8..3298f4bb2 100644
 --- a/drivers/gpu/drm/omapdrm/omap_fb.c
@@ -1576,56 +1222,10 @@ index d958cc813..e8dabf9ee 100644
  		goto fail;
  	}
 diff --git a/drivers/gpu/drm/omapdrm/omap_gem.c b/drivers/gpu/drm/omapdrm/omap_gem.c
-index 4ba5d035c..5ec403138 100644
+index 4ba5d035c..d86afd8f9 100644
 --- a/drivers/gpu/drm/omapdrm/omap_gem.c
 +++ b/drivers/gpu/drm/omapdrm/omap_gem.c
-@@ -34,6 +34,9 @@
- #define OMAP_BO_MEM_SHMEM	0x02000000	/* memory allocated through shmem backing */
- #define OMAP_BO_MEM_DMABUF	0x08000000	/* memory imported from a dmabuf */
- 
-+#define OMAP_BO_EXT_SYNC	0x10000000	/* externally allocated sync object */
-+#define OMAP_BO_EXT_MEM		0x20000000	/* externally allocated memory */
-+
- struct omap_gem_object {
- 	struct drm_gem_object base;
- 
-@@ -102,6 +105,27 @@ struct omap_gem_object {
- 	 * Virtual address, if mapped.
- 	 */
- 	void *vaddr;
-+
-+	/**
-+	 * sync-object allocated on demand (if needed)
-+	 *
-+	 * Per-buffer sync-object for tracking pending and completed hw/dma
-+	  * read and write operations.
-+	 */
-+	struct {
-+		uint32_t write_pending;
-+		uint32_t write_complete;
-+		uint32_t read_pending;
-+		uint32_t read_complete;
-+	} *sync;
-+
-+	struct omap_gem_vm_ops *ops;
-+
-+	/**
-+	 * per-mapper private data..
-+	 */
-+	void *priv;
-+
- };
- 
- #define to_omap_bo(x) container_of(x, struct omap_gem_object, base)
-@@ -156,6 +180,7 @@ u64 omap_gem_mmap_offset(struct drm_gem_object *obj)
- 
- 	return drm_vma_node_offset_addr(&obj->vma_node);
- }
-+EXPORT_SYMBOL(omap_gem_mmap_offset);
- 
- static bool omap_gem_is_contiguous(struct omap_gem_object *omap_obj)
- {
-@@ -205,7 +230,7 @@ static void omap_gem_evict(struct drm_gem_object *obj)
+@@ -205,7 +205,7 @@ static void omap_gem_evict(struct drm_gem_object *obj)
  	struct omap_gem_object *omap_obj = to_omap_bo(obj);
  	struct omap_drm_private *priv = obj->dev->dev_private;
  
@@ -1634,15 +1234,7 @@ index 4ba5d035c..5ec403138 100644
  		enum tiler_fmt fmt = gem2fmt(omap_obj->flags);
  		int i;
  
-@@ -326,6 +351,7 @@ u32 omap_gem_flags(struct drm_gem_object *obj)
- {
- 	return to_omap_bo(obj)->flags;
- }
-+EXPORT_SYMBOL(omap_gem_flags);
- 
- /** get mmap size */
- size_t omap_gem_mmap_size(struct drm_gem_object *obj)
-@@ -333,7 +359,7 @@ size_t omap_gem_mmap_size(struct drm_gem_object *obj)
+@@ -333,7 +333,7 @@ size_t omap_gem_mmap_size(struct drm_gem_object *obj)
  	struct omap_gem_object *omap_obj = to_omap_bo(obj);
  	size_t size = obj->size;
  
@@ -1651,27 +1243,7 @@ index 4ba5d035c..5ec403138 100644
  		/* for tiled buffers, the virtual size has stride rounded up
  		 * to 4kb.. (to hide the fact that row n+1 might start 16kb or
  		 * 32kb later!).  But we don't back the entire buffer with
-@@ -347,6 +373,19 @@ size_t omap_gem_mmap_size(struct drm_gem_object *obj)
- 	return size;
- }
- 
-+/* get tiled size, returns -EINVAL if not tiled buffer */
-+int omap_gem_tiled_size(struct drm_gem_object *obj, uint16_t *w, uint16_t *h)
-+{
-+	struct omap_gem_object *omap_obj = to_omap_bo(obj);
-+	if (omap_obj->flags & OMAP_BO_TILED_MASK) {
-+		*w = omap_obj->width;
-+		*h = omap_obj->height;
-+		return 0;
-+	}
-+	return -EINVAL;
-+}
-+EXPORT_SYMBOL(omap_gem_tiled_size);
-+
- /* -----------------------------------------------------------------------------
-  * Fault Handling
-  */
-@@ -522,7 +561,7 @@ vm_fault_t omap_gem_fault(struct vm_fault *vmf)
+@@ -522,7 +522,7 @@ vm_fault_t omap_gem_fault(struct vm_fault *vmf)
  	 * probably trigger put_pages()?
  	 */
  
@@ -1680,17 +1252,7 @@ index 4ba5d035c..5ec403138 100644
  		ret = omap_gem_fault_2d(obj, vma, vmf);
  	else
  		ret = omap_gem_fault_1d(obj, vma, vmf);
-@@ -580,6 +619,9 @@ int omap_gem_mmap_obj(struct drm_gem_object *obj,
- 		vma->vm_page_prot = vm_get_page_prot(vma->vm_flags);
- 	}
- 
-+	if (omap_obj->ops && omap_obj->ops->mmap)
-+		omap_obj->ops->mmap(obj->filp, vma);
-+
- 	return 0;
- }
- 
-@@ -638,7 +680,7 @@ int omap_gem_dumb_map_offset(struct drm_file *file, struct drm_device *dev,
+@@ -638,7 +638,7 @@ int omap_gem_dumb_map_offset(struct drm_file *file, struct drm_device *dev,
  
  	*offset = omap_gem_mmap_offset(obj);
  
@@ -1699,7 +1261,7 @@ index 4ba5d035c..5ec403138 100644
  
  fail:
  	return ret;
-@@ -793,7 +835,7 @@ int omap_gem_pin(struct drm_gem_object *obj, dma_addr_t *dma_addr)
+@@ -793,7 +793,7 @@ int omap_gem_pin(struct drm_gem_object *obj, dma_addr_t *dma_addr)
  			if (ret)
  				goto fail;
  
@@ -1708,7 +1270,7 @@ index 4ba5d035c..5ec403138 100644
  				block = tiler_reserve_2d(fmt,
  						omap_obj->width,
  						omap_obj->height, 0);
-@@ -826,9 +868,11 @@ int omap_gem_pin(struct drm_gem_object *obj, dma_addr_t *dma_addr)
+@@ -826,9 +826,11 @@ int omap_gem_pin(struct drm_gem_object *obj, dma_addr_t *dma_addr)
  
  		omap_obj->dma_addr_cnt++;
  
@@ -1722,22 +1284,9 @@ index 4ba5d035c..5ec403138 100644
  	} else {
  		ret = -EINVAL;
  		goto fail;
-@@ -840,21 +884,29 @@ fail:
- 	return ret;
+@@ -841,20 +843,16 @@ fail:
  }
  
-+
-+/* Get physical address for DMA.. if 'remap' is true, and the buffer is not
-+ * already contiguous, remap it to pin in physically contiguous memory.. (ie.
-+ * map in TILER)
-+ */
-+int omap_gem_get_paddr(struct drm_gem_object *obj,
-+		dma_addr_t *paddr, bool remap)
-+{
-+	return omap_gem_pin(obj, paddr);
-+}
-+EXPORT_SYMBOL(omap_gem_get_paddr);
-+
  /**
 - * omap_gem_unpin() - Unpin a GEM object from memory
 + * omap_gem_unpin_locked() - Unpin a GEM object from memory
@@ -1759,7 +1308,7 @@ index 4ba5d035c..5ec403138 100644
  	if (omap_obj->dma_addr_cnt > 0) {
  		omap_obj->dma_addr_cnt--;
  		if (omap_obj->dma_addr_cnt == 0) {
-@@ -872,10 +924,34 @@ void omap_gem_unpin(struct drm_gem_object *obj)
+@@ -872,7 +870,22 @@ void omap_gem_unpin(struct drm_gem_object *obj)
  			omap_obj->block = NULL;
  		}
  	}
@@ -1782,19 +1331,7 @@ index 4ba5d035c..5ec403138 100644
  	mutex_unlock(&omap_obj->lock);
  }
  
-+/* Release physical address, when DMA is no longer being performed.. this
-+ * could potentially unpin and unmap buffers from TILER
-+ */
-+void omap_gem_put_paddr(struct drm_gem_object *obj)
-+{
-+	omap_gem_unpin(obj);
-+}
-+EXPORT_SYMBOL(omap_gem_put_paddr);
-+
- /* Get rotated scanout address (only valid if already pinned), at the
-  * specified orientation and x,y offset from top-left corner of buffer
-  * (only valid for tiled 2d buffers)
-@@ -889,7 +965,7 @@ int omap_gem_rotated_dma_addr(struct drm_gem_object *obj, u32 orient,
+@@ -889,7 +902,7 @@ int omap_gem_rotated_dma_addr(struct drm_gem_object *obj, u32 orient,
  	mutex_lock(&omap_obj->lock);
  
  	if ((omap_obj->dma_addr_cnt > 0) && omap_obj->block &&
@@ -1803,7 +1340,7 @@ index 4ba5d035c..5ec403138 100644
  		*dma_addr = tiler_tsptr(omap_obj->block, orient, x, y);
  		ret = 0;
  	}
-@@ -904,10 +980,11 @@ int omap_gem_tiled_stride(struct drm_gem_object *obj, u32 orient)
+@@ -904,7 +917,7 @@ int omap_gem_tiled_stride(struct drm_gem_object *obj, u32 orient)
  {
  	struct omap_gem_object *omap_obj = to_omap_bo(obj);
  	int ret = -EINVAL;
@@ -1812,27 +1349,7 @@ index 4ba5d035c..5ec403138 100644
  		ret = tiler_stride(gem2fmt(omap_obj->flags), orient);
  	return ret;
  }
-+EXPORT_SYMBOL(omap_gem_tiled_stride);
- 
- /* if !remap, and we don't have pages backing, then fail, rather than
-  * increasing the pin count (which we don't really do yet anyways,
-@@ -945,6 +1022,7 @@ unlock:
- 
- 	return ret;
- }
-+EXPORT_SYMBOL(omap_gem_get_pages);
- 
- /* release pages when DMA no longer being performed */
- int omap_gem_put_pages(struct drm_gem_object *obj)
-@@ -955,6 +1033,7 @@ int omap_gem_put_pages(struct drm_gem_object *obj)
- 	 */
- 	return 0;
- }
-+EXPORT_SYMBOL(omap_gem_put_pages);
- 
- #ifdef CONFIG_DRM_FBDEV_EMULATION
- /*
-@@ -1042,7 +1121,7 @@ void omap_gem_describe(struct drm_gem_object *obj, struct seq_file *m)
+@@ -1042,7 +1055,7 @@ void omap_gem_describe(struct drm_gem_object *obj, struct seq_file *m)
  			off, &omap_obj->dma_addr, omap_obj->dma_addr_cnt,
  			omap_obj->vaddr, omap_obj->roll);
  
@@ -1841,233 +1358,7 @@ index 4ba5d035c..5ec403138 100644
  		seq_printf(m, " %dx%d", omap_obj->width, omap_obj->height);
  		if (omap_obj->block) {
  			struct tcm_area *area = &omap_obj->block->area;
-@@ -1077,6 +1156,225 @@ void omap_gem_describe_objects(struct list_head *list, struct seq_file *m)
- }
- #endif
- 
-+/* -----------------------------------------------------------------------------
-+ * Buffer Synchronization
-+ */
-+
-+static DEFINE_SPINLOCK(sync_lock);
-+
-+struct omap_gem_sync_waiter {
-+	struct list_head list;
-+	struct omap_gem_object *omap_obj;
-+	enum omap_gem_op op;
-+	uint32_t read_target, write_target;
-+	/* notify called w/ sync_lock held */
-+	void (*notify)(void *arg);
-+	void *arg;
-+};
-+
-+/* list of omap_gem_sync_waiter.. the notify fxn gets called back when
-+ * the read and/or write target count is achieved which can call a user
-+ * callback (ex. to kick 3d and/or 2d), wakeup blocked task (prep for
-+ * cpu access), etc.
-+ */
-+static LIST_HEAD(waiters);
-+
-+static inline bool is_waiting(struct omap_gem_sync_waiter *waiter)
-+{
-+	struct omap_gem_object *omap_obj = waiter->omap_obj;
-+	if ((waiter->op & OMAP_GEM_READ) &&
-+			(omap_obj->sync->write_complete < waiter->write_target))
-+		return true;
-+	if ((waiter->op & OMAP_GEM_WRITE) &&
-+			(omap_obj->sync->read_complete < waiter->read_target))
-+		return true;
-+	return false;
-+}
-+
-+/* macro for sync debug.. */
-+#define SYNCDBG 0
-+#define SYNC(fmt, ...) do { if (SYNCDBG) \
-+		printk(KERN_ERR "%s:%d: "fmt"\n", \
-+				__func__, __LINE__, ##__VA_ARGS__); \
-+	} while (0)
-+
-+
-+static void sync_op_update(void)
-+{
-+	struct omap_gem_sync_waiter *waiter, *n;
-+	list_for_each_entry_safe(waiter, n, &waiters, list) {
-+		if (!is_waiting(waiter)) {
-+			list_del(&waiter->list);
-+			SYNC("notify: %p", waiter);
-+			waiter->notify(waiter->arg);
-+			kfree(waiter);
-+		}
-+	}
-+}
-+
-+/* it is a bit lame to handle updates in this sort of polling way, but
-+ * in case of PVR, the GPU can directly update read/write complete
-+ * values, and not really tell us which ones it updated.. this also
-+ * means that sync_lock is not quite sufficient.  So we'll need to
-+ * do something a bit better when it comes time to add support for
-+ * separate 2d hw..
-+ */
-+void omap_gem_op_update(void)
-+{
-+	spin_lock(&sync_lock);
-+	sync_op_update();
-+	spin_unlock(&sync_lock);
-+}
-+EXPORT_SYMBOL(omap_gem_op_update);
-+
-+static inline int sync_op(struct drm_gem_object *obj,
-+		enum omap_gem_op op, bool start)
-+{
-+	struct omap_gem_object *omap_obj = to_omap_bo(obj);
-+	int ret = 0;
-+
-+	spin_lock(&sync_lock);
-+
-+	if (!omap_obj->sync) {
-+		omap_obj->sync = kzalloc(sizeof(*omap_obj->sync), GFP_ATOMIC);
-+		if (!omap_obj->sync) {
-+			ret = -ENOMEM;
-+			goto unlock;
-+		}
-+	}
-+
-+	if (start) {
-+		if (op & OMAP_GEM_READ)
-+			omap_obj->sync->read_pending++;
-+		if (op & OMAP_GEM_WRITE)
-+			omap_obj->sync->write_pending++;
-+	} else {
-+		if (op & OMAP_GEM_READ)
-+			omap_obj->sync->read_complete++;
-+		if (op & OMAP_GEM_WRITE)
-+			omap_obj->sync->write_complete++;
-+		sync_op_update();
-+	}
-+
-+unlock:
-+	spin_unlock(&sync_lock);
-+
-+	return ret;
-+}
-+
-+/* mark the start of read and/or write operation */
-+int omap_gem_op_start(struct drm_gem_object *obj, enum omap_gem_op op)
-+{
-+	return sync_op(obj, op, true);
-+}
-+EXPORT_SYMBOL(omap_gem_op_start);
-+
-+int omap_gem_op_finish(struct drm_gem_object *obj, enum omap_gem_op op)
-+{
-+	return sync_op(obj, op, false);
-+}
-+EXPORT_SYMBOL(omap_gem_op_finish);
-+
-+static DECLARE_WAIT_QUEUE_HEAD(sync_event);
-+
-+static void sync_notify(void *arg)
-+{
-+	struct task_struct **waiter_task = arg;
-+	*waiter_task = NULL;
-+	wake_up_all(&sync_event);
-+}
-+
-+int omap_gem_op_sync(struct drm_gem_object *obj, enum omap_gem_op op)
-+{
-+	struct omap_gem_object *omap_obj = to_omap_bo(obj);
-+	int ret = 0;
-+	if (omap_obj->sync) {
-+		struct task_struct *waiter_task = current;
-+		struct omap_gem_sync_waiter *waiter =
-+				kzalloc(sizeof(*waiter), GFP_KERNEL);
-+
-+		if (!waiter)
-+			return -ENOMEM;
-+
-+		waiter->omap_obj = omap_obj;
-+		waiter->op = op;
-+		waiter->read_target = omap_obj->sync->read_pending;
-+		waiter->write_target = omap_obj->sync->write_pending;
-+		waiter->notify = sync_notify;
-+		waiter->arg = &waiter_task;
-+
-+		spin_lock(&sync_lock);
-+		if (is_waiting(waiter)) {
-+			SYNC("waited: %p", waiter);
-+			list_add_tail(&waiter->list, &waiters);
-+			spin_unlock(&sync_lock);
-+			ret = wait_event_interruptible(sync_event,
-+					(waiter_task == NULL));
-+			spin_lock(&sync_lock);
-+			if (waiter_task) {
-+				SYNC("interrupted: %p", waiter);
-+				/* we were interrupted */
-+				list_del(&waiter->list);
-+				waiter_task = NULL;
-+			} else {
-+				/* freed in sync_op_update() */
-+				waiter = NULL;
-+			}
-+		}
-+		spin_unlock(&sync_lock);
-+		kfree(waiter);
-+	}
-+	return ret;
-+}
-+EXPORT_SYMBOL(omap_gem_op_sync);
-+
-+/* call fxn(arg), either synchronously or asynchronously if the op
-+ * is currently blocked..  fxn() can be called from any context
-+ *
-+ * (TODO for now fxn is called back from whichever context calls
-+ * omap_gem_op_finish().. but this could be better defined later
-+ * if needed)
-+ *
-+ * TODO more code in common w/ _sync()..
-+ */
-+int omap_gem_op_async(struct drm_gem_object *obj, enum omap_gem_op op,
-+		void (*fxn)(void *arg), void *arg)
-+{
-+	struct omap_gem_object *omap_obj = to_omap_bo(obj);
-+	if (omap_obj->sync) {
-+		struct omap_gem_sync_waiter *waiter =
-+				kzalloc(sizeof(*waiter), GFP_ATOMIC);
-+
-+		if (!waiter)
-+			return -ENOMEM;
-+
-+		waiter->omap_obj = omap_obj;
-+		waiter->op = op;
-+		waiter->read_target = omap_obj->sync->read_pending;
-+		waiter->write_target = omap_obj->sync->write_pending;
-+		waiter->notify = fxn;
-+		waiter->arg = arg;
-+
-+		spin_lock(&sync_lock);
-+		if (is_waiting(waiter)) {
-+			SYNC("waited: %p", waiter);
-+			list_add_tail(&waiter->list, &waiters);
-+			spin_unlock(&sync_lock);
-+			return 0;
-+		}
-+
-+		spin_unlock(&sync_lock);
-+
-+		kfree(waiter);
-+	}
-+
-+	/* no waiting.. */
-+	fxn(arg);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(omap_gem_op_async);
-+
- /* -----------------------------------------------------------------------------
-  * Constructor & Destructor
-  */
-@@ -1093,6 +1391,9 @@ void omap_gem_free_object(struct drm_gem_object *obj)
+@@ -1093,6 +1106,9 @@ void omap_gem_free_object(struct drm_gem_object *obj)
  	list_del(&omap_obj->mm_list);
  	mutex_unlock(&priv->list_lock);
  
@@ -2077,50 +1368,7 @@ index 4ba5d035c..5ec403138 100644
  	/*
  	 * We own the sole reference to the object at this point, but to keep
  	 * lockdep happy, we must still take the omap_obj_lock to call
-@@ -1104,22 +1405,29 @@ void omap_gem_free_object(struct drm_gem_object *obj)
- 	/* The object should not be pinned. */
- 	WARN_ON(omap_obj->dma_addr_cnt > 0);
- 
--	if (omap_obj->pages) {
--		if (omap_obj->flags & OMAP_BO_MEM_DMABUF)
--			kfree(omap_obj->pages);
--		else
--			omap_gem_detach_pages(obj);
--	}
-+	/* don't free externally allocated backing memory */
-+	if (!(omap_obj->flags & OMAP_BO_EXT_MEM)) {
-+		if (omap_obj->pages) {
-+			if (omap_obj->flags & OMAP_BO_MEM_DMABUF)
-+				kfree(omap_obj->pages);
-+			else
-+				omap_gem_detach_pages(obj);
-+		}
- 
--	if (omap_obj->flags & OMAP_BO_MEM_DMA_API) {
--		dma_free_wc(dev->dev, obj->size, omap_obj->vaddr,
--			    omap_obj->dma_addr);
--	} else if (omap_obj->vaddr) {
--		vunmap(omap_obj->vaddr);
--	} else if (obj->import_attach) {
--		drm_prime_gem_destroy(obj, omap_obj->sgt);
-+		if (omap_obj->flags & OMAP_BO_MEM_DMA_API) {
-+			dma_free_wc(dev->dev, obj->size, omap_obj->vaddr,
-+				    omap_obj->dma_addr);
-+		} else if (omap_obj->vaddr) {
-+			vunmap(omap_obj->vaddr);
-+		} else if (obj->import_attach) {
-+			drm_prime_gem_destroy(obj, omap_obj->sgt);
-+		}
- 	}
- 
-+	/* don't free externally allocated syncobj */
-+	if (!(omap_obj->flags & OMAP_BO_EXT_SYNC))
-+		kfree(omap_obj->sync);
-+
- 	mutex_unlock(&omap_obj->lock);
- 
- 	drm_gem_object_release(obj);
-@@ -1129,6 +1437,47 @@ void omap_gem_free_object(struct drm_gem_object *obj)
+@@ -1129,6 +1145,47 @@ void omap_gem_free_object(struct drm_gem_object *obj)
  	kfree(omap_obj);
  }
  
@@ -2168,7 +1416,7 @@ index 4ba5d035c..5ec403138 100644
  /* GEM buffer object constructor */
  struct drm_gem_object *omap_gem_new(struct drm_device *dev,
  		union omap_gem_size gsize, u32 flags)
-@@ -1140,13 +1489,11 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
+@@ -1140,18 +1197,15 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
  	size_t size;
  	int ret;
  
@@ -2186,7 +1434,12 @@ index 4ba5d035c..5ec403138 100644
  		/*
  		 * Tiled buffers are always shmem paged backed. When they are
  		 * scanned out, they are remapped into DMM/TILER.
-@@ -1160,11 +1507,11 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
+ 		 */
+-		flags &= ~OMAP_BO_SCANOUT;
+ 		flags |= OMAP_BO_MEM_SHMEM;
+ 
+ 		/*
+@@ -1160,11 +1214,11 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
  		 */
  		flags &= ~(OMAP_BO_CACHED|OMAP_BO_WC|OMAP_BO_UNCACHED);
  		flags |= tiler_get_cpu_cache_flags();
@@ -2202,7 +1455,7 @@ index 4ba5d035c..5ec403138 100644
  		 */
  		flags |= OMAP_BO_MEM_DMA_API;
  	} else if (!(flags & OMAP_BO_MEM_DMABUF)) {
-@@ -1183,7 +1530,7 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
+@@ -1183,7 +1237,7 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
  	omap_obj->flags = flags;
  	mutex_init(&omap_obj->lock);
  
@@ -2211,7 +1464,7 @@ index 4ba5d035c..5ec403138 100644
  		/*
  		 * For tiled buffers align dimensions to slot boundaries and
  		 * calculate size based on aligned dimensions.
-@@ -1221,19 +1568,68 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
+@@ -1221,12 +1275,22 @@ struct drm_gem_object *omap_gem_new(struct drm_device *dev,
  			goto err_release;
  	}
  
@@ -2232,55 +1485,9 @@ index 4ba5d035c..5ec403138 100644
 +		dma_free_writecombine(dev->dev, size,
 +				omap_obj->vaddr, omap_obj->dma_addr);
  err_release:
-+	kfree(omap_obj->sync);
  	drm_gem_object_release(obj);
  err_free:
- 	kfree(omap_obj);
- 	return NULL;
- }
- 
-+/* special API so PVR can update the buffer to use a sync-object allocated
-+ * from it's sync-obj heap.  Only used for a newly allocated (from PVR's
-+ * perspective) sync-object, so we overwrite the new syncobj w/ values
-+ * from the already allocated syncobj (if there is one)
-+ */
-+int omap_gem_set_sync_object(struct drm_gem_object *obj, void *syncobj)
-+{
-+	struct omap_gem_object *omap_obj = to_omap_bo(obj);
-+	int ret = 0;
-+
-+	spin_lock(&sync_lock);
-+
-+	if ((omap_obj->flags & OMAP_BO_EXT_SYNC) && !syncobj) {
-+		/* clearing a previously set syncobj */
-+		syncobj = kzalloc(sizeof(*omap_obj->sync), GFP_ATOMIC);
-+		if (!syncobj) {
-+			ret = -ENOMEM;
-+			goto unlock;
-+		}
-+		memcpy(syncobj, omap_obj->sync, sizeof(*omap_obj->sync));
-+		omap_obj->flags &= ~OMAP_BO_EXT_SYNC;
-+		omap_obj->sync = syncobj;
-+	} else if (syncobj && !(omap_obj->flags & OMAP_BO_EXT_SYNC)) {
-+		/* replacing an existing syncobj */
-+		if (omap_obj->sync) {
-+			memcpy(syncobj, omap_obj->sync, sizeof(*omap_obj->sync));
-+			kfree(omap_obj->sync);
-+		}
-+		omap_obj->flags |= OMAP_BO_EXT_SYNC;
-+		omap_obj->sync = syncobj;
-+	}
-+
-+unlock:
-+	spin_unlock(&sync_lock);
-+	return ret;
-+}
-+EXPORT_SYMBOL(omap_gem_set_sync_object);
-+
- struct drm_gem_object *omap_gem_new_dmabuf(struct drm_device *dev, size_t size,
- 					   struct sg_table *sgt)
- {
-@@ -1312,7 +1708,7 @@ int omap_gem_new_handle(struct drm_device *dev, struct drm_file *file,
+@@ -1312,7 +1376,7 @@ int omap_gem_new_handle(struct drm_device *dev, struct drm_file *file,
  	}
  
  	/* drop reference from allocate - handle holds it now */
@@ -2289,161 +1496,6 @@ index 4ba5d035c..5ec403138 100644
  
  	return 0;
  }
-@@ -1388,3 +1784,68 @@ void omap_gem_deinit(struct drm_device *dev)
- 	 */
- 	kfree(priv->usergart);
- }
-+
-+/****** PLUGIN API specific ******/
-+
-+/* This constructor is mainly to give plugins a way to wrap their
-+ * own allocations
-+ */
-+struct drm_gem_object *omap_gem_new_ext(struct drm_device *dev,
-+		union omap_gem_size gsize, uint32_t flags,
-+		dma_addr_t paddr, struct page **pages,
-+		struct omap_gem_vm_ops *ops)
-+{
-+	struct drm_gem_object *obj;
-+
-+	BUG_ON((flags & OMAP_BO_TILED_MASK) && !pages);
-+
-+	if (paddr)
-+		flags |= OMAP_BO_MEM_DMA_API;
-+
-+	obj = omap_gem_new(dev, gsize, flags | OMAP_BO_EXT_MEM);
-+	if (obj) {
-+		struct omap_gem_object *omap_obj = to_omap_bo(obj);
-+
-+		omap_obj->dma_addr = paddr;
-+		omap_obj->pages = pages;
-+		omap_obj->ops = ops;
-+	}
-+	return obj;
-+}
-+EXPORT_SYMBOL(omap_gem_new_ext);
-+
-+void omap_gem_vm_open(struct vm_area_struct *vma)
-+{
-+	struct drm_gem_object *obj = vma->vm_private_data;
-+	struct omap_gem_object *omap_obj = to_omap_bo(obj);
-+
-+	if (omap_obj->ops && omap_obj->ops->open)
-+		omap_obj->ops->open(vma);
-+	else
-+		drm_gem_vm_open(vma);
-+
-+}
-+
-+void omap_gem_vm_close(struct vm_area_struct *vma)
-+{
-+	struct drm_gem_object *obj = vma->vm_private_data;
-+	struct omap_gem_object *omap_obj = to_omap_bo(obj);
-+
-+	if (omap_obj->ops && omap_obj->ops->close)
-+		omap_obj->ops->close(vma);
-+	else
-+		drm_gem_vm_close(vma);
-+
-+}
-+
-+void *omap_gem_priv(struct drm_gem_object *obj)
-+{
-+	return to_omap_bo(obj)->priv;
-+}
-+EXPORT_SYMBOL(omap_gem_priv);
-+
-+void omap_gem_set_priv(struct drm_gem_object *obj, void *priv)
-+{
-+	to_omap_bo(obj)->priv = priv;
-+}
-+EXPORT_SYMBOL(omap_gem_set_priv);
-diff --git a/drivers/gpu/drm/omapdrm/omap_gem.h b/drivers/gpu/drm/omapdrm/omap_gem.h
-index c1c45fbde..5fc33cdc7 100644
---- a/drivers/gpu/drm/omapdrm/omap_gem.h
-+++ b/drivers/gpu/drm/omapdrm/omap_gem.h
-@@ -74,6 +74,13 @@ int omap_gem_mmap_obj(struct drm_gem_object *obj,
- 		struct vm_area_struct *vma);
- u64 omap_gem_mmap_offset(struct drm_gem_object *obj);
- size_t omap_gem_mmap_size(struct drm_gem_object *obj);
-+int omap_gem_tiled_size(struct drm_gem_object *obj, uint16_t *w, uint16_t *h);
-+
-+int omap_gem_op_start(struct drm_gem_object *obj, enum omap_gem_op op);
-+int omap_gem_op_finish(struct drm_gem_object *obj, enum omap_gem_op op);
-+int omap_gem_op_sync(struct drm_gem_object *obj, enum omap_gem_op op);
-+int omap_gem_op_async(struct drm_gem_object *obj, enum omap_gem_op op,
-+		void (*fxn)(void *arg), void *arg);
- 
- /* PRIME Interface */
- struct dma_buf *omap_gem_prime_export(struct drm_device *dev,
-@@ -88,6 +95,9 @@ void omap_gem_dma_sync_buffer(struct drm_gem_object *obj,
- 		enum dma_data_direction dir);
- int omap_gem_pin(struct drm_gem_object *obj, dma_addr_t *dma_addr);
- void omap_gem_unpin(struct drm_gem_object *obj);
-+int omap_gem_get_paddr(struct drm_gem_object *obj,
-+		dma_addr_t *paddr, bool remap);
-+void omap_gem_put_paddr(struct drm_gem_object *obj);
- int omap_gem_get_pages(struct drm_gem_object *obj, struct page ***pages,
- 		bool remap);
- int omap_gem_put_pages(struct drm_gem_object *obj);
-@@ -97,4 +107,57 @@ int omap_gem_rotated_dma_addr(struct drm_gem_object *obj, u32 orient,
- 		int x, int y, dma_addr_t *dma_addr);
- int omap_gem_tiled_stride(struct drm_gem_object *obj, u32 orient);
- 
-+/****** PLUGIN API specific ******/
-+
-+/* interface that plug-in drivers (for now just PVR) can implement */
-+struct omap_drm_plugin {
-+	const char *name;
-+
-+	/* drm functions */
-+	int (*load)(struct drm_device *dev, unsigned long flags);
-+	int (*unload)(struct drm_device *dev);
-+	int (*open)(struct drm_device *dev, struct drm_file *file);
-+	int (*release)(struct drm_device *dev, struct drm_file *file);
-+
-+	struct drm_ioctl_desc *ioctls;
-+	int num_ioctls;
-+	int ioctl_base;
-+};
-+
-+int omap_drm_register_plugin(struct omap_drm_plugin *plugin);
-+int omap_drm_unregister_plugin(struct omap_drm_plugin *plugin);
-+
-+void *omap_drm_file_priv(struct drm_file *file);
-+void omap_drm_file_set_priv(struct drm_file *file, void *priv);
-+
-+void *omap_gem_priv(struct drm_gem_object *obj);
-+void omap_gem_set_priv(struct drm_gem_object *obj, void *priv);
-+void omap_gem_vm_open(struct vm_area_struct *vma);
-+void omap_gem_vm_close(struct vm_area_struct *vma);
-+
-+/* for external plugin buffers wrapped as GEM object (via. omap_gem_new_ext())
-+ * a vm_ops struct can be provided to get callback notification of various
-+ * events..
-+ */
-+struct omap_gem_vm_ops {
-+	void (*open)(struct vm_area_struct *area);
-+	void (*close)(struct vm_area_struct *area);
-+	/*maybe: int (*fault)(struct vm_area_struct *vma,
-+	  struct vm_fault *vmf)*/
-+
-+	/* note: mmap isn't expected to do anything. it is just to allow buffer
-+	 * allocate to update it's own internal state
-+	 */
-+	void (*mmap)(struct file *, struct vm_area_struct *);
-+};
-+
-+struct drm_gem_object *omap_gem_new_ext(struct drm_device *dev,
-+		union omap_gem_size gsize, uint32_t flags,
-+		dma_addr_t paddr, struct page **pages,
-+		struct omap_gem_vm_ops *ops);
-+
-+void omap_gem_op_update(void);
-+int omap_gem_set_sync_object(struct drm_gem_object *obj, void *syncobj);
-+/*********************************/
-+
- #endif /* __OMAPDRM_GEM_H__ */
 diff --git a/drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c b/drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c
 index ec04a69ad..ce29ac8c4 100644
 --- a/drivers/gpu/drm/omapdrm/omap_gem_dmabuf.c
@@ -9919,10 +8971,10 @@ index 7ed4713d5..761363ea0 100644
  /* IPX options */
  #define IPX_TYPE	1
 diff --git a/include/uapi/drm/omap_drm.h b/include/uapi/drm/omap_drm.h
-index 1fccffef9..d014ef2c8 100644
+index 1fccffef9..842d3180a 100644
 --- a/include/uapi/drm/omap_drm.h
 +++ b/include/uapi/drm/omap_drm.h
-@@ -38,20 +38,35 @@ struct drm_omap_param {
+@@ -38,20 +38,29 @@ struct drm_omap_param {
  	__u64 value;			/* in (set_param), out (get_param) */
  };
  
@@ -9958,31 +9010,9 @@ index 1fccffef9..d014ef2c8 100644
  #define OMAP_BO_TILED_32	0x00000300
 -#define OMAP_BO_TILED		(OMAP_BO_TILED_8 | OMAP_BO_TILED_16 | OMAP_BO_TILED_32)
 +#define OMAP_BO_TILED_MASK	0x00000f00
-+
-+struct drm_omap_get_base {
-+	char plugin_name[64];           /* in */
-+	uint32_t ioctl_base;            /* out */
-+	uint32_t __pad;
-+};
  
  union omap_gem_size {
  	__u32 bytes;		/* (for non-tiled formats) */
-@@ -106,6 +121,7 @@ struct drm_omap_gem_info {
- 
- #define DRM_OMAP_GET_PARAM		0x00
- #define DRM_OMAP_SET_PARAM		0x01
-+#define DRM_OMAP_GET_BASE		0x02
- #define DRM_OMAP_GEM_NEW		0x03
- #define DRM_OMAP_GEM_CPU_PREP		0x04	/* Deprecated, to be removed */
- #define DRM_OMAP_GEM_CPU_FINI		0x05	/* Deprecated, to be removed */
-@@ -114,6 +130,7 @@ struct drm_omap_gem_info {
- 
- #define DRM_IOCTL_OMAP_GET_PARAM	DRM_IOWR(DRM_COMMAND_BASE + DRM_OMAP_GET_PARAM, struct drm_omap_param)
- #define DRM_IOCTL_OMAP_SET_PARAM	DRM_IOW (DRM_COMMAND_BASE + DRM_OMAP_SET_PARAM, struct drm_omap_param)
-+#define DRM_IOCTL_OMAP_GET_BASE		DRM_IOWR(DRM_COMMAND_BASE + DRM_OMAP_GET_BASE, struct drm_omap_get_base)
- #define DRM_IOCTL_OMAP_GEM_NEW		DRM_IOWR(DRM_COMMAND_BASE + DRM_OMAP_GEM_NEW, struct drm_omap_gem_new)
- #define DRM_IOCTL_OMAP_GEM_CPU_PREP	DRM_IOW (DRM_COMMAND_BASE + DRM_OMAP_GEM_CPU_PREP, struct drm_omap_gem_cpu_prep)
- #define DRM_IOCTL_OMAP_GEM_CPU_FINI	DRM_IOW (DRM_COMMAND_BASE + DRM_OMAP_GEM_CPU_FINI, struct drm_omap_gem_cpu_fini)
 diff --git a/include/uapi/linux/rpmsg_rpc.h b/include/uapi/linux/rpmsg_rpc.h
 new file mode 100644
 index 000000000..88b712644
@@ -11106,3 +10136,6 @@ index 201f7e588..0cf5b006b 100644
 +#if PF_MAX > 46
  #error New address family defined, please update secclass_map.
  #endif
+-- 
+2.24.3 (Apple Git-128)
+
