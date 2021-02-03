@@ -7,7 +7,7 @@ PV = "1.0.0"
 PR = "r0"
 
 INSTALL_PKGS += "gles-dummy libdce libdce-firmware libavcodec libavformat libavutil libavresample \
-                 libswscale libswresample wl127x-fw abefw scummvm \
+                 libswscale libswresample wl127x-fw abefw \
 "
 
 RDEPENDS += ""
