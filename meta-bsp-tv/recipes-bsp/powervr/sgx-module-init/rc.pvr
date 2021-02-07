@@ -1,0 +1,34 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          pvr-init
+# Required-Start:    checkroot
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: PVR SGX driver init.
+### END INIT INFO
+
+[ -e /sbin/modprobe ] || exit 1
+
+LOAD_MODULE=/sbin/modprobe
+
+[ "$VERBOSE" != no ] && echo -n "Loading PVR modules: "
+
+CPU_VER=`cat /proc/cpuinfo | grep Hardware | cut -d : -f2`
+
+case $CPU_VER in
+    " Generic OMAP4 (Flattened Device Tree)")
+    [ "$VERBOSE" != no ] && echo "omapdrm_pvr_pandaboard"
+    $LOAD_MODULE omapdrm_pvr_pandaboard
+    ;;
+    " Generic OMAP5 (Flattened Device Tree)")
+    [ "$VERBOSE" != no ] && echo "omapdrm_pvr_igepv5"
+    $LOAD_MODULE omapdrm_pvr_igev5
+    ;;
+    " Generic DRA74X (Flattened Device Tree)")
+    [ "$VERBOSE" != no ] && echo "omapdrm_pvr_beaglex15"
+    $LOAD_MODULE omapdrm_pvr_beaglex15
+    ;;
+esac
+
+[ -e /usr/bin/pvrsrvinit ] && /usr/bin/pvrsrvinit
