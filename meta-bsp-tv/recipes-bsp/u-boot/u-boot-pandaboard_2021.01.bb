@@ -5,10 +5,9 @@ ROM and used to initialize and test the hardware or to download and run \
 application code."
 SECTION = "bootloaders"
 DEPENDS += "flex-native bison-native kern-tools-native"
-PROVIDES += "u-boot"
 
 LICENSE = "GPLv2+"
-LIC_FILES_CHKSUM = "file://Licenses/README;md5=30503fd321432fc713238f582193b78e"
+LIC_FILES_CHKSUM = "file://Licenses/README;md5=5a7450c57ffe5ae63fd732446b988025"
 PE = "1"
 
 inherit uboot-config uboot-extlinux-config uboot-sign deploy
@@ -17,7 +16,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files/pandaboard:${THISDIR}/files:"
 
 # We use the revision in order to avoid having to fetch it from the
 # repo during parse
-SRCREV = "36fec02b1f90b92cf51ec531564f9284eae27ab4"
+SRCREV = "c4fddedc48f336eabc4ce3f74940e6aa372de18c"
 
 SRC_URI = "git://git.denx.de/u-boot.git \
            file://boot-panda-label.script \
@@ -41,12 +40,10 @@ UBOOT_MACHINE = "omap4_panda_defconfig"
 COMPATIBLE_MACHINE = "board-tv"
 
 UBOOT_SUFFIX ??= "bin"
-UBOOT_IMAGE ?= "u-boot-${MACHINE}-${PV}-${PR}.${UBOOT_SUFFIX}"
-UBOOT_SYMLINK ?= "u-boot-${MACHINE}.${UBOOT_SUFFIX}"
+UBOOT_IMAGE ?= "u-boot-panda-${PV}-${PR}.${UBOOT_SUFFIX}"
 UBOOT_MAKE_TARGET ?= "all"
 
-MLO_IMAGE ?= "MLO-${MACHINE}-${PV}-${PR}"
-MLO_SYMLINK ?= "MLO"
+MLO_IMAGE ?= "MLO-panda-${PV}-${PR}"
 
 do_configure_prepend () {
     sed -i -e s,NFS_IP,${MA_NFS_IP},g ${WORKDIR}/boot-panda-nfs.script
@@ -80,16 +77,13 @@ do_compile () {
 do_install () {
     install -d ${D}/boot
     install -m 0644 ${B}/${UBOOT_BINARY} ${D}/boot/${UBOOT_IMAGE}
-    ln -sf ${UBOOT_IMAGE} ${D}/boot/${UBOOT_BINARY}
 
     install -m 0644 ${B}/MLO ${D}/boot/${MLO_IMAGE}
-    ln -sf ${MLO_IMAGE} ${D}/boot/${MLO_SYMLINK}
 
-    install -m 0644 ${WORKDIR}/boot-panda-sdcard.script ${D}/boot/uEnv-sdcard.txt
-    install -m 0644 ${WORKDIR}/boot-panda-label.script ${D}/boot/uEnv-label.txt
-    install -m 0644 ${WORKDIR}/boot-panda-nfs.script ${D}/boot/uEnv-nfs.txt
-    install -m 0644 ${WORKDIR}/boot-panda-nfs2.script ${D}/boot/uEnv-nfs2.txt
-    ln -sf uEnv-label.txt ${D}/boot/uEnv.txt
+    install -m 0644 ${WORKDIR}/boot-panda-sdcard.script ${D}/boot/uEnv-panda-sdcard.txt
+    install -m 0644 ${WORKDIR}/boot-panda-label.script ${D}/boot/uEnv-panda-label.txt
+    install -m 0644 ${WORKDIR}/boot-panda-nfs.script ${D}/boot/uEnv-panda-nfs.txt
+    install -m 0644 ${WORKDIR}/boot-panda-nfs2.script ${D}/boot/uEnv-panda-nfs2.txt
 }
 
 FILES_${PN} = "/boot"
@@ -100,17 +94,13 @@ do_deploy () {
 
     cd ${DEPLOYDIR}
     rm -f ${UBOOT_SYMLINK}
-    ln -sf ${UBOOT_IMAGE} ${UBOOT_SYMLINK}
 
     install -m 0644 ${B}/MLO ${DEPLOYDIR}/${MLO_IMAGE}
-    ln -sf ${MLO_IMAGE} ${DEPLOYDIR}/${MLO_SYMLINK}
 
-    install -m 0644 ${WORKDIR}/boot-panda-sdcard.script ${DEPLOYDIR}/uEnv-sdcard.txt
-    install -m 0644 ${WORKDIR}/boot-panda-label.script ${DEPLOYDIR}/uEnv-label.txt
-    install -m 0644 ${WORKDIR}/boot-panda-nfs.script ${DEPLOYDIR}/uEnv-nfs.txt
-    install -m 0644 ${WORKDIR}/boot-panda-nfs2.script ${DEPLOYDIR}/uEnv-nfs2.txt
-    rm -f uEnv.txt
-    ln -sf uEnv-label.txt uEnv.txt
+    install -m 0644 ${WORKDIR}/boot-panda-sdcard.script ${DEPLOYDIR}/uEnv-panda-sdcard.txt
+    install -m 0644 ${WORKDIR}/boot-panda-label.script ${DEPLOYDIR}/uEnv-panda-label.txt
+    install -m 0644 ${WORKDIR}/boot-panda-nfs.script ${DEPLOYDIR}/uEnv-panda-nfs.txt
+    install -m 0644 ${WORKDIR}/boot-panda-nfs2.script ${DEPLOYDIR}/uEnv-panda-nfs2.txt
 }
 
 addtask deploy before do_build after do_compile
