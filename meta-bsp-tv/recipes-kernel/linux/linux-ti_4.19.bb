@@ -21,6 +21,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v4.x/linux-${LINUX_VERSION}.tar.xz \
            file://wait-for-rootfs.patch \
            file://remoteproc-rpmsg-omapdrm-gem-machomap2.patch \
            file://gpu-dts.patch \
+           file://dra7-revert-timer.patch \
            file://dra7.patch \
            file://defconfig \
            "

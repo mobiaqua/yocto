@@ -288,7 +288,34 @@ index 0c0781a37..28362277d 100644
  				status = "disabled";
  			};
  		};
-@@ -942,6 +944,8 @@
+@@ -910,6 +912,8 @@
+ 			reg = <0x48032000 0x80>;
+ 			interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "timer2";
++			clocks = <&l4per_clkctrl DRA7_TIMER2_CLKCTRL 24>;
++			clock-names = "fck";
+ 		};
+ 
+ 		timer3: timer@48034000 {
+@@ -917,6 +921,8 @@
+ 			reg = <0x48034000 0x80>;
+ 			interrupts = <GIC_SPI 34 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "timer3";
++			clocks = <&l4per_clkctrl DRA7_TIMER3_CLKCTRL 24>;
++			clock-names = "fck";
+ 		};
+ 
+ 		timer4: timer@48036000 {
+@@ -924,6 +930,8 @@
+ 			reg = <0x48036000 0x80>;
+ 			interrupts = <GIC_SPI 35 IRQ_TYPE_LEVEL_HIGH>;
+ 			ti,hwmods = "timer4";
++			clocks = <&l4per_clkctrl DRA7_TIMER4_CLKCTRL 24>;
++			clock-names = "fck";
+ 		};
+ 
+ 		timer5: timer@48820000 {
+@@ -931,6 +939,8 @@
  			reg = <0x48820000 0x80>;
  			interrupts = <GIC_SPI 36 IRQ_TYPE_LEVEL_HIGH>;
  			ti,hwmods = "timer5";
