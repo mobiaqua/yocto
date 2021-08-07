@@ -2,6 +2,7 @@ SUMMARY = "Userspace NFS server v3 protocol"
 DESCRIPTION = "UNFS3 is a user-space implementation of the NFSv3 server \
 specification. It provides a daemon for the MOUNT and NFS protocols, which \
 are used by NFS clients for accessing files on the server."
+HOMEPAGE = "https://github.com/unfs3/unfs3"
 SECTION = "console/network"
 LICENSE = "unfs3"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=9475885294e17c0cc0067820d042792e"
@@ -35,7 +36,7 @@ BBCLASSEXTEND = "native nativesdk"
 inherit autotools
 EXTRA_OECONF_append_class-native = " --sbindir=${bindir}"
 CFLAGS_append = " -I${STAGING_INCDIR}/tirpc"
-LDFLAGS_append = " -ltirpc"
+EXTRA_OECONF_append = " LIBS=-ltirpc"
 
 # Turn off these header detects else the inode search
 # will walk entire file systems and this is a real problem

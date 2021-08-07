@@ -4,6 +4,7 @@
 
 SUMMARY = "Pseudo gives fake root capabilities to a normal user"
 HOMEPAGE = "http://git.yoctoproject.org/cgit/cgit.cgi/pseudo"
+DESCRIPTION = "The pseudo utility offers a way to run commands in a virtualized root environment."
 LIC_FILES_CHKSUM = "file://COPYING;md5=a1d8023a6f953ac6ea4af765ff62d574"
 SECTION = "base"
 LICENSE = "LGPL2.1"
@@ -110,6 +111,19 @@ do_compile_prepend_class-nativesdk () {
 		make 'LIB=foo' ${MAKEOPTS} distclean 
 	fi
 }
+
+do_compile_append_class-native () {
+	if [ '${@bb.data.inherits_class('uninative', d)}' = 'True' ]; then
+		for i in PSEUDO_PORT_UNIX_SYNCFS PSEUDO_PORT_UIDS_GENERIC PSEUDO_PORT_LINUX_NEWCLONE PSEUDO_PORT_LINUX_XATTR PSEUDO_PORT_LINUX_STATVFS; do
+			grep $i.1 ${S}/pseudo_ports.h
+			if [ $? != 0 ]; then
+				echo "$i not enabled in pseudo which is incompatible with uninative"
+				exit 1
+			fi
+		done
+	fi
+}
+
 
 do_install () {
 	oe_runmake 'DESTDIR=${D}' ${MAKEOPTS} 'LIB=lib/pseudo/lib$(MARK64)' install

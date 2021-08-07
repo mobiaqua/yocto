@@ -61,17 +61,14 @@ def process_file_darwin(cmd, fpath, rootdir, baseprefix, tmpdir, d, break_hardli
     import subprocess as sub
 
 # MobiAqua: starts here
-    try:
-        out = sub.check_output([d.expand("${HOST_PREFIX}otool"), "-L", fpath], universal_newlines=True, stderr=sub.PIPE)
-    except sub.CalledProcessError:
-        return
-#    p = sub.Popen([d.expand("${HOST_PREFIX}otool"), '-L', fpath],stdout=sub.PIPE,stderr=sub.PIPE)
-#    out, err = p.communicate()
-#    # If returned successfully, process stdout for results
-#    if p.returncode != 0:
-#        return
-# MobiAqua: end here
+    return
+# MobiAqua: ends here
 
+    p = sub.Popen([d.expand("${HOST_PREFIX}otool"), '-L', fpath],stdout=sub.PIPE,stderr=sub.PIPE)
+    out, err = p.communicate()
+    # If returned successfully, process stdout for results
+    if p.returncode != 0:
+        return
     for l in out.split("\n"):
         if "(compatibility" not in l:
             continue
@@ -82,28 +79,9 @@ def process_file_darwin(cmd, fpath, rootdir, baseprefix, tmpdir, d, break_hardli
         if break_hardlinks:
             bb.utils.break_hardlinks(fpath)
 
-# MobiAqua: start here:
-        if fpath.endswith(".dylib"):
-            newpath = "@rpath/" + os.path.relpath(rpath, os.path.dirname(fpath.replace(rootdir, "/")))
-            try:
-                sub.check_output([d.expand("${HOST_PREFIX}install_name_tool"), "-id", newpath, fpath],
-                stderr=sub.PIPE, universal_newlines=True)
-            except sub.CalledProcessError as e:
-                bb.fatal("install_name_tool command failed with exit code %d:\n%s\n%s" % (e.returncode, e.stdout, e.stderr))
-
-        else:
-            if rpath.endswith(".dylib"):
-                newpath = "@loader_path/" + os.path.relpath(rpath, baseprefix)
-                try:
-                    sub.check_output([d.expand("${HOST_PREFIX}install_name_tool"), "-change", rpath, newpath, fpath],
-                        stderr=sub.PIPE, universal_newlines=True)
-                except sub.CalledProcessError as e:
-                    bb.fatal("install_name_tool command failed with exit code %d:\n%s\n%s" % (e.returncode, e.stdout, e.stderr))
-
-#        newpath = "@loader_path/" + os.path.relpath(rpath, os.path.dirname(fpath.replace(rootdir, "/")))
-#        p = sub.Popen([d.expand("${HOST_PREFIX}install_name_tool"), '-change', rpath, newpath, fpath],stdout=sub.PIPE,stderr=sub.PIPE)
-#        out, err = p.communicate()
-# MobiAqua: ends here
+        newpath = "@loader_path/" + os.path.relpath(rpath, os.path.dirname(fpath.replace(rootdir, "/")))
+        p = sub.Popen([d.expand("${HOST_PREFIX}install_name_tool"), '-change', rpath, newpath, fpath],stdout=sub.PIPE,stderr=sub.PIPE)
+        out, err = p.communicate()
 
 def process_dir(rootdir, directory, d, break_hardlinks = False):
     bb.debug(2, "Checking %s for binaries to process" % directory)

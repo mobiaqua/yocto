@@ -1,5 +1,6 @@
 SUMMARY = "jQuery is a fast, small, and feature-rich JavaScript library"
 HOMEPAGE = "https://jquery.com/"
+DESCRIPTION = "${SUMMARY}"
 LICENSE = "MIT"
 SECTION = "devel"
 LIC_FILES_CHKSUM = "file://${WORKDIR}/${BP}.js;startline=8;endline=10;md5=b1e67ece919e852643f1541a54492d65"
@@ -15,6 +16,11 @@ SRC_URI[min.sha256sum] = "c4dccdd9ae25b64078e0c73f273de94f8894d5c99e4741645ece29
 SRC_URI[map.sha256sum] = "3149351c8cbc3fb230bbf6188617c7ffda77d9e14333f4f5f0aa1aae379df892"
 
 UPSTREAM_CHECK_REGEX = "jquery-(?P<pver>\d+(\.\d+)+)\.js"
+
+# https://github.com/jquery/jquery/issues/3927
+# There are ways jquery can expose security issues but any issues are in the apps exposing them
+# and there is little we can directly do
+CVE_CHECK_WHITELIST += "CVE-2007-2379"
 
 inherit allarch
 

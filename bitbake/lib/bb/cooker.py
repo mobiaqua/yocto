@@ -1647,6 +1647,7 @@ class BBCooker:
         return
 
     def post_serve(self):
+        self.shutdown(force=True)
         prserv.serv.auto_shutdown()
         if self.hashserv:
             self.hashserv.process.terminate()
@@ -1661,6 +1662,7 @@ class BBCooker:
 
         if self.parser:
             self.parser.shutdown(clean=not force, force=force)
+            self.parser.final_cleanup()
 
     def finishcommand(self):
         self.state = state.initial
@@ -1942,7 +1944,8 @@ class Parser(multiprocessing.Process):
             except queue.Empty:
                 pass
             else:
-                self.results.cancel_join_thread()
+                self.results.close()
+                self.results.join_thread()
                 break
 
             if pending:
@@ -1951,6 +1954,8 @@ class Parser(multiprocessing.Process):
                 try:
                     job = self.jobs.pop()
                 except IndexError:
+                    self.results.close()
+                    self.results.join_thread()
                     break
                 result = self.parse(*job)
                 # Clear the siggen cache after parsing to control memory usage, its huge
@@ -2026,6 +2031,7 @@ class CookerParser(object):
 
         self.start()
         self.haveshutdown = False
+        self.syncthread = None
 
     def start(self):
         self.results = self.load_cached()
@@ -2067,12 +2073,9 @@ class CookerParser(object):
                                             self.total)
 
             bb.event.fire(event, self.cfgdata)
-            for process in self.processes:
-                self.parser_quit.put(None)
-        else:
-            self.parser_quit.cancel_join_thread()
-            for process in self.processes:
-                self.parser_quit.put(None)
+
+        for process in self.processes:
+            self.parser_quit.put(None)
 
         # Cleanup the queue before call process.join(), otherwise there might be
         # deadlocks.
@@ -2089,9 +2092,13 @@ class CookerParser(object):
             else:
                 process.join()
 
+        self.parser_quit.close()
+        # Allow data left in the cancel queue to be discarded
+        self.parser_quit.cancel_join_thread()
+
         sync = threading.Thread(target=self.bb_cache.sync)
+        self.syncthread = sync
         sync.start()
-        multiprocessing.util.Finalize(None, sync.join, exitpriority=-100)
         bb.codeparser.parser_cache_savemerge()
         bb.fetch.fetcher_parse_done()
         if self.cooker.configuration.profile:
@@ -2104,6 +2111,10 @@ class CookerParser(object):
             pout = "profile-parse.log.processed"
             bb.utils.process_profilelog(profiles, pout = pout)
             print("Processed parsing statistics saved to %s" % (pout))
+
+    def final_cleanup(self):
+        if self.syncthread:
+            self.syncthread.join()
 
     def load_cached(self):
         for filename, appends in self.fromcache:
@@ -2137,18 +2148,18 @@ class CookerParser(object):
         except bb.BBHandledException as exc:
             self.error += 1
             logger.error('Failed to parse recipe: %s' % exc.recipe)
-            self.shutdown(clean=False)
+            self.shutdown(clean=False, force=True)
             return False
         except ParsingFailure as exc:
             self.error += 1
             logger.error('Unable to parse %s: %s' %
                      (exc.recipe, bb.exceptions.to_string(exc.realexception)))
-            self.shutdown(clean=False)
+            self.shutdown(clean=False, force=True)
             return False
         except bb.parse.ParseError as exc:
             self.error += 1
             logger.error(str(exc))
-            self.shutdown(clean=False)
+            self.shutdown(clean=False, force=True)
             return False
         except bb.data_smart.ExpansionError as exc:
             self.error += 1
@@ -2157,7 +2168,7 @@ class CookerParser(object):
             tb = list(itertools.dropwhile(lambda e: e.filename.startswith(bbdir), exc.traceback))
             logger.error('ExpansionError during parsing %s', value.recipe,
                          exc_info=(etype, value, tb))
-            self.shutdown(clean=False)
+            self.shutdown(clean=False, force=True)
             return False
         except Exception as exc:
             self.error += 1
@@ -2169,7 +2180,7 @@ class CookerParser(object):
                 # Most likely, an exception occurred during raising an exception
                 import traceback
                 logger.error('Exception during parse: %s' % traceback.format_exc())
-            self.shutdown(clean=False)
+            self.shutdown(clean=False, force=True)
             return False
 
         self.current += 1

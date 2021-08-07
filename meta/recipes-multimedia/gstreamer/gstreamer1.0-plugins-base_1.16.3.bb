@@ -1,5 +1,8 @@
 require gstreamer1.0-plugins-common.inc
 
+DESCRIPTION = "'Base' GStreamer plugins and helper libraries"
+HOMEPAGE = "https://gstreamer.freedesktop.org/"
+BUGTRACKER = "https://gitlab.freedesktop.org/gstreamer/gst-plugins-base/-/issues"
 LICENSE = "GPLv2+ & LGPLv2+"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6762ed442b3822387a51c92d928ead0d \
                     file://common/coverage/coverage-report.pl;beginline=2;endline=17;md5=a4e1830fce078028c8f0974161272607"
@@ -12,9 +15,14 @@ SRC_URI = " \
             file://0003-ssaparse-enhance-SSA-text-lines-parsing.patch \
             file://0005-viv-fb-Make-sure-config.h-is-included.patch \
             file://0009-glimagesink-Downrank-to-marginal.patch \
+            file://CVE-2021-3522.patch \
             "
 SRC_URI[md5sum] = "e3ddb1bae9fb510b49a295f212f1e6e4"
 SRC_URI[sha256sum] = "9f02678b0bbbcc9eff107d3bd89d83ce92fec2154cd607c7c8bd34dc7fee491c"
+
+# CPE entries for gst-plugins-base are listed as gstreamer issues
+# so we need to ignore the false hit
+CVE_CHECK_WHITELIST += "CVE-2021-3522"
 
 S = "${WORKDIR}/gst-plugins-base-${PV}"
 
