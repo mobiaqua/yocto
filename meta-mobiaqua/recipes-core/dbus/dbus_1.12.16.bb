@@ -93,6 +93,11 @@ pkg_postinst_dbus() {
 	fi
 }
 
+pkg_postinst_ontarget_${PN} () {
+	adduser --system --home /var/lib/dbus --no-create-home --shell /bin/false messagebus messagebus
+	chown messagebus:messagebus /var/lib/dbus
+	chown root:messagebus /usr/libexec/dbus-daemon-launch-helper
+}
 
 EXTRA_OECONF = "--disable-tests \
                 --disable-xml-docs \
@@ -121,10 +126,16 @@ PACKAGECONFIG[user-session] = "--enable-user-session --with-systemduserunitdir=$
 do_install() {
 	autotools_do_install
 
-	if ${@bb.utils.contains('DISTRO_FEATURES', 'sysvinit', 'true', 'false', d)}; then
+	# MobiAqua: Added below condition for busybox manager case
+	if ${@bb.utils.contains('VIRTUAL-RUNTIME_init_manager','busybox','true','false',d)}; then
+	# MobiAqua: Disabled below case for above case
+	#if ${@bb.utils.contains('DISTRO_FEATURES', 'sysvinit', 'true', 'false', d)}; then
 		install -d ${D}${sysconfdir}/init.d
 		sed 's:@bindir@:${bindir}:' < ${WORKDIR}/dbus-1.init >${WORKDIR}/dbus-1.init.sh
 		install -m 0755 ${WORKDIR}/dbus-1.init.sh ${D}${sysconfdir}/init.d/dbus-1
+		# MobiAqua: Added symlink for init script
+		install -d ${D}${sysconfdir}/rcS.d
+		ln -sf ../init.d/${INITSCRIPT_NAME} ${D}${sysconfdir}/rcS.d/S02${INITSCRIPT_NAME}
 		install -d ${D}${sysconfdir}/default/volatiles
 		echo "d messagebus messagebus 0755 ${localstatedir}/run/dbus none" \
 		     > ${D}${sysconfdir}/default/volatiles/99_dbus
@@ -142,9 +153,11 @@ do_install() {
 
 	mkdir -p ${D}${localstatedir}/lib/dbus
 
-	chown messagebus:messagebus ${D}${localstatedir}/lib/dbus
+	# MobiAqua: disabled chown
+	#chown messagebus:messagebus ${D}${localstatedir}/lib/dbus
 
-	chown root:messagebus ${D}${libexecdir}/dbus-daemon-launch-helper
+	# MobiAqua: disabled chown
+	#chown root:messagebus ${D}${libexecdir}/dbus-daemon-launch-helper
 	chmod 4755 ${D}${libexecdir}/dbus-daemon-launch-helper
 
 	# Remove Red Hat initscript
