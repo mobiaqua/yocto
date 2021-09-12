@@ -12,7 +12,7 @@ DEFAULT_PREFERENCE = "99"
 
 PV = "8d+git-${SRCREV}"
 
-SRCREV = "1309ccb485789b3ce8a7d8513b83d824a4922e28"
+SRCREV = "c95141fd43d8965041924b02264b902a95c8c729"
 
 SRC_URI = "git://github.com/libjpeg-turbo/libjpeg-turbo.git;protocol=git;branch=1.5.x"
 
