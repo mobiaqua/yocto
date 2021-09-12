@@ -22,37 +22,30 @@ DEPENDS = "glib-2.0-native \
            virtual/libintl \
            virtual/libiconv \
            libffi \
-           zlib \
-           ${@bb.utils.contains('PTEST_ENABLED', '1', 'dbus', '', d)}"
+           zlib"
 
 PACKAGES += "${PN}-codegen ${PN}-utils"
 
 LEAD_SONAME = "libglib-2.0.*"
 
 # MobiAqua: removed 'gio-module-cache'
-inherit autotools gettext gtk-doc pkgconfig ptest-gnome upstream-version-is-even bash-completion manpages features_check
+inherit meson gettext gtk-doc pkgconfig ptest-gnome upstream-version-is-even bash-completion manpages features_check
 
-REQUIRED_DISTRO_FEATURES_libc-glibc = "${@'libc-charsets libc-locale-code libc-locales' if bb.utils.contains('DISTRO_FEATURES', 'ptest', True, False, d) else ''}"
+GTKDOC_MESON_OPTION = "gtk_doc"
 
 S = "${WORKDIR}/glib-${PV}"
 
-PACKAGECONFIG ??= "system-pcre libmount"
+PACKAGECONFIG ??= "system-pcre libmount \
+                   ${@bb.utils.contains('PTEST_ENABLED', '1', 'tests', '', d)}"
 # To use the system pcre it must be configured with --enable-unicode-properties
-PACKAGECONFIG[system-pcre] = "--with-pcre=system,--with-pcre=internal,libpcre"
-PACKAGECONFIG[libmount] = "--enable-libmount,--disable-libmount,util-linux"
-PACKAGECONFIG[manpages] = "--enable-man --with-xml-catalog=${STAGING_ETCDIR_NATIVE}/xml/catalog.xml, --disable-man, libxslt-native xmlto-native"
-PACKAGECONFIG[libelf] = "--enable-libelf,--disable-libelf,elfutils"
+PACKAGECONFIG[system-pcre] = "-Dinternal_pcre=false,-Dinternal_pcre=true,libpcre"
+PACKAGECONFIG[libmount] = "-Dlibmount=true,-Dlibmount=false,util-linux"
+PACKAGECONFIG[manpages] = "-Dman=true, -Dman=false, libxslt-native xmlto-native"
+# libelf is auto-detected without a configuration option
+PACKAGECONFIG[libelf] = ",,elfutils"
+PACKAGECONFIG[tests] = "-Dinstalled_tests=true,-Dinstalled_tests=false,dbus"
 
-CORECONF = "--disable-dtrace --disable-fam --disable-systemtap --with-python=python3"
-
-PRINTF = "--enable-included-printf=no"
-PRINTF_darwin = "--enable-included-printf=yes"
-PRINTF_mingw32 = "--enable-included-printf=yes"
-EXTRA_OECONF = "${PRINTF} ${CORECONF}"
-EXTRA_OECONF_class-native = "${CORECONF} --disable-selinux"
-
-# Tell configure that we'll have dbus-daemon on the target for the tests
-EXTRA_OECONF_append_class-target = " ${@bb.utils.contains('PTEST_ENABLED', '1', ' ac_cv_prog_DBUS_DAEMON=dbus-daemon', '', d)}"
+EXTRA_OEMESON = "-Ddtrace=false -Dfam=false -Dsystemtap=false -Dselinux=disabled"
 
 do_configure_prepend() {
 	sed -i -e '1s,#!.*,#!${USRBINPATH}/env python3,' ${S}/gio/gdbus-2.0/codegen/gdbus-codegen.in
@@ -62,13 +55,15 @@ FILES_${PN} = "${libdir}/lib*${SOLIBS} \
                ${libdir}/gio \
                ${libexecdir}/*gio-querymodules \
                ${datadir}/glib-2.0/schemas"
+
+FILES_${PN}-utils += "${bindir}/glib-genmarshal \
+                      ${bindir}/glib-gettextize \
+                      ${bindir}/glib-mkenums \
+                      ${bindir}/glib-compile-resources"
+
 FILES_${PN}-dev += "${libdir}/glib-2.0/include \
                     ${libdir}/gio/modules/lib*${SOLIBSDEV} \
                     ${libdir}/gio/modules/*.la \
-                    ${bindir}/glib-genmarshal \
-                    ${bindir}/glib-gettextize \
-                    ${bindir}/glib-mkenums \
-                    ${bindir}/glib-compile-resources \
                     ${datadir}/glib-2.0/gettext/po/Makefile.in.in \
                     ${datadir}/glib-2.0/schemas/gschema.dtd \
                     ${datadir}/glib-2.0/valgrind/glib.supp \
@@ -119,6 +114,8 @@ do_install_append () {
         if test "x${MLPREFIX}" != "x"; then
                 mv ${D}${libexecdir}/gio-querymodules${EXEEXT} ${D}${libexecdir}/${MLPREFIX}gio-querymodules${EXEEXT}
         fi
+        # Autotools does this, meson does not
+        mkdir -p ${D}${libdir}/gio/modules
 }
 
 do_install_append_class-target () {
@@ -129,6 +126,16 @@ do_install_append_class-target () {
 			rm ${D}${datadir}/installed-tests/glib/gdbus-serialization.test
 		fi
 	fi
+	if [ -f ${D}${datadir}/installed-tests/glib/static-link.test ]; then
+        if test "x${MLPREFIX}" != "x"; then
+                mv ${D}${datadir}/installed-tests/glib/static-link.test ${D}${datadir}/installed-tests/glib/${MLPREFIX}static-link.test
+        fi
+	fi
+}
+
+# As we do not build python3 for windows, makes no sense to ship the script that's using it
+do_install_append_mingw32() {
+        rm -f ${D}${bindir}/gtester-report
 }
 
 # MobiAqua: removed 'python3 python3-distutils python3-xml'
@@ -137,7 +144,11 @@ CODEGEN_PYTHON_RDEPENDS_mingw32 = ""
 
 RDEPENDS_${PN}-codegen += "${CODEGEN_PYTHON_RDEPENDS}"
 
+RDEPENDS_${PN}-ptest += "${PN}-utils"
+
 RDEPENDS_${PN}-ptest += "\
+            coreutils \
+            libgcc \
             dbus \
             gnome-desktop-testing \
             tzdata \
@@ -146,6 +157,16 @@ RDEPENDS_${PN}-ptest += "\
             tzdata-europe \
             tzdata-posix \
             shared-mime-info \
+            ${PN}-locale-ja \
+            ${PN}-locale-fr \
+            ${PN}-locale-el \
+            ${PN}-locale-hr \
+            ${PN}-locale-lt \
+            ${PN}-locale-pl \
+            ${PN}-locale-ru \
+            ${PN}-locale-th \
+            python3-core \
+            python3-modules \
            "
 
 RDEPENDS_${PN}-ptest_append_libc-glibc = "\
@@ -171,5 +192,7 @@ RDEPENDS_${PN}-ptest_append_libc-glibc = "\
             locale-base-fr-fr \
             locale-base-es-es \
             locale-base-en-gb \
+            locale-base-en-us \
             locale-base-pl-pl \
+            locale-base-pl-pl.iso-8859-2 \
            "
