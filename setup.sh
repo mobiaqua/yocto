@@ -53,7 +53,7 @@ sha384sum sha512sum shred shuf sleep sort split stat stdbuf stty sum sync tac ta
 timeout touch tr true truncate tsort tty uname unexpand uniq unlink uptime users vdir wc who \
 whoami yes"
 
-tools="bison perl git wget gzip texi2html file bison flex help2man unzip xz dos2unix meson ninja"
+tools="bison perl git wget gzip texi2html file bison flex help2man unzip xz dos2unix meson ninja cmake"
 
 prepare_tools() {
 	OE_BASE=`pwd -P`
@@ -503,10 +503,10 @@ ASSUME_PROVIDED += \" git-native perl-native python-native python3-native deskto
 linux-libc-headers-native glib-2.0-native intltool-native xz-native gzip-native \
 findutils-native bison-native flex-native help2man-native bc-native subversion-native \
 m4-native unzip-native texinfo-native texinfo-dummy-native patch-replacement-native \
-meson-native ninja-native\"
+meson-native ninja-native cmake-native\"
 SANITY_REQUIRED_UTILITIES_remove = \"chrpath\"
 PACKAGE_DEPENDS_remove = \"dwarfsrcfiles-native pseudo-native\"
-HOSTTOOLS += \"otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep tic bc dc dos2unix sw_vers xcrun glib-genmarshal glib-compile-schemas svn\"
+HOSTTOOLS += \"otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep tic bc dc dos2unix sw_vers xcrun glib-genmarshal glib-compile-schemas svn meson ninja cmake\"
 HOSTTOOLS_remove = \"chrpath flock ldd\"
 PARALLEL_MAKE = \"-j 8\"
 BB_NUMBER_THREADS = \"8\"
