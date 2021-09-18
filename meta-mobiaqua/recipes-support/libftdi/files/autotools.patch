@@ -1,0 +1,98 @@
+diff -urNP libftdi1-1.0/Makefile.am libftdi1-1.0-new/Makefile.am
+--- libftdi1-1.0/Makefile.am	1970-01-01 01:00:00.000000000 +0100
++++ libftdi1-1.0-new/Makefile.am	2013-11-30 15:53:54.000000000 +0100
+@@ -0,0 +1,16 @@
++# not a GNU package. You can remove this line, if
++# have all needed files, that a GNU package needs
++AUTOMAKE_OPTIONS = foreign 1.4
++
++SUBDIRS = src $(LIBFTDI_MODULES)
++
++EXTRA_DIST = libftdi1.spec libftdi1.spec.in COPYING.LIB COPYING.GPL LICENSE \
++             README AUTHORS ChangeLog libftdi1-config.in CMakeLists.txt \
++             packages COPYING-CMAKE-SCRIPTS FindUSB.cmake README.mingw \
++             Toolchain-mingw32.cmake Toolchain-Crossbuild32.cmake
++
++bin_SCRIPTS = libftdi1-config
++
++# Install the pkg-config file:
++pkgconfigdir = $(libdir)/pkgconfig
++pkgconfig_DATA = libftdi1.pc $(LIBFTDI_MODULES_PKGCONFIG)
+diff -urNP libftdi1-1.0/configure.in libftdi1-1.0-new/configure.in
+--- libftdi1-1.0/configure.in	1970-01-01 01:00:00.000000000 +0100
++++ libftdi1-1.0-new/configure.in	2013-11-30 15:44:42.000000000 +0100
+@@ -0,0 +1,40 @@
++AC_INIT(libftdi1, 1.0)
++AM_INIT_AUTOMAKE
++AM_CONFIG_HEADER(config.h)
++
++AC_LANG_C
++AC_PROG_CC
++AM_PROG_LIBTOOL
++AC_PROG_CXX
++
++dnl Check for pkgconfig first
++AC_CHECK_PROG([HAVE_PKGCONFIG], [pkg-config], [yes], [no])
++
++dnl *** checks for libraries ***
++dnl Check for libusb1
++PKG_CHECK_MODULES([LIBUSB1], [libusb-1.0], [
++       AC_DEFINE([HAVE_LIBUSB1], [1], [Define if you have libusb-1.x])
++       PKG_CHECK_EXISTS([libusb-1.0 >= 1.0.9],
++               [AC_DEFINE([HAVE_LIBUSB_ERROR_NAME], [1], [Define if your libusb has libusb_error_name()])],
++               [AC_MSG_WARN([libusb-1.x older than 1.0.9 detected, consider updating])])
++       LIBUSB1_CFLAGS=`echo $LIBUSB1_CFLAGS | sed 's/-I/-isystem /'`
++       CFLAGS="$CFLAGS $LIBUSB1_CFLAGS"
++       LIBS="$LIBS $LIBUSB1_LIBS"
++       AC_MSG_NOTICE([libusb-1.0 header bug workaround: LIBUSB1_CFLAGS changed to "$LIBUSB1_CFLAGS"])
++  ], [
++       AC_MSG_ERROR([libusb-1.x not found])
++])
++
++ENABLE_ASYNC_MODE=1
++CFLAGS="$CFLAGS -DLIBFTDI_LINUX_ASYNC_MODE"
++
++LIBFTDI_MODULES=
++LIBFTDI_MODULES_PKGCONFIG=
++
++AC_SUBST(LIBFTDI_MODULES)
++AC_SUBST(LIBFTDI_MODULES_PKGCONFIG)
++
++AC_CONFIG_FILES([libftdi1-config],[chmod a+x libftdi1-config])
++AC_CONFIG_FILES(Makefile src/Makefile src/ftdi_version_i.h libftdi1.pc libftdi1.spec)
++
++AC_OUTPUT
+diff -urNP libftdi1-1.0/src/Makefile.am libftdi1-1.0-new/src/Makefile.am
+--- libftdi1-1.0/src/Makefile.am	1970-01-01 01:00:00.000000000 +0100
++++ libftdi1-1.0-new/src/Makefile.am	2013-11-30 15:53:20.000000000 +0100
+@@ -0,0 +1,11 @@
++# the library search path.
++lib_LTLIBRARIES =  libftdi1.la
++libftdi1_la_SOURCES =  ftdi.c ftdi_stream.c
++include_HEADERS =  ftdi.h ftdi_i.h ftdi_version_i.h
++
++# Note:  If you specify a:b:c as the version in the next line,
++#  the library that is made has version (a-c).c.b.  In this
++#  example, the version is 2.1.2. (3:2:1)
++libftdi1_la_LDFLAGS = -version-info 2:0:0
++
++EXTRA_DIST = CMakeLists.txt
+diff -urNP libftdi1-1.0/src/ftdi_version_i.h.in libftdi1-1.0-new/src/ftdi_version_i.h.in
+--- libftdi1-1.0/src/ftdi_version_i.h.in	2013-01-29 14:21:38.000000000 +0100
++++ libftdi1-1.0-new/src/ftdi_version_i.h.in	2013-11-30 15:48:10.000000000 +0100
+@@ -1,11 +1,11 @@
+ #ifndef FTDI_VERSION_INTERNAL_H
+ #define FTDI_VERSION_INTERNAL_H
+ 
+-#define FTDI_MAJOR_VERSION @MAJOR_VERSION@
+-#define FTDI_MINOR_VERSION @MINOR_VERSION@
++#define FTDI_MAJOR_VERSION 1
++#define FTDI_MINOR_VERSION 0
+ #define FTDI_MICRO_VERSION 0
+ 
+-const char FTDI_VERSION_STRING[] = "@VERSION_STRING@";
+-const char FTDI_SNAPSHOT_VERSION[] = "@SNAPSHOT_VERSION@";
++const char FTDI_VERSION_STRING[] = "1.0";
++const char FTDI_SNAPSHOT_VERSION[] = "";
+ 
+ #endif

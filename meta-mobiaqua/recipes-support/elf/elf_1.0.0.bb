@@ -1,5 +1,4 @@
 DESCRIPTION = "elf include"
-LICENSE = "GPL"
 SECTION = "base"
 PRIORITY = "required"
 PR = "r1"
