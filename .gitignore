@@ -23,6 +23,7 @@ hob-image-*.bb
 !meta-yocto-bsp
 !meta-yocto-imported
 !meta-bsp-*
+!meta-null
 !meta-mobiaqua
 /documentation/*/eclipse/
 /documentation/*/*.html
