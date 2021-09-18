@@ -1,0 +1,14 @@
+diff -urp old/bfd/elf.c new/bfd/elf.c
+--- old/bfd/elf.c	2020-01-30 08:15:56.000000000 +0100
++++ new/bfd/elf.c	2021-09-18 16:22:23.000000000 +0200
+@@ -5934,7 +5934,9 @@ assign_file_positions_for_load_sections 
+ 	  _bfd_error_handler (_("%pB: error: PHDR segment not covered"
+ 				" by LOAD segment"),
+ 			      abfd);
+-	  return FALSE;
++	  if (link_info == NULL)
++	    return FALSE;
++	  link_info->callbacks->info ("%X");
+ 	}
+ 
+       /* Check that all sections are in a PT_LOAD segment.
