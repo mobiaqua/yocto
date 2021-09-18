@@ -1,0 +1,12 @@
+diff -ur old/drivers/input/keyboard/ipaq-micro-keys.c new/drivers/input/keyboard/ipaq-micro-keys.c
+--- old/drivers/input/keyboard/ipaq-micro-keys.c	2015-01-07 22:03:10.000000000 +0100
++++ new/drivers/input/keyboard/ipaq-micro-keys.c	2015-01-07 21:47:52.000000000 +0100
+@@ -50,7 +50,7 @@
+ 	int key, down;
+ 
+ 	down = 0x80 & msg[0];
+-	key  = 0x7f & msg[0];
++	key  = (0x7f & msg[0]) - 1;
+ 
+ 	if (key < ARRAY_SIZE(keycodes)) {
+ 		input_report_key(keys->input, keycodes[key], down);

@@ -398,21 +398,25 @@ setup() {
 		image=rootfs-devel
 		ARMDIR=armv7a-hf
 		BSP_LAYER=meta-bsp-tv
+		BSP_LAYER2=meta-null
 	elif [ "$TARGET" = "car" ]; then
 		export MACHINE=igep0030
 		image=rootfs-devel
 		ARMDIR=armv7a-hf
 		BSP_LAYER=meta-bsp-car
+		BSP_LAYER2=meta-null
 	elif [ "$TARGET" = "pda-sa1110" ]; then
 		export MACHINE=pda-sa1110
-		image=rootfs-pda
+		image=rootfs-release
 		ARMDIR=armv4
 		BSP_LAYER=meta-bsp-sa1110
+		BSP_LAYER2=meta-bsp-pda
 	elif [ "$TARGET" = "pda-pxa250" ]; then
 		export MACHINE=pda-pxa250
-		image=rootfs-pda
+		image=rootfs-release
 		ARMDIR=armv5te
 		BSP_LAYER=meta-bsp-pxa250
+		BSP_LAYER2=meta-bsp-pda
 	fi
 
 	if [ -e ${HOME}/.mobiaqua/oe/${DISTRO}-${TARGET}_config ]; then
@@ -518,7 +522,7 @@ BB_NUMBER_THREADS = \"8\"
 POKY_BBLAYERS_CONF_VERSION = \"2\"
 BBPATH = \"\${TOPDIR}\"
 BBFILES ?= \"\"
-BBLAYERS ?= \"${OE_BASE}/meta ${OE_BASE}/meta-mobiaqua ${OE_BASE}/${BSP_LAYER}\"
+BBLAYERS ?= \"${OE_BASE}/meta ${OE_BASE}/meta-mobiaqua ${OE_BASE}/${BSP_LAYER2} ${OE_BASE}/${BSP_LAYER}\"
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/bblayers.conf
 
 

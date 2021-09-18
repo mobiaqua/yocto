@@ -1,0 +1,26 @@
+diff -urp old/Makefile new/Makefile
+--- old/Makefile	2014-12-07 23:21:05.000000000 +0100
++++ new/Makefile	2014-12-10 22:29:56.000000000 +0100
+@@ -297,7 +297,7 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH"
+ 
+ HOSTCC       = gcc
+ HOSTCXX      = g++
+-HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
++HOSTCFLAGS   := -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 $(HOST_INC)
+ HOSTCXXFLAGS = -O2
+ 
+ # Decide whether to build built-in, modular, or both.
+diff -urp old/scripts/mod/sumversion.c new/scripts/mod/sumversion.c
+--- old/scripts/mod/sumversion.c	2013-01-05 20:17:13.000000000 +0100
++++ new/scripts/mod/sumversion.c	2013-01-05 20:28:53.000000000 +0100
+@@ -10,6 +10,10 @@
+ #include <limits.h>
+ #include "modpost.h"
+ 
++#ifndef PATH_MAX
++#define PATH_MAX 1024
++#endif
++
+ /*
+  * Stolen form Cryptographic API.
+  *
