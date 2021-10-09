@@ -23,6 +23,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v4.x/linux-${LINUX_VERSION}.tar.xz \
            file://gpu-dts.patch \
            file://dra7-revert-timer.patch \
            file://dra7.patch \
+           file://gpu2d.patch \
            file://defconfig \
            "
 
