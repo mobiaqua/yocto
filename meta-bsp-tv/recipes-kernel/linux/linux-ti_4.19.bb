@@ -5,7 +5,7 @@ DEPENDS += "openssl-native ncurses-native elf-native kmod-native"
 COMPATIBLE_MACHINE = "board-tv"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=bbea815ee2795b2f4230826c0c6b8814"
-LINUX_VERSION = "4.19.201"
+LINUX_VERSION = "4.19.215"
 PV = "${LINUX_VERSION}"
 KERNEL_DEVICETREE_board-tv = "omap4-panda.dtb omap4-panda-es.dtb am57xx-beagle-x15-revc.dtb"
 FILESEXTRAPATHS_prepend := "${THISDIR}/linux-ti_4.19:"
@@ -27,7 +27,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v4.x/linux-${LINUX_VERSION}.tar.xz \
            file://defconfig \
            "
 
-SRC_URI[sha256sum] = "8235dfa7188246ee64a247b70bcf2508b15bf5af07fb1fe817d96cf962e1dcd0"
+SRC_URI[sha256sum] = "9e2064f9cb942999a76737d510f08a85bcd8164e9762ce0f7dbfeac58bc2f2b3"
 
 S = "${WORKDIR}/linux-${PV}"
 
