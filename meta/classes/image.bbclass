@@ -9,7 +9,7 @@ ROOTFS_BOOTSTRAP_INSTALL = "run-postinsts"
 IMGCLASSES = "rootfs_${IMAGE_PKGTYPE} image_types ${IMAGE_CLASSES}"
 # Only Linux SDKs support populate_sdk_ext, fall back to populate_sdk_base
 # in the non-Linux SDK_OS case, such as mingw32
-# MobiAqua: removed 'populate_sdk_base', 'populate_sdk_ext'
+# MobiAqua: disabled 'populate_sdk_base', 'populate_sdk_ext'
 #IMGCLASSES += "${@['populate_sdk_base', 'populate_sdk_ext']['linux' in d.getVar("SDK_OS")]}"
 IMGCLASSES += "${@bb.utils.contains_any('IMAGE_FSTYPES', 'live iso hddimg', 'image-live', '', d)}"
 IMGCLASSES += "${@bb.utils.contains('IMAGE_FSTYPES', 'container', 'image-container', '', d)}"
@@ -58,7 +58,7 @@ FEATURE_PACKAGES_package-management = "${ROOTFS_PKGMANAGE}"
 SPLASH ?= "psplash"
 FEATURE_PACKAGES_splash = "${SPLASH}"
 
-# MobiAqua: removed: 'IMAGE_INSTALL_COMPLEMENTARY'
+# MobiAqua: disabled: 'IMAGE_INSTALL_COMPLEMENTARY'
 #IMAGE_INSTALL_COMPLEMENTARY = '${@complementary_globs("IMAGE_FEATURES", d)}'
 
 def check_image_features(d):

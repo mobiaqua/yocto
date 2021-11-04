@@ -706,6 +706,7 @@ def sstate_package(ss, d):
             pass
         except OSError as e:
             # Handle read-only file systems gracefully
+            import errno
             if e.errno != errno.EROFS:
                 raise e
 
@@ -796,7 +797,7 @@ sstate_task_postfunc[dirs] = "${WORKDIR}"
 sstate_create_package () {
 	# Exit early if it already exists
 	if [ -e ${SSTATE_PKG} ]; then
-		[ ! -w ${SSTATE_PKG} ] || touch ${SSTATE_PKG}
+		touch ${SSTATE_PKG} 2>/dev/null || true
 		return
 	fi
 
@@ -830,7 +831,7 @@ sstate_create_package () {
 	else
 		rm $TFILE
 	fi
-	[ ! -w ${SSTATE_PKG} ] || touch ${SSTATE_PKG}
+	touch ${SSTATE_PKG} 2>/dev/null || true
 }
 
 python sstate_sign_package () {
@@ -950,10 +951,11 @@ def sstate_checkhashes(sq_data, d, siginfo=False, currentcount=0, summary=True, 
                 found.add(tid)
                 if tid in missed:
                     missed.remove(tid)
-            except:
+            except bb.fetch2.FetchError as e:
                 missed.add(tid)
-                bb.debug(2, "SState: Unsuccessful fetch test for %s" % srcuri)
-                pass
+                bb.debug(2, "SState: Unsuccessful fetch test for %s (%s)" % (srcuri, e))
+            except Exception as e:
+                bb.error("SState: cannot test %s: %s" % (srcuri, e))
             if len(tasklist) >= min_tasks:
                 bb.event.fire(bb.event.ProcessProgress(msg, len(tasklist) - thread_worker.tasks.qsize()), d)
 
@@ -1015,6 +1017,7 @@ def sstate_checkhashes(sq_data, d, siginfo=False, currentcount=0, summary=True, 
         bb.parse.siggen.checkhashes(sq_data, missed, found, d)
 
     return found
+setscene_depvalid[vardepsexclude] = "SSTATE_EXCLUDEDEPS_SYSROOT"
 
 BB_SETSCENE_DEPVALID = "setscene_depvalid"
 
@@ -1148,6 +1151,7 @@ python sstate_eventhandler() {
                 pass
             except OSError as e:
                 # Handle read-only file systems gracefully
+                import errno
                 if e.errno != errno.EROFS:
                     raise e
 

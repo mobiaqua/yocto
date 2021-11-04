@@ -65,3 +65,7 @@ PROVIDES_append_class-native = " tar-replacement-native"
 NATIVE_PACKAGE_PATH_SUFFIX = "/${PN}"
 
 BBCLASSEXTEND = "native nativesdk"
+
+# Avoid false positives from CVEs in node-tar package
+# For example CVE-2021-{32803,32804,37701,37712,37713}
+CVE_PRODUCT = "gnu:tar"

@@ -77,43 +77,41 @@ python create_source_date_epoch_stamp() {
     import oe.reproducible
 
     epochfile = d.getVar('SDE_FILE')
-    # If it exists we need to regenerate as the sources may have changed
-    if os.path.isfile(epochfile):
-        bb.debug(1, "Deleting existing SOURCE_DATE_EPOCH from: %s" % epochfile)
-        os.remove(epochfile)
+    tmp_file = "%s.new" % epochfile
 
     source_date_epoch = oe.reproducible.get_source_date_epoch(d, d.getVar('S'))
 
     bb.debug(1, "SOURCE_DATE_EPOCH: %d" % source_date_epoch)
     bb.utils.mkdirhier(d.getVar('SDE_DIR'))
-    with open(epochfile, 'w') as f:
+    with open(tmp_file, 'w') as f:
         f.write(str(source_date_epoch))
+
+    os.rename(tmp_file, epochfile)
 }
 
 def get_source_date_epoch_value(d):
-    cached = d.getVar('__CACHED_SOURCE_DATE_EPOCH')
-    if cached:
+    epochfile = d.getVar('SDE_FILE')
+    cached, efile = d.getVar('__CACHED_SOURCE_DATE_EPOCH') or (None, None)
+    if cached and efile == epochfile:
         return cached
 
-    epochfile = d.getVar('SDE_FILE')
+    if cached and epochfile != efile:
+        bb.debug(1, "Epoch file changed from %s to %s" % (efile, epochfile))
+
     source_date_epoch = int(d.getVar('SOURCE_DATE_EPOCH_FALLBACK'))
-    if os.path.isfile(epochfile):
+    try:
         with open(epochfile, 'r') as f:
             s = f.read()
             try:
                 source_date_epoch = int(s)
-                # workaround for old sstate with SDE_FILE content being 0 - use SOURCE_DATE_EPOCH_FALLBACK
-                if source_date_epoch == 0 :
-                    source_date_epoch = int(d.getVar('SOURCE_DATE_EPOCH_FALLBACK'))
-                    bb.warn("SOURCE_DATE_EPOCH value from sstate '%s' is deprecated/invalid. Reverting to SOURCE_DATE_EPOCH_FALLBACK '%s'" % (s, source_date_epoch))
             except ValueError:
                 bb.warn("SOURCE_DATE_EPOCH value '%s' is invalid. Reverting to SOURCE_DATE_EPOCH_FALLBACK" % s)
                 source_date_epoch = int(d.getVar('SOURCE_DATE_EPOCH_FALLBACK'))
         bb.debug(1, "SOURCE_DATE_EPOCH: %d" % source_date_epoch)
-    else:
+    except FileNotFoundError:
         bb.debug(1, "Cannot find %s. SOURCE_DATE_EPOCH will default to %d" % (epochfile, source_date_epoch))
 
-    d.setVar('__CACHED_SOURCE_DATE_EPOCH', str(source_date_epoch))
+    d.setVar('__CACHED_SOURCE_DATE_EPOCH', (str(source_date_epoch), epochfile))
     return str(source_date_epoch)
 
 export SOURCE_DATE_EPOCH ?= "${@get_source_date_epoch_value(d)}"
