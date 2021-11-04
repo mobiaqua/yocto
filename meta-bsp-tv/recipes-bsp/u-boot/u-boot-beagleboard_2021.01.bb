@@ -23,6 +23,7 @@ SRC_URI = "git://git.denx.de/u-boot.git \
            file://boot-beagle-sdcard.script \
            file://boot-beagle-nfs.script \
            file://boot-beagle-nfs2.script \
+           file://avoid-python2.patch \
            file://0001-am57xx_evm-fixes.patch \
           "
 

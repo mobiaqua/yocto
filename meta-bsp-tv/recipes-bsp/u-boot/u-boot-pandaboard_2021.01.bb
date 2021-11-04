@@ -23,6 +23,7 @@ SRC_URI = "git://git.denx.de/u-boot.git \
            file://boot-panda-sdcard.script \
            file://boot-panda-nfs.script \
            file://boot-panda-nfs2.script \
+           file://avoid-python2.patch \
           "
 
 S = "${WORKDIR}/git"

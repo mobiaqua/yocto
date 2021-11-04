@@ -1,0 +1,12 @@
+diff -urp old/Makefile new/Makefile
+--- old/Makefile	2021-11-04 22:02:36.000000000 +0100
++++ new/Makefile	2021-11-04 22:03:43.000000000 +0100
+@@ -325,7 +325,7 @@ HOSTLDFLAGS += $(call os_x_before, 10, 7
+ 
+ # macOS Mojave (10.14.X) 
+ # Undefined symbols for architecture x86_64: "_PyArg_ParseTuple"
+-HOSTLDFLAGS += $(call os_x_after, 10, 14, "-lpython -dynamclib", "")
++#HOSTLDFLAGS += $(call os_x_after, 10, 14, "-lpython -dynamclib", "")
+ endif
+ 
+ # Decide whether to build built-in, modular, or both.
