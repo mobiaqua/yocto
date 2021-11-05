@@ -1,6 +1,6 @@
 **This is MobiAqua fork of Yocto "Dunfell" distribution.**
 
-**Only macOS 10.15 and later on Intel CPU host supported.**
+**Only macOS 12 and later on Intel CPU host supported.**
 
 **Only MacPorts with GNU prefix tools supported.**
 
