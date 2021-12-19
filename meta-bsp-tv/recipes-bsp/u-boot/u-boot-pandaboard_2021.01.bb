@@ -18,7 +18,7 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/files/pandaboard:${THISDIR}/files:"
 # repo during parse
 SRCREV = "c4fddedc48f336eabc4ce3f74940e6aa372de18c"
 
-SRC_URI = "git://git.denx.de/u-boot.git \
+SRC_URI = "git://git.denx.de/u-boot.git;branch=master \
            file://boot-panda-label.script \
            file://boot-panda-sdcard.script \
            file://boot-panda-nfs.script \
