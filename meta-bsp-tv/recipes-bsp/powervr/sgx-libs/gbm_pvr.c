@@ -184,7 +184,7 @@ gbm_pvr_bo_create(struct gbm_device *gbm,
       format == GBM_FORMAT_ARGB8888;
    is_scanout = (usage & GBM_BO_USE_SCANOUT) != 0 &&
       (format == GBM_FORMAT_XRGB8888 || format == GBM_FORMAT_ARGB8888);
-   if (!is_cursor && !is_scanout) {
+   if (is_cursor || !is_scanout) {
       errno = EINVAL;
       return NULL;
    }
