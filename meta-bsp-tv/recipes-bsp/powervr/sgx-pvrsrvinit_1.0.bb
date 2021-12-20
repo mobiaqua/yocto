@@ -3,7 +3,7 @@ LICENSE = "MIT"
 
 ERROR_QA_remove = "license-checksum"
 
-DEPENDS = "sgx-libs"
+DEPENDS = ""
 
 SRC_URI = "file://pvrsrvinit.c"
 
@@ -18,7 +18,11 @@ CLEANBROKEN = "1"
 do_configure[noexec] = "1"
 
 do_compile() {
-	${CC} -o pvrsrvinit pvrsrvinit.c ${CFLAGS} ${LDFLAGS} -g -lsrv_init
+	if [ "${DEBUG_BUILD}" = "yes" ]; then
+		${CC} -o pvrsrvinit pvrsrvinit.c ${CFLAGS} ${LDFLAGS} -ldl -g3 -O0
+	else
+		${CC} -o pvrsrvinit pvrsrvinit.c ${CFLAGS} ${LDFLAGS} -ldl -g
+	fi
 }
 
 do_install() {

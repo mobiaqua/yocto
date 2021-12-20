@@ -23,19 +23,38 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <dlfcn.h>
 
-extern int SrvInit(void);
+typedef int SrvInitFunc(void);
+
+static SrvInitFunc *SrvInit;
 
 int main(int argc, char **argv)
 {
     int status;
+    void *handle;
+
+    handle = dlopen("/usr/lib/libsrv_init.so", RTLD_NOW | RTLD_GLOBAL);
+    if (!handle) {
+        fprintf(stderr, "Failed to load SGX 'srv_init' library: %s\n", dlerror());
+        return 1;
+    }
+
+    SrvInit = dlsym(handle, "SrvInit");
+    if (!SrvInit) {
+        fprintf(stderr, "Failed to find symbol: %s\n", dlerror());
+        dlclose(handle);
+        return 1;
+    }
 
     status = SrvInit();
     if (status)
     {
-       sprintf(stderr, "SrvInit: Failed to init SGX services, error code: %d", status);
-       return 1;
+        fprintf(stderr, "SrvInit: Failed to init SGX services, error code: %d\n", status);
+        dlclose(handle);
+        return 1;
     }
 
+    dlclose(handle);
     return 0;
 }
