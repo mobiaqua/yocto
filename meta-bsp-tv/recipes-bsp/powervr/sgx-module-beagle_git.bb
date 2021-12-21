@@ -27,4 +27,4 @@ do_install() {
 	cp ${S}/eurasiacon/binary2_omap_linux_release/target_armhf/kbuild/omapdrm_pvr_beaglex15.ko ${D}/lib/modules/${KERNEL_VERSION}/kernel/drivers/gpu/pvr
 }
 
-PACKAGE_STRIP = "no"
+INHIBIT_PACKAGE_STRIP = "1"
