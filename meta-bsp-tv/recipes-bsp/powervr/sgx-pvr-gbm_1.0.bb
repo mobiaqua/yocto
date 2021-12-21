@@ -52,7 +52,7 @@ do_install() {
 	install -m 0644 libpvrws_GBM.so ${D}${libdir}
 }
 
-PACKAGES = "${PN}"
+PACKAGES = "${PN} ${PN}-dbg"
 
 FILES_${PN} = "${libdir}/*.so ${libdir}/gbm/*.so"
 FILES_${PN}-dbg = "${libdir}/.debug ${libdir}/gbm/.debug"
