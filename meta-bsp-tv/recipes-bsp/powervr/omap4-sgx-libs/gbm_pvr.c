@@ -252,7 +252,7 @@ gbm_pvr_surface_destroy(struct gbm_surface *_surf)
 
    for (int i = 0; i < PVR_NUM_BACK_BUFFERS; i++) {
       if (surf->back_buffers[i]) {
-         gbm_bo_destroy(surf->back_buffers[i]);
+         gbm_pvr_bo_destroy(surf->back_buffers[i]);
       }
    }
 
