@@ -32,17 +32,12 @@ INSANE_SKIP_${PN} += "dev-elf dev-deps"
 do_configure[noexec] = "1"
 
 do_compile() {
-	export DRM_CFLAGS=`pkg-config --cflags libdrm`
-	export DRM_LIBS=`pkg-config --libs libdrm`
-	export GBM_CFLAGS=`pkg-config --cflags gbm`
-	export GBM_LIBS=`pkg-config --libs gbm`
-
 	if [ "${DEBUG_BUILD}" = "yes" ]; then
-		${CC} ${CFLAGS} ${LDFLAGS} ${GBM_CFLAGS} ${GBM_LIBS} ${DRM_CFLAGS} ${DRM_LIBS} -O0 -g3 gbm_pvr.c -fPIC -shared -o gbm_pvr.so
-		${CC} ${CFLAGS} ${LDFLAGS} ${GBM_CFLAGS} ${GBM_LIBS} ${DRM_CFLAGS} ${DRM_LIBS} -O0 -g3 pvrws_GBM.c -fPIC -shared -o libpvrws_GBM.so
+		${CC} ${CFLAGS} `pkg-config --cflags libdrm gbm` ${LDFLAGS} -O0 -g3 gbm_pvr.c -fPIC -shared `pkg-config --libs libdrm gbm` -o gbm_pvr.so
+		${CC} ${CFLAGS} `pkg-config --cflags libdrm gbm` -DLINUX ${LDFLAGS} -O0 -g3 pvrws_GBM.c -fPIC -shared `pkg-config --libs libdrm gbm` -o libpvrws_GBM.so
 	else
-		${CC} ${CFLAGS} ${LDFLAGS} ${GBM_CFLAGS} ${GBM_LIBS} ${DRM_CFLAGS} ${DRM_LIBS} -DLINUX -g gbm_pvr.c -fPIC -shared -o gbm_pvr.so
-		${CC} ${CFLAGS} ${LDFLAGS} ${GBM_CFLAGS} ${GBM_LIBS} ${DRM_CFLAGS} ${DRM_LIBS} -DLINUX -g pvrws_GBM.c -fPIC -shared -o libpvrws_GBM.so
+		${CC} ${CFLAGS} `pkg-config --cflags libdrm gbm` ${LDFLAGS} -g gbm_pvr.c -fPIC -shared `pkg-config --libs libdrm gbm` -o gbm_pvr.so
+		${CC} ${CFLAGS} `pkg-config --cflags libdrm gbm` -DLINUX ${LDFLAGS} -g pvrws_GBM.c -fPIC -shared `pkg-config --libs libdrm gbm` -o libpvrws_GBM.so
 	fi
 }
 
