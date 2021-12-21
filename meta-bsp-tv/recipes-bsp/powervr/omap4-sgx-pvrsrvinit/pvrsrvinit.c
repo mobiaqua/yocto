@@ -33,7 +33,7 @@ int main(int argc, char **argv)
     status = SrvInit();
     if (status)
     {
-       sprintf(stderr, "SrvInit: Failed to init SGX services, error code: %d", status);
+       fprintf(stderr, "SrvInit: Failed to init SGX services, error code: %d", status);
        return 1;
     }
 
