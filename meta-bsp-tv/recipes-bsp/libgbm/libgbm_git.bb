@@ -10,7 +10,7 @@ PROVIDES += "virtual/libgbm"
 
 inherit autotools lib_package pkgconfig
 
-SRCREV = "d3656c5af15d0d43a53a7b8338c6dcca2de14c80"
+SRCREV = "e1f9ff191c77be0d6936ff5d32e2b62faf9935a8"
 
 SRC_URI = "git://github.com/mobiaqua/libgbm.git;protocol=git \
           "
