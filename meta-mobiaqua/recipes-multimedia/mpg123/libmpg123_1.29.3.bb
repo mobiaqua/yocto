@@ -1,7 +1,7 @@
 DESCRIPTION = "mpg123 is a fast and free console based real time MPEG \
 Audio Player for Layer 1, 2 and 3."
 LICENSE = "LGPL-2.1"
-LIC_FILES_CHKSUM = "file://COPYING;md5=1e86753638d3cf2512528b99079bc4f3"
+LIC_FILES_CHKSUM = "file://COPYING;md5=e7b9c15fcfb986abb4cc5e8400a24169"
 DESCRIPTION = "multimedia"
 HOMEPAGE = "http://www.mpg123.de"
 RCONFLICTS_${PN} = "mpg321"
@@ -17,8 +17,7 @@ EXTRA_OECONF_armv7a-hf="--with-cpu=neon --with-optimization=4 --enable-network=n
 
 inherit autotools pkgconfig
 
-SRC_URI[md5sum] = "294a6c30546504ec3d0deac2b2ea22be"
-SRC_URI[sha256sum] = "90306848359c793fd43b9906e52201df18775742dc3c81c06ab67a806509890a"
+SRC_URI[sha256sum] = "963885d8cc77262f28b77187c7d189e32195e64244de2530b798ddf32183e847"
 
 S = "${WORKDIR}/mpg123-${PV}"
 
