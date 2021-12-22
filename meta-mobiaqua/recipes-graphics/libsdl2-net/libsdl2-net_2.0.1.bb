@@ -17,7 +17,7 @@ SRC_URI[sha256sum] = "15ce8a7e5a23dafe8177c8df6e6c79b6749a03fff1e8196742d3571657
 
 do_configure_prepend() {
     # create dummy files which autotools consider as mandatory
-    touch ${S}/NEWS ${S}/README ${S}/AUTHORS ${S}/ChangeLog  
+    touch ${S}/NEWS ${S}/README ${S}/AUTHORS ${S}/ChangeLog
 
     # Remove old libtool macros.
     for macro in libtool.m4 lt~obsolete.m4 ltoptions.m4 ltsugar.m4 ltversion.m4; do
