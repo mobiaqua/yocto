@@ -64,3 +64,8 @@ do_configure_prepend() {
 FILES_${PN}-dev += "${libdir}/cmake"
 
 BBCLASSEXTEND = "native nativesdk"
+
+DEBUG_BUILD = "${@['no','yes'][d.getVar('BUILD_DEBUG') == '1']}"
+CFLAGS_append = "${@['',' -O0 -g3'][d.getVar('BUILD_DEBUG') == '1']}"
+
+RM_WORK_EXCLUDE += "${@['','${PN}'][d.getVar('BUILD_DEBUG') == '1']}"
