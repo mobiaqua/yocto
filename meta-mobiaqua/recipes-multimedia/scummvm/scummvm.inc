@@ -29,11 +29,6 @@ EXTRA_OECONF = "--host=${HOST_SYS} \
 
 EXTRA_OEMAKE = "MANDIR=${mandir}"
 
-# Workaround, because some env variables are not recognised correctly
 do_configure() {
 	${S}/configure ${EXTRA_OECONF}
-	sed -i "s/AS := as/AS := ${AS}/" ${B}/config.mk
-	sed -i "s/AR := ar cru/AR := ${AR} cru/" ${B}/config.mk
-	sed -i "s/STRIP := strip/STRIP := ${STRIP}/" ${B}/config.mk
-	sed -i "s/RANLIB := ranlib/RANLIB := ${RANLIB}/" ${B}/config.mk
 }
