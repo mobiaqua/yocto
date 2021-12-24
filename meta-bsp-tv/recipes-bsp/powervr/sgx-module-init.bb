@@ -4,7 +4,10 @@ ERROR_QA_remove = "license-checksum"
 PR = "r0"
 PV = "1"
 
-SRC_URI = "file://rc.pvr"
+SRC_URI = "\
+           file://rc.pvr \
+           file://pvr.conf \
+          "
 
 inherit update-rc.d
 
@@ -23,6 +26,9 @@ do_install() {
 		install -d ${D}${sysconfdir}/rcS.d
 		ln -sf ../init.d/${INITSCRIPT_NAME} ${D}${sysconfdir}/rcS.d/S30${INITSCRIPT_NAME}
 	fi
+
+	install -d ${D}${sysconfdir}/modprobe.d
+	install -m 0644 ${WORKDIR}/pvr.conf ${D}${sysconfdir}/modprobe.d/pvr.conf
 }
 
 FILES_${PN} += "${sysconfdir}"
