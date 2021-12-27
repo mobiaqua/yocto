@@ -49,6 +49,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <dlfcn.h>
 
 #include "pvrws_GBM.h"
 
@@ -57,6 +58,45 @@
 #define SGX_GENERAL_HEAP_ID 0
 
 static int refCount = 0;
+
+typedef PVRSRV_ERROR IMG_CALLCONV PVRSRVConnect_Type(PVRSRV_CONNECTION **ppsConnection, IMG_UINT32 ui32SrvFlags);
+typedef PVRSRV_ERROR IMG_CALLCONV PVRSRVDisconnect_Type(IMG_HANDLE hConnection);
+typedef PVRSRV_ERROR IMG_CALLCONV PVRSRVEnumerateDevices_Type(IMG_CONST PVRSRV_CONNECTION *psConnection,
+                                                              IMG_UINT32 *puiNumDevices,
+                                                              PVRSRV_DEVICE_IDENTIFIER *puiDevIDs);
+typedef PVRSRV_ERROR IMG_CALLCONV PVRSRVAcquireDeviceData_Type(IMG_CONST PVRSRV_CONNECTION *psConnection,
+                                                               IMG_UINT32 uiDevIndex,
+                                                               PVRSRV_DEV_DATA *psDevData,
+                                                               PVRSRV_DEVICE_TYPE eDeviceType);
+typedef PVRSRV_ERROR IMG_CALLCONV PVRSRVGetMiscInfo_Type(IMG_HANDLE hConnection, PVRSRV_MISC_INFO *psMiscInfo);
+typedef PVRSRV_ERROR IMG_CALLCONV PVRSRVReleaseMiscInfo_Type(IMG_HANDLE hConnection, PVRSRV_MISC_INFO *psMiscInfo);
+typedef PVRSRV_ERROR IMG_CALLCONV PVRSRVCreateDeviceMemContext_Type(IMG_CONST PVRSRV_DEV_DATA *psDevData,
+                                                                    IMG_HANDLE *phDevMemContext,
+                                                                    IMG_UINT32 *pui32SharedHeapCount,
+                                                                    PVRSRV_HEAP_INFO *psHeapInfo);
+typedef PVRSRV_ERROR IMG_CALLCONV PVRSRVDestroyDeviceMemContext_Type(IMG_CONST PVRSRV_DEV_DATA *psDevData,
+                                                                     IMG_HANDLE hDevMemContext);
+typedef PVRSRV_ERROR PVRSRVEventObjectWait_Type(const PVRSRV_CONNECTION *psConnection, IMG_HANDLE hOSEvent);
+typedef PVRSRV_ERROR PVRSRVMapFullDmaBuf_Type(const PVRSRV_DEV_DATA *psDevData,
+                                              const IMG_HANDLE hDevMemHeap,
+                                              const IMG_UINT32 ui32Attribs,
+                                              const IMG_INT iDmaBufFD,
+                                              PVRSRV_CLIENT_MEM_INFO **ppsMemInfo);
+typedef PVRSRV_ERROR PVRSRVUnmapDmaBuf_Type(const PVRSRV_DEV_DATA *psDevData, PVRSRV_CLIENT_MEM_INFO *psMemInfo);
+typedef const IMG_CHAR *PVRSRVGetErrorString_Type(PVRSRV_ERROR eError);
+
+static PVRSRVConnect_Type *PVRSRVConnectFunc;
+static PVRSRVDisconnect_Type *PVRSRVDisconnectFunc;
+static PVRSRVEnumerateDevices_Type *PVRSRVEnumerateDevicesFunc;
+static PVRSRVAcquireDeviceData_Type *PVRSRVAcquireDeviceDataFunc;
+static PVRSRVGetMiscInfo_Type *PVRSRVGetMiscInfoFunc;
+static PVRSRVReleaseMiscInfo_Type *PVRSRVReleaseMiscInfoFunc;
+static PVRSRVCreateDeviceMemContext_Type *PVRSRVCreateDeviceMemContextFunc;
+static PVRSRVDestroyDeviceMemContext_Type *PVRSRVDestroyDeviceMemContextFunc;
+static PVRSRVEventObjectWait_Type *PVRSRVEventObjectWaitFunc;
+static PVRSRVMapFullDmaBuf_Type *PVRSRVMapFullDmaBufFunc;
+static PVRSRVUnmapDmaBuf_Type *PVRSRVUnmapDmaBufFunc;
+static PVRSRVGetErrorString_Type *PVRSRVGetErrorStringFunc;
 
 static WSEGLCaps const wseglDisplayCaps[] = {
     { WSEGL_CAP_WINDOWS_USE_HW_SYNC, 0 },
@@ -89,17 +129,17 @@ static bool InitialiseServices(struct GBMDisplay *display)
     IMG_UINT32 heapCount;
     int i;
 
-    err = PVRSRVConnect(&display->services, 0);
+    err = PVRSRVConnectFunc(&display->services, 0);
     if (err != PVRSRV_OK)
     {
-        fprintf(stderr, "PVRSRVConnect failed: %s\n", PVRSRVGetErrorString(err));
+        fprintf(stderr, "PVRSRVConnect failed: %s\n", PVRSRVGetErrorStringFunc(err));
         return 0;
     }
 
-    err = PVRSRVEnumerateDevices(display->services, &numDevices, devIds);
+    err = PVRSRVEnumerateDevicesFunc(display->services, &numDevices, devIds);
     if (err != PVRSRV_OK)
     {
-        fprintf(stderr, "PVRSRVEnumerateDevices failed: %s\n", PVRSRVGetErrorString(err));
+        fprintf(stderr, "PVRSRVEnumerateDevices failed: %s\n", PVRSRVGetErrorStringFunc(err));
         goto DISCONNECT;
     }
 
@@ -119,17 +159,17 @@ static bool InitialiseServices(struct GBMDisplay *display)
         goto DISCONNECT;
     }
 
-    err = PVRSRVAcquireDeviceData(display->services, devIds[i].ui32DeviceIndex, &display->devData, PVRSRV_DEVICE_TYPE_UNKNOWN);
+    err = PVRSRVAcquireDeviceDataFunc(display->services, devIds[i].ui32DeviceIndex, &display->devData, PVRSRV_DEVICE_TYPE_UNKNOWN);
     if (err != PVRSRV_OK)
     {
-        fprintf(stderr, "PVRSRVAcquireDeviceData failed: %s\n", PVRSRVGetErrorString(err));
+        fprintf(stderr, "PVRSRVAcquireDeviceData failed: %s\n", PVRSRVGetErrorStringFunc(err));
         goto DISCONNECT;
     }
 
-    err = PVRSRVCreateDeviceMemContext(&display->devData, &display->devMemContext, &heapCount, heapInfo);
+    err = PVRSRVCreateDeviceMemContextFunc(&display->devData, &display->devMemContext, &heapCount, heapInfo);
     if (err != PVRSRV_OK)
     {
-        fprintf(stderr, "PVRSRVCreateDeviceMemContext failed: %s\n", PVRSRVGetErrorString(err));
+        fprintf(stderr, "PVRSRVCreateDeviceMemContext failed: %s\n", PVRSRVGetErrorStringFunc(err));
         goto DESTROY_CONTEXT;
     }
 
@@ -148,27 +188,27 @@ static bool InitialiseServices(struct GBMDisplay *display)
     }
 
     display->miscInfo.ui32StateRequest = PVRSRV_MISC_INFO_GLOBALEVENTOBJECT_PRESENT;
-    err = PVRSRVGetMiscInfo((IMG_HANDLE)display->services, &display->miscInfo);
+    err = PVRSRVGetMiscInfoFunc((IMG_HANDLE)display->services, &display->miscInfo);
     if (err != PVRSRV_OK)
     {
-        fprintf(stderr, "PVRSRVGetMiscInfo failed: %s\n", PVRSRVGetErrorString(err));
+        fprintf(stderr, "PVRSRVGetMiscInfo failed: %s\n", PVRSRVGetErrorStringFunc(err));
         goto DESTROY_CONTEXT;
     }
 
     return true;
 
 DESTROY_CONTEXT:
-    PVRSRVDestroyDeviceMemContext(&display->devData, display->devMemContext);
+    PVRSRVDestroyDeviceMemContextFunc(&display->devData, display->devMemContext);
 DISCONNECT:
-    PVRSRVDisconnect((IMG_HANDLE)display->services);
+    PVRSRVDisconnectFunc((IMG_HANDLE)display->services);
     return false;
 }
 
 static void DeInitialiseServices(struct GBMDisplay *display)
 {
-    PVRSRVReleaseMiscInfo((IMG_HANDLE)display->services, &display->miscInfo);
-    PVRSRVDestroyDeviceMemContext(&display->devData, display->devMemContext);
-    PVRSRVDisconnect((IMG_HANDLE)display->services);
+    PVRSRVReleaseMiscInfoFunc((IMG_HANDLE)display->services, &display->miscInfo);
+    PVRSRVDestroyDeviceMemContextFunc(&display->devData, display->devMemContext);
+    PVRSRVDisconnectFunc((IMG_HANDLE)display->services);
 }
 
 static inline bool unsigned_greater_equal(unsigned a, unsigned b)
@@ -200,7 +240,7 @@ static void WaitForOpsComplete(struct GBMDisplay *display, const PVRSRV_CLIENT_S
             break;
         }
 
-        PVRSRVEventObjectWait(display->services, display->miscInfo.hOSGlobalEvent);
+        PVRSRVEventObjectWaitFunc(display->services, display->miscInfo.hOSGlobalEvent);
     }
 }
 
@@ -287,11 +327,11 @@ static WSEGLError wseglCreateWindowDrawable
             close(dmaFd);
             goto FAIL;
         }
-        err = PVRSRVMapFullDmaBuf(&drawable->display->devData,
-                                  drawable->display->mappingHeap,
-                                  PVRSRV_MAP_NOUSERVIRTUAL,
-                                  dmaFd,
-                                  &drawable->backBuffers[i].memInfo);
+        err = PVRSRVMapFullDmaBufFunc(&drawable->display->devData,
+                                      drawable->display->mappingHeap,
+                                      PVRSRV_MAP_NOUSERVIRTUAL,
+                                      dmaFd,
+                                      &drawable->backBuffers[i].memInfo);
         close(dmaFd);
         if (err != PVRSRV_OK)
             goto FAIL;
@@ -309,7 +349,7 @@ FAIL:
         if (drawable->backBuffers[i].memInfo)
         {
             WaitForOpsComplete(display, drawable->backBuffers[i].memInfo->psClientSyncInfo);
-            PVRSRVUnmapDmaBuf(&drawable->display->devData, drawable->backBuffers[i].memInfo);
+            PVRSRVUnmapDmaBufFunc(&drawable->display->devData, drawable->backBuffers[i].memInfo);
             if (drawable->backBuffers[i].mmap)
                 gbm_bo_unmap(drawable->window->back_buffers[i], drawable->backBuffers[i].mmap);
         }
@@ -503,5 +543,27 @@ static WSEGL_FunctionTable const wseglFunctions = {
 
 const WSEGL_FunctionTable *WSEGL_GetFunctionTablePointer(void)
 {
+    unsigned *handle;
+
+    if ((handle = dlopen("/usr/lib/libsrv_init.so", RTLD_LAZY | RTLD_GLOBAL)) == NULL)
+    {
+        return NULL;
+    }
+
+    PVRSRVConnectFunc = dlsym(handle, "PVRSRVConnect");
+    PVRSRVDisconnectFunc = dlsym(handle, "PVRSRVDisconnect");
+    PVRSRVEnumerateDevicesFunc = dlsym(handle, "PVRSRVEnumerateDevices");
+    PVRSRVAcquireDeviceDataFunc = dlsym(handle, "PVRSRVAcquireDeviceData");
+    PVRSRVGetMiscInfoFunc = dlsym(handle, "PVRSRVGetMiscInfo");
+    PVRSRVReleaseMiscInfoFunc = dlsym(handle, "PVRSRVReleaseMiscInfo");
+    PVRSRVCreateDeviceMemContextFunc = dlsym(handle, "PVRSRVCreateDeviceMemContext");
+    PVRSRVDestroyDeviceMemContextFunc = dlsym(handle, "PVRSRVDestroyDeviceMemContext");
+    PVRSRVEventObjectWaitFunc = dlsym(handle, "PVRSRVEventObjectWait");
+    PVRSRVMapFullDmaBufFunc = dlsym(handle, "PVRSRVMapFullDmaBuf");
+    PVRSRVUnmapDmaBufFunc = dlsym(handle, "PVRSRVUnmapDmaBuf");
+    PVRSRVGetErrorStringFunc = dlsym(handle, "PVRSRVGetErrorString");
+
+    dlclose(handle);
+
     return &wseglFunctions;
 }
