@@ -40,7 +40,7 @@ UBOOT_MACHINE = "omap4_panda_defconfig"
 
 COMPATIBLE_MACHINE = "board-tv"
 
-UBOOT_SUFFIX ??= "bin"
+UBOOT_SUFFIX ??= "img"
 UBOOT_IMAGE ?= "u-boot-panda-${PV}-${PR}.${UBOOT_SUFFIX}"
 UBOOT_MAKE_TARGET ?= "all"
 
