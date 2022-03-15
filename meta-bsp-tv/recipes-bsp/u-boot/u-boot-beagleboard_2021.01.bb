@@ -23,6 +23,10 @@ SRC_URI = "git://git.denx.de/u-boot.git;branch=master \
            file://boot-beagle-sdcard.script \
            file://boot-beagle-nfs.script \
            file://boot-beagle-nfs2.script \
+           file://boot-beagleai-label.script \
+           file://boot-beagleai-sdcard.script \
+           file://boot-beagleai-nfs.script \
+           file://boot-beagleai-nfs2.script \
            file://avoid-python2.patch \
            file://0001-am57xx_evm-fixes.patch \
           "
@@ -50,11 +54,17 @@ MLO_IMAGE ?= "MLO-beagle-${PV}-${PR}"
 do_configure_prepend () {
     sed -i -e s,NFS_IP,${MA_NFS_IP},g ${WORKDIR}/boot-beagle-nfs.script
     sed -i -e s,NFS_PATH,${MA_NFS_PATH},g ${WORKDIR}/boot-beagle-nfs.script
+    sed -i -e s,NFS_IP,${MA_NFS_IP},g ${WORKDIR}/boot-beagleai-nfs.script
+    sed -i -e s,NFS_PATH,${MA_NFS_PATH},g ${WORKDIR}/boot-beagleai-nfs.script
 
     sed -i -e s,NFS_IP,${MA_NFS_IP},g ${WORKDIR}/boot-beagle-nfs2.script
     sed -i -e s,NFS_PATH,${MA_NFS_PATH},g ${WORKDIR}/boot-beagle-nfs2.script
     sed -i -e s,TARGET_IP,${MA_TARGET_IP},g ${WORKDIR}/boot-beagle-nfs2.script
     sed -i -e s,GATEWAY_IP,${MA_GATEWAY_IP},g ${WORKDIR}/boot-beagle-nfs2.script
+    sed -i -e s,NFS_IP,${MA_NFS_IP},g ${WORKDIR}/boot-beagleai-nfs2.script
+    sed -i -e s,NFS_PATH,${MA_NFS_PATH},g ${WORKDIR}/boot-beagleai-nfs2.script
+    sed -i -e s,TARGET_IP,${MA_TARGET_IP},g ${WORKDIR}/boot-beagleai-nfs2.script
+    sed -i -e s,GATEWAY_IP,${MA_GATEWAY_IP},g ${WORKDIR}/boot-beagleai-nfs2.script
 }
 
 do_configure () {
@@ -81,6 +91,10 @@ do_install () {
     install -m 0644 ${WORKDIR}/boot-beagle-label.script ${D}/boot/uEnv-beagle-label.txt
     install -m 0644 ${WORKDIR}/boot-beagle-nfs.script ${D}/boot/uEnv-beagle-nfs.txt
     install -m 0644 ${WORKDIR}/boot-beagle-nfs2.script ${D}/boot/uEnv-beagle-nfs2.txt
+    install -m 0644 ${WORKDIR}/boot-beagle-sdcard.script ${D}/boot/uEnv-beagleai-sdcard.txt
+    install -m 0644 ${WORKDIR}/boot-beagle-label.script ${D}/boot/uEnv-beagleai-label.txt
+    install -m 0644 ${WORKDIR}/boot-beagle-nfs.script ${D}/boot/uEnv-beagleai-nfs.txt
+    install -m 0644 ${WORKDIR}/boot-beagle-nfs2.script ${D}/boot/uEnv-beagleai-nfs2.txt
 }
 
 FILES_${PN} = "/boot"
@@ -97,6 +111,10 @@ do_deploy () {
     install -m 0644 ${WORKDIR}/boot-beagle-label.script ${DEPLOYDIR}/uEnv-beagle-label.txt
     install -m 0644 ${WORKDIR}/boot-beagle-nfs.script ${DEPLOYDIR}/uEnv-beagle-nfs.txt
     install -m 0644 ${WORKDIR}/boot-beagle-nfs2.script ${DEPLOYDIR}/uEnv-beagle-nfs2.txt
+    install -m 0644 ${WORKDIR}/boot-beagle-sdcard.script ${DEPLOYDIR}/uEnv-beagleai-sdcard.txt
+    install -m 0644 ${WORKDIR}/boot-beagle-label.script ${DEPLOYDIR}/uEnv-beagleai-label.txt
+    install -m 0644 ${WORKDIR}/boot-beagle-nfs.script ${DEPLOYDIR}/uEnv-beagleai-nfs.txt
+    install -m 0644 ${WORKDIR}/boot-beagle-nfs2.script ${DEPLOYDIR}/uEnv-beagleai-nfs2.txt
 }
 
 addtask deploy before do_build after do_compile

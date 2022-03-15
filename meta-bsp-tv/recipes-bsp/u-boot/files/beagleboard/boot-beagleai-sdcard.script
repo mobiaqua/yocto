@@ -1,0 +1,3 @@
+bootcmd=fatload mmc 0:1 0x80000000 uImage;bootm 0x80000000
+bootargs=console=ttyS0,115200n8 root=/dev/mmcblk0p2 ro consoleblank=0 earlyprintk earlycon=ttyS0,115200n8 fixrtc
+uenvcmd=boot
