@@ -1,6 +1,6 @@
 --- a/arch/arm/boot/dts/omap4.dtsi
 +++ b/arch/arm/boot/dts/omap4.dtsi
-@@ -536,10 +562,11 @@
+@@ -567,10 +593,11 @@
  			#size-cells = <1>;
  			ranges = <0 0x56000000 0x2000000>;
  
@@ -19,7 +19,7 @@
 diff --git a/arch/arm/boot/dts/omap443x.dtsi b/arch/arm/boot/dts/omap443x.dtsi
 --- a/arch/arm/boot/dts/omap443x.dtsi
 +++ b/arch/arm/boot/dts/omap443x.dtsi
-@@ -76,11 +76,11 @@
+@@ -78,11 +78,11 @@
  /include/ "omap443x-clocks.dtsi"
  
  /*

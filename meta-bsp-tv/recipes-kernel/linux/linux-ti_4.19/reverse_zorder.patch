@@ -4,11 +4,11 @@
  
  	plane->state->rotation = DRM_MODE_ROTATE_0;
  	plane->state->zpos = plane->type == DRM_PLANE_TYPE_PRIMARY
--			   ? 0 : omap_plane->id;
-+			   ? 3 : 3 - omap_plane->id;
+-			   ? 0 : old_omap_state->overlay->overlay_id;
++			   ? 3 : 3 - old_omap_state->overlay->overlay_id;
  
- 	priv->dispc_ops->ovl_enable(priv->dispc, omap_plane->id, false);
- }
+ 	omap_overlay_disable(old_state->state, plane, old_omap_state->overlay);
+ 	new_omap_state->overlay = NULL;
 @@ -179,7 +179,7 @@ void omap_plane_install_properties(struct drm_plane *plane,
  						   DRM_MODE_ROTATE_0);
  	}
@@ -24,6 +24,6 @@
  	plane->state->zpos = plane->type == DRM_PLANE_TYPE_PRIMARY
 -			   ? 0 : omap_plane->id;
 +			   ? 3 : 3 - omap_plane->id;
- }
+ 	plane->state->color_encoding = DRM_COLOR_YCBCR_BT601;
+ 	plane->state->color_range = DRM_COLOR_YCBCR_FULL_RANGE;
  
- static int omap_plane_atomic_set_property(struct drm_plane *plane,

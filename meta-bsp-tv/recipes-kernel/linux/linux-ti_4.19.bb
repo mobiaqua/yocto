@@ -11,20 +11,18 @@ KERNEL_DEVICETREE_board-tv = "omap4-panda.dtb omap4-panda-es.dtb am57xx-beagle-x
 FILESEXTRAPATHS_prepend := "${THISDIR}/linux-ti_4.19:"
 
 SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v4.x/linux-${LINUX_VERSION}.tar.xz \
+           file://ti-upstream.patch \
            file://fix_nonlinux_compile.patch \
            file://0001-bootup-hacks-move-mmc-early.patch \
-           file://fixed_name_hdmi_audio.patch \
-           file://smsc95xx-add-macaddr-module-parameter.patch \
-           file://panda-bt-fixes.patch \
            file://0003-bootup-hacks-xor-select-neon-or-arm4regs.patch \
-           file://reverse_zorder.patch \
            file://wait-for-rootfs.patch \
-           file://remoteproc-rpmsg-omapdrm-gem-machomap2.patch \
+           file://smsc95xx-add-macaddr-module-parameter.patch \
+           file://fixed_name_hdmi_audio.patch \
            file://gpu-dts.patch \
-           file://dra7-revert-timer.patch \
-           file://dra7.patch \
+           file://panda-bt-fixes.patch \
+           file://reverse_zorder.patch \
            file://gpu2d.patch \
-           file://beagleboneai.patch \
+           file://dra7-revert-timer.patch \
            file://defconfig \
            "
 

@@ -10,7 +10,7 @@ index 8e9213b36..8e60dbc09 100644
  
  #include <generated/utsrelease.h>
  
-@@ -312,6 +313,8 @@ fw_get_filesystem_firmware(struct device *device, struct fw_priv *fw_priv)
+@@ -313,6 +314,8 @@ fw_get_filesystem_firmware(struct device *device, struct fw_priv *fw_priv)
  	if (!path)
  		return -ENOMEM;
  
