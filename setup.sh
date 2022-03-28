@@ -175,7 +175,7 @@ echo -n \"10.15.0\"
 	fi
 
 	if [ "$OS" = "Darwin" ]; then
-		/bin/rm ${OE_BASE}/bin/ggrep
+		/bin/rm -f ${OE_BASE}/bin/ggrep
 		/bin/ln -s /opt/local/bin/ggrep ${OE_BASE}/bin/ggrep
 	fi
 
@@ -383,6 +383,20 @@ echo -n \"10.15.0\"
 		return 1
 	fi
 
+	if [ "$OS" = "Darwin" ]; then
+		/bin/rm -f ${OE_BASE}/bin/rsync
+		if [ -e /opt/local/bin/rsync ]; then
+			/bin/ln -s /opt/local/bin/rsync ${OE_BASE}/bin/rsync
+		else
+			echo "* ERROR *  Missing rsync package"
+			return 1
+		fi
+	fi
+	if [ "$OS" == "Linux" ] && [ ! -e /usr/bin/rsync ]; then
+		echo "* ERROR *  Missing rsync package"
+		return 1
+	fi
+
 	return 0
 }
 
@@ -507,10 +521,10 @@ ASSUME_PROVIDED += \" git-native perl-native python-native python3-native deskto
 linux-libc-headers-native glib-2.0-native intltool-native xz-native gzip-native \
 findutils-native bison-native flex-native help2man-native bc-native subversion-native \
 m4-native unzip-native texinfo-native texinfo-dummy-native patch-replacement-native \
-meson-native ninja-native cmake-native\"
+meson-native ninja-native cmake-native rsync-native\"
 SANITY_REQUIRED_UTILITIES_remove = \"chrpath\"
 PACKAGE_DEPENDS_remove = \"dwarfsrcfiles-native pseudo-native\"
-HOSTTOOLS += \"otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep tic bc dc dos2unix sw_vers xcrun glib-genmarshal glib-compile-schemas svn meson ninja cmake\"
+HOSTTOOLS += \"otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep tic bc dc dos2unix sw_vers xcrun glib-genmarshal glib-compile-schemas svn meson ninja cmake rsync\"
 HOSTTOOLS_remove = \"chrpath flock ldd\"
 PARALLEL_MAKE = \"-j 8\"
 BB_NUMBER_THREADS = \"8\"
