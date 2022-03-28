@@ -567,20 +567,20 @@ bitbake() {
 }
 
 echo
-echo "--- MobiAqua Yocto configuration started ---"
+echo "--- MobiAqua Yocto configuration started... ---"
 
 ERROR=0
 
-[ $ERROR != 1 ] && [ $EUID -eq 0 ] && error "Script running with superuser privileges! Aborting."
+[ $ERROR != 1 ] && [ $EUID -eq 0 ] && error "Script running with superuser privileges! Aborting.";
 
 [ $ERROR != 1 ] && [ -z "$BASH_VERSION" ] && error "Script NOT running in 'bash' shell"
 
 [ $ERROR != 1 ] && [ "x$0" = "x./setup.sh" ] && error "Script must be executed via sourcing: '. setup.sh [<target>] [-debug]'"
 
-[ $ERROR != 1 ] &&  [ "$1" = "" ] && print_help
+[ $ERROR != 1 ] && [ "$1" = "" ] && print_help
 
-[ $ERROR != 1 ] && python_v3_check && [ $? != 0 ] && error "Python v3 is required"
+[ $ERROR != 1 ] && { python_v3_check; [ $? != 0 ] && error "Python v3 is required"; }
 
-[ $ERROR != 1 ] && prepare_tools && [ $? != 0 ] && error "Please install missing tools"
+[ $ERROR != 1 ] && { prepare_tools; [ $? != 0 ] && error "Please install missing tools"; }
 
 [ $ERROR != 1 ] && setup $1 $2
