@@ -1,0 +1,119 @@
+From 58429878b38a9690cfd5b14c266dcffc94a7873f Mon Sep 17 00:00:00 2001
+From: Lorenzo Bianconi <lorenzo@kernel.org>
+Date: Fri, 19 Feb 2021 17:39:18 +0200
+Subject: [PATCH] net: ethernet: ti: fix netdevice stats for XDP
+
+commit a8225efdf31e9498c5696554e5731da893c93f61 upstream.
+
+Align netdevice statistics when the device is running in XDP mode
+to other upstream drivers. In particular report to user-space rx
+packets even if they are not forwarded to the networking stack
+(XDP_PASS) but if they are redirected (XDP_REDIRECT), dropped (XDP_DROP)
+or sent back using the same interface (XDP_TX). This patch allows the
+system administrator to verify the device is receiving data correctly.
+
+Signed-off-by: Lorenzo Bianconi <lorenzo@kernel.org>
+Signed-off-by: Jakub Kicinski <kuba@kernel.org>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+Link: https://lore.kernel.org/r/a457cb17dd9c58c116d64ee34c354b2e89c0ff8f.1612375372.git.lorenzo@kernel.org
+---
+ drivers/net/ethernet/ti/cpsw.c      |  4 +---
+ drivers/net/ethernet/ti/cpsw_new.c  |  4 +---
+ drivers/net/ethernet/ti/cpsw_priv.c | 12 ++++++++++--
+ drivers/net/ethernet/ti/cpsw_priv.h |  2 +-
+ 4 files changed, 13 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
+index b0f00b4edd94..3ae91da24a55 100644
+--- a/drivers/net/ethernet/ti/cpsw.c
++++ b/drivers/net/ethernet/ti/cpsw.c
+@@ -409,12 +409,10 @@ static void cpsw_rx_handler(void *token, int len, int status)
+ 		xdp.frame_sz = PAGE_SIZE;
+ 
+ 		port = priv->emac_port + cpsw->data.dual_emac;
+-		ret = cpsw_run_xdp(priv, ch, &xdp, page, port);
++		ret = cpsw_run_xdp(priv, ch, &xdp, page, port, &len);
+ 		if (ret != CPSW_XDP_PASS)
+ 			goto requeue;
+ 
+-		/* XDP prog might have changed packet data and boundaries */
+-		len = xdp.data_end - xdp.data;
+ 		headroom = xdp.data - xdp.data_hard_start;
+ 
+ 		/* XDP prog can modify vlan tag, so can't use encap header */
+diff --git a/drivers/net/ethernet/ti/cpsw_new.c b/drivers/net/ethernet/ti/cpsw_new.c
+index 2f5e0ad23ad7..019bbebe8733 100644
+--- a/drivers/net/ethernet/ti/cpsw_new.c
++++ b/drivers/net/ethernet/ti/cpsw_new.c
+@@ -351,12 +351,10 @@ static void cpsw_rx_handler(void *token, int len, int status)
+ 		xdp.rxq = &priv->xdp_rxq[ch];
+ 		xdp.frame_sz = PAGE_SIZE;
+ 
+-		ret = cpsw_run_xdp(priv, ch, &xdp, page, priv->emac_port);
++		ret = cpsw_run_xdp(priv, ch, &xdp, page, priv->emac_port, &len);
+ 		if (ret != CPSW_XDP_PASS)
+ 			goto requeue;
+ 
+-		/* XDP prog might have changed packet data and boundaries */
+-		len = xdp.data_end - xdp.data;
+ 		headroom = xdp.data - xdp.data_hard_start;
+ 
+ 		/* XDP prog can modify vlan tag, so can't use encap header */
+diff --git a/drivers/net/ethernet/ti/cpsw_priv.c b/drivers/net/ethernet/ti/cpsw_priv.c
+index 424e644724e4..9ffbfe833029 100644
+--- a/drivers/net/ethernet/ti/cpsw_priv.c
++++ b/drivers/net/ethernet/ti/cpsw_priv.c
+@@ -1323,7 +1323,7 @@ int cpsw_xdp_tx_frame(struct cpsw_priv *priv, struct xdp_frame *xdpf,
+ }
+ 
+ int cpsw_run_xdp(struct cpsw_priv *priv, int ch, struct xdp_buff *xdp,
+-		 struct page *page, int port)
++		 struct page *page, int port, int *len)
+ {
+ 	struct cpsw_common *cpsw = priv->cpsw;
+ 	struct net_device *ndev = priv->ndev;
+@@ -1341,10 +1341,13 @@ int cpsw_run_xdp(struct cpsw_priv *priv, int ch, struct xdp_buff *xdp,
+ 	}
+ 
+ 	act = bpf_prog_run_xdp(prog, xdp);
++	/* XDP prog might have changed packet data and boundaries */
++	*len = xdp->data_end - xdp->data;
++
+ 	switch (act) {
+ 	case XDP_PASS:
+ 		ret = CPSW_XDP_PASS;
+-		break;
++		goto out;
+ 	case XDP_TX:
+ 		xdpf = xdp_convert_buff_to_frame(xdp);
+ 		if (unlikely(!xdpf))
+@@ -1370,8 +1373,13 @@ int cpsw_run_xdp(struct cpsw_priv *priv, int ch, struct xdp_buff *xdp,
+ 		trace_xdp_exception(ndev, prog, act);
+ 		fallthrough;	/* handle aborts by dropping packet */
+ 	case XDP_DROP:
++		ndev->stats.rx_bytes += *len;
++		ndev->stats.rx_packets++;
+ 		goto drop;
+ 	}
++
++	ndev->stats.rx_bytes += *len;
++	ndev->stats.rx_packets++;
+ out:
+ 	rcu_read_unlock();
+ 	return ret;
+diff --git a/drivers/net/ethernet/ti/cpsw_priv.h b/drivers/net/ethernet/ti/cpsw_priv.h
+index 7b7f3596b20d..a323bea54faa 100644
+--- a/drivers/net/ethernet/ti/cpsw_priv.h
++++ b/drivers/net/ethernet/ti/cpsw_priv.h
+@@ -438,7 +438,7 @@ int cpsw_ndo_bpf(struct net_device *ndev, struct netdev_bpf *bpf);
+ int cpsw_xdp_tx_frame(struct cpsw_priv *priv, struct xdp_frame *xdpf,
+ 		      struct page *page, int port);
+ int cpsw_run_xdp(struct cpsw_priv *priv, int ch, struct xdp_buff *xdp,
+-		 struct page *page, int port);
++		 struct page *page, int port, int *len);
+ irqreturn_t cpsw_tx_interrupt(int irq, void *dev_id);
+ irqreturn_t cpsw_rx_interrupt(int irq, void *dev_id);
+ irqreturn_t cpsw_misc_interrupt(int irq, void *dev_id);
+-- 
+2.32.0 (Apple Git-132)
+

@@ -1,0 +1,56 @@
+From 62782877f37c73c65f4ee70a992891a1f080d999 Mon Sep 17 00:00:00 2001
+From: Lokesh Vutla <lokeshvutla@ti.com>
+Date: Thu, 3 Jun 2021 14:29:06 +0530
+Subject: [PATCH] ARM: dts: ti: Fix node name for all ecap dt nodes
+
+dtbs_check produces the following warning for ecap node name:
+ecap@100: $nodename:0: 'ecap@100' does not match '^pwm(@.*|-[0-9a-f])*$'
+
+Fix this by replacing ecap with pwm in node name
+
+Signed-off-by: Lokesh Vutla <lokeshvutla@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ arch/arm/boot/dts/am335x-cm-t335.dts | 2 +-
+ arch/arm/boot/dts/am335x-evm.dts     | 2 +-
+ arch/arm/boot/dts/am335x-evmsk.dts   | 2 +-
+ arch/arm/boot/dts/am33xx-l4.dtsi     | 6 +++---
+ arch/arm/boot/dts/am437x-l4.dtsi     | 6 +++---
+ arch/arm/boot/dts/da850.dtsi         | 6 +++---
+ arch/arm/boot/dts/dra7-l4.dtsi       | 6 +++---
+ 7 files changed, 15 insertions(+), 15 deletions(-)
+
+diff --git a/arch/arm/boot/dts/dra7-l4.dtsi b/arch/arm/boot/dts/dra7-l4.dtsi
+index 3bf90d9e3335..c5e83b4fe32a 100644
+--- a/arch/arm/boot/dts/dra7-l4.dtsi
++++ b/arch/arm/boot/dts/dra7-l4.dtsi
+@@ -2530,7 +2530,7 @@ epwmss0: epwmss@0 {
+ 				status = "disabled";
+ 				ranges = <0 0 0x1000>;
+ 
+-				ecap0: ecap@100 {
++				ecap0: pwm@100 {
+ 					compatible = "ti,dra746-ecap",
+ 						     "ti,am3352-ecap";
+ 					#pwm-cells = <3>;
+@@ -2576,7 +2576,7 @@ epwmss1: epwmss@0 {
+ 				status = "disabled";
+ 				ranges = <0 0 0x1000>;
+ 
+-				ecap1: ecap@100 {
++				ecap1: pwm@100 {
+ 					compatible = "ti,dra746-ecap",
+ 						     "ti,am3352-ecap";
+ 					#pwm-cells = <3>;
+@@ -2622,7 +2622,7 @@ epwmss2: epwmss@0 {
+ 				status = "disabled";
+ 				ranges = <0 0 0x1000>;
+ 
+-				ecap2: ecap@100 {
++				ecap2: pwm@100 {
+ 					compatible = "ti,dra746-ecap",
+ 						     "ti,am3352-ecap";
+ 					#pwm-cells = <3>;
+-- 
+2.32.0 (Apple Git-132)
+

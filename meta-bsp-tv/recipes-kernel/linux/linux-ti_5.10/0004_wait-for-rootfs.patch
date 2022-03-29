@@ -1,0 +1,63 @@
+diff --git a/drivers/base/firmware_loader/main.c b/drivers/base/firmware_loader/main.c
+index 1372f40d0..481aafae2 100644
+--- a/drivers/base/firmware_loader/main.c
++++ b/drivers/base/firmware_loader/main.c
+@@ -505,6 +505,8 @@ fw_get_filesystem_firmware(struct device *device, struct fw_priv *fw_priv,
+ 	if (!path)
+ 		return -ENOMEM;
+ 
++	wait_for_rootfs();
++
+ 	for (i = 0; i < ARRAY_SIZE(fw_path); i++) {
+ 		size_t file_size = 0;
+ 		size_t *file_size_ptr = NULL;
+diff --git a/include/linux/init.h b/include/linux/init.h
+index 7b53cb309..2530aa2be 100644
+--- a/include/linux/init.h
++++ b/include/linux/init.h
+@@ -150,6 +150,7 @@ void setup_arch(char **);
+ void prepare_namespace(void);
+ void __init init_rootfs(void);
+ extern struct file_system_type rootfs_fs_type;
++void wait_for_rootfs(void);
+ 
+ #if defined(CONFIG_STRICT_KERNEL_RWX) || defined(CONFIG_STRICT_MODULE_RWX)
+ extern bool rodata_enabled;
+diff --git a/init/main.c b/init/main.c
+index 4fe58ed4a..9e0a6b419 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -1487,6 +1487,25 @@ void __init console_on_rootfs(void)
+ 	fput(file);
+ }
+ 
++static DECLARE_WAIT_QUEUE_HEAD(rootfs_waitq);
++static bool rootfs_mounted;
++
++void wait_for_rootfs(void)
++{
++	/* Avoid waiting for ourselves */
++	if (rootfs_mounted || WARN_ON(is_global_init(current)))
++		return;
++
++	wait_event(rootfs_waitq, rootfs_mounted);
++}
++EXPORT_SYMBOL(wait_for_rootfs);
++
++static inline void wake_up_rootfs_waiters(void)
++{
++	rootfs_mounted = true;
++	wake_up_all(&rootfs_waitq);
++}
++
+ static noinline void __init kernel_init_freeable(void)
+ {
+ 	/*
+@@ -1546,5 +1565,7 @@ static noinline void __init kernel_init_freeable(void)
+ 	 * and default modules
+ 	 */
+ 
++	wake_up_rootfs_waiters();
++
+ 	integrity_load_keys();
+ }

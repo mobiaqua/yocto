@@ -1,0 +1,243 @@
+From 9261b211ad2de163d0765ff32f84b3d7c58536de Mon Sep 17 00:00:00 2001
+From: Benoit Parrot <bparrot@ti.com>
+Date: Fri, 30 Jul 2021 13:04:31 +0200
+Subject: [PATCH] drm/omap: add omap_plane_reserve/release_wb
+
+Add functions to reserve and release a plane for writeback. Reserving a
+plane will prevent the display side from using the plane while writeback
+is in progress by causing omap_plane_atomic_check() to return -EBUSY.
+
+Signed-off-by: Benoit Parrot <bparrot@ti.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Neil Armstrong <narmstrong@baylibre.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/gpu/drm/omapdrm/omap_overlay.c | 76 ++++++++++++++++++++++++++
+ drivers/gpu/drm/omapdrm/omap_overlay.h |  8 +++
+ drivers/gpu/drm/omapdrm/omap_plane.c   | 74 +++++++++++++++++++++++++
+ drivers/gpu/drm/omapdrm/omap_plane.h   |  4 ++
+ 4 files changed, 162 insertions(+)
+
+diff --git a/drivers/gpu/drm/omapdrm/omap_overlay.c b/drivers/gpu/drm/omapdrm/omap_overlay.c
+index d27b4c3d769b..2210827b4521 100644
+--- a/drivers/gpu/drm/omapdrm/omap_overlay.c
++++ b/drivers/gpu/drm/omapdrm/omap_overlay.c
+@@ -191,6 +191,82 @@ void omap_overlay_disable(struct drm_atomic_state *s,
+ 	 */
+ }
+ 
++int omap_overlay_assign_wb(struct omap_drm_private *priv,
++			   struct drm_plane *plane,
++			   u32 caps, u32 fourcc, u32 crtc_mask,
++			   struct omap_hw_overlay **overlay)
++{
++	struct omap_global_state *old_global_state;
++	struct drm_plane **overlay_map;
++	struct omap_hw_overlay *ovl;
++
++	/*
++	 * As there is no state here we can't really grab the global obj lock.
++	 * This might cause issue!
++	 */
++	old_global_state = omap_get_existing_global_state(priv);
++	DBG("old_global_state: %p", old_global_state);
++
++	overlay_map = old_global_state->hwoverlay_to_plane;
++
++	if (!*overlay) {
++		ovl = omap_plane_find_free_overlay(plane->dev, overlay_map,
++						   caps, fourcc, crtc_mask);
++		if (!ovl)
++			return -ENOMEM;
++
++		overlay_map[ovl->idx] = plane;
++		*overlay = ovl;
++
++		DBG("%s: assign to WB plane %s for caps %x",
++		    (*overlay)->name, plane->name, caps);
++	}
++
++	return 0;
++}
++
++void omap_overlay_release_wb(struct omap_drm_private *priv,
++			     struct drm_plane *plane,
++			     struct omap_hw_overlay *overlay)
++{
++	struct omap_global_state *old_global_state;
++	struct drm_plane **overlay_map;
++
++	if (!overlay)
++		return;
++
++	/*
++	 * As there is no state here we can't really grab the global obj lock.
++	 * This might cause issue!
++	 */
++	old_global_state = omap_get_existing_global_state(priv);
++	DBG("old_global_state: %p", old_global_state);
++
++	overlay_map = old_global_state->hwoverlay_to_plane;
++
++	if (WARN_ON(!overlay_map[overlay->idx]))
++		return;
++	/*
++	 * Check that the overlay we are releasing is actually
++	 * assigned to the plane we are trying to release it from.
++	 */
++	if (overlay_map[overlay->idx] == plane) {
++		DBG("%s: release from WB plane %s", overlay->name, plane->name);
++
++		/*
++		 * As this might get called without having done any other
++		 * actual h/w access make sure the module is enabled before
++		 * trying to access it.
++		 */
++		priv->dispc_ops->runtime_get(priv->dispc);
++		priv->dispc_ops->ovl_enable(priv->dispc, overlay->overlay_id,
++					    false);
++		priv->dispc_ops->runtime_put(priv->dispc);
++		overlay->possible_crtcs = (1 << priv->num_pipes) - 1;
++		overlay_map[overlay->idx] = NULL;
++	}
++}
++
+ static void omap_overlay_destroy(struct omap_hw_overlay *overlay)
+ {
+ 	kfree(overlay);
+diff --git a/drivers/gpu/drm/omapdrm/omap_overlay.h b/drivers/gpu/drm/omapdrm/omap_overlay.h
+index a800468511f1..d3d41f53d68d 100644
+--- a/drivers/gpu/drm/omapdrm/omap_overlay.h
++++ b/drivers/gpu/drm/omapdrm/omap_overlay.h
+@@ -38,4 +38,12 @@ void omap_overlay_release(struct drm_atomic_state *s,
+ void omap_overlay_disable(struct drm_atomic_state *s,
+ 			  struct drm_plane *plane,
+ 			  struct omap_hw_overlay *overlay);
++int omap_overlay_assign_wb(struct omap_drm_private *priv,
++			   struct drm_plane *plane,
++			   u32 caps, u32 fourcc, u32 crtc_mask,
++			   struct omap_hw_overlay **overlay);
++void omap_overlay_release_wb(struct omap_drm_private *priv,
++			     struct drm_plane *plane,
++			     struct omap_hw_overlay *overlay);
++
+ #endif /* __OMAPDRM_OVERLAY_H__ */
+diff --git a/drivers/gpu/drm/omapdrm/omap_plane.c b/drivers/gpu/drm/omapdrm/omap_plane.c
+index f59a7c42d2b1..4f4458d38ffb 100644
+--- a/drivers/gpu/drm/omapdrm/omap_plane.c
++++ b/drivers/gpu/drm/omapdrm/omap_plane.c
+@@ -32,6 +32,12 @@ struct omap_plane {
+ 	struct drm_plane base;
+ 	enum omap_plane_id id;
+ 	const char *name;
++
++	/*
++	 * WB has no notion of atomic state we need to keep
++	 * a reference to the allocated overlay here.
++	 */
++	struct omap_hw_overlay *reserved_wb_overlay;
+ };
+ 
+ bool is_omap_plane_dual_overlay(struct drm_plane_state *state)
+@@ -192,6 +198,7 @@ static int omap_plane_atomic_check(struct drm_plane *plane,
+ 				   struct drm_plane_state *state)
+ {
+ 	struct omap_drm_private *priv = plane->dev->dev_private;
++	struct omap_plane *omap_plane = to_omap_plane(plane);
+ 	struct drm_crtc *crtc;
+ 	struct drm_crtc_state *crtc_state;
+ 	u16 width, height;
+@@ -208,6 +215,9 @@ static int omap_plane_atomic_check(struct drm_plane *plane,
+ 	int min_scale, max_scale;
+ 	int ret;
+ 
++	if (omap_plane->reserved_wb_overlay)
++		return -EBUSY;
++
+ 	omap_overlay_global_state = omap_get_global_state(state->state);
+ 	if (IS_ERR(omap_overlay_global_state))
+ 		return PTR_ERR(omap_overlay_global_state);
+@@ -614,3 +624,67 @@ struct drm_plane *omap_plane_init(struct drm_device *dev,
+ 	kfree(omap_plane);
+ 	return NULL;
+ }
++
++enum omap_plane_id omap_plane_id_wb(struct drm_plane *plane)
++{
++	struct omap_plane *omap_plane = to_omap_plane(plane);
++
++	return omap_plane->reserved_wb_overlay->overlay_id;
++}
++
++struct drm_plane *omap_plane_reserve_wb(struct drm_device *dev)
++{
++	struct omap_drm_private *priv = dev->dev_private;
++	int i, ret;
++
++	/*
++	 * Look from the last plane to the first to lessen chances of the
++	 * display side trying to use the same plane as writeback.
++	 */
++	for (i = priv->num_planes - 1; i >= 0; --i) {
++		struct drm_plane *plane = priv->planes[i];
++		struct omap_plane *omap_plane = to_omap_plane(plane);
++		struct omap_hw_overlay *new_ovl = NULL;
++		u32 crtc_mask = (1 << priv->num_pipes) - 1;
++		u32 fourcc = DRM_FORMAT_YUYV;
++		u32 caps = OMAP_DSS_OVL_CAP_SCALE;
++
++		if (plane->state->crtc || plane->state->fb)
++			continue;
++
++		if (omap_plane->reserved_wb_overlay)
++			continue;
++
++		ret = omap_overlay_assign_wb(priv, plane, caps, fourcc,
++					     crtc_mask, &new_ovl);
++		if (ret) {
++			DBG("%s: failed to assign hw_overlay for wb!",
++			    plane->name);
++			return NULL;
++		}
++
++		omap_plane->reserved_wb_overlay = new_ovl;
++
++		return plane;
++	}
++
++	return NULL;
++}
++
++void omap_plane_release_wb(struct drm_plane *plane)
++{
++	struct omap_drm_private *priv = plane->dev->dev_private;
++	struct omap_plane *omap_plane;
++
++	/*
++	 * This is also called on module unload at which point plane might
++	 * not be set. In that case just return as there is nothing to do.
++	 */
++	if (!plane)
++		return;
++
++	omap_plane = to_omap_plane(plane);
++
++	omap_overlay_release_wb(priv, plane, omap_plane->reserved_wb_overlay);
++	omap_plane->reserved_wb_overlay = NULL;
++}
+diff --git a/drivers/gpu/drm/omapdrm/omap_plane.h b/drivers/gpu/drm/omapdrm/omap_plane.h
+index a9a33e12722a..378b06345a70 100644
+--- a/drivers/gpu/drm/omapdrm/omap_plane.h
++++ b/drivers/gpu/drm/omapdrm/omap_plane.h
+@@ -24,4 +24,8 @@ void omap_plane_install_properties(struct drm_plane *plane,
+ 		struct drm_mode_object *obj);
+ bool is_omap_plane_dual_overlay(struct drm_plane_state *state);
+ 
++enum omap_plane_id omap_plane_id_wb(struct drm_plane *plane);
++struct drm_plane *omap_plane_reserve_wb(struct drm_device *dev);
++void omap_plane_release_wb(struct drm_plane *plane);
++
+ #endif /* __OMAPDRM_PLANE_H__ */
+-- 
+2.32.0 (Apple Git-132)
+

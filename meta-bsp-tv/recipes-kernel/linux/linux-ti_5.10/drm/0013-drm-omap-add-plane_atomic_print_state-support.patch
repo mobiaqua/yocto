@@ -1,0 +1,55 @@
+From ff751af2307a0b7dadd860cc7e45d302429e855f Mon Sep 17 00:00:00 2001
+From: Benoit Parrot <bparrot@ti.com>
+Date: Fri, 30 Jul 2021 13:02:47 +0200
+Subject: [PATCH] drm/omap: add plane_atomic_print_state support
+
+Now that we added specific item to our subclassed drm_plane_state
+we can add omap_plane_atomic_print_state() helper to dump out our own
+driver specific plane state.
+
+Signed-off-by: Benoit Parrot <bparrot@ti.com>
+Signed-off-by: Neil Armstrong <narmstrong@baylibre.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/gpu/drm/omapdrm/omap_plane.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/drivers/gpu/drm/omapdrm/omap_plane.c b/drivers/gpu/drm/omapdrm/omap_plane.c
+index 896d428e39e6..95dedf176175 100644
+--- a/drivers/gpu/drm/omapdrm/omap_plane.c
++++ b/drivers/gpu/drm/omapdrm/omap_plane.c
+@@ -344,6 +344,23 @@ omap_plane_atomic_duplicate_state(struct drm_plane *plane)
+ 	return &copy->base;
+ }
+ 
++static void omap_plane_atomic_print_state(struct drm_printer *p,
++					  const struct drm_plane_state *state)
++{
++	struct omap_plane_state *omap_state = to_omap_plane_state(state);
++
++	drm_printf(p, "\toverlay=%s\n", omap_state->overlay ?
++					omap_state->overlay->name : "(null)");
++	if (omap_state->overlay) {
++		drm_printf(p, "\t\tidx=%d\n", omap_state->overlay->idx);
++		drm_printf(p, "\t\toverlay_id=%d\n",
++			   omap_state->overlay->overlay_id);
++		drm_printf(p, "\t\tcaps=0x%x\n", omap_state->overlay->caps);
++		drm_printf(p, "\t\tpossible_crtcs=0x%x\n",
++			   omap_state->overlay->possible_crtcs);
++	}
++}
++
+ static int omap_plane_atomic_set_property(struct drm_plane *plane,
+ 					  struct drm_plane_state *state,
+ 					  struct drm_property *property,
+@@ -383,6 +400,7 @@ static const struct drm_plane_funcs omap_plane_funcs = {
+ 	.atomic_destroy_state = drm_atomic_helper_plane_destroy_state,
+ 	.atomic_set_property = omap_plane_atomic_set_property,
+ 	.atomic_get_property = omap_plane_atomic_get_property,
++	.atomic_print_state = omap_plane_atomic_print_state,
+ };
+ 
+ static bool omap_plane_supports_yuv(struct drm_plane *plane)
+-- 
+2.32.0 (Apple Git-132)
+

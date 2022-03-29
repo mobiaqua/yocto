@@ -1,0 +1,143 @@
+From 4d8ee60e7de7599dd2a72d5df7a7b74c3dc9663e Mon Sep 17 00:00:00 2001
+From: Benoit Parrot <bparrot@ti.com>
+Date: Thu, 16 Sep 2021 16:26:04 +0200
+Subject: [PATCH] ARM: dts: DRA74x: Add VIP2 and VIP3 dtsi entries
+
+This patch adds the required dtsi entries to support the Video
+Input Port (VIP) for the DRA74 family of devices.
+
+- Added VIP 2 and 3 entries in dra74x.dtsi.
+
+Signed-off-by: Benoit Parrot <bparrot@ti.com>
+[Bartosz: moved the new nodes to the already existing &l4_per3 extension]
+Signed-off-by: Bartosz Golaszewski <bgolaszewski@baylibre.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ arch/arm/boot/dts/dra74x.dtsi | 113 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 113 insertions(+)
+
+diff --git a/arch/arm/boot/dts/dra74x.dtsi b/arch/arm/boot/dts/dra74x.dtsi
+index cfb39dde4930..dd8f598c8d87 100644
+--- a/arch/arm/boot/dts/dra74x.dtsi
++++ b/arch/arm/boot/dts/dra74x.dtsi
+@@ -229,4 +229,117 @@ usb4: usb@10000 {
+ 			};
+ 		};
+ 	};
++
++	target-module@190000 {			/* 0x48990000, ap 23 2e.0 */
++		compatible = "ti,sysc-omap4", "ti,sysc";
++		reg = <0x190010 0x4>;
++		reg-names = "sysc";
++		ti,sysc-midle = <SYSC_IDLE_FORCE>,
++				<SYSC_IDLE_NO>,
++				<SYSC_IDLE_SMART>;
++		ti,sysc-sidle = <SYSC_IDLE_FORCE>,
++				<SYSC_IDLE_NO>,
++				<SYSC_IDLE_SMART>;
++		clocks = <&cam_clkctrl DRA7_CAM_VIP2_CLKCTRL 0>;
++		clock-names = "fck";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges = <0x0 0x190000 0x10000>;
++
++		vip2: vip@0 {
++			compatible = "ti,dra7-vip2";
++			reg = <0x0000 0x114>,
++			      <0x5500 0xd8>,
++			      <0x5700 0x18>,
++			      <0x5800 0x80>,
++			      <0x5a00 0xd8>,
++			      <0x5c00 0x18>,
++			      <0x5d00 0x80>,
++			      <0xd000 0x400>;
++			reg-names = "vip",
++				    "parser0",
++				    "csc0",
++				    "sc0",
++				    "parser1",
++				    "csc1",
++				    "sc1",
++				    "vpdma";
++			interrupts = <GIC_SPI 352 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 393 IRQ_TYPE_LEVEL_HIGH>;
++			/* CTRL_CORE_SMA_SW_1 */
++			ti,vip-clk-polarity = <&scm_conf 0x534>;
++
++			ports {
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				vin3a: port@0 {
++					reg = <0>;
++				};
++				vin4a: port@1 {
++					reg = <1>;
++				};
++				vin3b: port@2 {
++					reg = <2>;
++				};
++				vin4b: port@3 {
++					reg = <3>;
++				};
++			};
++		};
++	};
++
++	target-module@1b0000 {			/* 0x489b0000, ap 25 34.0 */
++		compatible = "ti,sysc-omap4", "ti,sysc";
++		reg = <0x1b0000 0x4>,
++		      <0x1b0010 0x4>;
++		reg-names = "rev", "sysc";
++		ti,sysc-midle = <SYSC_IDLE_FORCE>,
++				<SYSC_IDLE_NO>,
++				<SYSC_IDLE_SMART>;
++		ti,sysc-sidle = <SYSC_IDLE_FORCE>,
++				<SYSC_IDLE_NO>,
++				<SYSC_IDLE_SMART>;
++		clocks = <&cam_clkctrl DRA7_CAM_VIP3_CLKCTRL 0>;
++		clock-names = "fck";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges = <0x0 0x1b0000 0x10000>;
++
++		vip3: vip@0 {
++			compatible = "ti,dra7-vip3";
++			reg = <0x0000 0x114>,
++			      <0x5500 0xd8>,
++			      <0x5700 0x18>,
++			      <0x5800 0x80>,
++			      <0x5a00 0xd8>,
++			      <0x5c00 0x18>,
++			      <0x5d00 0x80>,
++			      <0xd000 0x400>;
++			reg-names = "vip",
++				    "parser0",
++				    "csc0",
++				    "sc0",
++				    "parser1",
++				    "csc1",
++				    "sc1",
++				    "vpdma";
++			interrupts = <GIC_SPI 353 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 394 IRQ_TYPE_LEVEL_HIGH>;
++			/* CTRL_CORE_SMA_SW_1 */
++			ti,vip-clk-polarity = <&scm_conf 0x534>;
++
++			ports {
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				vin5a: port@0 {
++					reg = <0>;
++				};
++				vin6a: port@1 {
++					reg = <1>;
++				};
++			};
++		};
++	};
+ };
+-- 
+2.32.0 (Apple Git-132)
+

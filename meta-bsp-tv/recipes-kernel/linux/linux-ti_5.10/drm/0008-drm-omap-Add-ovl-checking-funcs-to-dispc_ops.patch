@@ -1,0 +1,66 @@
+From a723e6298bf8c09731e98e8e45724bf5dfb8c32a Mon Sep 17 00:00:00 2001
+From: Benoit Parrot <bparrot@ti.com>
+Date: Fri, 30 Jul 2021 13:02:42 +0200
+Subject: [PATCH] drm/omap: Add ovl checking funcs to dispc_ops
+
+In order to be able to dynamically assign overlays to planes we need to
+be able to asses the overlay capabilities.
+
+Add a helper function to be able to retrieve the supported capabilities
+of an overlay.
+
+And export the function to check if a fourcc is supported on a given
+overlay.
+
+Signed-off-by: Benoit Parrot <bparrot@ti.com>
+Signed-off-by: Neil Armstrong <narmstrong@baylibre.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/gpu/drm/omapdrm/dss/dispc.c   | 8 ++++++++
+ drivers/gpu/drm/omapdrm/dss/omapdss.h | 4 ++++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/drivers/gpu/drm/omapdrm/dss/dispc.c b/drivers/gpu/drm/omapdrm/dss/dispc.c
+index a30ebb76478a..9fc900899bcd 100644
+--- a/drivers/gpu/drm/omapdrm/dss/dispc.c
++++ b/drivers/gpu/drm/omapdrm/dss/dispc.c
+@@ -2536,6 +2536,12 @@ static int dispc_ovl_calc_scaling_44xx(struct dispc_device *dispc,
+ 	return 0;
+ }
+ 
++static enum omap_overlay_caps dispc_ovl_get_caps(struct dispc_device *dispc,
++						 enum omap_plane_id plane)
++{
++	return dispc->feat->overlay_caps[plane];
++}
++
+ #define DIV_FRAC(dividend, divisor) \
+ 	((dividend) * 100 / (divisor) - ((dividend) / (divisor) * 100))
+ 
+@@ -4804,6 +4810,8 @@ static const struct dispc_ops dispc_ops = {
+ 	.ovl_enable = dispc_ovl_enable,
+ 	.ovl_setup = dispc_ovl_setup,
+ 	.ovl_get_color_modes = dispc_ovl_get_color_modes,
++	.ovl_color_mode_supported = dispc_ovl_color_mode_supported,
++	.ovl_get_caps = dispc_ovl_get_caps,
+ 	.ovl_get_max_size = dispc_ovl_get_max_size,
+ 
+ 	.wb_get_framedone_irq = dispc_wb_get_framedone_irq,
+diff --git a/drivers/gpu/drm/omapdrm/dss/omapdss.h b/drivers/gpu/drm/omapdrm/dss/omapdss.h
+index d2711950bded..9652eb85dea1 100644
+--- a/drivers/gpu/drm/omapdrm/dss/omapdss.h
++++ b/drivers/gpu/drm/omapdrm/dss/omapdss.h
+@@ -583,6 +583,10 @@ struct dispc_ops {
+ 
+ 	const u32 *(*ovl_get_color_modes)(struct dispc_device *dispc,
+ 					  enum omap_plane_id plane);
++	bool (*ovl_color_mode_supported)(struct dispc_device *dispc,
++					 enum omap_plane_id plane, u32 fourcc);
++	enum omap_overlay_caps (*ovl_get_caps)(struct dispc_device *dispc,
++					       enum omap_plane_id plane);
+ 	void (*ovl_get_max_size)(struct dispc_device *dispc,
+ 				 u16 *width, u16 *height);
+ 
+-- 
+2.32.0 (Apple Git-132)
+

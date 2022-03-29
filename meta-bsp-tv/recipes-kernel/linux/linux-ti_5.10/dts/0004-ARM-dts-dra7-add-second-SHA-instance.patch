@@ -1,0 +1,76 @@
+From be5cd39a5e2cfa9cd78ccd00e7886029e21ceaf1 Mon Sep 17 00:00:00 2001
+From: Tero Kristo <t-kristo@ti.com>
+Date: Mon, 7 Sep 2020 12:52:46 +0300
+Subject: [PATCH] ARM: dts: dra7: add second SHA instance
+
+DRA7 SoC has two SHA instances, add the missing second one under the
+main dts file.
+
+Signed-off-by: Tero Kristo <t-kristo@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+---
+ arch/arm/boot/dts/dra7.dtsi | 34 ++++++++++++++++++++++++++++++++--
+ 1 file changed, 32 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+index 4e1bbc0198eb..6ba6a1b50e00 100644
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -932,7 +932,7 @@ aes2: aes@0 {
+ 			};
+ 		};
+ 
+-		sham_target: target-module@4b101000 {
++		sham1_target: target-module@4b101000 {
+ 			compatible = "ti,sysc-omap3-sham", "ti,sysc";
+ 			reg = <0x4b101100 0x4>,
+ 			      <0x4b101110 0x4>,
+@@ -951,7 +951,7 @@ sham_target: target-module@4b101000 {
+ 			#size-cells = <1>;
+ 			ranges = <0x0 0x4b101000 0x1000>;
+ 
+-			sham: sham@0 {
++			sham1: sham@0 {
+ 				compatible = "ti,omap5-sham";
+ 				reg = <0 0x300>;
+ 				interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>;
+@@ -962,6 +962,36 @@ sham: sham@0 {
+ 			};
+ 		};
+ 
++		sham2_target: target-module@42701000 {
++			compatible = "ti,sysc-omap3-sham", "ti,sysc";
++			reg = <0x42701100 0x4>,
++			      <0x42701110 0x4>,
++			      <0x42701114 0x4>;
++			reg-names = "rev", "sysc", "syss";
++			ti,sysc-mask = <(SYSC_OMAP2_SOFTRESET |
++					 SYSC_OMAP2_AUTOIDLE)>;
++			ti,sysc-sidle = <SYSC_IDLE_FORCE>,
++					<SYSC_IDLE_NO>,
++					<SYSC_IDLE_SMART>;
++			ti,syss-mask = <1>;
++			/* Domains (P, C): l4per_pwrdm, l4sec_clkdm */
++			clocks = <&l4sec_clkctrl DRA7_L4SEC_SHAM2_CLKCTRL 0>;
++			clock-names = "fck";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges = <0x0 0x42701000 0x1000>;
++
++			sham2: sham@0 {
++				compatible = "ti,omap5-sham";
++				reg = <0 0x300>;
++				interrupts = <GIC_SPI 163 IRQ_TYPE_LEVEL_HIGH>;
++				dmas = <&edma_xbar 165 0>;
++				dma-names = "rx";
++				clocks = <&l3_iclk_div>;
++				clock-names = "fck";
++			};
++		};
++
+ 		opp_supply_mpu: opp-supply@4a003b20 {
+ 			compatible = "ti,omap5-opp-supply";
+ 			reg = <0x4a003b20 0xc>;
+-- 
+2.32.0 (Apple Git-132)
+

@@ -1,0 +1,179 @@
+From c563579d604f7b5a7431758bf40df80109543b34 Mon Sep 17 00:00:00 2001
+From: Jindong Yue <jindong.yue@nxp.com>
+Date: Wed, 24 Feb 2021 13:58:25 +0800
+Subject: [PATCH] remoteproc: core: Remove casting to rproc_handle_resource_t
+
+There are four different callback functions that are used for the
+rproc_handle_resource_t callback that all have different second
+parameter types.
+
+rproc_handle_vdev -> struct fw_rsc_vdev
+rproc_handle_trace -> struct fw_rsc_trace
+rproc_handle_devmem -> struct fw_rsc_devmem
+rproc_handle_carveout -> struct fw_rsc_carveout
+
+These callbacks are cast to rproc_handle_resource_t so that there is no
+error about incompatible pointer types. Unfortunately, this is a Clang's
+Control-Flow Integrity checking violation, which verifies that the
+callback function's types match the prototypes exactly before jumping.
+
+[    7.275750] Kernel panic - not syncing: CFI failure (target: rproc_handle_vdev+0x0/0x4)
+[    7.283763] CPU: 2 PID: 1 Comm: init Tainted: G         C O      5.4.70-03301-g527af2c96672 #17
+[    7.292463] Hardware name: NXP i.MX8MPlus EVK board (DT)
+[    7.297779] Call trace:
+[    7.300232]  dump_backtrace.cfi_jt+0x0/0x4
+[    7.304337]  show_stack+0x18/0x24
+[    7.307660]  dump_stack+0xb8/0x114
+[    7.311069]  panic+0x164/0x3d4
+[    7.314130]  __ubsan_handle_cfi_check_fail_abort+0x0/0x14
+[    7.319533]  perf_proc_update_handler+0x0/0xcc
+[    7.323983]  __cfi_check+0x63278/0x6a290
+[    7.327913]  rproc_boot+0x3f8/0x738
+[    7.331404]  rproc_add+0x68/0x110
+[    7.334738]  imx_rproc_probe+0x5e4/0x708 [imx_rproc]
+[    7.339711]  platform_drv_probe+0xac/0xf0
+[    7.343726]  really_probe+0x260/0x65c
+[    7.347393]  driver_probe_device+0x64/0x100
+[    7.351580]  device_driver_attach+0x6c/0xac
+[    7.355766]  __driver_attach+0xdc/0x184
+[    7.359609]  bus_for_each_dev+0x98/0x104
+[    7.363537]  driver_attach+0x24/0x30
+[    7.367117]  bus_add_driver+0x100/0x1e0
+[    7.370958]  driver_register+0x78/0x114
+[    7.374800]  __platform_driver_register+0x44/0x50
+[    7.379514]  init_module+0x20/0xfe8 [imx_rproc]
+[    7.384049]  do_one_initcall+0x190/0x348
+[    7.387979]  do_init_module+0x5c/0x210
+[    7.391731]  load_module+0x2fbc/0x3590
+[    7.395485]  __arm64_sys_finit_module+0xb8/0xec
+[    7.400025]  el0_svc_common+0xb4/0x19c
+[    7.403777]  el0_svc_handler+0x74/0x98
+[    7.407531]  el0_svc+0x8/0xc
+[    7.410419] SMP: stopping secondary CPUs
+[    7.414648] Kernel Offset: disabled
+[    7.418142] CPU features: 0x00010002,2000200c
+[    7.422501] Memory Limit: none
+
+To fix this, change the second parameter of all functions to void * and
+use a local variable with the correct type so that everything works
+properly. With this, we can remove casting to rproc_handle_resource_t
+for these functions.
+
+Signed-off-by: Jindong Yue <jindong.yue@nxp.com>
+Reviewed-by: Peng Fan <peng.fan@nxp.com>
+Reviewed-by: Sami Tolvanen <samitolvanen@google.com>
+Reviewed-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+Link: https://lore.kernel.org/r/20210224055825.7417-1-jindong.yue@nxp.com
+Signed-off-by: Bjorn Andersson <bjorn.andersson@linaro.org>
+[s-anna@ti.com: cherry-pick linux-next commit '2bf2346159bc' for v5.13]
+Signed-off-by: Suman Anna <s-anna@ti.com>
+---
+ drivers/remoteproc/remoteproc_core.c | 29 +++++++++++++++-------------
+ 1 file changed, 16 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
+index 381ac681bd7b..5825628cb141 100644
+--- a/drivers/remoteproc/remoteproc_core.c
++++ b/drivers/remoteproc/remoteproc_core.c
+@@ -539,7 +539,7 @@ static int copy_dma_range_map(struct device *to, struct device *from)
+ /**
+  * rproc_handle_vdev() - handle a vdev fw resource
+  * @rproc: the remote processor
+- * @rsc: the vring resource descriptor
++ * @ptr: the vring resource descriptor
+  * @offset: offset of the resource entry
+  * @avail: size of available data (for sanity checking the image)
+  *
+@@ -564,9 +564,10 @@ static int copy_dma_range_map(struct device *to, struct device *from)
+  *
+  * Returns 0 on success, or an appropriate error code otherwise
+  */
+-static int rproc_handle_vdev(struct rproc *rproc, struct fw_rsc_vdev *rsc,
++static int rproc_handle_vdev(struct rproc *rproc, void *ptr,
+ 			     int offset, int avail)
+ {
++	struct fw_rsc_vdev *rsc = ptr;
+ 	struct device *dev = &rproc->dev;
+ 	struct rproc_vdev *rvdev;
+ 	int i, ret;
+@@ -684,7 +685,7 @@ void rproc_vdev_release(struct kref *ref)
+ /**
+  * rproc_handle_trace() - handle a shared trace buffer resource
+  * @rproc: the remote processor
+- * @rsc: the trace resource descriptor
++ * @ptr: the trace resource descriptor
+  * @offset: offset of the resource entry
+  * @avail: size of available data (for sanity checking the image)
+  *
+@@ -698,9 +699,10 @@ void rproc_vdev_release(struct kref *ref)
+  *
+  * Returns 0 on success, or an appropriate error code otherwise
+  */
+-static int rproc_handle_trace(struct rproc *rproc, struct fw_rsc_trace *rsc,
++static int rproc_handle_trace(struct rproc *rproc, void *ptr,
+ 			      int offset, int avail)
+ {
++	struct fw_rsc_trace *rsc = ptr;
+ 	struct rproc_debug_trace *trace;
+ 	struct device *dev = &rproc->dev;
+ 	char name[15];
+@@ -750,7 +752,7 @@ static int rproc_handle_trace(struct rproc *rproc, struct fw_rsc_trace *rsc,
+ /**
+  * rproc_handle_devmem() - handle devmem resource entry
+  * @rproc: remote processor handle
+- * @rsc: the devmem resource entry
++ * @ptr: the devmem resource entry
+  * @offset: offset of the resource entry
+  * @avail: size of available data (for sanity checking the image)
+  *
+@@ -773,9 +775,10 @@ static int rproc_handle_trace(struct rproc *rproc, struct fw_rsc_trace *rsc,
+  * and not allow firmwares to request access to physical addresses that
+  * are outside those ranges.
+  */
+-static int rproc_handle_devmem(struct rproc *rproc, struct fw_rsc_devmem *rsc,
++static int rproc_handle_devmem(struct rproc *rproc, void *ptr,
+ 			       int offset, int avail)
+ {
++	struct fw_rsc_devmem *rsc = ptr;
+ 	struct rproc_mem_entry *mapping;
+ 	struct device *dev = &rproc->dev;
+ 	int ret;
+@@ -954,7 +957,7 @@ static int rproc_release_carveout(struct rproc *rproc,
+ /**
+  * rproc_handle_carveout() - handle phys contig memory allocation requests
+  * @rproc: rproc handle
+- * @rsc: the resource entry
++ * @ptr: the resource entry
+  * @offset: offset of the resource entry
+  * @avail: size of available data (for image validation)
+  *
+@@ -971,9 +974,9 @@ static int rproc_release_carveout(struct rproc *rproc,
+  * pressure is important; it may have a substantial impact on performance.
+  */
+ static int rproc_handle_carveout(struct rproc *rproc,
+-				 struct fw_rsc_carveout *rsc,
+-				 int offset, int avail)
++				 void *ptr, int offset, int avail)
+ {
++	struct fw_rsc_carveout *rsc = ptr;
+ 	struct rproc_mem_entry *carveout;
+ 	struct device *dev = &rproc->dev;
+ 
+@@ -1155,10 +1158,10 @@ EXPORT_SYMBOL(rproc_of_parse_firmware);
+  * enum fw_resource_type.
+  */
+ static rproc_handle_resource_t rproc_loading_handlers[RSC_LAST] = {
+-	[RSC_CARVEOUT] = (rproc_handle_resource_t)rproc_handle_carveout,
+-	[RSC_DEVMEM] = (rproc_handle_resource_t)rproc_handle_devmem,
+-	[RSC_TRACE] = (rproc_handle_resource_t)rproc_handle_trace,
+-	[RSC_VDEV] = (rproc_handle_resource_t)rproc_handle_vdev,
++	[RSC_CARVEOUT] = rproc_handle_carveout,
++	[RSC_DEVMEM] = rproc_handle_devmem,
++	[RSC_TRACE] = rproc_handle_trace,
++	[RSC_VDEV] = rproc_handle_vdev,
+ };
+ 
+ /* handle firmware resource entries before booting the remote processor */
+-- 
+2.32.0 (Apple Git-132)
+

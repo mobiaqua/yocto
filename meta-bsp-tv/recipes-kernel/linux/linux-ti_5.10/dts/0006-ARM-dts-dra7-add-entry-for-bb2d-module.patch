@@ -1,0 +1,42 @@
+From d3f2f49df7c5d73f9bc3631903bd8667664856b7 Mon Sep 17 00:00:00 2001
+From: Gowtham Tammana <g-tammana@ti.com>
+Date: Fri, 30 Jul 2021 10:43:13 +0200
+Subject: [PATCH] ARM: dts: dra7: add entry for bb2d module
+
+BB2D entry is added to the dts file. Crossbar index number is used
+for interrupt mapping.
+
+Signed-off-by: Gowtham Tammana <g-tammana@ti.com>
+Signed-off-by: Jyri Sarha <jsarha@ti.com>
+Signed-off-by: Neil Armstrong <narmstrong@baylibre.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+Reviewed-by: Suman Anna <s-anna@ti.com>
+Reviewed-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+---
+ arch/arm/boot/dts/dra7.dtsi | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/arch/arm/boot/dts/dra7.dtsi b/arch/arm/boot/dts/dra7.dtsi
+index 8989a5115117..6f621a94f9d8 100644
+--- a/arch/arm/boot/dts/dra7.dtsi
++++ b/arch/arm/boot/dts/dra7.dtsi
+@@ -883,6 +883,16 @@ hdmi: encoder@0 {
+ 			};
+ 		};
+ 
++		bb2d: bb2d@59000000 {
++			compatible = "ti,dra7-bb2d";
++			reg = <0x59000000 0x0700>;
++			interrupts = <GIC_SPI 120 IRQ_TYPE_LEVEL_HIGH>;
++			ti,hwmods = "bb2d";
++			clocks = <&dss_clkctrl DRA7_BB2D_CLKCTRL 0>;
++			clock-names = "fck";
++			status = "disabled";
++		};
++
+ 		aes1_target: target-module@4b500000 {
+ 			compatible = "ti,sysc-omap2", "ti,sysc";
+ 			reg = <0x4b500080 0x4>,
+-- 
+2.32.0 (Apple Git-132)
+

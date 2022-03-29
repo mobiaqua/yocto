@@ -1,0 +1,41 @@
+From 06462804afa2b0fd3d4528b12c51f4ab7e4c0273 Mon Sep 17 00:00:00 2001
+From: Suman Anna <s-anna@ti.com>
+Date: Mon, 14 Feb 2022 11:24:42 -0800
+Subject: [PATCH] remoteproc: debugfs: Optimize the trace va lookup
+
+The commit a987e6b91a5a ("remoteproc: fix trace buffer va initialization")
+computes the trace va given the trace device address every time a debugfs
+read is done. This can be optimized to perform the lookup only the first
+time, and store the value in the va field of the embedded rproc_mem_entry
+structure for the debug trace. This restores how the trace va was stored
+prior to the above commit in the original trace resource entry handling.
+
+Signed-off-by: Suman Anna <s-anna@ti.com>
+---
+ drivers/remoteproc/remoteproc_debugfs.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/remoteproc/remoteproc_debugfs.c b/drivers/remoteproc/remoteproc_debugfs.c
+index 7e5845376e9f..f99a169e2d97 100644
+--- a/drivers/remoteproc/remoteproc_debugfs.c
++++ b/drivers/remoteproc/remoteproc_debugfs.c
+@@ -128,11 +128,14 @@ static ssize_t rproc_trace_read(struct file *filp, char __user *userbuf,
+ {
+ 	struct rproc_debug_trace *data = filp->private_data;
+ 	struct rproc_mem_entry *trace = &data->trace_mem;
+-	void *va;
++	void *va = trace->va;
+ 	char buf[100];
+ 	int len;
+ 
+-	va = rproc_da_to_va(data->rproc, trace->da, trace->len);
++	if (!va) {
++		va = rproc_da_to_va(data->rproc, trace->da, trace->len);
++		trace->va = va;
++	}
+ 
+ 	if (!va) {
+ 		len = scnprintf(buf, sizeof(buf), "Trace %s not available\n",
+-- 
+2.32.0 (Apple Git-132)
+
