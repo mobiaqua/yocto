@@ -2,8 +2,8 @@ DESCRIPTION = "ScummVM is a program which allows you to run certain classic grap
 HOMEPAGE = "https://www.scummvm.org"
 SECTION = "games"
 PRIORITY = "optional"
-LICENSE = "GPLv2"
-LIC_FILES_CHKSUM = "file://COPYING;md5=b234ee4d69f5fce4486a80fdaf4a4263"
+LICENSE = "GPLv3+"
+LIC_FILES_CHKSUM = "file://COPYING;md5=1ebbd3e34237af26da5dc08a4e440464"
 DEPENDS = "libsdl2 libsdl2-net virtual/egl virtual/libgles2 libvorbis libogg zlib curl libmad mpeg2dec flac \
 libjpeg-turbo libpng libtheora faad2 fluidsynth freetype liba52"
 
