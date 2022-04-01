@@ -14,7 +14,6 @@ LICENSE_libavcodec = "${@bb.utils.contains('PACKAGECONFIG', 'gpl', 'GPLv2+', 'LG
 LICENSE_libavdevice = "${@bb.utils.contains('PACKAGECONFIG', 'gpl', 'GPLv2+', 'LGPLv2.1+', d)}"
 LICENSE_libavfilter = "${@bb.utils.contains('PACKAGECONFIG', 'gpl', 'GPLv2+', 'LGPLv2.1+', d)}"
 LICENSE_libavformat = "${@bb.utils.contains('PACKAGECONFIG', 'gpl', 'GPLv2+', 'LGPLv2.1+', d)}"
-LICENSE_libavresample = "${@bb.utils.contains('PACKAGECONFIG', 'gpl', 'GPLv2+', 'LGPLv2.1+', d)}"
 LICENSE_libavutil = "${@bb.utils.contains('PACKAGECONFIG', 'gpl', 'GPLv2+', 'LGPLv2.1+', d)}"
 LICENSE_libpostproc = "GPLv2+"
 LICENSE_libswresample = "${@bb.utils.contains('PACKAGECONFIG', 'gpl', 'GPLv2+', 'LGPLv2.1+', d)}"
@@ -41,7 +40,6 @@ PACKAGES += "libav-x264-presets \
              libavcodec  libavcodec-dev  libavcodec-dbg \
              libavdevice libavdevice-dev libavdevice-dbg \
              libavformat libavformat-dev libavformat-dbg \
-             libavresample libavresample-dev libavresample-dbg \
              libavutil   libavutil-dev   libavutil-dbg \
              libpostproc libpostproc-dev libpostproc-dbg \
              libswscale  libswscale-dev  libswscale-dbg \
@@ -64,10 +62,6 @@ FILES_libavformat = "${libdir}/libavformat*.so.*"
 FILES_libavformat-dev = "${libdir}/libavformat*.so ${libdir}/pkgconfig/libavformat.pc ${libdir}/libavformat*.a"
 FILES_libavformat-dbg += "${libdir}/.debug/libavformat*"
 
-FILES_libavresample = "${libdir}/libavresample*.so.*"
-FILES_libavresample-dev = "${libdir}/libavresample*.so ${libdir}/pkgconfig/libavresample.pc ${libdir}/libavresample*.a"
-FILES_libavresample-dbg += "${libdir}/.debug/libavresample*"
-
 FILES_libavutil = "${libdir}/libavutil*.so.*"
 FILES_libavutil-dev = "${libdir}/libavutil*.so ${libdir}/pkgconfig/libavutil.pc ${libdir}/libavutil*.a"
 FILES_libavutil-dbg += "${libdir}/.debug/libavutil*"
@@ -88,7 +82,7 @@ FILES_libavfilter = "${libdir}/libavfilter*.so.*"
 FILES_libavfilter-dev = "${libdir}/libavfilter*.so ${libdir}/pkgconfig/libavfilter.pc ${libdir}/libavfilter*.a"
 FILES_libavfilter-dbg += "${libdir}/.debug/libavfilter*"
 
-SRCREV = "cc33e73618a981de7fd96385ecb34719de031f16"
+SRCREV = "a4e1dd694014bd9314f63ddebc52ff2495c4f616"
 
 PV = "4.4+git${SRCPV}"
 PR = "r1"
@@ -124,7 +118,6 @@ EXTRA_OECONF = " \
         --enable-swscale \
         --enable-swresample \
         --enable-avfilter \
-        --enable-avresample \
         --enable-protocol=file \
         --enable-bsf=mov2textsub,h264_mp4toannexb,hevc_mp4toannexb,mpeg4_unpack_bframes \
         --enable-demuxer=matroska,mov,flac,mp3,wav,mpegps,mpegts,avi,m4v,mpegvideo,asf,flv,rm,rtmp,swf,srt,ass \
