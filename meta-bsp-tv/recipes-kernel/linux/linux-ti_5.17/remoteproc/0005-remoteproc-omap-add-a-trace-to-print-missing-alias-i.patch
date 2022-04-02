@@ -1,0 +1,33 @@
+From 4262d9cd053b91b5fa7dea48973d1ed0c033532a Mon Sep 17 00:00:00 2001
+From: Suman Anna <s-anna@ti.com>
+Date: Sun, 6 Feb 2022 19:51:23 -0800
+Subject: [PATCH] remoteproc/omap: add a trace to print missing alias ids
+
+The alias ids for OMAP remoteprocs are required by some
+rpmsg client drivers to identify a remote processor in
+a fixed manner to userspace. Add a trace during probe
+to warn developers if the alias id is not defined for a
+remoteproc DT node.
+
+Signed-off-by: Suman Anna <s-anna@ti.com>
+---
+ drivers/remoteproc/omap_remoteproc.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/remoteproc/omap_remoteproc.c b/drivers/remoteproc/omap_remoteproc.c
+index d94b7391bf9d..3fad75a038d5 100644
+--- a/drivers/remoteproc/omap_remoteproc.c
++++ b/drivers/remoteproc/omap_remoteproc.c
+@@ -1356,6 +1356,9 @@ static int omap_rproc_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		goto release_mem;
+ 
++	if (rproc_get_id(rproc) < 0)
++		dev_warn(&pdev->dev, "device does not have an alias id\n");
++
+ 	return 0;
+ 
+ release_mem:
+-- 
+2.32.0 (Apple Git-132)
+

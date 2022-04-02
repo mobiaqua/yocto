@@ -1,0 +1,147 @@
+From 5dbfbbd4c81f644cf74b197abc6ef473454d935d Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Date: Fri, 30 Jul 2021 13:02:03 +0200
+Subject: [PATCH] drm/omap: add alpha blender property
+
+Add support to enable/disable alpha blender on DSS3.
+
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Neil Armstrong <narmstrong@baylibre.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/gpu/drm/omapdrm/dss/dispc.c   |  4 ++--
+ drivers/gpu/drm/omapdrm/dss/omapdss.h |  2 +-
+ drivers/gpu/drm/omapdrm/omap_crtc.c   | 10 +++++++++-
+ drivers/gpu/drm/omapdrm/omap_drv.c    |  5 +++++
+ drivers/gpu/drm/omapdrm/omap_drv.h    |  1 +
+ 5 files changed, 18 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpu/drm/omapdrm/dss/dispc.c b/drivers/gpu/drm/omapdrm/dss/dispc.c
+index 9a4c5f672594..fb90096a906b 100644
+--- a/drivers/gpu/drm/omapdrm/dss/dispc.c
++++ b/drivers/gpu/drm/omapdrm/dss/dispc.c
+@@ -3042,7 +3042,7 @@ static void dispc_mgr_setup(struct dispc_device *dispc,
+ 				info->trans_key);
+ 	dispc_mgr_enable_trans_key(dispc, channel, info->trans_enabled);
+ 	dispc_mgr_enable_alpha_fixed_zorder(dispc, channel,
+-			info->partial_alpha_enabled);
++			info->alpha_blender_enabled);
+ 	if (dispc_has_feature(dispc, FEAT_CPR)) {
+ 		dispc_mgr_enable_cpr(dispc, channel, info->cpr_enable);
+ 		dispc_mgr_set_cpr_coef(dispc, channel, &info->cpr_coefs);
+@@ -4638,7 +4638,7 @@ static const struct dispc_errata_i734_data {
+ 	.mgri = {
+ 		.default_color = 0,
+ 		.trans_enabled = false,
+-		.partial_alpha_enabled = false,
++		.alpha_blender_enabled = false,
+ 		.cpr_enable = false,
+ 	},
+ 	.lcd_conf = {
+diff --git a/drivers/gpu/drm/omapdrm/dss/omapdss.h b/drivers/gpu/drm/omapdrm/dss/omapdss.h
+index 1855517cc141..9554bf71cb54 100644
+--- a/drivers/gpu/drm/omapdrm/dss/omapdss.h
++++ b/drivers/gpu/drm/omapdrm/dss/omapdss.h
+@@ -256,7 +256,7 @@ struct omap_overlay_manager_info {
+ 	u32 trans_key;
+ 	bool trans_enabled;
+ 
+-	bool partial_alpha_enabled;
++	bool alpha_blender_enabled;
+ 
+ 	bool cpr_enable;
+ 	struct omap_dss_cpr_coefs cpr_coefs;
+diff --git a/drivers/gpu/drm/omapdrm/omap_crtc.c b/drivers/gpu/drm/omapdrm/omap_crtc.c
+index 5b4808e9fb28..e1503ab3567c 100644
+--- a/drivers/gpu/drm/omapdrm/omap_crtc.c
++++ b/drivers/gpu/drm/omapdrm/omap_crtc.c
+@@ -28,6 +28,7 @@ struct omap_crtc_state {
+ 	u32 default_color;
+ 	unsigned int trans_key_mode;
+ 	unsigned int trans_key;
++	bool alpha_blender_enabled;
+ };
+ 
+ #define to_omap_crtc(x) container_of(x, struct omap_crtc, base)
+@@ -432,7 +433,6 @@ static void omap_crtc_write_crtc_properties(struct drm_crtc *crtc)
+ 	memset(&info, 0, sizeof(info));
+ 
+ 	info.default_color = omap_state->default_color;
+-	info.partial_alpha_enabled = false;
+ 
+ 	info.trans_key = omap_state->trans_key;
+ 
+@@ -451,6 +451,8 @@ static void omap_crtc_write_crtc_properties(struct drm_crtc *crtc)
+ 		break;
+ 	}
+ 
++	info.alpha_blender_enabled = omap_state->alpha_blender_enabled;
++
+ 	if (crtc->state->ctm) {
+ 		struct drm_color_ctm *ctm =
+ 			(struct drm_color_ctm *) crtc->state->ctm->data;
+@@ -756,6 +758,8 @@ static int omap_crtc_atomic_set_property(struct drm_crtc *crtc,
+ 		omap_state->trans_key_mode = val;
+ 	else if (property == priv->trans_key_prop)
+ 		omap_state->trans_key = val;
++	else if (property == priv->alpha_blender_prop)
++		omap_state->alpha_blender_enabled = !!val;
+ 	else
+ 		return -EINVAL;
+ 
+@@ -780,6 +784,8 @@ static int omap_crtc_atomic_get_property(struct drm_crtc *crtc,
+ 		*val = omap_state->trans_key_mode;
+ 	else if (property == priv->trans_key_prop)
+ 		*val = omap_state->trans_key;
++	else if (property == priv->alpha_blender_prop)
++		*val = omap_state->alpha_blender_enabled;
+ 	else
+ 		return -EINVAL;
+ 
+@@ -824,6 +830,7 @@ omap_crtc_duplicate_state(struct drm_crtc *crtc)
+ 
+ 	state->trans_key_mode = current_state->trans_key_mode;
+ 	state->trans_key = current_state->trans_key;
++	state->alpha_blender_enabled = current_state->alpha_blender_enabled;
+ 
+ 	return &state->base;
+ }
+@@ -882,6 +889,7 @@ static void omap_crtc_install_properties(struct drm_crtc *crtc)
+ 	drm_object_attach_property(obj, priv->background_color_prop, 0);
+ 	drm_object_attach_property(obj, priv->trans_key_mode_prop, 0);
+ 	drm_object_attach_property(obj, priv->trans_key_prop, 0);
++	drm_object_attach_property(obj, priv->alpha_blender_prop, 0);
+ }
+ 
+ /* initialize crtc */
+diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_drv.c
+index 188bb87ba4ac..334e31be7d51 100644
+--- a/drivers/gpu/drm/omapdrm/omap_drv.c
++++ b/drivers/gpu/drm/omapdrm/omap_drv.c
+@@ -223,6 +223,11 @@ static int omap_modeset_init_properties(struct drm_device *dev)
+ 	if (!priv->trans_key_prop)
+ 		return -ENOMEM;
+ 
++	priv->alpha_blender_prop = drm_property_create_bool(dev, 0,
++		"alpha_blender");
++	if (!priv->alpha_blender_prop)
++		return -ENOMEM;
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/gpu/drm/omapdrm/omap_drv.h b/drivers/gpu/drm/omapdrm/omap_drv.h
+index dc50c7fa8d0e..41b587ca4eac 100644
+--- a/drivers/gpu/drm/omapdrm/omap_drv.h
++++ b/drivers/gpu/drm/omapdrm/omap_drv.h
+@@ -76,6 +76,7 @@ struct omap_drm_private {
+ 	struct drm_property *background_color_prop;
+ 	struct drm_property *trans_key_mode_prop;
+ 	struct drm_property *trans_key_prop;
++	struct drm_property *alpha_blender_prop;
+ 
+ 	/* irq handling: */
+ 	spinlock_t wait_lock;		/* protects the wait_list */
+-- 
+2.32.0 (Apple Git-132)
+

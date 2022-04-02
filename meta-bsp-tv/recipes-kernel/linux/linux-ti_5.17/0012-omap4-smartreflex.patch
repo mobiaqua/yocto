@@ -1,0 +1,19 @@
+--- a/arch/arm/mach-omap2/pm.c
++++ b/arch/arm/mach-omap2/pm.c
+@@ -164,4 +164,4 @@ int __init omap2_common_pm_late_init(void)
+ 
+ 	return 0;
+ }
+-omap_late_initcall(omap2_common_pm_late_init);
++omap_late_initcall_sync(omap2_common_pm_late_init);
+--- a/drivers/soc/ti/smartreflex.c
++++ b/drivers/soc/ti/smartreflex.c
+@@ -1031,7 +1031,7 @@ static int __init sr_init(void)
+ 
+ 	return 0;
+ }
+-late_initcall(sr_init);
++late_initcall_sync(sr_init);
+ 
+ static void __exit sr_exit(void)
+ {
