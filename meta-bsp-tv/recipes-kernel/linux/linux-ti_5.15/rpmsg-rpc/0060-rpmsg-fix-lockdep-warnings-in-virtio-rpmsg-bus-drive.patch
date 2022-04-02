@@ -1,0 +1,178 @@
+From cbcbf9db04af2a780e596e3e2e55dc9bde294b4c Mon Sep 17 00:00:00 2001
+From: Angela Stegmaier <angelabaker@ti.com>
+Date: Wed, 23 Feb 2022 10:55:50 -0600
+Subject: [PATCH] rpmsg: fix lockdep warnings in virtio rpmsg bus driver
+
+The virtio rpmsg bus framework uses endpoints as the basis for
+sending and receiving messages to/from a remote processor. Each
+rpmsg bus device will have a primary endpoint if the corresponding
+rpmsg bus driver supports a callback, and secondary child endpoints
+associated with the same rpmsg bus device. The life-cycle of these
+endpoints are tied to the corresponding rpmsg device. A virtio rpmsg
+bus device can also have its own endpoint for supporting name service
+announcements from a corresponding remote processor to create and
+delete rpmsg devices dynamically.
+
+Each endpoint has a callback lock associated with it to provide
+protection/mutual exclusion between threads that process incoming
+rpmsg messages and threads that want to delete the endpoint. The
+virtio rpmsg name service endpoint callback will run while holding
+it's ept->cb_lock to create/delete rpmsg devices for RPMSG_NS_CREATE
+and RPMSG_NS_DELETE messages respectively. The latter message
+processing will destroy the requested channel, and will ultimately
+result in all the secondary rpmsg device endpoints also to be
+destroyed. The ept->cb_lock for the channel's endpoint is also
+locked during its destruction while setting the callback to NULL.
+This results in a seemingly nested locking of the ept->cb_lock even
+though the locking is on different mutexes. This will result in a
+false warning from the lockdep validator when it is enabled because
+the lockdep deals with classes and both are the same class, although
+they are different instances.
+
+Similar circular dependency scenarios also exist with remoteproc
+error recovery and existing rpmsg driver - rpmsg_proto.
+
+These issues are fixed by replacing the existing mutex_lock() calls
+with the mutex_lock_nested() API variation and using different
+subclasses for the NameService end-point and for the rpmsg channel
+device end-points.
+
+Following are example warning signatures that get fixed by this patch:
+
+1. Recursive locking dependency during RPMSG_NS_DESTROY message processing
+ ============================================
+ WARNING: possible recursive locking detected
+ --------------------------------------------
+ kworker/0:1/20 is trying to acquire lock:
+ c68c2c44 (&ept->cb_lock){+.+.}-{3:3}, at: __rpmsg_destroy_ept+0x44/0x98 [virtio_rpmsg_bus]
+
+ but task is already holding lock:
+ c69a8344 (&ept->cb_lock){+.+.}-{3:3}, at: rpmsg_recv_done+0x9c/0x2a0 [virtio_rpmsg_bus]
+
+ other info that might help us debug this:
+  Possible unsafe locking scenario:
+
+        CPU0
+        ----
+   lock(&ept->cb_lock);
+   lock(&ept->cb_lock);
+
+  *** DEADLOCK ***
+
+  May be due to missing lock nesting notation
+
+ 4 locks held by kworker/0:1/20:
+  #0: c200a6a8 ((wq_completion)events){+.+.}-{0:0}, at: process_one_work+0x204/0x7c0
+  #1: c30a5f20 ((work_completion)(&mq->work)){+.+.}-{0:0}, at: process_one_work+0x204/0x7c0
+  #2: c69a8344 (&ept->cb_lock){+.+.}-{3:3}, at: rpmsg_recv_done+0x9c/0x2a0 [virtio_rpmsg_bus]
+  #3: c59d74c8 (&dev->mutex){....}-{3:3}, at: device_release_driver_internal+0x18/0x1d4
+
+2. Circular locking dependency during error recovery of rpmsg-proto driver
+ ======================================================
+ WARNING: possible circular locking dependency detected
+ ------------------------------------------------------
+ kworker/0:3/968 is trying to acquire lock:
+ c59ba544 (&ept->cb_lock){+.+.}-{3:3}, at: __rpmsg_destroy_ept+0x44/0x98 [virtio_rpmsg_bus]
+
+ but task is already holding lock:
+ bf014038 (rpmsg_channels_lock){+.+.}-{3:3}, at: rpmsg_proto_remove+0x28/0x178 [rpmsg_proto]
+
+ which lock already depends on the new lock.
+
+ other info that might help us debug this:
+
+  Possible unsafe locking scenario:
+
+        CPU0                    CPU1
+        ----                    ----
+   lock(rpmsg_channels_lock);
+                                lock(&ept->cb_lock);
+                                lock(rpmsg_channels_lock);
+   lock(&ept->cb_lock);
+
+  *** DEADLOCK ***
+
+ 6 locks held by kworker/0:3/968:
+  #0: c200a6a8 ((wq_completion)events){+.+.}-{0:0}, at: process_one_work+0x204/0x7c0
+  #1: c5f73f20 ((work_completion)(&rproc->crash_handler)){+.+.}-{0:0}, at: process_one_work+0x204/0x7c0
+  #2: c5648364 (&rproc->lock){+.+.}-{3:3}, at: rproc_trigger_recovery+0x30/0x304
+  #3: c58eb8f8 (&dev->mutex){....}-{3:3}, at: device_release_driver_internal+0x18/0x1d4
+  #4: c59a70c8 (&dev->mutex){....}-{3:3}, at: device_release_driver_internal+0x18/0x1d4
+  #5: bf014038 (rpmsg_channels_lock){+.+.}-{3:3}, at: rpmsg_proto_remove+0x28/0x178 [rpmsg_proto]
+
+Signed-off-by: Angela Stegmaier <angelabaker@ti.com>
+[s-anna@ti.com: flip the subclass values, update crash log examples for 5.10]
+Signed-off-by: Suman Anna <s-anna@ti.com>
+[dfustini: fix trivial conflict in drivers/rpmsg/virtio_rpmsg_bus.c]
+Signed-off-by: Drew Fustini <dfustini@baylibre.com>
+---
+ drivers/rpmsg/virtio_rpmsg_bus.c | 7 +++++--
+ include/linux/rpmsg.h            | 6 ++++++
+ 2 files changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/rpmsg/virtio_rpmsg_bus.c b/drivers/rpmsg/virtio_rpmsg_bus.c
+index ae76de99adf6..97256d3a79be 100644
+--- a/drivers/rpmsg/virtio_rpmsg_bus.c
++++ b/drivers/rpmsg/virtio_rpmsg_bus.c
+@@ -293,6 +293,9 @@ static struct rpmsg_endpoint *__rpmsg_create_ept(struct virtproc_info *vrp,
+ 		goto free_ept;
+ 	}
+ 	ept->addr = id;
++	ept->cb_lockdep_class = ((ept->addr == RPMSG_NS_ADDR) ?
++				 RPMSG_LOCKDEP_SUBCLASS_NS :
++				 RPMSG_LOCKDEP_SUBCLASS_NORMAL);
+ 
+ 	mutex_unlock(&vrp->endpoints_lock);
+ 
+@@ -333,7 +336,7 @@ __rpmsg_destroy_ept(struct virtproc_info *vrp, struct rpmsg_endpoint *ept)
+ 	mutex_unlock(&vrp->endpoints_lock);
+ 
+ 	/* make sure in-flight inbound messages won't invoke cb anymore */
+-	mutex_lock(&ept->cb_lock);
++	mutex_lock_nested(&ept->cb_lock, ept->cb_lockdep_class);
+ 	ept->cb = NULL;
+ 	mutex_unlock(&ept->cb_lock);
+ 
+@@ -801,7 +804,7 @@ static int rpmsg_recv_single(struct virtproc_info *vrp, struct device *dev,
+ 
+ 	if (ept) {
+ 		/* make sure ept->cb doesn't go away while we use it */
+-		mutex_lock(&ept->cb_lock);
++		mutex_lock_nested(&ept->cb_lock, ept->cb_lockdep_class);
+ 
+ 		if (ept->cb)
+ 			ept->cb(ept->rpdev, msg->data, msg_len, ept->priv,
+diff --git a/include/linux/rpmsg.h b/include/linux/rpmsg.h
+index a10ca1af3a8b..11da9a96e6e7 100644
+--- a/include/linux/rpmsg.h
++++ b/include/linux/rpmsg.h
+@@ -25,6 +25,10 @@ struct rpmsg_endpoint;
+ struct rpmsg_device_ops;
+ struct rpmsg_endpoint_ops;
+ 
++/* lockdep subclasses for use with ept cb_lock mutex nested calls */
++#define RPMSG_LOCKDEP_SUBCLASS_NORMAL   0 /* regular ept cb_lock */
++#define RPMSG_LOCKDEP_SUBCLASS_NS       1 /* name service ept cb_lock */
++
+ /**
+  * struct rpmsg_channel_info - channel info representation
+  * @name: name of service
+@@ -71,6 +75,7 @@ typedef int (*rpmsg_rx_cb_t)(struct rpmsg_device *, void *, int, void *, u32);
+  * @refcount: when this drops to zero, the ept is deallocated
+  * @cb: rx callback handler
+  * @cb_lock: must be taken before accessing/changing @cb
++ * @cb_lockdep_class: mutex lockdep class to be used with @cb_lock
+  * @addr: local rpmsg address
+  * @priv: private data for the driver's use
+  *
+@@ -93,6 +98,7 @@ struct rpmsg_endpoint {
+ 	struct kref refcount;
+ 	rpmsg_rx_cb_t cb;
+ 	struct mutex cb_lock;
++	int cb_lockdep_class;
+ 	u32 addr;
+ 	void *priv;
+ 
+-- 
+2.32.0 (Apple Git-132)
+

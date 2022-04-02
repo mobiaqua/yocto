@@ -1,0 +1,14 @@
+diff --git a/arch/arm/mm/proc-v7-bugs.c b/arch/arm/mm/proc-v7-bugs.c
+index 06dbfb968..053cfc743 100644
+--- a/arch/arm/mm/proc-v7-bugs.c
++++ b/arch/arm/mm/proc-v7-bugs.c
+@@ -108,9 +108,6 @@ static unsigned int spectre_v2_install_workaround(unsigned int method)
+ #else
+ static unsigned int spectre_v2_install_workaround(unsigned int method)
+ {
+-	pr_info("CPU%u: Spectre V2: workarounds disabled by configuration\n",
+-		smp_processor_id());
+-
+ 	return SPECTRE_VULNERABLE;
+ }
+ #endif

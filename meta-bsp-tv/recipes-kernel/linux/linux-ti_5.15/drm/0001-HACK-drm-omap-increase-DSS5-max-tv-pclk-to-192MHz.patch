@@ -1,0 +1,41 @@
+From c9f882761713ba20ad6f3f29c4b650e905be93f8 Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Date: Fri, 30 Jul 2021 11:10:20 +0200
+Subject: [PATCH] HACK: drm/omap: increase DSS5 max tv pclk to 192MHz
+
+DSS5's maximum tv pclk rate (i.e. HDMI) is set to 186MHz, which comes
+from the TRM (DPLL_HDMI_CLK1 frequency must be lower than 186 MHz). To
+support DRA76's wide screen HDMI feature, we need to increase this
+maximum rate.
+
+This patch is a hack until we get a clear understanding from the HW
+people on what are the limits. Testing shows that the PLL seems to work
+fine even with ~240MHz clocks, and even the HDMI output at that clock is
+stable enough for monitors to show a picture. This holds true for all
+DRA7 and AM5 SoCs (and probably also for OMAP5).
+
+However, the highest we can go without big refactoring to the clocking
+code is 192MHz, as that is the DSS func clock we get from the PRCM. So,
+increase the max HDMI pixel clock to 192MHz for now, to allow some more
+2k+ modes to work.
+
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Neil Armstrong <narmstrong@baylibre.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/gpu/drm/omapdrm/dss/dispc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/omapdrm/dss/dispc.c b/drivers/gpu/drm/omapdrm/dss/dispc.c
+index 5619420cc..bd1af4472 100644
+--- a/drivers/gpu/drm/omapdrm/dss/dispc.c
++++ b/drivers/gpu/drm/omapdrm/dss/dispc.c
+@@ -4458,7 +4461,7 @@ static const struct dispc_features omap54xx_dispc_feats = {
+ 	.mgr_width_max		=	4096,
+ 	.mgr_height_max		=	4096,
+ 	.max_lcd_pclk		=	170000000,
+-	.max_tv_pclk		=	186000000,
++	.max_tv_pclk		=	192000000,
+ 	.max_downscale		=	4,
+ 	.max_line_width		=	2048,
+ 	.min_pcd		=	1,

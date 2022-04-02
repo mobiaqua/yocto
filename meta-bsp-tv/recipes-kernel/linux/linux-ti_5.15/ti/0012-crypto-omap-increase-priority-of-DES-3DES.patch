@@ -1,0 +1,57 @@
+From 110abe1c9c615cfa47791f5e97142a703e514c34 Mon Sep 17 00:00:00 2001
+From: Corentin Labbe <clabbe@baylibre.com>
+Date: Mon, 31 Jan 2022 13:39:39 +0000
+Subject: [PATCH] crypto: omap - increase priority of DES/3DES
+
+Give the same priority of OMAP DES/3DES than OMAP AES for being sure it
+is picked before software implementation.
+
+Signed-off-by: Corentin Labbe <clabbe@baylibre.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/crypto/omap-des.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/crypto/omap-des.c b/drivers/crypto/omap-des.c
+index 7fdf38e07adf..dc162771496f 100644
+--- a/drivers/crypto/omap-des.c
++++ b/drivers/crypto/omap-des.c
+@@ -736,7 +736,7 @@ static struct skcipher_alg algs_ecb_cbc[] = {
+ {
+ 	.base.cra_name		= "ecb(des)",
+ 	.base.cra_driver_name	= "ecb-des-omap",
+-	.base.cra_priority	= 100,
++	.base.cra_priority	= 300,
+ 	.base.cra_flags		= CRYPTO_ALG_KERN_DRIVER_ONLY |
+ 				  CRYPTO_ALG_ASYNC,
+ 	.base.cra_blocksize	= DES_BLOCK_SIZE,
+@@ -753,7 +753,7 @@ static struct skcipher_alg algs_ecb_cbc[] = {
+ {
+ 	.base.cra_name		= "cbc(des)",
+ 	.base.cra_driver_name	= "cbc-des-omap",
+-	.base.cra_priority	= 100,
++	.base.cra_priority	= 300,
+ 	.base.cra_flags		= CRYPTO_ALG_KERN_DRIVER_ONLY |
+ 				  CRYPTO_ALG_ASYNC,
+ 	.base.cra_blocksize	= DES_BLOCK_SIZE,
+@@ -771,7 +771,7 @@ static struct skcipher_alg algs_ecb_cbc[] = {
+ {
+ 	.base.cra_name		= "ecb(des3_ede)",
+ 	.base.cra_driver_name	= "ecb-des3-omap",
+-	.base.cra_priority	= 100,
++	.base.cra_priority	= 300,
+ 	.base.cra_flags		= CRYPTO_ALG_KERN_DRIVER_ONLY |
+ 				  CRYPTO_ALG_ASYNC,
+ 	.base.cra_blocksize	= DES3_EDE_BLOCK_SIZE,
+@@ -788,7 +788,7 @@ static struct skcipher_alg algs_ecb_cbc[] = {
+ {
+ 	.base.cra_name		= "cbc(des3_ede)",
+ 	.base.cra_driver_name	= "cbc-des3-omap",
+-	.base.cra_priority	= 100,
++	.base.cra_priority	= 300,
+ 	.base.cra_flags		= CRYPTO_ALG_KERN_DRIVER_ONLY |
+ 				  CRYPTO_ALG_ASYNC,
+ 	.base.cra_blocksize	= DES3_EDE_BLOCK_SIZE,
+-- 
+2.32.0 (Apple Git-132)
+

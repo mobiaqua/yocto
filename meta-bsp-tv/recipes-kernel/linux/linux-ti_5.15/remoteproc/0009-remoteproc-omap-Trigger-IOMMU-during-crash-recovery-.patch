@@ -1,0 +1,43 @@
+From 83e0958942e4f84e24f1e3d5af2c790233494549 Mon Sep 17 00:00:00 2001
+From: Tero Kristo <t-kristo@ti.com>
+Date: Wed, 23 Feb 2022 12:40:20 -0600
+Subject: [PATCH] remoteproc/omap: Trigger IOMMU during crash recovery sequence
+
+Trigger IOMMU during crash recovery sequence to reset IOMMU also.
+Otherwise IOMMU may end up in a stale state, causing the remoteproc to
+hang or crash again. This issue is particularly seen on DRA7xx/AM57xx
+DSP remoteprocs.
+
+Signed-off-by: Tero Kristo <t-kristo@ti.com>
+Signed-off-by: Suman Anna <s-anna@ti.com>
+---
+ drivers/remoteproc/omap_remoteproc.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/drivers/remoteproc/omap_remoteproc.c b/drivers/remoteproc/omap_remoteproc.c
+index 3fad75a038d5..c67fd9f50141 100644
+--- a/drivers/remoteproc/omap_remoteproc.c
++++ b/drivers/remoteproc/omap_remoteproc.c
+@@ -703,6 +703,19 @@ static int omap_rproc_stop(struct rproc *rproc)
+ 	pm_runtime_put_noidle(dev);
+ 	pm_runtime_set_suspended(dev);
+ 
++	/*
++	 * If remoteproc has crashed, we must trigger IOMMU to reset it also.
++	 * Otherwise we may have stale data in IOMMU causing remoteproc to
++	 * hang / die again. Sleep between is needed to make sure reset
++	 * actually gets triggered, otherwise the runtime PM framework may
++	 * consider this sequence as a NOP.
++	 */
++	if (rproc->state == RPROC_CRASHED) {
++		omap_iommu_domain_deactivate(rproc->domain);
++		msleep(5);
++		omap_iommu_domain_activate(rproc->domain);
++	}
++
+ 	return 0;
+ 
+ enable_device:
+-- 
+2.32.0 (Apple Git-132)
+
