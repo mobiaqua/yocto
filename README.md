@@ -8,11 +8,11 @@
 
   - "tv"
 
-    Pandaboard(ES)/IGEPv5/BeagleBoard-X15 as media center for TV
+    Pandaboard(ES)/BeagleBoard-X15/BeagleBone-AI
 
   - "car" - not supported
 
-    IGEPv3 as car hub controller with LCD and periferials
+    IGEPv3
 
   - "pda-sa1110"
 
