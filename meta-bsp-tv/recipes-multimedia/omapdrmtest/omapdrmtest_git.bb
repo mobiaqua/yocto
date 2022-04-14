@@ -9,13 +9,12 @@ PV = "1.0"
 PR = "r0"
 PR_append = "+gitr-${SRCREV}"
 
-SRCREV = "c287ddf9a8346ff5d18df7ab70cfd7bc438b62e5"
+SRCREV = "1fceb3ac4b0e7ed014000a10dfe6ca8729f9cd8d"
 SRC_URI = "git://git.ti.com/glsdk/omapdrmtest.git;protocol=git \
            file://0004-display-kmscube-align-width-on-128-bytes-to-please-Ducat.patch \
            file://0005-Hack-disp-kmscube-reduce-u-v-by-10.patch \
-           file://display-kmscube_revert.patch \
-           file://use-hdmi.patch \
            file://drop-cube.patch \
+           file://improve-display-connection.patch \
 "
 
 S = "${WORKDIR}/git"
