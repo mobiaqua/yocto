@@ -46,7 +46,7 @@ struct gbm_pvr_surface {
    struct gbm_surface base;
 
    int current_back_buffer;
-   struct gbm_bo *back_buffers[PVR_NUM_BACK_BUFFERS];
+   struct gbm_pvr_bo *back_buffers[PVR_NUM_BACK_BUFFERS];
 };
 
 static inline struct gbm_pvr_device *

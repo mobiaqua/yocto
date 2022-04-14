@@ -38,6 +38,7 @@
 #include <xf86drm.h>
 #include <drm_fourcc.h>
 #include <sys/mman.h>
+#include <omap_drm.h>
 
 #include "gbm_pvrint.h"
 
@@ -150,6 +151,13 @@ static struct gbm_bo *
 gbm_pvr_bo_import(struct gbm_device *gbm,
                   uint32_t type, void *buffer, uint32_t usage)
 {
+   struct gbm_pvr_device *pvr = gbm_pvr_device(gbm);
+   struct gbm_pvr_bo *bo;
+   struct gbm_import_fd_data *gbm_dmabuf;
+   struct drm_prime_handle dreq;
+   struct drm_omap_gem_info oreq;
+   int ret, is_cursor, is_scanout;
+
    switch (type) {
    case GBM_BO_IMPORT_WL_BUFFER:
       fprintf(stderr, "gbm_pvr_bo_import: GBM_BO_IMPORT_WL_BUFFER is not implemented\n");
@@ -159,10 +167,47 @@ gbm_pvr_bo_import(struct gbm_device *gbm,
       fprintf(stderr, "gbm_pvr_bo_import: GBM_BO_IMPORT_EGL_IMAGE is not implemented\n");
       errno = ENOSYS;
       return NULL;
-   case GBM_BO_IMPORT_FD:
-      fprintf(stderr, "gbm_pvr_bo_import: GBM_BO_IMPORT_FD is not supported\n");
-      errno = ENOSYS;
-      return NULL;
+   case GBM_BO_IMPORT_FD: {
+      gbm_dmabuf = buffer;
+      is_cursor = (usage & GBM_BO_USE_CURSOR) != 0 &&
+         gbm_dmabuf->format == GBM_FORMAT_ARGB8888;
+      is_scanout = (usage & GBM_BO_USE_SCANOUT) != 0 &&
+         (gbm_dmabuf->format == GBM_FORMAT_XRGB8888 || gbm_dmabuf->format == GBM_FORMAT_ARGB8888);
+      if (is_cursor || !is_scanout) {
+         errno = EINVAL;
+         return NULL;
+      }
+      bo = calloc(1, sizeof *bo);
+      if (bo == NULL) {
+         errno = ENOMEM;
+         return NULL;
+      }
+
+      ret = drmPrimeFDToHandle(gbm->fd, gbm_dmabuf->fd, &bo->base.handle.u32);
+      if (ret)  {
+         free(bo);
+         errno = ENOSYS;
+         return NULL;
+      }
+
+      bo->base.gbm = gbm;
+      bo->base.width = gbm_dmabuf->width;
+      bo->base.height = gbm_dmabuf->height;
+      bo->base.stride = gbm_dmabuf->stride;
+      bo->base.format = gbm_pvr_format_canonicalize(gbm_dmabuf->format);
+      bo->base.handle.u32 = dreq.handle;
+
+      oreq.handle = dreq.handle;
+      ret = drmCommandWriteRead(gbm->fd, DRM_OMAP_GEM_INFO, &oreq, sizeof(oreq));
+      if (ret)  {
+         free(bo);
+         errno = ENOSYS;
+         return NULL;
+      }
+      bo->size = oreq.size;
+
+      return (struct gbm_bo *)bo;
+   }
    case GBM_BO_IMPORT_FD_MODIFIER:
       fprintf(stderr, "gbm_pvr_bo_import: GBM_BO_IMPORT_FD_MODIFIER is not supported\n");
       errno = ENOSYS;
@@ -181,7 +226,6 @@ gbm_pvr_bo_create(struct gbm_device *gbm,
                   const uint64_t *modifiers,
                   const unsigned int count)
 {
-   struct gbm_pvr_device *pvr = gbm_pvr_device(gbm);
    struct gbm_pvr_bo *bo;
    int is_cursor, is_scanout;
    struct drm_mode_create_dumb dreq;
@@ -204,11 +248,13 @@ gbm_pvr_bo_create(struct gbm_device *gbm,
    }
 
    bo = calloc(1, sizeof *bo);
-   if (bo == NULL)
+   if (bo == NULL) {
+       errno = ENOMEM;
       return NULL;
+   }
 
    bo->base.gbm = gbm;
-   bo->base.width = width;;
+   bo->base.width = width;
    bo->base.height = height;
    bo->base.format = gbm_pvr_format_canonicalize(format);
 
@@ -288,7 +334,7 @@ gbm_pvr_surface_destroy(struct gbm_surface *_surf)
 
    for (int i = 0; i < PVR_NUM_BACK_BUFFERS; i++) {
       if (surf->back_buffers[i]) {
-         gbm_pvr_bo_destroy(surf->back_buffers[i]);
+         gbm_pvr_bo_destroy((struct gbm_bo *)surf->back_buffers[i]);
       }
    }
 
@@ -321,7 +367,7 @@ gbm_pvr_surface_create(struct gbm_device *gbm,
    surf->base.format = gbm_pvr_format_canonicalize(format);
    surf->base.flags = flags;
    for (int i = 0; i < PVR_NUM_BACK_BUFFERS; i++) {
-      surf->back_buffers[i] = gbm_pvr_bo_create(gbm, width, height, format, flags, NULL, 0);
+      surf->back_buffers[i] = (struct gbm_pvr_bo *)gbm_pvr_bo_create(gbm, width, height, format, flags, NULL, 0);
       if (!surf->back_buffers[i]) {
          fprintf(stderr, "gbm_pvr_surface_create: gbm_bo_create() failed!\n");
          errno = ENOMEM;
@@ -340,7 +386,7 @@ gbm_pvr_surface_lock_front_buffer(struct gbm_surface *_surf)
 
    int index = (surf->current_back_buffer + 1) % PVR_NUM_BACK_BUFFERS;
 
-   return surf->back_buffers[index];
+   return (struct gbm_bo *)surf->back_buffers[index];
 }
 
 static void

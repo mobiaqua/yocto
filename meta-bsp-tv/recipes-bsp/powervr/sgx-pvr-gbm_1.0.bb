@@ -33,11 +33,11 @@ do_configure[noexec] = "1"
 
 do_compile() {
 	if [ "${DEBUG_BUILD}" = "yes" ]; then
-		${CC} ${CFLAGS} `pkg-config --cflags libdrm gbm` ${LDFLAGS} -O0 -g3 gbm_pvr.c -fPIC -shared `pkg-config --libs libdrm gbm` -o gbm_pvr.so
-		${CC} ${CFLAGS} `pkg-config --cflags libdrm gbm` -DLINUX ${LDFLAGS} -O0 -g3 pvrws_GBM.c -fPIC -shared `pkg-config --libs libdrm gbm` -o libpvrws_GBM.so
+		${CC} ${CFLAGS} `pkg-config --cflags libdrm libdrm_omap gbm` ${LDFLAGS} -O0 -g3 gbm_pvr.c -fPIC -shared `pkg-config --libs libdrm libdrm_omap gbm` -o gbm_pvr.so
+		${CC} ${CFLAGS} `pkg-config --cflags libdrm libdrm_omap gbm` -DLINUX ${LDFLAGS} -O0 -g3 pvrws_GBM.c -fPIC -shared `pkg-config --libs libdrm_omap libdrm gbm` -o libpvrws_GBM.so
 	else
-		${CC} ${CFLAGS} `pkg-config --cflags libdrm gbm` ${LDFLAGS} -g gbm_pvr.c -fPIC -shared `pkg-config --libs libdrm gbm` -o gbm_pvr.so
-		${CC} ${CFLAGS} `pkg-config --cflags libdrm gbm` -DLINUX ${LDFLAGS} -g pvrws_GBM.c -fPIC -shared `pkg-config --libs libdrm gbm` -o libpvrws_GBM.so
+		${CC} ${CFLAGS} `pkg-config --cflags libdrm libdrm_omap gbm` ${LDFLAGS} -g gbm_pvr.c -fPIC -shared `pkg-config --libs libdrm libdrm_omap gbm` -o gbm_pvr.so
+		${CC} ${CFLAGS} `pkg-config --cflags libdrm libdrm_omap gbm` -DLINUX ${LDFLAGS} -g pvrws_GBM.c -fPIC -shared `pkg-config --libs libdrm libdrm_omap gbm` -o libpvrws_GBM.so
 	fi
 }
 

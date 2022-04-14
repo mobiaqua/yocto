@@ -60,7 +60,11 @@ struct GBMDrawable
     int                 width;
     int                 height;
     int                 stride;
-    struct gbm_pvr_surface *window;
+    union gbp_pvr_handle
+    {
+        struct gbm_pvr_surface *window;
+        struct gbm_pvr_bo      *pixmap;
+    } handle;
     struct GBMDisplay   *display;
     int                 numBackBuffers;
     struct GBMBuffer    *backBuffers;

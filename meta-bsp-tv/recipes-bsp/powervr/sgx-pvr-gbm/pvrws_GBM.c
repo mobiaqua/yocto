@@ -108,6 +108,7 @@ static WSEGLCaps const wseglDisplayCaps[] = {
 /* Configuration information for the display */
 static WSEGLConfig wseglDisplayConfigs[] = {
     { WSEGL_DRAWABLE_WINDOW, WSEGL_PIXELFORMAT_ARGB8888, WSEGL_FALSE, 0, 0, 0, WSEGL_OPAQUE, 0 },
+    { WSEGL_DRAWABLE_PIXMAP, WSEGL_PIXELFORMAT_ARGB8888, WSEGL_FALSE, 0, 0, 0, WSEGL_OPAQUE, 0 },
     { WSEGL_NO_DRAWABLE, 0, 0, 0, 0, 0, 0, 0 }
 };
 
@@ -307,18 +308,18 @@ static WSEGLError wseglCreateWindowDrawable
 
     drawable->type = GBM_DRAWABLE_WINDOW;
     drawable->display = (struct GBMDisplay *)display;
-    drawable->backBuffers = calloc(sizeof(struct GBMBuffer), PVR_NUM_BACK_BUFFERS);
     drawable->numBackBuffers = PVR_NUM_BACK_BUFFERS;
-    drawable->window = (struct gbm_pvr_surface *)nativeWindow;
-    drawable->width = drawable->window->base.width;
-    drawable->height = drawable->window->base.height;
+    drawable->backBuffers = calloc(sizeof(struct GBMBuffer), drawable->numBackBuffers);
+    drawable->handle.window = (struct gbm_pvr_surface *)nativeWindow;
+    drawable->width = drawable->handle.window->base.width;
+    drawable->height = drawable->handle.window->base.height;
 
     for (int i = 0; i < PVR_NUM_BACK_BUFFERS; i++)
     {
-        int dmaFd = gbm_bo_get_fd(drawable->window->back_buffers[i]);
+        int dmaFd = gbm_bo_get_fd((struct gbm_bo *)drawable->handle.window->back_buffers[i]);
         if (dmaFd == -1)
             goto FAIL;
-        void *mmap = gbm_bo_map(drawable->window->back_buffers[i],
+        void *mmap = gbm_bo_map((struct gbm_bo *)drawable->handle.window->back_buffers[i],
                                 0, 0, drawable->width, drawable->height, 0,
                                 &drawable->stride,
                                 &drawable->backBuffers[i].mmap);
@@ -351,7 +352,7 @@ FAIL:
             WaitForOpsComplete(display, drawable->backBuffers[i].memInfo->psClientSyncInfo);
             PVRSRVUnmapDmaBufFunc(&drawable->display->devData, drawable->backBuffers[i].memInfo);
             if (drawable->backBuffers[i].mmap)
-                gbm_bo_unmap(drawable->window->back_buffers[i], drawable->backBuffers[i].mmap);
+                gbm_bo_unmap((struct gbm_bo *)drawable->handle.window->back_buffers[i], drawable->backBuffers[i].mmap);
         }
     }
 
@@ -365,13 +366,65 @@ FAIL:
 static WSEGLError wseglCreatePixmapDrawable(WSEGLDisplayHandle display, WSEGLConfig *config,
      WSEGLDrawableHandle *_drawable, NativePixmapType nativePixmap, WSEGLRotationAngle *rotationAngle)
 {
-    WSEGL_UNUSED(display);
     WSEGL_UNUSED(config);
-    WSEGL_UNUSED(_drawable);
-    WSEGL_UNUSED(nativePixmap);
-    WSEGL_UNUSED(rotationAngle);
+    PVRSRV_ERROR err;
 
-    return WSEGL_BAD_NATIVE_PIXMAP;
+    if (!nativePixmap)
+        return WSEGL_BAD_NATIVE_PIXMAP;
+
+    struct GBMDrawable *drawable = calloc(sizeof(struct GBMDrawable), 1);
+    if (!drawable)
+        return WSEGL_OUT_OF_MEMORY;
+
+    drawable->type = GBM_DRAWABLE_PIXMAP;
+    drawable->display = (struct GBMDisplay *)display;
+    drawable->numBackBuffers = 1;
+    drawable->backBuffers = calloc(sizeof(struct GBMBuffer), drawable->numBackBuffers);
+    drawable->handle.pixmap = (struct gbm_pvr_bo *)nativePixmap;
+    drawable->width = drawable->handle.pixmap->base.width;
+    drawable->height = drawable->handle.pixmap->base.height;
+
+    int dmaFd = gbm_bo_get_fd((struct gbm_bo *)drawable->handle.pixmap);
+    if (dmaFd == -1)
+        goto FAIL;
+    void *mmap = gbm_bo_map((struct gbm_bo *)drawable->handle.pixmap,
+                            0, 0, drawable->width, drawable->height, 0,
+                            &drawable->stride,
+                            &drawable->backBuffers[0].mmap);
+    if (!mmap)
+    {
+        close(dmaFd);
+        goto FAIL;
+    }
+    err = PVRSRVMapFullDmaBufFunc(&drawable->display->devData,
+                                  drawable->display->mappingHeap,
+                                  PVRSRV_MAP_NOUSERVIRTUAL,
+                                  dmaFd,
+                                  &drawable->backBuffers[0].memInfo);
+
+    close(dmaFd);
+    if (err != PVRSRV_OK)
+        goto FAIL;
+
+    *_drawable = drawable;
+    *rotationAngle = WSEGL_ROTATE_0;
+
+    return WSEGL_SUCCESS;
+
+FAIL:
+
+    if (drawable->backBuffers[0].memInfo)
+    {
+        WaitForOpsComplete(display, drawable->backBuffers[0].memInfo->psClientSyncInfo);
+        PVRSRVUnmapDmaBufFunc(&drawable->display->devData, drawable->backBuffers[0].memInfo);
+        if (drawable->backBuffers[0].mmap)
+            gbm_bo_unmap((struct gbm_bo *)drawable->handle.pixmap, drawable->backBuffers[0].mmap);
+    }
+
+    free(drawable->backBuffers);
+    free(drawable);
+
+    return WSEGL_OUT_OF_MEMORY;
 }
 
 /* Delete a specific drawable */
@@ -389,7 +442,10 @@ static WSEGLError wseglDeleteDrawable(WSEGLDrawableHandle _drawable)
             WaitForOpsComplete(display, drawable->backBuffers[i].memInfo->psClientSyncInfo);
             PVRSRVUnmapDmaBuf(&drawable->display->devData, drawable->backBuffers[i].memInfo);
             if (drawable->backBuffers[i].mmap)
-                gbm_bo_unmap(drawable->window->back_buffers[i], drawable->backBuffers[i].mmap);
+                if (drawable->type == GBM_DRAWABLE_WINDOW)
+                    gbm_bo_unmap((struct gbm_bo *)drawable->handle.window->back_buffers[i], drawable->backBuffers[i].mmap);
+                else
+                    gbm_bo_unmap((struct gbm_bo *)drawable->handle.pixmap, drawable->backBuffers[i].mmap);
         }
     }
     free(drawable->backBuffers);
@@ -406,8 +462,8 @@ static WSEGLError wseglSwapDrawable(WSEGLDrawableHandle _drawable, unsigned long
 
     if (drawable->type == GBM_DRAWABLE_WINDOW)
     {
-        drawable->window->current_back_buffer =
-            (drawable->window->current_back_buffer + 1) % PVR_NUM_BACK_BUFFERS;
+        drawable->handle.window->current_back_buffer =
+            (drawable->handle.window->current_back_buffer + 1) % PVR_NUM_BACK_BUFFERS;
     }
     else
         return WSEGL_BAD_DRAWABLE;
@@ -468,8 +524,8 @@ static WSEGLError wseglGetDrawableParameters(WSEGLDrawableHandle _drawable,
     sourceIdx = renderIdx = 0;
     if (drawable->type == GBM_DRAWABLE_WINDOW)
     {
-        renderIdx = drawable->window->current_back_buffer;
-        sourceIdx = (drawable->window->current_back_buffer + 1) % PVR_NUM_BACK_BUFFERS;
+        renderIdx = drawable->handle.window->current_back_buffer;
+        sourceIdx = (drawable->handle.window->current_back_buffer + 1) % PVR_NUM_BACK_BUFFERS;
     }
 
     source = drawable->backBuffers[sourceIdx].memInfo;
