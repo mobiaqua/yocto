@@ -87,13 +87,13 @@ gbm_pvr_bo_write(struct gbm_bo *_bo, const void *buf, size_t count)
    struct gbm_pvr_bo *bo = gbm_pvr_bo(_bo);
    struct drm_mode_map_dumb mreq;
 
-   mreq.handle = bo->base.handle.u32;
+   mreq.handle = bo->base.v0.handle.u32;
    mreq.pad = 0;
    mreq.offset = 0;
-   if (drmIoctl(bo->base.gbm->fd, DRM_IOCTL_MODE_MAP_DUMB, &mreq) == -1)
+   if (drmIoctl(bo->base.gbm->v0.fd, DRM_IOCTL_MODE_MAP_DUMB, &mreq) == -1)
       return -1;
 
-   void *map = mmap(0, bo->size, PROT_READ | PROT_WRITE, MAP_SHARED, bo->base.gbm->fd, mreq.offset);
+   void *map = mmap(0, bo->size, PROT_READ | PROT_WRITE, MAP_SHARED, bo->base.gbm->v0.fd, mreq.offset);
    if (!map)
       return -1;
 
@@ -111,7 +111,7 @@ gbm_pvr_bo_get_fd(struct gbm_bo *_bo)
    struct gbm_pvr_bo *bo = gbm_pvr_bo(_bo);
    int fd;
 
-   if (drmPrimeHandleToFD(bo->base.gbm->fd, bo->base.handle.u32, DRM_CLOEXEC, &fd))
+   if (drmPrimeHandleToFD(bo->base.gbm->v0.fd, bo->base.v0.handle.u32, DRM_CLOEXEC, &fd))
       return -1;
 
    return fd;
@@ -126,13 +126,13 @@ gbm_pvr_bo_get_planes(struct gbm_bo *_bo)
 static union gbm_bo_handle
 gbm_pvr_bo_get_handle_for_plane(struct gbm_bo *_bo, int plane)
 {
-   return _bo->handle;
+   return _bo->v0.handle;
 }
 
 static uint32_t
 gbm_pvr_bo_get_stride(struct gbm_bo *_bo, int plane)
 {
-   return _bo->stride;
+   return _bo->v0.stride;
 }
 
 static uint32_t
@@ -183,7 +183,7 @@ gbm_pvr_bo_import(struct gbm_device *gbm,
          return NULL;
       }
 
-      ret = drmPrimeFDToHandle(gbm->fd, gbm_dmabuf->fd, &bo->base.handle.u32);
+      ret = drmPrimeFDToHandle(gbm->v0.fd, gbm_dmabuf->fd, &bo->base.v0.handle.u32);
       if (ret)  {
          free(bo);
          errno = ENOSYS;
@@ -191,14 +191,14 @@ gbm_pvr_bo_import(struct gbm_device *gbm,
       }
 
       bo->base.gbm = gbm;
-      bo->base.width = gbm_dmabuf->width;
-      bo->base.height = gbm_dmabuf->height;
-      bo->base.stride = gbm_dmabuf->stride;
-      bo->base.format = gbm_pvr_format_canonicalize(gbm_dmabuf->format);
-      bo->base.handle.u32 = dreq.handle;
+      bo->base.v0.width = gbm_dmabuf->width;
+      bo->base.v0.height = gbm_dmabuf->height;
+      bo->base.v0.stride = gbm_dmabuf->stride;
+      bo->base.v0.format = gbm_pvr_format_canonicalize(gbm_dmabuf->format);
+      bo->base.v0.handle.u32 = dreq.handle;
 
       oreq.handle = dreq.handle;
-      ret = drmCommandWriteRead(gbm->fd, DRM_OMAP_GEM_INFO, &oreq, sizeof(oreq));
+      ret = drmCommandWriteRead(gbm->v0.fd, DRM_OMAP_GEM_INFO, &oreq, sizeof(oreq));
       if (ret)  {
          free(bo);
          errno = ENOSYS;
@@ -254,9 +254,9 @@ gbm_pvr_bo_create(struct gbm_device *gbm,
    }
 
    bo->base.gbm = gbm;
-   bo->base.width = width;
-   bo->base.height = height;
-   bo->base.format = gbm_pvr_format_canonicalize(format);
+   bo->base.v0.width = width;
+   bo->base.v0.height = height;
+   bo->base.v0.format = gbm_pvr_format_canonicalize(format);
 
    dreq.height = height;
    dreq.width = ALIGN(width, 32);
@@ -265,14 +265,14 @@ gbm_pvr_bo_create(struct gbm_device *gbm,
    dreq.handle = 0;
    dreq.pitch = 0;
    dreq.size = 0;
-   int ret = drmIoctl(bo->base.gbm->fd, DRM_IOCTL_MODE_CREATE_DUMB, &dreq);
+   int ret = drmIoctl(bo->base.gbm->v0.fd, DRM_IOCTL_MODE_CREATE_DUMB, &dreq);
    if (ret == -1)  {
       free(bo);
       return NULL;
    }
 
-   bo->base.stride = dreq.pitch;
-   bo->base.handle.u32 = dreq.handle;
+   bo->base.v0.stride = dreq.pitch;
+   bo->base.v0.handle.u32 = dreq.handle;
    bo->size = dreq.size;
 
    return &bo->base;
@@ -287,8 +287,8 @@ gbm_pvr_bo_destroy(struct gbm_bo *_bo)
    if (bo->mmap)
       munmap(bo->mmap, bo->size);
 
-   dreq.handle = bo->base.handle.u32;
-   drmIoctl(bo->base.gbm->fd, DRM_IOCTL_MODE_DESTROY_DUMB, &dreq);
+   dreq.handle = bo->base.v0.handle.u32;
+   drmIoctl(bo->base.gbm->v0.fd, DRM_IOCTL_MODE_DESTROY_DUMB, &dreq);
 
    free(bo);
 }
@@ -302,18 +302,18 @@ gbm_pvr_bo_map(struct gbm_bo *_bo,
    struct gbm_pvr_bo *bo = gbm_pvr_bo(_bo);
    struct drm_mode_map_dumb mreq;
 
-   mreq.handle = bo->base.handle.u32;
+   mreq.handle = bo->base.v0.handle.u32;
    mreq.pad = 0;
    mreq.offset = 0;
-   if (drmIoctl(bo->base.gbm->fd, DRM_IOCTL_MODE_MAP_DUMB, &mreq) == -1)
+   if (drmIoctl(bo->base.gbm->v0.fd, DRM_IOCTL_MODE_MAP_DUMB, &mreq) == -1)
       return NULL;
 
-   bo->mmap = mmap(0, bo->size, PROT_READ | PROT_WRITE, MAP_SHARED, bo->base.gbm->fd, mreq.offset);
+   bo->mmap = mmap(0, bo->size, PROT_READ | PROT_WRITE, MAP_SHARED, bo->base.gbm->v0.fd, mreq.offset);
    if (!bo->mmap)
       return NULL;
 
-   *map_data = (char *)bo->mmap + (bo->base.stride * y) + (x * 4);
-   *stride = bo->base.stride;
+   *map_data = (char *)bo->mmap + (bo->base.v0.stride * y) + (x * 4);
+   *stride = bo->base.v0.stride;
 
    return *map_data;
 }
@@ -362,10 +362,10 @@ gbm_pvr_surface_create(struct gbm_device *gbm,
    }
 
    surf->base.gbm = gbm;
-   surf->base.width = width;
-   surf->base.height = height;
-   surf->base.format = gbm_pvr_format_canonicalize(format);
-   surf->base.flags = flags;
+   surf->base.v0.width = width;
+   surf->base.v0.height = height;
+   surf->base.v0.format = gbm_pvr_format_canonicalize(format);
+   surf->base.v0.flags = flags;
    for (int i = 0; i < PVR_NUM_BACK_BUFFERS; i++) {
       surf->back_buffers[i] = (struct gbm_pvr_bo *)gbm_pvr_bo_create(gbm, width, height, format, flags, NULL, 0);
       if (!surf->back_buffers[i]) {
@@ -410,7 +410,7 @@ gbm_pvr_device_destroy(struct gbm_device *gbm)
 }
 
 static struct gbm_device *
-gbm_pvr_device_create(int fd)
+gbm_pvr_device_create(int fd, uint32_t gbm_backend_version)
 {
    struct gbm_pvr_device *pvr;
    drmVersionPtr version;
@@ -431,32 +431,40 @@ gbm_pvr_device_create(int fd)
    if (!pvr)
       return NULL;
 
-   pvr->base.fd = fd;
-   pvr->base.destroy = gbm_pvr_device_destroy;
-   pvr->base.is_format_supported = gbm_pvr_is_format_supported;
-   pvr->base.get_format_modifier_plane_count = gbm_pvr_get_format_modifier_plane_count;
-   pvr->base.bo_create = gbm_pvr_bo_create;
-   pvr->base.bo_destroy = gbm_pvr_bo_destroy;
-   pvr->base.bo_import = gbm_pvr_bo_import;
-   pvr->base.bo_map = gbm_pvr_bo_map;
-   pvr->base.bo_unmap = gbm_pvr_bo_unmap;
-   pvr->base.bo_write = gbm_pvr_bo_write;
-   pvr->base.bo_get_fd = gbm_pvr_bo_get_fd;
-   pvr->base.bo_get_planes = gbm_pvr_bo_get_planes;
-   pvr->base.bo_get_handle = gbm_pvr_bo_get_handle_for_plane;
-   pvr->base.bo_get_stride = gbm_pvr_bo_get_stride;
-   pvr->base.bo_get_offset = gbm_pvr_bo_get_offset;
-   pvr->base.bo_get_modifier = gbm_pvr_bo_get_modifier;
-   pvr->base.surface_create = gbm_pvr_surface_create;
-   pvr->base.surface_destroy = gbm_pvr_surface_destroy;
-   pvr->base.surface_lock_front_buffer = gbm_pvr_surface_lock_front_buffer;
-   pvr->base.surface_release_buffer = gbm_pvr_surface_release_buffer;
-   pvr->base.surface_has_free_buffers = gbm_pvr_surface_has_free_buffers;
+   pvr->base.v0.fd = fd;
+   pvr->base.v0.backend_version = gbm_backend_version;
+   pvr->base.v0.destroy = gbm_pvr_device_destroy;
+   pvr->base.v0.is_format_supported = gbm_pvr_is_format_supported;
+   pvr->base.v0.get_format_modifier_plane_count = gbm_pvr_get_format_modifier_plane_count;
+   pvr->base.v0.bo_create = gbm_pvr_bo_create;
+   pvr->base.v0.bo_destroy = gbm_pvr_bo_destroy;
+   pvr->base.v0.bo_import = gbm_pvr_bo_import;
+   pvr->base.v0.bo_map = gbm_pvr_bo_map;
+   pvr->base.v0.bo_unmap = gbm_pvr_bo_unmap;
+   pvr->base.v0.bo_write = gbm_pvr_bo_write;
+   pvr->base.v0.bo_get_fd = gbm_pvr_bo_get_fd;
+   pvr->base.v0.bo_get_planes = gbm_pvr_bo_get_planes;
+   pvr->base.v0.bo_get_handle = gbm_pvr_bo_get_handle_for_plane;
+   pvr->base.v0.bo_get_stride = gbm_pvr_bo_get_stride;
+   pvr->base.v0.bo_get_offset = gbm_pvr_bo_get_offset;
+   pvr->base.v0.bo_get_modifier = gbm_pvr_bo_get_modifier;
+   pvr->base.v0.surface_create = gbm_pvr_surface_create;
+   pvr->base.v0.surface_destroy = gbm_pvr_surface_destroy;
+   pvr->base.v0.surface_lock_front_buffer = gbm_pvr_surface_lock_front_buffer;
+   pvr->base.v0.surface_release_buffer = gbm_pvr_surface_release_buffer;
+   pvr->base.v0.surface_has_free_buffers = gbm_pvr_surface_has_free_buffers;
+
+   pvr->base.v0.name = "omapdrm";
 
    return &pvr->base;
 }
 
-struct gbm_backend gbm_backend = {
-   .backend_name = "pvr",
-   .create_device = gbm_pvr_device_create,
+static struct gbm_backend gbm_pvr_backend = {
+   .v0.backend_version = GBM_BACKEND_ABI_VERSION,
+   .v0.backend_name = "pvr",
+   .v0.create_device = gbm_pvr_device_create,
 };
+
+struct gbm_backend *gbmint_get_backend(struct gbm_core *gbm_core) {
+   return &gbm_pvr_backend;
+}

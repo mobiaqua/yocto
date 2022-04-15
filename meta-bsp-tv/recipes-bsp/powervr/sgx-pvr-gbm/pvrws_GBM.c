@@ -311,8 +311,8 @@ static WSEGLError wseglCreateWindowDrawable
     drawable->numBackBuffers = PVR_NUM_BACK_BUFFERS;
     drawable->backBuffers = calloc(sizeof(struct GBMBuffer), drawable->numBackBuffers);
     drawable->handle.window = (struct gbm_pvr_surface *)nativeWindow;
-    drawable->width = drawable->handle.window->base.width;
-    drawable->height = drawable->handle.window->base.height;
+    drawable->width = drawable->handle.window->base.v0.width;
+    drawable->height = drawable->handle.window->base.v0.height;
 
     for (int i = 0; i < PVR_NUM_BACK_BUFFERS; i++)
     {
@@ -381,8 +381,8 @@ static WSEGLError wseglCreatePixmapDrawable(WSEGLDisplayHandle display, WSEGLCon
     drawable->numBackBuffers = 1;
     drawable->backBuffers = calloc(sizeof(struct GBMBuffer), drawable->numBackBuffers);
     drawable->handle.pixmap = (struct gbm_pvr_bo *)nativePixmap;
-    drawable->width = drawable->handle.pixmap->base.width;
-    drawable->height = drawable->handle.pixmap->base.height;
+    drawable->width = drawable->handle.pixmap->base.v0.width;
+    drawable->height = drawable->handle.pixmap->base.v0.height;
 
     int dmaFd = gbm_bo_get_fd((struct gbm_bo *)drawable->handle.pixmap);
     if (dmaFd == -1)

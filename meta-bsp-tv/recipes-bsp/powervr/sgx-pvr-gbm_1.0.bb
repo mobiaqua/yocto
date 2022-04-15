@@ -33,21 +33,24 @@ do_configure[noexec] = "1"
 
 do_compile() {
 	if [ "${DEBUG_BUILD}" = "yes" ]; then
-		${CC} ${CFLAGS} `pkg-config --cflags libdrm libdrm_omap gbm` ${LDFLAGS} -O0 -g3 gbm_pvr.c -fPIC -shared `pkg-config --libs libdrm libdrm_omap gbm` -o gbm_pvr.so
+		${CC} ${CFLAGS} `pkg-config --cflags libdrm libdrm_omap gbm` ${LDFLAGS} -O0 -g3 gbm_pvr.c -fPIC -shared `pkg-config --libs libdrm libdrm_omap gbm` -o pvr_gbm.so
 		${CC} ${CFLAGS} `pkg-config --cflags libdrm libdrm_omap gbm` -DLINUX ${LDFLAGS} -O0 -g3 pvrws_GBM.c -fPIC -shared `pkg-config --libs libdrm_omap libdrm gbm` -o libpvrws_GBM.so
 	else
-		${CC} ${CFLAGS} `pkg-config --cflags libdrm libdrm_omap gbm` ${LDFLAGS} -g gbm_pvr.c -fPIC -shared `pkg-config --libs libdrm libdrm_omap gbm` -o gbm_pvr.so
+		${CC} ${CFLAGS} `pkg-config --cflags libdrm libdrm_omap gbm` ${LDFLAGS} -g gbm_pvr.c -fPIC -shared `pkg-config --libs libdrm libdrm_omap gbm` -o pvr_gbm.so
 		${CC} ${CFLAGS} `pkg-config --cflags libdrm libdrm_omap gbm` -DLINUX ${LDFLAGS} -g pvrws_GBM.c -fPIC -shared `pkg-config --libs libdrm libdrm_omap gbm` -o libpvrws_GBM.so
 	fi
 }
 
 do_install() {
 	install -d ${D}${libdir}/gbm
-	install -m 0644 gbm_pvr.so ${D}${libdir}/gbm
+	install -m 0644 pvr_gbm.so ${D}${libdir}/gbm
 	install -m 0644 libpvrws_GBM.so ${D}${libdir}
+	install -d ${D}${sysconfdir}/profile.d
+	echo "export GBM_BACKEND=pvr" > ${D}${sysconfdir}/profile.d/pvr_gbm.sh
+	chmod 755 ${D}${sysconfdir}/profile.d/pvr_gbm.sh
 }
 
 PACKAGES = "${PN} ${PN}-dbg"
 
-FILES_${PN} = "${libdir}/*.so ${libdir}/gbm/*.so"
+FILES_${PN} = "${libdir}/*.so ${libdir}/gbm/*.so ${sysconfdir}/profile.d/*.sh"
 FILES_${PN}-dbg = "${libdir}/.debug ${libdir}/gbm/.debug"

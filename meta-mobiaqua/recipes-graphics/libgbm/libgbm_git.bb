@@ -1,7 +1,7 @@
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://gbm.c;beginline=1;endline=25;md5=25104d6bc2ac7998715c25b43c0b3208"
 
-PV = "21.2.0"
+PV = "22.2.0"
 PR = "r0"
 
 DEPENDS = "udev libdrm"
@@ -10,7 +10,7 @@ PROVIDES += "virtual/libgbm"
 
 inherit autotools lib_package pkgconfig
 
-SRCREV = "e1f9ff191c77be0d6936ff5d32e2b62faf9935a8"
+SRCREV = "12f869f1a72154a432d6105a3b59fe10191061d4"
 
 SRC_URI = "git://github.com/mobiaqua/libgbm.git;protocol=git \
           "
