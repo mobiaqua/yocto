@@ -5,7 +5,7 @@ DEPENDS += "openssl-native ncurses-native elf-native kmod-native"
 COMPATIBLE_MACHINE = "board-tv"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "5.17.1"
+LINUX_VERSION = "5.17.3"
 PV = "${LINUX_VERSION}"
 KERNEL_DEVICETREE_board-tv = "omap4-panda.dtb omap4-panda-es.dtb am57xx-beagle-x15-revc.dtb am5729-beagleboneai.dtb"
 FILESEXTRAPATHS_prepend := "${THISDIR}/linux-ti_5.17:"
@@ -45,7 +45,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v5.x/linux-${LINUX_VERSION}.tar.xz \
            file://rpmsg-rpc/0057-rpmsg-rpc-fix-potential-memory-leak-of-unprocessed-s.patch \
            file://rpmsg-rpc/0058-rpmsg-rpc-fix-static-checker-errors.patch \
            file://rpmsg-rpc/0060-rpmsg-fix-lockdep-warnings-in-virtio-rpmsg-bus-drive.patch \
-           file://ti/0010-clocksource-drivers-timer-ti-dm-fix-regression-from-.patch \
            file://ti/0011-clocksource-drivers-timer-ti-dm-ack-pending-interrup.patch \
            file://ti/0013-drm-atomic-integrate-private-objects-with-suspend-re.patch \
            file://ti/0014-iommu-omap-Add-transition-support-between-hwmod-and-.patch \
@@ -73,7 +72,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v5.x/linux-${LINUX_VERSION}.tar.xz \
            file://defconfig \
            "
 
-SRC_URI[sha256sum] = "7cd5c5d432a25f45060868ce6a8578890e550158a2f779c4a20804b551e84c24"
+SRC_URI[sha256sum] = "32d0a8e366b87e1cbde951b9f7a01287546670ba60fac35cccfc8a7c005a162c"
 
 S = "${WORKDIR}/linux-${PV}"
 
