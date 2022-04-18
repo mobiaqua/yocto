@@ -17,7 +17,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v4.x/linux-${PV}.tar.xz \
            file://defconfig \
           "
 
-SRC_URI[sha256sum] = "67727389771a858406f773b4db62d7d3248209e26120df47507ea4a8898d2e15"
+SRC_URI[sha256sum] = "85d3d93757f402d95ae3b34c52d8dc3b797d25f7f6ea0dcc405b9418968ea39d"
 
 S = "${WORKDIR}/linux-${PV}"
 
