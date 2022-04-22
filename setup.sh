@@ -25,7 +25,7 @@ print_help() {
 }
 
 python_v3_check() {
-	VER=`/usr/bin/env python --version 2>&1 | grep "Python 3"`
+	VER=`/usr/bin/env python3.7 --version 2>&1 | grep "Python 3"`
 	if [ "$VER" != "" ]; then
 		return 0
 	else
@@ -241,9 +241,9 @@ echo -n \"10.15.0\"
 	if [ "$OS" = "Darwin" ]; then
 		/bin/rm -f ${OE_BASE}/bin/python
 		/bin/rm -f ${OE_BASE}/bin/python3
-		if [ -e /opt/local/bin/python3 ]; then
-			/bin/ln -s /opt/local/bin/python3 ${OE_BASE}/bin/python
-			/bin/ln -s /opt/local/bin/python3 ${OE_BASE}/bin/python3
+		if [ -e /opt/local/bin/python3.7 ]; then
+			/bin/ln -s /opt/local/bin/python3.7 ${OE_BASE}/bin/python
+			/bin/ln -s /opt/local/bin/python3.7 ${OE_BASE}/bin/python3
 		else
 			echo "* ERROR *  Missing MacPorts python"
 			return 1
@@ -593,7 +593,7 @@ ERROR=0
 
 [ $ERROR != 1 ] && [ "$1" = "" ] && print_help
 
-[ $ERROR != 1 ] && { python_v3_check; [ $? != 0 ] && error "Python v3 is required"; }
+[ $ERROR != 1 ] && { python_v3_check; [ $? != 0 ] && error "Python v3.7 is required"; }
 
 [ $ERROR != 1 ] && { prepare_tools; [ $? != 0 ] && error "Please install missing tools"; }
 
