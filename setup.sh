@@ -15,8 +15,8 @@ print_help() {
 	echo ". setup.sh [<target>] [-debug]"
 	echo
 	echo "Targets list:"
-	echo "- tv"
-	echo "- car"
+	echo "- media"
+	echo "- dsp"
 	echo "- pda-sa1110"
 	echo "- pda-pxa250"
 	echo
@@ -407,30 +407,22 @@ setup() {
 	export DISTRO=mobiaqua
 	export TARGET=$1
 
-	if [ "$TARGET" = "tv" ]; then
+	if [ "$TARGET" = "media" ]; then
 		export MACHINE=board-tv
-		image=rootfs-devel
+		image=media-rootfs-devel
 		ARMDIR=armv7a-hf
-		BSP_LAYER=meta-bsp-tv
-		BSP_LAYER2=meta-null
-	elif [ "$TARGET" = "car" ]; then
+	elif [ "$TARGET" = "dsp" ]; then
 		export MACHINE=igep0030
-		image=rootfs-devel
+		image=dsp-rootfs-devel
 		ARMDIR=armv7a-hf
-		BSP_LAYER=meta-bsp-car
-		BSP_LAYER2=meta-null
 	elif [ "$TARGET" = "pda-sa1110" ]; then
 		export MACHINE=pda-sa1110
-		image=rootfs-release
+		image=pda-rootfs-release
 		ARMDIR=armv4
-		BSP_LAYER=meta-bsp-sa1110
-		BSP_LAYER2=meta-bsp-pda
 	elif [ "$TARGET" = "pda-pxa250" ]; then
 		export MACHINE=pda-pxa250
-		image=rootfs-release
+		image=pda-rootfs-release
 		ARMDIR=armv5te
-		BSP_LAYER=meta-bsp-pxa250
-		BSP_LAYER2=meta-bsp-pda
 	fi
 
 	if [ -e ${HOME}/.mobiaqua/oe/${DISTRO}-${TARGET}_config ]; then
@@ -536,7 +528,7 @@ BB_NUMBER_THREADS = \"8\"
 POKY_BBLAYERS_CONF_VERSION = \"2\"
 BBPATH = \"\${TOPDIR}\"
 BBFILES ?= \"\"
-BBLAYERS ?= \"${OE_BASE}/meta ${OE_BASE}/meta-mobiaqua ${OE_BASE}/${BSP_LAYER2} ${OE_BASE}/${BSP_LAYER}\"
+BBLAYERS ?= \"${OE_BASE}/meta ${OE_BASE}/meta-mobiaqua\"
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/bblayers.conf
 
 

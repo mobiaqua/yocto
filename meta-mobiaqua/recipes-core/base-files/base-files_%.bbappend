@@ -3,4 +3,3 @@ do_install_append () {
 		install -m 0644 ${MA_FSTAB_FILE} ${D}${sysconfdir}/fstab
 	fi
 }
-

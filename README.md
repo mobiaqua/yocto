@@ -6,11 +6,11 @@
 
   Targets list:
 
-  - "tv"
+  - "media"
 
     Pandaboard(ES)/BeagleBoard-X15/BeagleBone-AI
 
-  - "car" - not supported
+  - "dsp"
 
     IGEPv3
 
@@ -24,7 +24,7 @@
 
   Example usage:
 
-  Run ". setup.sh tv" to setup Yocto environment.
+  Run ". setup.sh media" to setup Yocto environment.
 
   Setup generate/load configuration files:
   - build-<target>/conf/local.conf
