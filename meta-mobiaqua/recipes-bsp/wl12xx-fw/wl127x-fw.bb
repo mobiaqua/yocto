@@ -1,5 +1,5 @@
 DESCRIPTION = "Firmware files for Bluetooth and Wifi"
-LICENSE = "Proprietary"
+LICENSE = "TI-TSPA"
 ERROR_QA_remove = "license-checksum"
 
 PV = "1.0"

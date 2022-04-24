@@ -1,6 +1,6 @@
 DESCRIPTION = "Userspace libraries for GC320 chipset on TI SoCs"
 HOMEPAGE = "https://git.ti.com/graphics/ti-gc320-libs"
-LICENSE = "Proprietary"
+LICENSE = "TI-TSPA"
 LIC_FILES_CHKSUM = "file://Manifest.html;md5=a9121e8936ace09820d23f7626daaca5"
 
 COMPATIBLE_MACHINE = "board-tv"

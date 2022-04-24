@@ -1,6 +1,6 @@
 DESCRIPTION = "VPDMA firmware for Video Input Port and Video Processing Engine"
 
-LICENSE = "Proprietary"
+LICENSE = "TI-TSPA"
 ERROR_QA_remove = "license-checksum"
 
 COMPATIBLE_MACHINE = "board-tv"

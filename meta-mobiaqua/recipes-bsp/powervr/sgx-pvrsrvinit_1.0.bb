@@ -1,6 +1,5 @@
 DESCRIPTION = "Program to init SGX services."
 LICENSE = "MIT"
-
 ERROR_QA_remove = "license-checksum"
 
 DEPENDS = ""
