@@ -5,7 +5,7 @@ DESCRIPTION = "<description>"
 PV = "1.0.0"
 PR = "r0"
 
-INSTALL_PKGS += "writeloader linux-firmware-sd8686"
+INSTALL_PKGS += "x-loader-igep-mlo writeloader linux-firmware-sd8686"
 
 RDEPENDS += ""
 RRECOMMENDS += ""
