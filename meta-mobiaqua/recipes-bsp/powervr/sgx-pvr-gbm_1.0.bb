@@ -1,9 +1,9 @@
 DESCRIPTION = "GBM plugin for SGX user space libs."
-LICENSE = "MIT|GPLv2"
+LICENSE = "MIT|GPL-3.0-only|LGPL-2.0-only"
 
-ERROR_QA_remove = "license-checksum"
+ERROR_QA:remove = "license-checksum"
 
-DEPENDS = "libdrm libgbm pkgconfig-native virtual/egl"
+DEPENDS = "libdrm pkgconfig-native virtual/libgbm virtual/egl"
 
 SRC_URI = "\
 	   file://LICENSE.GPL \
@@ -27,7 +27,7 @@ RM_WORK_EXCLUDE += "${@['','${PN}'][d.getVar('BUILD_DEBUG') == '1']}"
 
 CLEANBROKEN = "1"
 
-INSANE_SKIP_${PN} += "dev-elf dev-deps"
+INSANE_SKIP:${PN} += "dev-elf dev-deps"
 
 do_configure[noexec] = "1"
 
@@ -52,5 +52,5 @@ do_install() {
 
 PACKAGES = "${PN} ${PN}-dbg"
 
-FILES_${PN} = "${libdir}/*.so ${libdir}/gbm/*.so ${sysconfdir}/profile.d/*.sh"
-FILES_${PN}-dbg = "${libdir}/.debug ${libdir}/gbm/.debug"
+FILES:${PN} = "${libdir}/*.so ${libdir}/gbm/*.so ${sysconfdir}/profile.d/*.sh"
+FILES:${PN}-dbg = "${libdir}/.debug ${libdir}/gbm/.debug"

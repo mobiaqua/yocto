@@ -3,25 +3,25 @@ SECTION = "multimedia"
 PRIORITY = "optional"
 HOMEPAGE = "http://www.mplayerhq.hu/"
 DEPENDS = "ffmpeg zlib freetype fontconfig alsa-lib libmpg123 ncurses"
-DEPENDS_append_board-tv = " libdce libdrm libgbm virtual/egl virtual/libgles2"
-RDEPENDS_${PN} = "mplayer-common glibc-gconv-cp1250 ttf-dejavu-sans"
+DEPENDS:append:board-tv = " libdce libdrm virtual/libgbm virtual/egl virtual/libgles2"
+RDEPENDS:${PN} = "mplayer-common glibc-gconv-cp1250 ttf-dejavu-sans"
 
-DEPENDS_append_board-tv = " ${@['','gdb-cross-arm'][d.getVar('BUILD_DEBUG') == '1']}"
+DEPENDS:append:board-tv = " ${@['','gdb-cross-arm'][d.getVar('BUILD_DEBUG') == '1']}"
 
-LICENSE = "GPLv2+"
-ERROR_QA_remove = "license-checksum"
+LICENSE = "GPL-2.0-or-later"
+ERROR_QA:remove = "license-checksum"
 
-RCONFLICTS_${PN} = "mplayer"
+RCONFLICTS:${PN} = "mplayer"
 
 SRCREV = "aa5ff49a389b997339c7b473e9dc9cc575c309ed"
-SRC_URI = "git://github.com/mobiaqua/mplayer-mini.git;protocol=git"
+SRC_URI = "git://github.com/mobiaqua/mplayer-mini.git;protocol=https;branch=master"
 
 PV = "1.0+git"
 PR = "r1"
 
 S = "${WORKDIR}/git/src"
 
-FILES_${PN} = "${bindir}/mplayer"
+FILES:${PN} = "${bindir}/mplayer"
 
 inherit autotools pkgconfig
 
@@ -32,9 +32,9 @@ EXTRA_OECONF = " \
 	--ar=${TARGET_PREFIX}ar \
 "
 
-FULL_OPTIMIZATION_append = " -fexpensive-optimizations -mvectorize-with-neon-quad -O4 -ffast-math"
+FULL_OPTIMIZATION:append = " -fexpensive-optimizations -mvectorize-with-neon-quad -O4 -ffast-math"
 
-do_configure_prepend_board-tv() {
+do_configure:prepend:board-tv() {
 	export DCE_CFLAGS=`pkg-config --cflags libdce`
 	export DCE_LIBS=`pkg-config --libs libdce`
 	export DRM_CFLAGS=`pkg-config --cflags libdrm`

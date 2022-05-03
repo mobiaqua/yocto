@@ -1,7 +1,7 @@
 DESCRIPTION = "Dummy EGL, GLES1, GLES2 libraries with includes."
 
 LICENSE = "MIT"
-ERROR_QA_remove = "license-checksum"
+ERROR_QA:remove = "license-checksum"
 
 PR = "r0"
 PV = "1.0"
@@ -16,8 +16,8 @@ SRC_URI = "\
 	   file://glesv2.pc \
 	   "
 
-PROVIDES += "virtual/egl virtual/libgles virtual/libgles2"
-DEPENDS = "libdrm libgbm pkgconfig-native"
+PROVIDES = "virtual/egl virtual/libgles virtual/libgles2"
+DEPENDS = "libdrm virtual/libgbm pkgconfig-native"
 
 DEFAULT_PREFERENCE = "10"
 
@@ -60,6 +60,6 @@ do_install() {
 
 PACKAGES = "${PN} ${PN}-dev ${PN}-dbg"
 
-FILES_${PN} = "${libdir}/*.so*"
-FILES_${PN}-dev = "${libdir}/pkgconfig ${includedir}"
-FILES_${PN}-dbg = "${libdir}/.debug ${libdir}/gbm/.debug"
+FILES:${PN} = "${libdir}/*.so*"
+FILES:${PN}-dev = "${libdir}/pkgconfig ${includedir}"
+FILES:${PN}-dbg = "${libdir}/.debug ${libdir}/gbm/.debug"

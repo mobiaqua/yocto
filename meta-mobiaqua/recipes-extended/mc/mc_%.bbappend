@@ -1,8 +1,10 @@
-RDEPENDS_${BPN}-helpers-perl_remove = "perl"
+RDEPENDS:${BPN}-helpers-perl:remove = "perl"
 
-EXTRA_OECONF_append = " --disable-vfs-extfs"
+EXTRA_OECONF:append = " --disable-vfs-extfs"
 
-do_install_prepend () {
+CFLAGS:append = " -DNCURSES_WIDECHAR=0"
+
+do_install:prepend () {
 	# w/a for missing files
 	install -d ${D}${libexecdir}/mc/extfs.d/
 	touch ${D}${libexecdir}/mc/extfs.d/s3+

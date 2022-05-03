@@ -18,8 +18,8 @@ index 356bb734..58ff7635 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
 @@ -399,25 +399,4 @@ else ( MACOSX_FRAMEWORK )
-    install ( FILES ${public_main_HEADER} DESTINATION ${INCLUDE_INSTALL_DIR} )
- endif ( MACOSX_FRAMEWORK )
+         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/fluidsynth
+ )
  
 -# ******* Auto Generated Lookup Tables ******
 -
@@ -40,7 +40,7 @@ index 356bb734..58ff7635 100644
 -        "${CMAKE_COMMAND}" -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE} -G "${CMAKE_GENERATOR}" -B "${GENTAB_BDIR}" "${GENTAB_SDIR}"
 -    BUILD_COMMAND
 -        "${CMAKE_COMMAND}" --build "${GENTAB_BDIR}"
--    INSTALL_COMMAND ${GENTAB_BDIR}/make_tables.exe "${CMAKE_BINARY_DIR}/"
+-    INSTALL_COMMAND ${GENTAB_BDIR}/make_tables.exe "${FluidSynth_BINARY_DIR}/"
 -)
 -add_dependencies(libfluidsynth-OBJ gentables)
 +

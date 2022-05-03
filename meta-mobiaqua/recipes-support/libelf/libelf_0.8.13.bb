@@ -15,10 +15,10 @@ PARALLEL_MAKE = ""
 
 TARGET_CC_ARCH += "${LDFLAGS}"
 
-EXTRA_OECONF_append_virtclass-native = " --enable-static"
-EXTRA_OECONF_append_virtclass-nativesdk = " --enable-static"
+EXTRA_OECONF:append:virtclass-native = " --enable-static"
+EXTRA_OECONF:append:virtclass-nativesdk = " --enable-static"
 
-do_configure_prepend () {
+do_configure:prepend () {
 	if test ! -e ${S}/acinclude.m4; then
 		cp ${S}/aclocal.m4 ${S}/acinclude.m4
 	fi

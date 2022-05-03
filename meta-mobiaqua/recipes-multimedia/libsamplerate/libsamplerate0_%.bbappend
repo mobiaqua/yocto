@@ -1,1 +1,1 @@
-DEPENDS_remove = "libsndfile1"
+DEPENDS:remove = "libsndfile1"

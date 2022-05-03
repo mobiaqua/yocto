@@ -1,5 +1,5 @@
-RDEPENDS_${PN}-python_remove = "python3-core"
+RDEPENDS:${PN}-python:remove = "python3-core"
 
-do_install_append () {
+do_install:append () {
 	rm -f ${D}/${bindir}/lsusb.py
 }

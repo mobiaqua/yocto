@@ -8,6 +8,7 @@ LIC_FILES_CHKSUM = "file://zlib.h;beginline=6;endline=23;md5=5377232268e952e9ef6
 
 SRC_URI = "${SOURCEFORGE_MIRROR}/libpng/${BPN}/${PV}/${BPN}-${PV}.tar.xz \
            file://ldflags-tests.patch \
+           file://0001-configure-Pass-LDFLAGS-to-link-tests.patch \
            file://CVE-2018-25032.patch \
            file://run-ptest \
            "
@@ -18,7 +19,7 @@ SRC_URI[sha256sum] = "4ff941449631ace0d4d203e3483be9dbc9da454084111f97ea0a2114e1
 
 CFLAGS += "-D_REENTRANT"
 
-RDEPENDS_${PN}-ptest += "make"
+RDEPENDS:${PN}-ptest += "make"
 
 inherit ptest
 
@@ -40,7 +41,7 @@ do_install_ptest() {
 
 # Move zlib shared libraries for target builds to $base_libdir so the library
 # can be used in early boot before $prefix is mounted.
-do_install_append_class-target() {
+do_install:append:class-target() {
 	if [ ${base_libdir} != ${libdir} ]
 	then
 		mkdir -p ${D}/${base_libdir}

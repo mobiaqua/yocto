@@ -5,24 +5,24 @@ DESCRIPTION = "FFmpeg is the leading multimedia framework, able to decode, encod
 HOMEPAGE = "https://www.ffmpeg.org/"
 SECTION = "libs"
 
-# MobiAqua: custom ffpmeg
-DEFAULT_PREFERENCE = "99"
-
-LICENSE = "BSD & GPLv2+ & LGPLv2.1+ & MIT"
-LICENSE_${PN} = "GPLv2+"
-LICENSE_libavcodec = "${@bb.utils.contains('PACKAGECONFIG', 'gpl', 'GPLv2+', 'LGPLv2.1+', d)}"
-LICENSE_libavdevice = "${@bb.utils.contains('PACKAGECONFIG', 'gpl', 'GPLv2+', 'LGPLv2.1+', d)}"
-LICENSE_libavfilter = "${@bb.utils.contains('PACKAGECONFIG', 'gpl', 'GPLv2+', 'LGPLv2.1+', d)}"
-LICENSE_libavformat = "${@bb.utils.contains('PACKAGECONFIG', 'gpl', 'GPLv2+', 'LGPLv2.1+', d)}"
-LICENSE_libavutil = "${@bb.utils.contains('PACKAGECONFIG', 'gpl', 'GPLv2+', 'LGPLv2.1+', d)}"
-LICENSE_libpostproc = "GPLv2+"
-LICENSE_libswresample = "${@bb.utils.contains('PACKAGECONFIG', 'gpl', 'GPLv2+', 'LGPLv2.1+', d)}"
-LICENSE_libswscale = "${@bb.utils.contains('PACKAGECONFIG', 'gpl', 'GPLv2+', 'LGPLv2.1+', d)}"
+LICENSE = "GPL-2.0-or-later & LGPL-2.1-or-later & ISC & MIT & BSD-2-Clause & BSD-3-Clause & IJG"
+LICENSE:${PN} = "GPL-2.0-or-later"
+LICENSE:libavcodec = "GPL-2.0-or-later"
+LICENSE:libavdevice = "GPL-2.0-or-later"
+LICENSE:libavfilter = "GPL-2.0-or-later"
+LICENSE:libavformat = "GPL-2.0-or-later"
+LICENSE:libavutil = "GPL-2.0-or-later"
+LICENSE:libpostproc = "GPL-2.0-or-later"
+LICENSE:libswresample = "GPL-2.0-or-later"
+LICENSE:libswscale = "GPL-2.0-or-later"
 
 LIC_FILES_CHKSUM = "file://COPYING.GPLv2;md5=b234ee4d69f5fce4486a80fdaf4a4263 \
                     file://COPYING.GPLv3;md5=d32239bcb673463ab874e80d47fae504 \
                     file://COPYING.LGPLv2.1;md5=bd7a443320af8c812e4c18d1b79df004 \
                     file://COPYING.LGPLv3;md5=e6a600fd5e1d9cbde2d983680233ad02"
+
+# MobiAqua: custom ffpmeg
+DEFAULT_PREFERENCE = "99"
 
 inherit autotools pkgconfig
 
@@ -30,11 +30,11 @@ LEAD_SONAME = "libavcodec.so"
 
 PACKAGES += "${PN}-vhook-dbg ${PN}-vhook"
 
-FILES_${PN} = "${bindir}"
-FILES_${PN}-dev = "${includedir}/${PN}"
+FILES:${PN} = "${bindir}"
+FILES:${PN}-dev = "${includedir}/${PN}"
 
-FILES_${PN}-vhook = "${libdir}/vhook"
-FILES_${PN}-vhook-dbg += "${libdir}/vhook/.debug"
+FILES:${PN}-vhook = "${libdir}/vhook"
+FILES:${PN}-vhook-dbg += "${libdir}/vhook/.debug"
 
 PACKAGES += "libav-x264-presets \
              libavcodec  libavcodec-dev  libavcodec-dbg \
@@ -47,40 +47,40 @@ PACKAGES += "libav-x264-presets \
              libavfilter libavfilter-dev libavfilter-dbg \
             "
 
-FILES_libav-x264-presets = "${datadir}/*.ffpreset"
+FILES:libav-x264-presets = "${datadir}/*.ffpreset"
 
-FILES_${PN}-dev = "${includedir}"
-FILES_libavcodec = "${libdir}/libavcodec*.so.*"
-FILES_libavcodec-dev = "${libdir}/libavcodec*.so ${libdir}/pkgconfig/libavcodec.pc ${libdir}/libavcodec*.a"
-FILES_libavcodec-dbg += "${libdir}/.debug/libavcodec*"
+FILES:${PN}-dev = "${includedir}"
+FILES:libavcodec = "${libdir}/libavcodec*.so.*"
+FILES:libavcodec-dev = "${libdir}/libavcodec*.so ${libdir}/pkgconfig/libavcodec.pc ${libdir}/libavcodec*.a"
+FILES:libavcodec-dbg += "${libdir}/.debug/libavcodec*"
 
-FILES_libavdevice = "${libdir}/libavdevice*.so.*"
-FILES_libavdevice-dev = "${libdir}/libavdevice*.so ${libdir}/pkgconfig/libavdevice.pc ${libdir}/libavdevice*.a"
-FILES_libavdevice-dbg += "${libdir}/.debug/libavdevice*"
+FILES:libavdevice = "${libdir}/libavdevice*.so.*"
+FILES:libavdevice-dev = "${libdir}/libavdevice*.so ${libdir}/pkgconfig/libavdevice.pc ${libdir}/libavdevice*.a"
+FILES:libavdevice-dbg += "${libdir}/.debug/libavdevice*"
 
-FILES_libavformat = "${libdir}/libavformat*.so.*"
-FILES_libavformat-dev = "${libdir}/libavformat*.so ${libdir}/pkgconfig/libavformat.pc ${libdir}/libavformat*.a"
-FILES_libavformat-dbg += "${libdir}/.debug/libavformat*"
+FILES:libavformat = "${libdir}/libavformat*.so.*"
+FILES:libavformat-dev = "${libdir}/libavformat*.so ${libdir}/pkgconfig/libavformat.pc ${libdir}/libavformat*.a"
+FILES:libavformat-dbg += "${libdir}/.debug/libavformat*"
 
-FILES_libavutil = "${libdir}/libavutil*.so.*"
-FILES_libavutil-dev = "${libdir}/libavutil*.so ${libdir}/pkgconfig/libavutil.pc ${libdir}/libavutil*.a"
-FILES_libavutil-dbg += "${libdir}/.debug/libavutil*"
+FILES:libavutil = "${libdir}/libavutil*.so.*"
+FILES:libavutil-dev = "${libdir}/libavutil*.so ${libdir}/pkgconfig/libavutil.pc ${libdir}/libavutil*.a"
+FILES:libavutil-dbg += "${libdir}/.debug/libavutil*"
 
-FILES_libpostproc = "${libdir}/libpostproc*.so.*"
-FILES_libpostproc-dev = "${libdir}/libpostproc*.so  ${libdir}/pkgconfig/libpostproc.pc ${libdir}/libpostproc*.a ${includedir}/postproc"
-FILES_libpostproc-dbg += "${libdir}/.debug/libpostproc*"
+FILES:libpostproc = "${libdir}/libpostproc*.so.*"
+FILES:libpostproc-dev = "${libdir}/libpostproc*.so  ${libdir}/pkgconfig/libpostproc.pc ${libdir}/libpostproc*.a ${includedir}/postproc"
+FILES:libpostproc-dbg += "${libdir}/.debug/libpostproc*"
 
-FILES_libswscale = "${libdir}/libswscale*.so.*"
-FILES_libswscale-dev = "${libdir}/libswscale*.so ${libdir}/pkgconfig/libswscale.pc ${libdir}/libswscale*.a"
-FILES_libswscale-dbg += "${libdir}/.debug/libswscale*"
+FILES:libswscale = "${libdir}/libswscale*.so.*"
+FILES:libswscale-dev = "${libdir}/libswscale*.so ${libdir}/pkgconfig/libswscale.pc ${libdir}/libswscale*.a"
+FILES:libswscale-dbg += "${libdir}/.debug/libswscale*"
 
-FILES_libswresample = "${libdir}/libswresample*.so.*"
-FILES_libswresample-dev = "${libdir}/libswresample*.so ${libdir}/pkgconfig/libswresample.pc ${libdir}/libswresample*.a"
-FILES_libswresample-dbg += "${libdir}/.debug/libswresample*"
+FILES:libswresample = "${libdir}/libswresample*.so.*"
+FILES:libswresample-dev = "${libdir}/libswresample*.so ${libdir}/pkgconfig/libswresample.pc ${libdir}/libswresample*.a"
+FILES:libswresample-dbg += "${libdir}/.debug/libswresample*"
 
-FILES_libavfilter = "${libdir}/libavfilter*.so.*"
-FILES_libavfilter-dev = "${libdir}/libavfilter*.so ${libdir}/pkgconfig/libavfilter.pc ${libdir}/libavfilter*.a"
-FILES_libavfilter-dbg += "${libdir}/.debug/libavfilter*"
+FILES:libavfilter = "${libdir}/libavfilter*.so.*"
+FILES:libavfilter-dev = "${libdir}/libavfilter*.so ${libdir}/pkgconfig/libavfilter.pc ${libdir}/libavfilter*.a"
+FILES:libavfilter-dbg += "${libdir}/.debug/libavfilter*"
 
 SRCREV = "a4e1dd694014bd9314f63ddebc52ff2495c4f616"
 
@@ -98,7 +98,7 @@ def cpu(d):
             return arg[6:]
     return 'generic'
 
-FULL_OPTIMIZATION_append = " -fexpensive-optimizations -mvectorize-with-neon-quad -O4 -ffast-math"
+FULL_OPTIMIZATION:append = " -fexpensive-optimizations -mvectorize-with-neon-quad -O4 -ffast-math"
 
 EXTRA_FFCONF ?= ""
 
@@ -152,7 +152,7 @@ do_configure() {
     ${S}/configure ${EXTRA_OECONF}
 }
 
-INSANE_SKIP_${PN} += "already-stripped installed-vs-shipped"
+INSANE_SKIP:${PN} += "already-stripped installed-vs-shipped"
 
 DEBUG_BUILD = "${@['no','yes'][d.getVar('BUILD_DEBUG') == '1']}"
 

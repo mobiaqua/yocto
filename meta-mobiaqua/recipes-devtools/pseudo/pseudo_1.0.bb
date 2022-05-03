@@ -1,7 +1,7 @@
 
 LICENSE = "PD"
 
-ERROR_QA_remove = "license-checksum"
+ERROR_QA:remove = "license-checksum"
 
 DEFAULT_PREFERENCE = "99"
 

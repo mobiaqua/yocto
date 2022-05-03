@@ -78,7 +78,7 @@ class GitSM(Git):
                     module_hash = ""
 
                 if not module_hash:
-                    logger.debug(1, "submodule %s is defined, but is not initialized in the repository. Skipping", m)
+                    logger.debug("submodule %s is defined, but is not initialized in the repository. Skipping", m)
                     continue
 
                 submodules.append(m)
@@ -140,15 +140,31 @@ class GitSM(Git):
         if Git.need_update(self, ud, d):
             return True
 
-        try:
-            # Check for the nugget dropped by the download operation
-            known_srcrevs = runfetchcmd("%s config --get-all bitbake.srcrev" % \
-                            (ud.basecmd), d, workdir=ud.clonedir)
+        need_update_list = []
+        def need_update_submodule(ud, url, module, modpath, workdir, d):
+            url += ";bareclone=1;nobranch=1"
 
-            if ud.revisions[ud.names[0]] not in known_srcrevs.split():
-                return True
-        except bb.fetch2.FetchError:
-            # No srcrev nuggets, so this is new and needs to be updated
+            try:
+                newfetch = Fetch([url], d, cache=False)
+                new_ud = newfetch.ud[url]
+                if new_ud.method.need_update(new_ud, d):
+                    need_update_list.append(modpath)
+            except Exception as e:
+                logger.error('gitsm: submodule update check failed: %s %s' % (type(e).__name__, str(e)))
+                need_update_result = True
+
+        # If we're using a shallow mirror tarball it needs to be unpacked
+        # temporarily so that we can examine the .gitmodules file
+        if ud.shallow and os.path.exists(ud.fullshallow) and not os.path.exists(ud.clonedir):
+            tmpdir = tempfile.mkdtemp(dir=d.getVar("DL_DIR"))
+            runfetchcmd("tar -xzf %s" % ud.fullshallow, d, workdir=tmpdir)
+            self.process_submodules(ud, tmpdir, need_update_submodule, d)
+            shutil.rmtree(tmpdir)
+        else:
+            self.process_submodules(ud, ud.clonedir, need_update_submodule, d)
+
+        if need_update_list:
+            logger.debug('gitsm: Submodules requiring update: %s' % (' '.join(need_update_list)))
             return True
 
         return False
@@ -163,9 +179,6 @@ class GitSM(Git):
             try:
                 newfetch = Fetch([url], d, cache=False)
                 newfetch.download()
-                # Drop a nugget to add each of the srcrevs we've fetched (used by need_update)
-                runfetchcmd("%s config --add bitbake.srcrev %s" % \
-                            (ud.basecmd, ud.revisions[ud.names[0]]), d, workdir=workdir)
             except Exception as e:
                 logger.error('gitsm: submodule download failed: %s %s' % (type(e).__name__, str(e)))
                 raise
@@ -223,3 +236,24 @@ class GitSM(Git):
             # up the configuration and checks out the files.  The main project config should remain
             # unmodified, and no download from the internet should occur.
             runfetchcmd("%s submodule update --recursive --no-fetch" % (ud.basecmd), d, quiet=True, workdir=ud.destdir)
+
+    def implicit_urldata(self, ud, d):
+        import shutil, subprocess, tempfile
+
+        urldata = []
+        def add_submodule(ud, url, module, modpath, workdir, d):
+            url += ";bareclone=1;nobranch=1"
+            newfetch = Fetch([url], d, cache=False)
+            urldata.extend(newfetch.expanded_urldata())
+
+        # If we're using a shallow mirror tarball it needs to be unpacked
+        # temporarily so that we can examine the .gitmodules file
+        if ud.shallow and os.path.exists(ud.fullshallow) and ud.method.need_update(ud, d):
+            tmpdir = tempfile.mkdtemp(dir=d.getVar("DL_DIR"))
+            subprocess.check_call("tar -xzf %s" % ud.fullshallow, cwd=tmpdir, shell=True)
+            self.process_submodules(ud, tmpdir, add_submodule, d)
+            shutil.rmtree(tmpdir)
+        else:
+            self.process_submodules(ud, ud.clonedir, add_submodule, d)
+
+        return urldata

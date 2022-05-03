@@ -1,10 +1,10 @@
-PACKAGECONFIG_remove = "disable-weak-ciphers"
+PACKAGECONFIG:remove = "disable-weak-ciphers"
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += "file://dropbear.default"
 
-do_install_append() {
+do_install:append() {
 	if ${@bb.utils.contains('VIRTUAL-RUNTIME_init_manager','busybox','true','false',d)}; then
 		install -d ${D}${sysconfdir}/rcS.d
 		ln -sf ../init.d/${INITSCRIPT_NAME} ${D}${sysconfdir}/rcS.d/S10${INITSCRIPT_NAME}

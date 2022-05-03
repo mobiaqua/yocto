@@ -2,7 +2,7 @@
 # License: MIT (see COPYING.MIT)
 
 LICENSE = "PD"
-ERROR_QA_remove = "license-checksum"
+ERROR_QA:remove = "license-checksum"
 
 DESCRIPTION = "Preconfigured mplayer preferences"
 
@@ -18,5 +18,5 @@ do_install() {
 	install -m 0644 ${WORKDIR}/input.conf "${D}/usr${sysconfdir}/mplayer"
 }
 
-FILES_${PN} = "/usr${sysconfdir}/mplayer"
+FILES:${PN} = "/usr${sysconfdir}/mplayer"
 PACKAGE_ARCH = "all"

@@ -5,10 +5,12 @@ DEPENDS += "openssl-native ncurses-native elf-native kmod-native"
 COMPATIBLE_MACHINE = "(board-tv|igep0030)"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "5.17.3"
+LINUX_VERSION = "5.17.5"
 PV = "${LINUX_VERSION}"
-KERNEL_DEVICETREE_board-tv = "omap4-panda.dtb omap4-panda-es.dtb am57xx-beagle-x15-revc.dtb am5729-beagleboneai.dtb"
-FILESEXTRAPATHS_prepend := "${THISDIR}/linux-ti_5.17:"
+KMETA = "kernel-meta"
+KCONF_BSP_AUDIT_LEVEL = "1"
+KERNEL_DEVICETREE:board-tv = "omap4-panda.dtb omap4-panda-es.dtb am57xx-beagle-x15-revc.dtb am5729-beagleboneai.dtb"
+FILESEXTRAPATHS:prepend := "${THISDIR}/linux-ti_5.17:"
 
 SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v5.x/linux-${LINUX_VERSION}.tar.xz \
            file://drm/0004-drm-omap-add-crtc-background-property.patch \
@@ -72,12 +74,8 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v5.x/linux-${LINUX_VERSION}.tar.xz \
            file://defconfig \
            "
 
-SRC_URI[sha256sum] = "32d0a8e366b87e1cbde951b9f7a01287546670ba60fac35cccfc8a7c005a162c"
+SRC_URI[sha256sum] = "9bbcd185b94436f9c8fe977fa0e862f60d34003562327fcebb27c9fa342fe987"
 
 S = "${WORKDIR}/linux-${PV}"
 
 KERNEL_EXTRA_ARGS += "LOADADDR=${UBOOT_LOADADDRESS}"
-
-do_kernel_configme() {
-    :
-}

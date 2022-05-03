@@ -1,11 +1,12 @@
 diff -urp old/lib/rpmscript.c new/lib/rpmscript.c
 --- old/lib/rpmscript.c	2020-11-10 08:05:56.000000000 +0100
 +++ new/lib/rpmscript.c	2020-11-10 10:42:04.000000000 +0100
-@@ -14,6 +14,7 @@
+@@ -14,6 +14,8 @@
  #include "rpmio/rpmlua.h"
  #include "lib/rpmscript.h"
  #include "rpmio/rpmio_internal.h"
 +#include "lib/rpmchroot.h"
++#include <signal.h>
  
  #include "lib/rpmplugins.h"     /* rpm plugins hooks */
  

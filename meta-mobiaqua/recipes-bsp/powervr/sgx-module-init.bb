@@ -1,5 +1,5 @@
 LICENSE = "MIT"
-ERROR_QA_remove = "license-checksum"
+ERROR_QA:remove = "license-checksum"
 
 PR = "r0"
 PV = "1"
@@ -31,4 +31,4 @@ do_install() {
 	install -m 0644 ${WORKDIR}/pvr.conf ${D}${sysconfdir}/modprobe.d/pvr.conf
 }
 
-FILES_${PN} += "${sysconfdir}"
+FILES:${PN} += "${sysconfdir}"

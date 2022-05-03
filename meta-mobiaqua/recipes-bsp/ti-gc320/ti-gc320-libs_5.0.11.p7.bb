@@ -24,4 +24,4 @@ do_install() {
     oe_runmake install
 }
 
-INSANE_SKIP_${PN} += "ldflags"
+INSANE_SKIP:${PN} += "ldflags"

@@ -1,6 +1,6 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-do_install_append() {
+do_install:append() {
 	if ${@bb.utils.contains('VIRTUAL-RUNTIME_init_manager','busybox','true','false',d)}; then
 		sed -i -e "s:#STATEDIR#:${localstatedir}/lib/alsa:g" ${WORKDIR}/alsa-state-init
 		install -d ${D}${sysconfdir}/rcS.d
@@ -10,4 +10,4 @@ do_install_append() {
 	fi
 }
 
-FILES_${PN}_append = " ${sysconfdir}/rcS.d/S39${INITSCRIPT_NAME}"
+FILES:${PN}:append = " ${sysconfdir}/rcS.d/S39${INITSCRIPT_NAME}"

@@ -1,14 +1,14 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += "file://fix-macos.patch"
 
-PACKAGECONFIG_remove = "libsolv"
+PACKAGECONFIG:remove = "libsolv"
 
-EXTRA_OECONF_append_class-native = " --enable-shared=no"
-EXTRA_OECONF_append_class-nativesdk = " --enable-shared=no"
+EXTRA_OECONF:append:class-native = " --enable-shared=no"
+EXTRA_OECONF:append:class-nativesdk = " --enable-shared=no"
 
-LDFLAGS_append_class-native = " -lz"
-LDFLAGS_append_class-nativesdk = " -lz"
+LDFLAGS:append:class-native = " -lz"
+LDFLAGS:append:class-nativesdk = " -lz"
 
-LDFLAGS_append_darwin_class-native = " -liconv"
-LDFLAGS_append_darwin_class-nativesdk = " -liconv"
+LDFLAGS:append:darwin:class-native = " -liconv"
+LDFLAGS:append:darwin:class-nativesdk = " -liconv"

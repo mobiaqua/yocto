@@ -1,3 +1,3 @@
 PYTHONRDEPS = ""
 
-PACKAGECONFIG_remove = "python"
+PACKAGECONFIG:remove = "python"

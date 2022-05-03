@@ -2,7 +2,7 @@ diff -urp old/fileattrs/elf.attr new/fileattrs/elf.attr
 --- old/fileattrs/elf.attr	2020-11-23 15:40:01.000000000 +0100
 +++ new/fileattrs/elf.attr	2020-11-23 15:45:24.000000000 +0100
 @@ -1,3 +1,2 @@
--%__elf_provides		%{_rpmconfigdir}/elfdeps --provides %{?__filter_GLIBC_PRIVATE:--filter-private}
--%__elf_requires		%{_rpmconfigdir}/elfdeps --requires %{?__filter_GLIBC_PRIVATE:--filter-private}
+-%__elf_provides		%{_rpmconfigdir}/elfdeps --provides
+-%__elf_requires		%{_rpmconfigdir}/elfdeps --requires
 +%__elf_requires		%{nil}
  %__elf_magic		^(setuid,? )?(setgid,? )?(sticky )?ELF (32|64)-bit.*$

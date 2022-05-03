@@ -10,7 +10,7 @@ error() {
 
 print_help() {
 	echo
-	echo "* ERROR *  Missing target param!"
+	echo "* ERROR *  Missing or wrong target param!"
 	echo
 	echo ". setup.sh [<target>] [-debug]"
 	echo
@@ -53,27 +53,17 @@ sha384sum sha512sum shred shuf sleep sort split stat stdbuf stty sum sync tac ta
 timeout touch tr true truncate tsort tty uname unexpand uniq unlink uptime users vdir wc who \
 whoami yes"
 
-tools="bison perl git wget gzip texi2html file bison flex help2man unzip xz dos2unix meson ninja cmake"
+tools="bison perl wget texi2html file bison flex help2man unzip xz dos2unix meson ninja cmake rsync zstd"
 
 prepare_tools() {
 	OE_BASE=`pwd -P`
 	mkdir -p ${OE_BASE}/bin
-	/bin/rm -f ${OE_BASE}/bin/tar
-	/bin/rm -f ${OE_BASE}/bin/\]
-	/bin/rm -f ${OE_BASE}/bin/\[
 
 	/bin/rm -f ${OE_BASE}/bin/chown
 	echo "#!/bin/bash
 
 " > ${OE_BASE}/bin/chown
 	/bin/chmod +x ${OE_BASE}/bin/chown
-
-	/bin/rm -f ${OE_BASE}/bin/sw_vers
-	echo "#!/bin/bash
-
-echo -n \"10.15.0\"
-" > ${OE_BASE}/bin/sw_vers
-	/bin/chmod +x ${OE_BASE}/bin/sw_vers
 
 	get_os
 	case $OS in
@@ -117,6 +107,118 @@ echo -n \"10.15.0\"
 				/bin/ln -s /opt/local/bin/g$i ${OE_BASE}/bin/$i
 			fi
 		done
+
+		for i in $tools; do
+			/bin/rm -f ${OE_BASE}/bin/$i
+			if [ -e /opt/local/bin/$i ]; then
+				/bin/ln -s /opt/local/bin/$i ${OE_BASE}/bin/$i
+			else
+				echo "* ERROR *  Missing $i!"
+				return 1
+			fi
+		done
+
+		/bin/rm -f ${OE_BASE}/bin/ggrep
+		/bin/ln -s /opt/local/bin/ggrep ${OE_BASE}/bin/ggrep
+
+		if [ ! -e /opt/local/bin/desktop-file-install ]; then
+			echo "* ERROR *  Missing desktop-file-utils package"
+			return 1
+		fi
+
+		if [ ! -e /opt/local/bin/intltoolize ]; then
+			echo "* ERROR *  Missing intltool package"
+			return 1
+		fi
+
+		/bin/rm -f ${OE_BASE}/bin/bc
+		/bin/rm -f ${OE_BASE}/bin/dc
+		if [ -e /opt/local/bin/bc ]; then
+			/bin/ln -s /opt/local/bin/bc ${OE_BASE}/bin/bc
+			/bin/ln -s /opt/local/bin/dc ${OE_BASE}/bin/dc
+		else
+			echo "* ERROR *  Missing GNU bc package"
+			return 1
+		fi
+
+		/bin/rm -f ${OE_BASE}/bin/python
+		/bin/rm -f ${OE_BASE}/bin/python3
+		if [ -e /opt/local/bin/python3.7 ]; then
+			/bin/ln -s python3 ${OE_BASE}/bin/python
+			/bin/ln -s /opt/local/bin/python3.7 ${OE_BASE}/bin/python3
+		else
+			echo "* ERROR *  Missing MacPorts python"
+			return 1
+		fi
+
+		/bin/rm -f ${OE_BASE}/bin/tar
+		if [ -e /opt/local/bin/gnutar ]; then
+			/bin/ln -s /opt/local/bin/gnutar ${OE_BASE}/bin/tar
+		else
+			echo "* ERROR *  Missing GNU tar package"
+			return 1
+		fi
+
+		/bin/rm -f ${OE_BASE}/bin/cpio
+		if [ -e /opt/local/bin/gnucpio ]; then
+			/bin/ln -s /opt/local/bin/gnucpio ${OE_BASE}/bin/cpio
+		else
+			echo "* ERROR *  Missing GNU cpio package"
+			return 1
+		fi
+
+		/bin/rm -f ${OE_BASE}/bin/perl
+		/bin/rm -f ${OE_BASE}/bin/pod2man
+		if [ -e /opt/local/bin/perl ]; then
+			/bin/ln -s /opt/local/bin/perl ${OE_BASE}/bin/perl
+			/bin/ln -s /opt/local/bin/pod2man ${OE_BASE}/bin/pod2man
+		else
+			echo "* ERROR *  Missing MacPorts perl package"
+			return 1
+		fi
+
+		/bin/rm -f ${OE_BASE}/bin/makeinfo
+		if [ -e /opt/local/bin/makeinfo ]; then
+			/bin/ln -s /opt/local/bin/makeinfo ${OE_BASE}/bin/makeinfo
+		else
+			echo "* ERROR *  Missing texinfo package"
+			return 1
+		fi
+
+		if [ ! -e /opt/local/bin/svn ]; then
+			echo "* ERROR *  Missing subversion package"
+			return 1
+		fi
+
+		if [ ! -e /opt/local/bin/glibtool ]; then
+			echo "* ERROR *  Missing glib2 package"
+			return 1
+		fi
+
+		/bin/rm -f ${OE_BASE}/bin/xargs
+		if [ -e /opt/local/bin/gxargs ]; then
+			/bin/ln -s /opt/local/bin/gxargs ${OE_BASE}/bin/xargs
+		else
+			echo "* ERROR *  Missing findutils package"
+			return 1
+		fi
+
+		/bin/rm -f ${OE_BASE}/bin/find
+		if [ -e /opt/local/bin/gfind ]; then
+			/bin/ln -s /opt/local/bin/gfind ${OE_BASE}/bin/find
+		else
+			echo "* ERROR *  Missing findutils package"
+			return 1
+		fi
+
+		/bin/rm -f ${OE_BASE}/bin/tic
+		if [ -e /opt/local/bin/tic ]; then
+			/bin/ln -s /opt/local/bin/tic ${OE_BASE}/bin/tic
+		else
+			echo "* ERROR *  Missing ncurses package"
+			return 1
+		fi
+
 		;;
 	Linux)
 		if [ -e /bin/readlink ]; then
@@ -131,6 +233,13 @@ echo -n \"10.15.0\"
 			rm -f ${OE_BASE}/bin/ggrep
 			/bin/ln -s /bin/grep ${OE_BASE}/bin/ggrep
 		fi
+
+		/bin/rm -f ${OE_BASE}/bin/sw_vers
+		echo "#!/bin/bash
+
+echo -n \"12.0.0\"
+" > ${OE_BASE}/bin/sw_vers
+		/bin/chmod +x ${OE_BASE}/bin/sw_vers
 
 		/bin/rm -f ${OE_BASE}/bin/otool
 		echo "#!/bin/bash
@@ -149,253 +258,71 @@ echo -n \"10.15.0\"
 
 " > ${OE_BASE}/bin/xcrun
 		/bin/chmod +x ${OE_BASE}/bin/xcrun
-	esac
 
-	if [ "$OS" = "Darwin" ]; then
-		for i in $tools; do
-			path=`whereis $i`
-			if [ "$path" = "" ]; then
-				/bin/rm -f ${OE_BASE}/bin/$i
-				if [ -e /opt/local/bin/$i ]; then
-					/bin/ln -s /opt/local/bin/$i ${OE_BASE}/bin/$i
-				else
-					echo "* ERROR *  Missing $i!"
-					return 1
-				fi
-			fi
-		done
-	fi
-	if [ "$OS" = "Linux" ]; then
 		for i in $tools; do
 			if [ ! -e /usr/bin/$i ] && [ ! -e /bin/$i ]; then
 				echo "* ERROR *  Missing $i!"
 				return 1
 			fi
 		done
-	fi
 
-	if [ "$OS" = "Darwin" ]; then
-		/bin/rm -f ${OE_BASE}/bin/ggrep
-		/bin/ln -s /opt/local/bin/ggrep ${OE_BASE}/bin/ggrep
-	fi
+		if [ ! -e /usr/bin/git ]; then
+			echo "* ERROR *  Missing git-core package"
+			return 1
+		fi
 
-	if [ "$OS" = "Darwin" ]; then
-		if [ ! -e /opt/local/bin/desktop-file-install ]; then
+		if [ ! -e /usr/bin/desktop-file-install ]; then
 			echo "* ERROR *  Missing desktop-file-utils package"
 			return 1
 		fi
-	fi
-	if [ "$OS" == "Linux" ] && [ ! -e /usr/bin/desktop-file-install ]; then
-		echo "* ERROR *  Missing desktop-file-utils package"
-		return 1
-	fi
 
-	if [ "$OS" = "Darwin" ]; then
-		if [ ! -e /opt/local/bin/intltoolize ]; then
+		if [ ! -e /usr/bin/intltoolize ]; then
 			echo "* ERROR *  Missing intltool package"
 			return 1
 		fi
-	fi
-	if [ "$OS" == "Linux" ] && [ ! -e /usr/bin/intltoolize ]; then
-		echo "* ERROR *  Missing intltool package"
-		return 1
-	fi
 
-	if [ "$OS" = "Darwin" ]; then
-		if [ ! -e /opt/local/bin/xz ]; then
-			echo "* ERROR *  Missing xz package"
+		if [ ! -e /usr/bin/m4 ]; then
+			echo "* ERROR *  Missing m4 package"
 			return 1
 		fi
-	fi
-	if [ "$OS" == "Linux" ] && [ ! -e /usr/bin/xz ]; then
-		echo "* ERROR *  Missing xz-utils package"
-		return 1
-	fi
 
-	if [ "$OS" = "Darwin" ]; then
-		/bin/rm -f ${OE_BASE}/bin/bison
-		if [ -e /opt/local/bin/bison ]; then
-			/bin/ln -s /opt/local/bin/bison ${OE_BASE}/bin/bison
-		else
-			echo "* ERROR *  Missing GNU bison package"
+		if [ ! -e /usr/bin/pod2man ]; then
+			echo "* ERROR *  Missing perl package"
 			return 1
 		fi
-	fi
-	if [ "$OS" == "Linux" ] && [ ! -e /usr/bin/bison ]; then
-		echo "* ERROR *  Missing bison package"
-		return 1
-	fi
 
-	if [ "$OS" = "Darwin" ]; then
-		/bin/rm -f ${OE_BASE}/bin/bc
-		/bin/rm -f ${OE_BASE}/bin/dc
-		if [ -e /opt/local/bin/bc ]; then
-			/bin/ln -s /opt/local/bin/bc ${OE_BASE}/bin/bc
-			/bin/ln -s /opt/local/bin/dc ${OE_BASE}/bin/dc
-		else
-			echo "* ERROR *  Missing GNU bc package"
-			return 1
-		fi
-	fi
-
-	if [ "$OS" = "Darwin" ]; then
-		/bin/rm -f ${OE_BASE}/bin/python
-		/bin/rm -f ${OE_BASE}/bin/python3
-		if [ -e /opt/local/bin/python3.7 ]; then
-			/bin/ln -s /opt/local/bin/python3.7 ${OE_BASE}/bin/python
-			/bin/ln -s /opt/local/bin/python3.7 ${OE_BASE}/bin/python3
-		else
-			echo "* ERROR *  Missing MacPorts python"
-			return 1
-		fi
-	fi
-
-	if [ "$OS" = "Darwin" ]; then
-		/bin/rm -f ${OE_BASE}/bin/flex
-		if [ -e /opt/local/bin/flex ]; then
-			/bin/ln -s /opt/local/bin/flex ${OE_BASE}/bin/flex
-		else
-			echo "* ERROR *  Missing GNU flex package"
-			return 1
-		fi
-	fi
-	if [ "$OS" == "Linux" ] && [ ! -e /usr/bin/flex ]; then
-		echo "* ERROR *  Missing flex package"
-		return 1
-	fi
-
-	if [ "$OS" == "Linux" ] && [ ! -e /usr/bin/m4 ]; then
-		echo "* ERROR *  Missing m4 package"
-		return 1
-	fi
-
-	if [ "$OS" = "Darwin" ]; then
-		/bin/rm -f ${OE_BASE}/bin/tar
-		if [ -e /opt/local/bin/gnutar ]; then
-			/bin/ln -s /opt/local/bin/gnutar ${OE_BASE}/bin/tar
-		else
-			echo "* ERROR *  Missing GNU tar package"
-			return 1
-		fi
-	fi
-
-	if [ "$OS" = "Darwin" ]; then
-		/bin/rm -f ${OE_BASE}/bin/cpio
-		if [ -e /opt/local/bin/gnucpio ]; then
-			/bin/ln -s /opt/local/bin/gnucpio ${OE_BASE}/bin/cpio
-		else
-			echo "* ERROR *  Missing GNU cpio package"
-			return 1
-		fi
-	fi
-
-	if [ "$OS" = "Darwin" ]; then
-		/bin/rm -f ${OE_BASE}/bin/perl
-		/bin/rm -f ${OE_BASE}/bin/pod2man
-		if [ -e /opt/local/bin/perl ]; then
-			/bin/ln -s /opt/local/bin/perl ${OE_BASE}/bin/perl
-			/bin/ln -s /opt/local/bin/pod2man ${OE_BASE}/bin/pod2man
-		else
-			echo "* ERROR *  Missing MacPorts perl package"
-			return 1
-		fi
-	fi
-	if [ "$OS" == "Linux" ] && [ ! -e /usr/bin/pod2man ]; then
-		echo "* ERROR *  Missing perl package"
-		return 1
-	fi
-
-	if [ "$OS" = "Darwin" ]; then
-		/bin/rm -f ${OE_BASE}/bin/makeinfo
-		if [ -e /opt/local/bin/makeinfo ]; then
-			/bin/ln -s /opt/local/bin/makeinfo ${OE_BASE}/bin/makeinfo
-		else
+		if [ ! -e /usr/bin/makeinfo ]; then
 			echo "* ERROR *  Missing texinfo package"
 			return 1
 		fi
-	fi
-	if [ "$OS" == "Linux" ] && [ ! -e /usr/bin/makeinfo ]; then
-		echo "* ERROR *  Missing texinfo package"
-		return 1
-	fi
 
-	if [ "$OS" = "Darwin" ]; then
-		if [ ! -e /opt/local/bin/svn ]; then
+		if [ ! -e /usr/bin/svn ]; then
 			echo "* ERROR *  Missing subversion package"
 			return 1
 		fi
-	fi
-	if [ "$OS" == "Linux" ] && [ ! -e /usr/bin/svn ]; then
-		echo "* ERROR *  Missing subversion package"
-		return 1
-	fi
 
-	if [ "$OS" = "Darwin" ]; then
-		if [ ! -e /opt/local/bin/glibtool ]; then
-			echo "* ERROR *  Missing glib2 package"
+		if [ ! -e /usr/bin/gapplication ]; then
+			echo "* ERROR *  Missing libglib2.0-bin package"
 			return 1
 		fi
-	fi
-	if [ "$OS" == "Linux" ] && [ ! -e /usr/bin/gapplication ]; then
-		echo "* ERROR *  Missing libglib2.0-bin package"
-		return 1
-	fi
 
-	if [ "$OS" = "Darwin" ]; then
-		/bin/rm -f ${OE_BASE}/bin/xargs
-		if [ -e /opt/local/bin/gxargs ]; then
-			/bin/ln -s /opt/local/bin/gxargs ${OE_BASE}/bin/xargs
-		else
+		if [ ! -e /usr/bin/xargs ]; then
 			echo "* ERROR *  Missing findutils package"
 			return 1
 		fi
-	fi
-	if [ "$OS" == "Linux" ] && [ ! -e /usr/bin/xargs ]; then
-		echo "* ERROR *  Missing findutils package"
-		return 1
-	fi
 
-	if [ "$OS" = "Darwin" ]; then
-		/bin/rm -f ${OE_BASE}/bin/find
-		if [ -e /opt/local/bin/gfind ]; then
-			/bin/ln -s /opt/local/bin/gfind ${OE_BASE}/bin/find
-		else
+		if [ ! -e /usr/bin/find ]; then
 			echo "* ERROR *  Missing findutils package"
 			return 1
 		fi
-	fi
-	if [ "$OS" == "Linux" ] && [ ! -e /usr/bin/find ]; then
-		echo "* ERROR *  Missing findutils package"
-		return 1
-	fi
 
-	if [ "$OS" = "Darwin" ]; then
-		/bin/rm -f ${OE_BASE}/bin/tic
-		if [ -e /opt/local/bin/tic ]; then
-			/bin/ln -s /opt/local/bin/tic ${OE_BASE}/bin/tic
-		else
+		if [ ! -e /usr/bin/tic ]; then
 			echo "* ERROR *  Missing ncurses package"
 			return 1
 		fi
-	fi
-	if [ "$OS" == "Linux" ] && [ ! -e /usr/bin/tic ]; then
-		echo "* ERROR *  Missing ncurses package"
-		return 1
-	fi
 
-	if [ "$OS" = "Darwin" ]; then
-		/bin/rm -f ${OE_BASE}/bin/rsync
-		if [ -e /opt/local/bin/rsync ]; then
-			/bin/ln -s /opt/local/bin/rsync ${OE_BASE}/bin/rsync
-		else
-			echo "* ERROR *  Missing rsync package"
-			return 1
-		fi
-	fi
-	if [ "$OS" == "Linux" ] && [ ! -e /usr/bin/rsync ]; then
-		echo "* ERROR *  Missing rsync package"
-		return 1
-	fi
+		;;
+	esac
 
 	return 0
 }
@@ -423,6 +350,9 @@ setup() {
 		export MACHINE=pda-pxa250
 		image=pda-rootfs-release
 		ARMDIR=armv5te
+	else
+		print_help
+		return 1
 	fi
 
 	if [ -e ${HOME}/.mobiaqua/oe/${DISTRO}-${TARGET}_config ]; then
@@ -446,15 +376,15 @@ setup() {
 	export MA_FSTAB_FILE="$HOME/.mobiaqua/oe/${DISTRO}-${TARGET}_fstab"
 	export MA_ROOTFS_POSTPROCESS=${MA_ROOTFS_POSTPROCESS:="echo"}
 	export MA_JTAG_ADAPTER=${MA_JTAG_ADAPTER:=""}
-	BB_ENV_EXTRAWHITE_OE="MACHINE DISTRO TCMODE TCLIBC HTTP_PROXY http_proxy \
+	BB_ENV_PASSTHROUGH_ADDITIONS_OE="MACHINE DISTRO TCMODE TCLIBC HTTP_PROXY http_proxy \
 HTTPS_PROXY https_proxy FTP_PROXY ftp_proxy FTPS_PROXY ftps_proxy ALL_PROXY \
 all_proxy NO_PROXY no_proxy SSH_AGENT_PID SSH_AUTH_SOCK BB_SRCREV_POLICY \
 SDKMACHINE BB_NUMBER_THREADS BB_NO_NETWORK PARALLEL_MAKE GIT_PROXY_COMMAND \
 SOCKS5_PASSWD SOCKS5_USER SCREENDIR STAMPS_DIR BBPATH_EXTRA BB_SETSCENE_ENFORCE \
 BB_LOGCONFIG MA_TARGET_IP MA_TARGET_MASK MA_TARGET_MAC MA_GATEWAY_IP MA_NFS_IP MA_NFS_PATH \
 MA_DNS_IP MA_ROOT_PASSWORD MA_DROPBEAR_KEY_FILE MA_FSTAB_FILE MA_JTAG_ADAPTER"
-BB_ENV_EXTRAWHITE="$(echo $BB_ENV_EXTRAWHITE $BB_ENV_EXTRAWHITE_OE | tr ' ' '\n' | LC_ALL=C sort --unique | tr '\n' ' ')"
-export BB_ENV_EXTRAWHITE
+BB_ENV_PASSTHROUGH_ADDITIONS="$(echo $BB_ENV_PASSTHROUGH_ADDITIONS $BB_ENV_PASSTHROUGH_ADDITIONS_OE | tr ' ' '\n' | LC_ALL=C sort --unique | tr '\n' ' ')"
+export BB_ENV_PASSTHROUGH_ADDITIONS
 
 
 	echo "--- Settings:"
@@ -513,13 +443,13 @@ ASSUME_PROVIDED += \" git-native perl-native python-native python3-native deskto
 linux-libc-headers-native glib-2.0-native intltool-native xz-native gzip-native \
 findutils-native bison-native flex-native help2man-native bc-native subversion-native \
 m4-native unzip-native texinfo-native texinfo-dummy-native patch-replacement-native \
-meson-native ninja-native cmake-native rsync-native\"
-SANITY_REQUIRED_UTILITIES_remove = \"chrpath\"
-PACKAGE_DEPENDS_remove = \"dwarfsrcfiles-native pseudo-native\"
+meson-native ninja-native cmake-native rsync-native zstd-native\"
+SANITY_REQUIRED_UTILITIES:remove = \"chrpath\"
+PACKAGE_DEPENDS:remove = \"dwarfsrcfiles-native pseudo-native\"
 HOSTTOOLS += \"otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep tic bc dc dos2unix sw_vers xcrun glib-genmarshal glib-compile-schemas svn meson ninja cmake rsync\"
-HOSTTOOLS_remove = \"chrpath flock ldd\"
-PARALLEL_MAKE = \"-j 8\"
-BB_NUMBER_THREADS = \"8\"
+HOSTTOOLS:remove = \"chrpath flock ldd pzstd\"
+#PARALLEL_MAKE = \"-j 8\"
+#BB_NUMBER_THREADS = \"8\"
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/local.conf
 
 

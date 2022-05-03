@@ -6,13 +6,13 @@ application code."
 SECTION = "bootloaders"
 DEPENDS += "flex-native bison-native kern-tools-native"
 
-LICENSE = "GPLv2+"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://Licenses/README;md5=a2c678cfd4a4d97135585cad908541c6"
 PE = "1"
 
 inherit uboot-config uboot-extlinux-config uboot-sign deploy
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRCREV = "0db612a7b713ebcdf7ee350395037570f1f4fd24"
 
@@ -35,7 +35,7 @@ COMPATIBLE_MACHINE = "(pda-sa1110|pda-pxa250)"
 PARALLEL_MAKE = ""
 
 UBOOT_SUFFIX ??= "bin"
-UBOOT_IMAGE ?= "u-boot-pda-sa1110-${PV}-${PR}.${UBOOT_SUFFIX}"
+UBOOT_IMAGE = "u-boot-pda-sa1110-${PV}-${PR}.${UBOOT_SUFFIX}"
 UBOOT_MAKE_TARGET ?= "all"
 
 do_configure () {
@@ -56,7 +56,7 @@ do_install () {
     install -m 0644 ${B}/${UBOOT_BINARY} ${D}/boot/${UBOOT_IMAGE}
 }
 
-FILES_${PN} = "/boot"
+FILES:${PN} = "/boot"
 
 do_deploy () {
     install -d ${DEPLOYDIR}

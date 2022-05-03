@@ -1,6 +1,6 @@
 DESCRIPTION = "Firmware files for Bluetooth and Wifi"
 LICENSE = "TI-TSPA"
-ERROR_QA_remove = "license-checksum"
+ERROR_QA:remove = "license-checksum"
 
 PV = "1.0"
 PR = "r0"
@@ -32,4 +32,4 @@ do_install() {
     install -m 0644 ${S}/LICENCE.ti-connectivity ${D}${base_libdir}/firmware/ti-connectivity/
 }
 
-FILES_${PN} += "${base_libdir}/firmware/ti-connectivity/*"
+FILES:${PN} += "${base_libdir}/firmware/ti-connectivity/*"

@@ -1,5 +1,5 @@
 CONF_PARAMS = "-shared"
-CNNF_PARAMS_class-native = "-static"
+CNNF_PARAMS:class-native = "-static"
 
 do_configure() {
 	./configure --prefix=${prefix} ${CONF_PARAMS} --libdir=${libdir} --uname=GNU

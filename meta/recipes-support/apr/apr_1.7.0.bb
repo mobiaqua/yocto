@@ -23,6 +23,7 @@ SRC_URI = "${APACHE_MIRROR}/apr/${BPN}-${PV}.tar.bz2 \
            file://0007-explicitly-link-libapr-against-phtread-to-make-gold-.patch \
            file://libtoolize_check.patch \
            file://0001-Add-option-to-disable-timed-dependant-tests.patch \
+           file://autoconf270.patch \
            file://CVE-2021-35940.patch \
            "
 
@@ -47,7 +48,7 @@ PACKAGECONFIG ??= "${@bb.utils.filter('DISTRO_FEATURES', 'ipv6', d)}"
 PACKAGECONFIG[ipv6] = "--enable-ipv6,--disable-ipv6,"
 PACKAGECONFIG[timed-tests] = "--enable-timed-tests,--disable-timed-tests,"
 
-do_configure_prepend() {
+do_configure:prepend() {
 	# Avoid absolute paths for grep since it causes failures
 	# when using sstate between different hosts with different
 	# install paths for grep.
@@ -61,24 +62,26 @@ do_configure_prepend() {
 MULTILIB_SCRIPTS = "${PN}-dev:${bindir}/apr-1-config \
                     ${PN}-dev:${datadir}/build-1/apr_rules.mk"
 
-FILES_${PN}-dev += "${libdir}/apr.exp ${datadir}/build-1/*"
-RDEPENDS_${PN}-dev += "bash"
+FILES:${PN}-dev += "${libdir}/apr.exp ${datadir}/build-1/*"
+RDEPENDS:${PN}-dev += "bash libtool"
 
-RDEPENDS_${PN}-ptest += "libgcc"
+RDEPENDS:${PN}-ptest += "libgcc"
 
 #for some reason, build/libtool.m4 handled by buildconf still be overwritten
 #when autoconf, so handle it again.
-do_configure_append() {
+do_configure:append() {
 	sed -i -e 's/LIBTOOL=\(.*\)top_build/LIBTOOL=\1apr_build/' ${S}/build/libtool.m4
 	sed -i -e 's/LIBTOOL=\(.*\)top_build/LIBTOOL=\1apr_build/' ${S}/build/apr_rules.mk
 }
 
-do_install_append() {
+do_install:append() {
 	oe_multilib_header apr.h
 	install -d ${D}${datadir}/apr
 }
 
-do_install_append_class-target() {
+do_install:append:class-target() {
+	rm -f ${D}${datadir}/build-1/libtool
+	sed -i s,LIBTOOL=.*,LIBTOOL=libtool,g ${D}${datadir}/build-1/apr_rules.mk
 	sed -i -e 's,${DEBUG_PREFIX_MAP},,g' \
 	       -e 's,${STAGING_DIR_HOST},,g' ${D}${datadir}/build-1/apr_rules.mk
 	sed -i -e 's,${STAGING_DIR_HOST},,g' \
@@ -96,12 +99,12 @@ apr_sysroot_preprocess () {
 	cp ${S}/build/apr_rules.mk $d/
 	sed -i s,apr_builddir=.*,apr_builddir=,g $d/apr_rules.mk
 	sed -i s,apr_builders=.*,apr_builders=,g $d/apr_rules.mk
-	sed -i s,LIBTOOL=.*,LIBTOOL=${HOST_SYS}-libtool,g $d/apr_rules.mk
+	sed -i s,LIBTOOL=.*,LIBTOOL=libtool,g $d/apr_rules.mk
 	sed -i s,\$\(apr_builders\),${STAGING_DATADIR}/apr/,g $d/apr_rules.mk
 	cp ${S}/build/mkdir.sh $d/
 	cp ${S}/build/make_exports.awk $d/
 	cp ${S}/build/make_var_export.awk $d/
-	cp ${S}/${HOST_SYS}-libtool ${SYSROOT_DESTDIR}${datadir}/build-1/libtool
+	cp ${S}/libtool ${SYSROOT_DESTDIR}${datadir}/build-1/libtool
 }
 
 do_compile_ptest() {

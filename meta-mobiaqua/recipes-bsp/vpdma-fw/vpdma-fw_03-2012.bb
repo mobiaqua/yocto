@@ -1,7 +1,7 @@
 DESCRIPTION = "VPDMA firmware for Video Input Port and Video Processing Engine"
 
 LICENSE = "TI-TSPA"
-ERROR_QA_remove = "license-checksum"
+ERROR_QA:remove = "license-checksum"
 
 COMPATIBLE_MACHINE = "board-tv"
 
@@ -27,6 +27,6 @@ do_install() {
     install -m 0644 ${S}/LICENCE.ti-vpdma ${D}${base_libdir}/firmware/LICENCE.ti-vpdma
 }
 
-FILES_${PN} += "${base_libdir}/firmware/${TARGET} ${base_libdir}/firmware/LICENCE.ti-vpdma"
+FILES:${PN} += "${base_libdir}/firmware/${TARGET} ${base_libdir}/firmware/LICENCE.ti-vpdma"
 
 PR = "r1"

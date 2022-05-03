@@ -48,10 +48,7 @@ __unset_regexp__ = re.compile( r"unset\s+([a-zA-Z0-9\-_+.${}/~]+)$" )
 __unset_flag_regexp__ = re.compile( r"unset\s+([a-zA-Z0-9\-_+.${}/~]+)\[([a-zA-Z0-9\-_+.]+)\]$" )
 
 def init(data):
-    topdir = data.getVar('TOPDIR', False)
-    if not topdir:
-        data.setVar('TOPDIR', os.getcwd())
-
+    return
 
 def supports(fn, d):
     return fn[-5:] == ".conf"
@@ -95,7 +92,7 @@ def include_single_file(parentfn, fn, lineno, data, error_out):
         if exc.errno == errno.ENOENT:
             if error_out:
                 raise ParseError("Could not %s file %s" % (error_out, fn), parentfn, lineno)
-            logger.debug(2, "CONF file '%s' not found", fn)
+            logger.debug2("CONF file '%s' not found", fn)
         else:
             if error_out:
                 raise ParseError("Could not %s file %s: %s" % (error_out, fn, exc.strerror), parentfn, lineno)

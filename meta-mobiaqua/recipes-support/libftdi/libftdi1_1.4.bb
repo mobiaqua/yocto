@@ -21,5 +21,5 @@ inherit autotools binconfig pkgconfig
 
 BBCLASSEXTEND = "native"
 
-EXTRA_OECONF_append_class-native = " --enable-shared=no"
-EXTRA_OECONF_append_class-nativesdk = " --enable-shared=no"
+EXTRA_OECONF:append:class-native = " --enable-shared=no"
+EXTRA_OECONF:append:class-nativesdk = " --enable-shared=no"

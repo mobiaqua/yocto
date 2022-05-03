@@ -4,12 +4,12 @@ diff -urp old/Makeconfig new/Makeconfig
 @@ -565,7 +565,7 @@ link-libc-tests-rpath-link = $(link-libc
  endif  # build-hardcoded-path-in-tests
  
- link-libc-before-gnulib = $(common-objpfx)libc.so$(libc.so-version) \
--			  $(common-objpfx)$(patsubst %,$(libtype.oS),c) \
-+			  $(common-objpfx)$(patsubst %,$(libtype.oF),c) \
- 			  -Wl,--as-needed $(elf-objpfx)ld.so \
- 			  -Wl,--no-as-needed
- link-libc = $(link-libc-before-gnulib) $(gnulib)
+ link-libc-between-gnulib = $(common-objpfx)libc.so$(libc.so-version) \
+-			   $(common-objpfx)$(patsubst %,$(libtype.oS),c) \
++			   $(common-objpfx)$(patsubst %,$(libtype.oF),c) \
+ 			   -Wl,--as-needed $(elf-objpfx)ld.so \
+ 			   -Wl,--no-as-needed
+ link-libc = $(link-libc-between-gnulib) $(gnulib)
 @@ -1002,7 +1002,7 @@ endif
  # to pass different flags for each flavor.
  libtypes = $(foreach o,$(object-suffixes-for-libc),$(libtype$o))

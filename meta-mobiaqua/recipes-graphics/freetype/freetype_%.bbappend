@@ -1,1 +1,1 @@
-PACKAGECONFIG_remove = "pixmap"
+PACKAGECONFIG:remove = "pixmap"

@@ -6,8 +6,7 @@ Subject: [PATCH] TIFFReadDirectory(): avoid calling memcpy() with a null
 
 Upstream-Status: Backport
 CVE: CVE-2022-0562
-Signed-off-by: Sana Kazi <Sana.Kazi@kpit.com>
-Comment: Refreshed patch
+
 ---
  libtiff/tif_dirread.c | 3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
@@ -16,13 +15,16 @@ diff --git a/libtiff/tif_dirread.c b/libtiff/tif_dirread.c
 index 2bbc4585..23194ced 100644
 --- a/libtiff/tif_dirread.c
 +++ b/libtiff/tif_dirread.c
-@@ -4126,7 +4126,8 @@
+@@ -4177,7 +4177,8 @@ TIFFReadDirectory(TIFF* tif)
                      goto bad;
                  }
  
--                memcpy(new_sampleinfo, tif->tif_dir.td_sampleinfo, old_extrasamples * sizeof(uint16));
+-                memcpy(new_sampleinfo, tif->tif_dir.td_sampleinfo, old_extrasamples * sizeof(uint16_t));
 +                if (old_extrasamples > 0)
-+                    memcpy(new_sampleinfo, tif->tif_dir.td_sampleinfo, old_extrasamples * sizeof(uint16));
++                    memcpy(new_sampleinfo, tif->tif_dir.td_sampleinfo, old_extrasamples * sizeof(uint16_t));
                  _TIFFsetShortArray(&tif->tif_dir.td_sampleinfo, new_sampleinfo, tif->tif_dir.td_extrasamples);
                  _TIFFfree(new_sampleinfo);
          }
+-- 
+GitLab
+

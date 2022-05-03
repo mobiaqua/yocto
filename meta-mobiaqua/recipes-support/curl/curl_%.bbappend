@@ -1,4 +1,4 @@
-PACKAGECONFIG_remove = "ipv6 gnutls"
-PACKAGECONFIG += "ssl"
+PACKAGECONFIG:remove = "ipv6 gnutls"
+PACKAGECONFIG:append = " openssl"
 
-RRECOMMENDS_lib${BPN}_remove = "ca-certificates"
+RRECOMMENDS:lib${BPN}:remove = "ca-certificates"

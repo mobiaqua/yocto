@@ -1,6 +1,6 @@
-SRC_URI_remove = "file://0025-handle-sysroot-support-for-nativesdk-gcc.patch"
+SRC_URI:remove = "file://0024-handle-sysroot-support-for-nativesdk-gcc.patch"
 
-do_compile_prepend () {
+do_compile:prepend () {
 	export AS_FOR_TARGET="${TARGET_SYS}-as"
 	export OBJDUMP_FOR_TARGET="${TARGET_SYS}-objdump"
 	export OBJCOPY_FOR_TARGET="${TARGET_SYS}-objcopy"

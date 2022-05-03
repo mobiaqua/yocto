@@ -7,8 +7,10 @@ KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=bbea815ee2795b2f4230826c0c6b8814"
 LINUX_VERSION = "4.19.234"
 PV = "${LINUX_VERSION}"
-KERNEL_DEVICETREE_board-tv = "omap4-panda.dtb omap4-panda-es.dtb am57xx-beagle-x15-revc.dtb am5729-beagleboneai.dtb"
-FILESEXTRAPATHS_prepend := "${THISDIR}/linux-ti_4.19:"
+KMETA = "kernel-meta"
+KCONF_BSP_AUDIT_LEVEL = "1"
+KERNEL_DEVICETREE:board-tv = "omap4-panda.dtb omap4-panda-es.dtb am57xx-beagle-x15-revc.dtb am5729-beagleboneai.dtb"
+FILESEXTRAPATHS:prepend := "${THISDIR}/linux-ti_4.19:"
 
 SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v4.x/linux-${LINUX_VERSION}.tar.xz \
            file://ti-upstream.patch \
@@ -31,7 +33,3 @@ SRC_URI[sha256sum] = "0082966be4a476c42ed59996e072e7e9fa5282b742efe4ffabadd6cd91
 S = "${WORKDIR}/linux-${PV}"
 
 KERNEL_EXTRA_ARGS += "LOADADDR=${UBOOT_LOADADDRESS}"
-
-do_kernel_configme() {
-    :
-}

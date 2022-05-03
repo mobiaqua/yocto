@@ -1,8 +1,13 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
-
-SRC_URI += "file://fix-ver.patch"
-
 do_configure () {
+	# When we upgrade glibc but not uninative we see obtuse failures in openssl. Make
+	# the issue really clear that perl isn't functional due to symbol mismatch issues.
+	cat <<- EOF > ${WORKDIR}/perltest
+	#!/usr/bin/env perl
+	use POSIX;
+	EOF
+	chmod a+x ${WORKDIR}/perltest
+	${WORKDIR}/perltest
+
 	os=${HOST_OS}
 	case $os in
 	linux-gnueabi |\
@@ -17,6 +22,9 @@ do_configure () {
 	esac
 	target="$os-${HOST_ARCH}"
 	case $target in
+	linux-arc)
+		target=linux-latomic
+		;;
 	linux-arm*)
 		target=linux-armv4
 		;;
@@ -63,6 +71,9 @@ do_configure () {
 	linux-sparc | linux-supersparc)
 		target=linux-sparcv9
 		;;
+	mingw32-x86_64)
+		target=mingw64
+		;;
 # MobiAqua: Added Darwin 64 bits target and static libs as w/a for wrong rpath in libs
 	darwin-x86_64)
 		target=darwin64-x86_64-cc
@@ -78,6 +89,8 @@ do_configure () {
 	# environment variables set by bitbake. Adjust the environment variables instead.
 	HASHBANGPERL="/usr/bin/env perl" PERL=perl PERL5LIB="${S}/external/perl/Text-Template-1.46/lib/" \
 	# MobiAqua: added extra_flags
-	perl ${S}/Configure ${EXTRA_OECONF} ${PACKAGECONFIG_CONFARGS} --prefix=$useprefix --openssldir=${libdir}/ssl-1.1 --libdir=${libdir} $target $extra_flags
+	perl ${S}/Configure ${EXTRA_OECONF} ${PACKAGECONFIG_CONFARGS} ${DEPRECATED_CRYPTO_FLAGS} --prefix=$useprefix --openssldir=${libdir}/ssl-3 --libdir=${libdir} $target $extra_flags
 	perl ${B}/configdata.pm --dump
 }
+
+RDEPENDS:${PN}-misc:remove = "perl"

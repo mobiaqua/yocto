@@ -15,4 +15,4 @@ do_install() {
     find ${D}${includedir} -name .install | xargs rm -f
 }
 
-DEPENDS_remove = "rsync-native"
+DEPENDS:remove = "rsync-native"

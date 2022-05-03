@@ -1,14 +1,14 @@
 DESCRIPTION = "Kernel drivers for the Vivante GC320 chipset found in TI SoCs"
 HOMEPAGE = "https://git.ti.com/graphics/ti-gc320-driver"
-LICENSE = "MIT | GPLv2"
+LICENSE = "MIT | GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://../LICENSE;md5=78d9818a51b9a8e9bb89dea418bac297"
 
 COMPATIBLE_MACHINE = "board-tv"
 
 inherit module
 
-PR_append = "+gitr-${SRCREV}"
-MACHINE_KERNEL_PR_append = "i"
+PR:append = "+gitr-${SRCREV}"
+MACHINE_KERNEL_PR:append = "i"
 
 DEPENDS = "linux-ti"
 
@@ -17,7 +17,7 @@ BRANCH = "ti-${PV}-k5.10"
 
 SRCREV = "3edc0a9db00931623ae303ad81c31f2f8a2012e2"
 
-SRC_URI = "git://github.com/mobiaqua/ti-gc320-driver.git;protocol=git;branch=${BRANCH}"
+SRC_URI = "git://github.com/mobiaqua/ti-gc320-driver.git;protocol=https;branch=${BRANCH}"
 
 S = "${WORKDIR}/git/src"
 

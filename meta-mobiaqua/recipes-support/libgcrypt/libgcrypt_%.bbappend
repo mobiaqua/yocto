@@ -1,1 +1,1 @@
-PACKAGECONFIG_remove = "capabilities"
+PACKAGECONFIG:remove = "capabilities"

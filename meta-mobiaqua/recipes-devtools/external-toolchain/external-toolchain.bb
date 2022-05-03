@@ -2,7 +2,7 @@ DESCRIPTION = "External Toolchain."
 SECTION = "devtools"
 PRIORITY = "optional"
 LICENSE = ""
-ERROR_QA_remove = "license-checksum"
+ERROR_QA:remove = "license-checksum"
 
 DEPENDS = "gdb-cross-arm"
 

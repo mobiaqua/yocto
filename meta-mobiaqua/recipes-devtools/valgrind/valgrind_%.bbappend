@@ -1,6 +1,6 @@
-RDEPENDS_${PN}_remove = "perl"
+RDEPENDS:${PN}:remove = "perl"
 
-do_install_append () {
+do_install:append () {
 	rm -f ${D}/${bindir}/ms_print
 	rm -f ${D}/${bindir}/cg_diff
 	rm -f ${D}/${bindir}/cg_annotate

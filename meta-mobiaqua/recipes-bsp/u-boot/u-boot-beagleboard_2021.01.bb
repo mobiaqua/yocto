@@ -6,13 +6,13 @@ application code."
 SECTION = "bootloaders"
 DEPENDS += "flex-native bison-native kern-tools-native"
 
-LICENSE = "GPLv2+"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://Licenses/README;md5=5a7450c57ffe5ae63fd732446b988025"
 PE = "1"
 
 inherit uboot-config uboot-extlinux-config uboot-sign deploy
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files/beagleboard:${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files/beagleboard:${THISDIR}/files:"
 
 # We use the revision in order to avoid having to fetch it from the
 # repo during parse
@@ -46,12 +46,12 @@ UBOOT_MACHINE = "am57xx_evm_defconfig"
 COMPATIBLE_MACHINE = "board-tv"
 
 UBOOT_SUFFIX ??= "img"
-UBOOT_IMAGE ?= "u-boot-beagle-${PV}-${PR}.${UBOOT_SUFFIX}"
+UBOOT_IMAGE = "u-boot-beagle-${PV}-${PR}.${UBOOT_SUFFIX}"
 UBOOT_MAKE_TARGET ?= "all"
 
 MLO_IMAGE ?= "MLO-beagle-${PV}-${PR}"
 
-do_configure_prepend () {
+do_configure:prepend () {
     sed -i -e s,NFS_IP,${MA_NFS_IP},g ${WORKDIR}/boot-beagle-nfs.script
     sed -i -e s,NFS_PATH,${MA_NFS_PATH},g ${WORKDIR}/boot-beagle-nfs.script
     sed -i -e s,NFS_IP,${MA_NFS_IP},g ${WORKDIR}/boot-beagleai-nfs.script
@@ -97,7 +97,7 @@ do_install () {
     install -m 0644 ${WORKDIR}/boot-beagle-nfs2.script ${D}/boot/uEnv-beagleai-nfs2.txt
 }
 
-FILES_${PN} = "/boot"
+FILES:${PN} = "/boot"
 
 do_deploy () {
     install -d ${DEPLOYDIR}

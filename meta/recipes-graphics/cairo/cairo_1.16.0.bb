@@ -10,20 +10,20 @@ HOMEPAGE = "http://cairographics.org"
 BUGTRACKER = "http://bugs.freedesktop.org"
 SECTION = "libs"
 
-LICENSE = "(MPL-1.1 | LGPLv2.1) & GPLv3+"
-LICENSE_${PN} = "MPL-1.1 | LGPLv2.1"
-LICENSE_${PN}-dev = "MPL-1.1 | LGPLv2.1"
-LICENSE_${PN}-doc = "MPL-1.1 | LGPLv2.1"
-LICENSE_${PN}-gobject = "MPL-1.1 | LGPLv2.1"
-LICENSE_${PN}-script-interpreter = "MPL-1.1 | LGPLv2.1"
-LICENSE_${PN}-perf-utils = "GPLv3+"
+LICENSE = "(MPL-1.1 | LGPL-2.1-only) & GPL-3.0-or-later"
+LICENSE:${PN} = "MPL-1.1 | LGPL-2.1-only"
+LICENSE:${PN}-dev = "MPL-1.1 | LGPL-2.1-only"
+LICENSE:${PN}-doc = "MPL-1.1 | LGPL-2.1-only"
+LICENSE:${PN}-gobject = "MPL-1.1 | LGPL-2.1-only"
+LICENSE:${PN}-script-interpreter = "MPL-1.1 | LGPL-2.1-only"
+LICENSE:${PN}-perf-utils = "GPL-3.0-or-later"
 
 LIC_FILES_CHKSUM = "file://COPYING;md5=e73e999e0c72b5ac9012424fa157ad77"
 
 DEPENDS = "fontconfig glib-2.0 libpng pixman zlib"
 
 SRC_URI = "http://cairographics.org/releases/cairo-${PV}.tar.xz \
-           file://cairo-get_bitmap_surface-bsc1036789-CVE-2017-7475.diff \ 
+           file://cairo-get_bitmap_surface-bsc1036789-CVE-2017-7475.diff \
            file://CVE-2018-19876.patch \
            file://CVE-2019-6461.patch \
            file://CVE-2019-6462.patch \
@@ -43,6 +43,8 @@ PACKAGECONFIG ??= "${@bb.utils.filter('DISTRO_FEATURES', 'directfb', d)} \
                    ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'x11 xcb', '', d)} \
                    ${@bb.utils.contains('DISTRO_FEATURES', 'x11 opengl', 'opengl', '', d)} \
                    trace"
+PACKAGECONFIG:class-native = "${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'x11 xcb', '', d)}"
+PACKAGECONFIG:class-nativesdk = "${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'x11 xcb', '', d)}"
 
 PACKAGECONFIG[x11] = "--with-x=yes -enable-xlib,--with-x=no --disable-xlib,${X11DEPENDS}"
 PACKAGECONFIG[xcb] = "--enable-xcb,--disable-xcb,libxcb"
@@ -63,7 +65,7 @@ export ac_cv_lib_bfd_bfd_openr="no"
 # Ensure we don't depend on LZO
 export ac_cv_lib_lzo2_lzo2a_decompress="no"
 
-do_install_append () {
+do_install:append () {
 	rm -rf ${D}${bindir}/cairo-sphinx
 	rm -rf ${D}${libdir}/cairo/cairo-fdr*
 	rm -rf ${D}${libdir}/cairo/cairo-sphinx*
@@ -77,20 +79,20 @@ do_install_append () {
 
 PACKAGES =+ "cairo-gobject cairo-script-interpreter cairo-perf-utils"
 
-SUMMARY_cairo-gobject = "The Cairo library GObject wrapper library"
-DESCRIPTION_cairo-gobject = "A GObject wrapper library for the Cairo API."
+SUMMARY:cairo-gobject = "The Cairo library GObject wrapper library"
+DESCRIPTION:cairo-gobject = "A GObject wrapper library for the Cairo API."
 
-SUMMARY_cairo-script-interpreter = "The Cairo library script interpreter"
-DESCRIPTION_cairo-script-interpreter = "The Cairo script interpreter implements \
+SUMMARY:cairo-script-interpreter = "The Cairo library script interpreter"
+DESCRIPTION:cairo-script-interpreter = "The Cairo script interpreter implements \
 CairoScript.  CairoScript is used by tracing utilities to enable the ability \
 to replay rendering."
 
-DESCRIPTION_cairo-perf-utils = "The Cairo library performance utilities"
+DESCRIPTION:cairo-perf-utils = "The Cairo library performance utilities"
 
-FILES_${PN} = "${libdir}/libcairo.so.*"
-FILES_${PN}-gobject = "${libdir}/libcairo-gobject.so.*"
-FILES_${PN}-script-interpreter = "${libdir}/libcairo-script-interpreter.so.*"
-FILES_${PN}-perf-utils = "${bindir}/cairo-trace* ${libdir}/cairo/*.la ${libdir}/cairo/libcairo-trace.so"
+FILES:${PN} = "${libdir}/libcairo.so.*"
+FILES:${PN}-gobject = "${libdir}/libcairo-gobject.so.*"
+FILES:${PN}-script-interpreter = "${libdir}/libcairo-script-interpreter.so.*"
+FILES:${PN}-perf-utils = "${bindir}/cairo-trace* ${libdir}/cairo/*.la ${libdir}/cairo/libcairo-trace.so"
 
 BBCLASSEXTEND = "native nativesdk"
 

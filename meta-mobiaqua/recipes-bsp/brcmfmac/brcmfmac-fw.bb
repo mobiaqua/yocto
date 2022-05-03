@@ -1,6 +1,6 @@
 DESCRIPTION = "Firmware files for Bluetooth and Wifi"
 LICENSE = "Proprietary"
-ERROR_QA_remove = "license-checksum"
+ERROR_QA:remove = "license-checksum"
 
 PV = "1.0"
 PR = "r0"
@@ -31,4 +31,4 @@ do_install() {
     install -m 0644 ${S}/BCM4345C0.hcd ${D}${sysconfdir}/firmware/
 }
 
-FILES_${PN} += "${base_libdir}/firmware/cypress/* ${sysconfdir}/firmware/*"
+FILES:${PN} += "${base_libdir}/firmware/cypress/* ${sysconfdir}/firmware/*"

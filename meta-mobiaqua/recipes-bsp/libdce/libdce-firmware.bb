@@ -1,5 +1,5 @@
 LICENSE = "TI-TEXT-FILE|BSD-3-Clause"
-ERROR_QA_remove = "license-checksum"
+ERROR_QA:remove = "license-checksum"
 
 PV = "1.00"
 PR = "r0"
@@ -21,4 +21,4 @@ do_install() {
 	install -m 0644 ${S}/ipu-fw.licenses ${D}${base_libdir}/firmware/
 }
 
-FILES_${PN} += "${base_libdir}/firmware/"
+FILES:${PN} += "${base_libdir}/firmware/"

@@ -7,7 +7,7 @@ PR = "r0"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-DEPENDS_append=" virtual/kernel"
+DEPENDS:append=" virtual/kernel"
 
 INSTALL_PKGS = "\
 	kernel-modules alsa-utils alsa-state alsa-utils-alsamixer glibc-gconv-ibm850 glibc-gconv-cp1250 \

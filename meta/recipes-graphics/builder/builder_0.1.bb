@@ -10,14 +10,14 @@ SRC_URI = "file://builder_session.sh \
 
 S = "${WORKDIR}"
 
-RDEPENDS_${PN} = "mini-x-session"
+RDEPENDS:${PN} = "mini-x-session"
 
 inherit useradd
 
 # builder user password is "builder"
 BUILDER_PASSWORD ?= ".gLibiNXn0P12"
 USERADD_PACKAGES = "${PN}"
-USERADD_PARAM_${PN} = "--system --create-home \
+USERADD_PARAM:${PN} = "--system --create-home \
                        --groups video,tty,audio \
                        --password ${BUILDER_PASSWORD} \
                        --user-group builder"
@@ -30,4 +30,4 @@ do_install () {
 }
 
 # -4178 is an unrelated 'builder'
-CVE_CHECK_WHITELIST = "CVE-2008-4178"
+CVE_CHECK_IGNORE = "CVE-2008-4178"

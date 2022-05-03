@@ -7,8 +7,10 @@ KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 LINUX_VERSION = "5.15.32"
 PV = "${LINUX_VERSION}"
-KERNEL_DEVICETREE_board-tv = "omap4-panda.dtb omap4-panda-es.dtb am57xx-beagle-x15-revc.dtb am5729-beagleboneai.dtb"
-FILESEXTRAPATHS_prepend := "${THISDIR}/linux-ti_5.15:"
+KMETA = "kernel-meta"
+KCONF_BSP_AUDIT_LEVEL = "1"
+KERNEL_DEVICETREE:board-tv = "omap4-panda.dtb omap4-panda-es.dtb am57xx-beagle-x15-revc.dtb am5729-beagleboneai.dtb"
+FILESEXTRAPATHS:prepend := "${THISDIR}/linux-ti_5.15:"
 
 SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v5.x/linux-${LINUX_VERSION}.tar.xz \
            file://drm/0000-drm-omapdrm-Export-correct-scatterlist-for-TILER-bac.patch \
@@ -86,7 +88,3 @@ SRC_URI[sha256sum] = "1463cdfa223088610dd65d3eadeffa44ec49746091b8ae8ddac6f3070d
 S = "${WORKDIR}/linux-${PV}"
 
 KERNEL_EXTRA_ARGS += "LOADADDR=${UBOOT_LOADADDRESS}"
-
-do_kernel_configme() {
-    :
-}

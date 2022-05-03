@@ -6,14 +6,15 @@ PR = "r0"
 
 DEPENDS = "udev libdrm"
 
+DEFAULT_PREFERENCE = "10"
+
 PROVIDES += "virtual/libgbm"
 
 inherit autotools lib_package pkgconfig
 
 SRCREV = "12f869f1a72154a432d6105a3b59fe10191061d4"
 
-SRC_URI = "git://github.com/mobiaqua/libgbm.git;protocol=git \
-          "
+SRC_URI = "git://github.com/mobiaqua/libgbm.git;protocol=https;branch=master"
 
 S = "${WORKDIR}/git"
 

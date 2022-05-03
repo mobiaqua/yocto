@@ -1,18 +1,18 @@
-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += "file://main.conf"
 
 GI_DATA_ENABLED = "False"
 
-PACKAGECONFIG_remove = "obex-profiles"
+PACKAGECONFIG:remove = "obex-profiles"
 
-RDEPENDS_${PN}-testtools_remove = "python3-dbus python3-core"
-PACKAGES_remove = "${PN}-testtools"
-FILES_${PN}-testtools = ""
+RDEPENDS:${PN}-testtools:remove = "python3-dbus python3-core"
+PACKAGES:remove = "${PN}-testtools"
+FILES:${PN}-testtools = ""
 
-INSANE_SKIP_${PN} += "installed-vs-shipped"
+INSANE_SKIP:${PN} += "installed-vs-shipped"
 
-do_install_append() {
+do_install:append() {
 	if ${@bb.utils.contains('VIRTUAL-RUNTIME_init_manager','busybox','true','false',d)}; then
 		install -d ${D}${sysconfdir}/init.d
 		touch ${D}${sysconfdir}/init.d/functions

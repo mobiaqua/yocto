@@ -1,18 +1,18 @@
 DESCRIPTION = "This is minimalised and modified version of UrJTAG is a universal JTAG tool"
 HOMEPAGE = "http://urjtag.org/"
-LICENSE = "GPLv2"
+LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://COPYING;md5=751419260aa954499f7abaabaa882bbe"
-DEPENDS = "libftdi1-native libusb1-native gettext-native readline-native"
+DEPENDS = "libftdi1-native libusb1-native gettext-native readline-native pkgconfig-native"
 
-SRCREV = "67bc2eca0d7c7df81dea03282ef6e31c5215a339"
+SRCREV = "ac3c214d888fe036315ddb819ade80e73fe439eb"
 
 PV = "0.10"
 PR = "r1"
-PR_append = "+gitr${SRCPV}"
+PR:append = "+gitr${SRCPV}"
 
 S = "${WORKDIR}/git/urjtag-mini"
 
-SRC_URI = "git://github.com/mobiaqua/tools;protocol=git;branch=master \
+SRC_URI = "git://github.com/mobiaqua/tools;protocol=https;branch=master \
           "
 
 inherit autotools native
@@ -27,5 +27,5 @@ do_install () {
         oe_runmake DESTDIR=${D} MKINSTALLDIRS="${S}/tools/mkinstalldirs" install
 }
 
-EXTRA_OECONF_append_class-native = " --enable-shared=no"
-EXTRA_OECONF_append_class-nativesdk = " --enable-shared=no"
+EXTRA_OECONF:append:class-native = " --enable-shared=no"
+EXTRA_OECONF:append:class-nativesdk = " --enable-shared=no"

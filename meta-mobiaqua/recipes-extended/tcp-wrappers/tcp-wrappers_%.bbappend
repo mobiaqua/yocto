@@ -1,1 +1,1 @@
-DEPENDS_remove = "libnsl2"
+DEPENDS:remove = "libnsl2"

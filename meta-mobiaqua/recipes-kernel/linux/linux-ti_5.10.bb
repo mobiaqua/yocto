@@ -7,8 +7,10 @@ KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 LINUX_VERSION = "5.10.108"
 PV = "${LINUX_VERSION}"
-KERNEL_DEVICETREE_board-tv = "omap4-panda.dtb omap4-panda-es.dtb am57xx-beagle-x15-revc.dtb am5729-beagleboneai.dtb"
-FILESEXTRAPATHS_prepend := "${THISDIR}/linux-ti_5.10:"
+KMETA = "kernel-meta"
+KCONF_BSP_AUDIT_LEVEL = "1"
+KERNEL_DEVICETREE:board-tv = "omap4-panda.dtb omap4-panda-es.dtb am57xx-beagle-x15-revc.dtb am5729-beagleboneai.dtb"
+FILESEXTRAPATHS:prepend := "${THISDIR}/linux-ti_5.10:"
 
 SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v5.x/linux-${LINUX_VERSION}.tar.xz \
            file://drm/0001-HACK-drm-omap-increase-DSS5-max-tv-pclk-to-192MHz.patch \
@@ -102,7 +104,3 @@ SRC_URI[sha256sum] = "bf6cc2d6e0918b8f34d1cde2fa39a6ad69c45025425048be1a1dac4a5b
 S = "${WORKDIR}/linux-${PV}"
 
 KERNEL_EXTRA_ARGS += "LOADADDR=${UBOOT_LOADADDRESS}"
-
-do_kernel_configme() {
-    :
-}
