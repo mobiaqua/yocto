@@ -8,6 +8,9 @@ SRC_URI += " \
     file://0003-Use-ARM-NEON-accelaration-for-float-multithreaded-se.patch \
 "
 
+# MobiAqua: added optimisations
+FULL_OPTIMIZATION:append = " -fexpensive-optimizations -mvectorize-with-neon-quad -O4 -ffast-math"
+
 # MobiAqua: added "-DCMAKE_SKIP_BUILD_RPATH=TRUE"
 EXTRA_OECMAKE = "-Denable-floats=ON -DLIB_SUFFIX=${@d.getVar('baselib').replace('lib', '')} -DCMAKE_SKIP_BUILD_RPATH=TRUE"
 
