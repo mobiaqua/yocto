@@ -55,12 +55,12 @@ index b6f97960d8ee..4f37e5366868 100644
  
  	dmtimer_systimer_disable(t);
 +
-+        /*
-+         * It is possible for a late interrupt to be generated which will
-+         * cause a suspend failure. Let's ack it here both in the timer
-+         * and the interrupt controller to avoid this.
-+         */
-+        writel_relaxed(OMAP_TIMER_INT_OVERFLOW, t->base + t->irq_stat);
++	/*
++	 * It is possible for a late interrupt to be generated which will
++	 * cause a suspend failure. Let's ack it here both in the timer
++	 * and the interrupt controller to avoid this.
++	 */
++	writel_relaxed(OMAP_TIMER_INT_OVERFLOW, t->base + t->irq_stat);
 +	omap_clockevent_late_ack();
 +
  	clk_disable(t->fck);
