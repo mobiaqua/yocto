@@ -471,8 +471,7 @@ def check_make_version(sanity_data):
 
     if bb.utils.vercmp_string_op(version, "4.2.1", "=="):
         distro = oe.lsb.distro_identifier()
-        # MobiAqua: ported fix for debian
-        if "ubuntu" in distro or "debian" in distro:
+        if "ubuntu" in distro or "debian" in distro or "linuxmint" in distro:
             return None
         return "make version 4.2.1 is known to have issues on Centos/OpenSUSE and other non-Ubuntu systems. Please use a buildtools-make-tarball or a newer version of make.\n"
     return None
