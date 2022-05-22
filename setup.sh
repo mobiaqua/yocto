@@ -17,8 +17,6 @@ print_help() {
 	echo "Targets list:"
 	echo "- media"
 	echo "- dsp"
-	echo "- pda-sa1110"
-	echo "- pda-pxa250"
 	echo
 	[ "x$0" = "x./setup.sh" ] && exit 1
 	ERROR=1
@@ -342,14 +340,6 @@ setup() {
 		export MACHINE=igep0030
 		image=dsp-rootfs-devel
 		ARMDIR=armv7a-hf
-	elif [ "$TARGET" = "pda-sa1110" ]; then
-		export MACHINE=pda-sa1110
-		image=pda-rootfs-release
-		ARMDIR=armv4
-	elif [ "$TARGET" = "pda-pxa250" ]; then
-		export MACHINE=pda-pxa250
-		image=pda-rootfs-release
-		ARMDIR=armv5te
 	else
 		print_help
 		return 1
