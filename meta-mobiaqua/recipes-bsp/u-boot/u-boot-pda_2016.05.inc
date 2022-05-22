@@ -18,7 +18,7 @@ SRCREV = "0db612a7b713ebcdf7ee350395037570f1f4fd24"
 
 PV = "v2016.05+git${SRCPV}"
 
-SRC_URI = "git://github.com/mobiaqua/bootloader.git;branch=master;protocol=git"
+SRC_URI = "git://github.com/mobiaqua/bootloader.git;branch=master;protocol=https"
 
 S = "${WORKDIR}/git/u-boot-pda"
 B = "${WORKDIR}/build"
