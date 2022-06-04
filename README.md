@@ -14,14 +14,6 @@
 
     IGEPv3
 
-  - "pda-sa1110"
-
-    Handheld devices with SA 1110 CPU: iPAQ H3600
-
-  - "pda-pxa25x"
-
-    Handheld devices with PXA 25x CPU: iPAQ H2200
-
   Example usage:
 
   Run ". setup.sh media" to setup Yocto environment.
