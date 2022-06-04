@@ -3022,7 +3022,7 @@ index 1ee49f9e3..014a38bd1 100644
  		/* explicitly check SR engine enable bit */
  		addr = CORE_CC_REG(base, sr_control0);
  		reg = chip->ops->read32(chip->ctx, addr);
-@@ -1441,3 +1473,151 @@ bool brcmf_chip_sr_capable(struct brcmf_chip *pub)
+@@ -1441,3 +1473,150 @@ bool brcmf_chip_sr_capable(struct brcmf_chip *pub)
  			       PMU_RCTL_LOGIC_DISABLE_MASK)) == 0;
  	}
  }
@@ -3173,7 +3173,6 @@ index 1ee49f9e3..014a38bd1 100644
 +		break;
 +	}
 +}
-+
 diff --git a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/chip.h b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/chip.h
 index d69f101f5..447fb28c6 100644
 --- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/chip.h
@@ -4159,11 +4158,11 @@ index 7c68d9849..f0c603ba6 100644
  		ifp->drvr->feat_flags |= BIT(id);
  	} else {
 @@ -248,7 +248,8 @@ void brcmf_feat_attach(struct brcmf_pub *drvr)
- 	brcmf_feat_firmware_capabilities(ifp);
  	memset(&gscan_cfg, 0, sizeof(gscan_cfg));
  	if (drvr->bus_if->chip != BRCM_CC_43430_CHIP_ID &&
--	    drvr->bus_if->chip != BRCM_CC_4345_CHIP_ID)
-+	    drvr->bus_if->chip != BRCM_CC_4345_CHIP_ID &&
+ 	    drvr->bus_if->chip != BRCM_CC_4345_CHIP_ID &&
+-	    drvr->bus_if->chip != BRCM_CC_43454_CHIP_ID)
++	    drvr->bus_if->chip != BRCM_CC_43454_CHIP_ID &&
 +	    drvr->bus_if->chip != CY_CC_43439_CHIP_ID)
  		brcmf_feat_iovar_data_set(ifp, BRCMF_FEAT_GSCAN,
  					  "pfn_gscan_cfg",
@@ -5740,14 +5739,6 @@ index 8b149996f..f5a90250b 100644
  
  	return err;
  }
-@@ -2106,6 +2552,7 @@ static const struct pci_device_id brcmf_pcie_devid_table[] = {
- 	BRCMF_PCIE_DEVICE(BRCM_PCIE_4356_DEVICE_ID),
- 	BRCMF_PCIE_DEVICE(BRCM_PCIE_43567_DEVICE_ID),
- 	BRCMF_PCIE_DEVICE(BRCM_PCIE_43570_DEVICE_ID),
-+	BRCMF_PCIE_DEVICE(BRCM_PCIE_43570_RAW_DEVICE_ID),
- 	BRCMF_PCIE_DEVICE(BRCM_PCIE_4358_DEVICE_ID),
- 	BRCMF_PCIE_DEVICE(BRCM_PCIE_4359_DEVICE_ID),
- 	BRCMF_PCIE_DEVICE(BRCM_PCIE_43602_DEVICE_ID),
 @@ -2121,13 +2568,16 @@ static const struct pci_device_id brcmf_pcie_devid_table[] = {
  	BRCMF_PCIE_DEVICE(BRCM_PCIE_4366_2G_DEVICE_ID),
  	BRCMF_PCIE_DEVICE(BRCM_PCIE_4366_5G_DEVICE_ID),
@@ -5949,7 +5940,7 @@ index 8effeb7a7..3cf0a549a 100644
  BRCMF_FW_CLM_DEF(43752, "brcmfmac43752-sdio");
  
  /* firmware config files */
-@@ -648,15 +668,18 @@ static const struct brcmf_firmware_mapping brcmf_sdio_fwnames[] = {
+@@ -648,16 +668,19 @@ static const struct brcmf_firmware_mapping brcmf_sdio_fwnames[] = {
  	BRCMF_FW_ENTRY(BRCM_CC_43362_CHIP_ID, 0xFFFFFFFE, 43362),
  	BRCMF_FW_ENTRY(BRCM_CC_4339_CHIP_ID, 0xFFFFFFFF, 4339),
  	BRCMF_FW_ENTRY(BRCM_CC_43430_CHIP_ID, 0x00000001, 43430A0),
@@ -5959,6 +5950,7 @@ index 8effeb7a7..3cf0a549a 100644
  	BRCMF_FW_ENTRY(BRCM_CC_43430_CHIP_ID, 0xFFFFFFFC, 43430B0),
  	BRCMF_FW_ENTRY(BRCM_CC_4345_CHIP_ID, 0x00000200, 43456),
  	BRCMF_FW_ENTRY(BRCM_CC_4345_CHIP_ID, 0xFFFFFDC0, 43455),
+ 	BRCMF_FW_ENTRY(BRCM_CC_43454_CHIP_ID, 0x00000040, 43455),
  	BRCMF_FW_ENTRY(BRCM_CC_4354_CHIP_ID, 0xFFFFFFFF, 4354),
  	BRCMF_FW_ENTRY(BRCM_CC_4356_CHIP_ID, 0xFFFFFFFF, 4356),
  	BRCMF_FW_ENTRY(BRCM_CC_4359_CHIP_ID, 0xFFFFFFFF, 4359),
@@ -7045,14 +7037,6 @@ index 9d8132016..9b84a667d 100644
  
  /* USB Device IDs */
  #define BRCM_USB_43143_DEVICE_ID	0xbd1e
-@@ -71,6 +74,7 @@
- #define BRCM_PCIE_4356_DEVICE_ID	0x43ec
- #define BRCM_PCIE_43567_DEVICE_ID	0x43d3
- #define BRCM_PCIE_43570_DEVICE_ID	0x43d9
-+#define BRCM_PCIE_43570_RAW_DEVICE_ID	0xaa31
- #define BRCM_PCIE_4358_DEVICE_ID	0x43e9
- #define BRCM_PCIE_4359_DEVICE_ID	0x43ef
- #define BRCM_PCIE_43602_DEVICE_ID	0x43ba
 @@ -85,7 +89,11 @@
  #define BRCM_PCIE_4366_2G_DEVICE_ID	0x43c4
  #define BRCM_PCIE_4366_5G_DEVICE_ID	0x43c5
@@ -7893,7 +7877,7 @@ index e87bccaab..ee2bfddd9 100644
 -void ieee80211_init_frag_cache(struct ieee80211_fragment_cache *cache);
 -void ieee80211_destroy_frag_cache(struct ieee80211_fragment_cache *cache);
 -
- #endif /* IEEE80211_I_H */
+ u8 ieee80211_ie_len_eht_cap(struct ieee80211_sub_if_data *sdata, u8 iftype);
 diff --git a/net/mac80211/iface.c b/net/mac80211/iface.c
 index 415314784..f69480cf9 100644
 --- a/net/mac80211/iface.c
@@ -9363,15 +9347,6 @@ diff --git a/net/wireless/nl80211.c b/net/wireless/nl80211.c
 index c01fbcc84..b7f8c5f67 100644
 --- a/net/wireless/nl80211.c
 +++ b/net/wireless/nl80211.c
-@@ -5,7 +5,7 @@
-  * Copyright 2006-2010	Johannes Berg <johannes@sipsolutions.net>
-  * Copyright 2013-2014  Intel Mobile Communications GmbH
-  * Copyright 2015-2017	Intel Deutschland GmbH
-- * Copyright (C) 2018-2021 Intel Corporation
-+ * Copyright (C) 2018-2020 Intel Corporation
-  */
- 
- #include <linux/if.h>
 @@ -229,13 +229,9 @@ static int validate_beacon_head(const struct nlattr *attr,
  	unsigned int len = nla_len(attr);
  	const struct element *elem;

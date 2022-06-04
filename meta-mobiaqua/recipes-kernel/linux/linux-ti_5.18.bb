@@ -5,12 +5,12 @@ DEPENDS += "openssl-native ncurses-native elf-native kmod-native"
 COMPATIBLE_MACHINE = "(board-tv|igep0030)"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "5.17.9"
+LINUX_VERSION = "5.18.1"
 PV = "${LINUX_VERSION}"
 KMETA = "kernel-meta"
 KCONF_BSP_AUDIT_LEVEL = "1"
 KERNEL_DEVICETREE:board-tv = "omap4-panda.dtb omap4-panda-es.dtb am57xx-beagle-x15-revc.dtb am5729-beagleboneai.dtb"
-FILESEXTRAPATHS:prepend := "${THISDIR}/linux-ti_5.17:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/linux-ti_5.18:"
 
 SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v5.x/linux-${LINUX_VERSION}.tar.xz \
            file://drm/0004-drm-omap-add-crtc-background-property.patch \
@@ -26,7 +26,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v5.x/linux-${LINUX_VERSION}.tar.xz \
            file://eth-dra7/0001-drivers-net-cpsw-ale-add-broadcast-multicast-rate-li.patch \
            file://remoteproc/0001-remoteproc-add-api-for-retrieving-a-rproc-unique-id.patch \
            file://remoteproc/0002-remoteproc-add-an-api-to-do-pa-to-da-conversion.patch \
-           file://remoteproc/0004-remoteproc-move-rproc_da_to_va-declaration-to-remote.patch \
            file://remoteproc/0005-remoteproc-omap-add-a-trace-to-print-missing-alias-i.patch \
            file://remoteproc/0006-remoteproc-debugfs-Optimize-the-trace-va-lookup.patch \
            file://remoteproc/0007-remoteproc-implement-last-trace-for-remoteproc.patch \
@@ -54,7 +53,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v5.x/linux-${LINUX_VERSION}.tar.xz \
            file://ti/0016-HACK-regulator-tps65917-palmas-Disable-bypass-for-ld.patch \
            file://ti/0017-Revert-Revert-drm-omap-add-OMAP_BO-flags-to-affect-b.patch \
            file://wlan/0001-wlan.patch \
-           file://upstream/0001-drm-omapdrm-Fix-implicit-dma_buf-fencing.patch \
            file://0001_fix_nonlinux_compile.patch \
            file://0002-bootup-hacks-move-mmc-early.patch \
            file://0004_wait-for-rootfs.patch \
@@ -74,7 +72,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v5.x/linux-${LINUX_VERSION}.tar.xz \
            file://defconfig \
            "
 
-SRC_URI[sha256sum] = "172424bc41ef2df9b19457ceb022b56a51eb9497529b15ce7e9b8d6f90ad5978"
+SRC_URI[sha256sum] = "83d14126c660186a7a1774a4a5c29d38e170fa5e52cfd2d08fd344dcf1f57d22"
 
 S = "${WORKDIR}/linux-${PV}"
 

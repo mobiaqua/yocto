@@ -151,8 +151,8 @@ index 3ad636a13..17faa4371 100644
 +	 */
 +	void (*unmap)(struct dma_buf *, unsigned long, void *);
 +
- 	int (*vmap)(struct dma_buf *dmabuf, struct dma_buf_map *map);
- 	void (*vunmap)(struct dma_buf *dmabuf, struct dma_buf_map *map);
+ 	int (*vmap)(struct dma_buf *dmabuf, struct iosys_map *map);
+ 	void (*vunmap)(struct dma_buf *dmabuf, struct iosys_map *map);
  };
 @@ -618,6 +643,8 @@ int dma_buf_begin_cpu_access(struct dma_buf *dma_buf,
  			     enum dma_data_direction dir);
