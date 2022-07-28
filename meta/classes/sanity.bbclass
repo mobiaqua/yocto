@@ -433,8 +433,7 @@ def check_patch_version(sanity_data):
     except subprocess.CalledProcessError as e:
         return "Unable to execute patch --version, exit code %d:\n%s\n" % (e.returncode, e.output)
 
-# Unpatched versions of make 3.82 are known to be broken.  See GNU Savannah Bug 30612.
-# Use a modified reproducer from http://savannah.gnu.org/bugs/?30612 to validate.
+# Glibc needs make 4.0 or later, we may as well match at this point
 def check_make_version(sanity_data):
     import subprocess
 
@@ -443,31 +442,9 @@ def check_make_version(sanity_data):
     except subprocess.CalledProcessError as e:
         return "Unable to execute make --version, exit code %d\n%s\n" % (e.returncode, e.output)
     version = result.split()[2]
-    if bb.utils.vercmp_string_op(version, "3.82", "=="):
-        # Construct a test file
-        f = open("makefile_test", "w")
-        f.write("makefile_test.a: makefile_test_a.c makefile_test_b.c makefile_test.a( makefile_test_a.c makefile_test_b.c)\n")
-        f.write("\n")
-        f.write("makefile_test_a.c:\n")
-        f.write("	touch $@\n")
-        f.write("\n")
-        f.write("makefile_test_b.c:\n")
-        f.write("	touch $@\n")
-        f.close()
+    if bb.utils.vercmp_string_op(version, "4.0", "<"):
 
-        # Check if make 3.82 has been patched
-        try:
-            subprocess.check_call(['make', '-f', 'makefile_test'])
-        except subprocess.CalledProcessError as e:
-            return "Your version of make 3.82 is broken. Please revert to 3.81 or install a patched version.\n"
-        finally:
-            os.remove("makefile_test")
-            if os.path.exists("makefile_test_a.c"):
-                os.remove("makefile_test_a.c")
-            if os.path.exists("makefile_test_b.c"):
-                os.remove("makefile_test_b.c")
-            if os.path.exists("makefile_test.a"):
-                os.remove("makefile_test.a")
+        return "Please install a make version of 4.0 or later.\n"
 
     if bb.utils.vercmp_string_op(version, "4.2.1", "=="):
         distro = oe.lsb.distro_identifier()
@@ -888,7 +865,7 @@ def check_sanity_everybuild(status, d):
     mirror_vars = ['MIRRORS', 'PREMIRRORS', 'SSTATE_MIRRORS']
     protocols = ['http', 'ftp', 'file', 'https', \
                  'git', 'gitsm', 'hg', 'osc', 'p4', 'svn', \
-                 'bzr', 'cvs', 'npm', 'sftp', 'ssh', 's3', 'az' ]
+                 'bzr', 'cvs', 'npm', 'sftp', 'ssh', 's3', 'az', 'ftps']
     for mirror_var in mirror_vars:
         mirrors = (d.getVar(mirror_var) or '').replace('\\n', ' ').split()
 
