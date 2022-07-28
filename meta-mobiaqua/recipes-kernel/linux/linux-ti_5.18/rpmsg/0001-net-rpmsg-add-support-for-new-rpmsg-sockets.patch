@@ -127,7 +127,7 @@ new file mode 100644
 index 000000000000..555da7ce28a4
 --- /dev/null
 +++ b/net/rpmsg/rpmsg_proto.c
-@@ -0,0 +1,657 @@
+@@ -0,0 +1,656 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/* AF_RPMSG: Remote processor messaging sockets
 + *
@@ -343,7 +343,6 @@ index 000000000000..555da7ce28a4
 +	struct sock *sk = sock->sk;
 +	struct sockaddr_rpmsg *sa;
 +	struct sk_buff *skb;
-+	int noblock = flags & MSG_DONTWAIT;
 +	int ret;
 +
 +	if (flags & MSG_OOB) {
@@ -353,7 +352,7 @@ index 000000000000..555da7ce28a4
 +
 +	msg->msg_namelen = 0;
 +
-+	skb = skb_recv_datagram(sk, flags, noblock, &ret);
++	skb = skb_recv_datagram(sk, flags, &ret);
 +	if (!skb) {
 +		/* check for shutdown ? */
 +		pr_err("skb_recv_datagram: %d\n", ret);

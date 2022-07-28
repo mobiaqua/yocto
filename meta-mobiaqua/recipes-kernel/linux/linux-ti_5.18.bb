@@ -5,7 +5,7 @@ DEPENDS += "openssl-native ncurses-native elf-native kmod-native"
 COMPATIBLE_MACHINE = "(board-tv|igep0030)"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "5.18.1"
+LINUX_VERSION = "5.18.14"
 PV = "${LINUX_VERSION}"
 KMETA = "kernel-meta"
 KCONF_BSP_AUDIT_LEVEL = "1"
@@ -66,13 +66,12 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v5.x/linux-${LINUX_VERSION}.tar.xz \
            file://0013-fix-dra7-l3-noc.patch \
            file://0020-restore-dmabuf-map.patch \
            file://0030-HACK-drm-omap-flush-the-mapped-page-in-kmap-kunmap.patch \
-           file://0040-remove-spectre-trace.patch \
            file://0050-add-export-vmalloc_node_range-for-sgx.patch \
            file://0200-beagle-ai.patch \
            file://defconfig \
            "
 
-SRC_URI[sha256sum] = "83d14126c660186a7a1774a4a5c29d38e170fa5e52cfd2d08fd344dcf1f57d22"
+SRC_URI[sha256sum] = "e17d46451133d3a3099b09e200839e875100b48403171923ab71b6a9b39856af"
 
 S = "${WORKDIR}/linux-${PV}"
 
