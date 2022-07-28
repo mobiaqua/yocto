@@ -19,10 +19,11 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files/igep:${THISDIR}/files:"
 SRCREV = "c4fddedc48f336eabc4ce3f74940e6aa372de18c"
 
 SRC_URI = "git://git.denx.de/u-boot.git;branch=master \
-           file://boot-igep-label.script \
-           file://boot-igep-sdcard.script \
            file://avoid-python2.patch \
           "
+
+#           file://boot-igep-label.script
+#           file://boot-igep-sdcard.script
 
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
@@ -67,8 +68,8 @@ do_install () {
 
     install -m 0644 ${B}/MLO ${D}/boot/${MLO_IMAGE}
 
-    install -m 0644 ${WORKDIR}/boot-igep-sdcard.script ${D}/boot/uEnv-igep-sdcard.txt
-    install -m 0644 ${WORKDIR}/boot-igep-label.script ${D}/boot/uEnv-igep-label.txt
+    #install -m 0644 ${WORKDIR}/boot-igep-sdcard.script ${D}/boot/uEnv-igep-sdcard.txt
+    #install -m 0644 ${WORKDIR}/boot-igep-label.script ${D}/boot/uEnv-igep-label.txt
 }
 
 FILES:${PN} = "/boot"
@@ -82,8 +83,8 @@ do_deploy () {
 
     install -m 0644 ${B}/MLO ${DEPLOYDIR}/${MLO_IMAGE}
 
-    install -m 0644 ${WORKDIR}/boot-igep-sdcard.script ${DEPLOYDIR}/uEnv-igep-sdcard.txt
-    install -m 0644 ${WORKDIR}/boot-igep-label.script ${DEPLOYDIR}/uEnv-igep-label.txt
+    #install -m 0644 ${WORKDIR}/boot-igep-sdcard.script ${DEPLOYDIR}/uEnv-igep-sdcard.txt
+    #install -m 0644 ${WORKDIR}/boot-igep-label.script ${DEPLOYDIR}/uEnv-igep-label.txt
 }
 
 addtask deploy before do_build after do_compile
