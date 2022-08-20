@@ -1,0 +1,46 @@
+diff --git a/drivers/rpmsg/rpmsg_rpc.c b/drivers/rpmsg/rpmsg_rpc.c
+index 930d8a8479ba..1679dc31e301 100644
+--- a/drivers/rpmsg/rpmsg_rpc.c
++++ b/drivers/rpmsg/rpmsg_rpc.c
+@@ -564,11 +564,13 @@ static int rppc_open(struct inode *inode, struct file *filp)
+ 	rpc->state = RPPC_STATE_DISCONNECTED;
+ 	rpc->rppcdev = rppcdev;
+ 
++	rpc->dev = get_device(rppcdev->dev);
+ 	chinfo.src = RPMSG_ADDR_ANY;
+ 	chinfo.dst = RPMSG_ADDR_ANY;
+ 	rpc->ept = rpmsg_create_ept(rppcdev->rpdev, rppc_cb, rpc, chinfo);
+ 	if (!rpc->ept) {
+ 		dev_err(rppcdev->dev, "create ept failed\n");
++		put_device(rpc->dev);
+ 		kfree(rpc);
+ 		return -ENOMEM;
+ 	}
+@@ -622,6 +624,7 @@ static int rppc_release(struct inode *inode, struct file *filp)
+ 	if (list_empty(&rppcdev->instances))
+ 		dev_dbg(rppcdev->dev, "all instances have been removed!\n");
+ 
++	put_device(rpc->dev);
+ 	kfree(rpc);
+ 	return 0;
+ }
+diff --git a/drivers/rpmsg/rpmsg_rpc_internal.h b/drivers/rpmsg/rpmsg_rpc_internal.h
+index e1c34778ccbe..c6ec7f1ccd30 100644
+--- a/drivers/rpmsg/rpmsg_rpc_internal.h
++++ b/drivers/rpmsg/rpmsg_rpc_internal.h
+@@ -62,6 +62,7 @@ struct rppc_device {
+  * struct rppc_instance - The per-instance data structure (per user)
+  * @list: list node
+  * @rppcdev: the rppc device (remote server instance) handle
++ * @dev: local device reference pointer of the rppc device
+  * @queue: queue of buffers waiting to be read by the user
+  * @lock: mutex for protecting instance variables
+  * @readq: wait queue of blocked user threads waiting to read data
+@@ -82,6 +83,7 @@ struct rppc_device {
+ struct rppc_instance {
+ 	struct list_head list;
+ 	struct rppc_device *rppcdev;
++	struct device *dev;
+ 	struct sk_buff_head queue;
+ 	struct mutex lock; /* instance state variables lock */
+ 	wait_queue_head_t readq;

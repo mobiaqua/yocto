@@ -1,0 +1,33 @@
+From 516002505f3a97a41144e4344fb6ca9533edfb0e Mon Sep 17 00:00:00 2001
+From: Gowtham Tammana <g-tammana@ti.com>
+Date: Fri, 30 Jul 2021 10:43:16 +0200
+Subject: [PATCH] ARM: dts: am57xx-evm: Enable BB2D node
+
+The BB2D graphics accelerator node has been enabled for AM57x based
+Beagle-X15 (GPEVM) and IDK platforms. The BB2D device node properties
+are inherited from the base dra7 dtsi file.
+
+Signed-off-by: Eric Ruei <e-ruei1@ti.com>
+Signed-off-by: Jacob Stiffler <j-stiffler@ti.com>
+Signed-off-by: Gowtham Tammana <g-tammana@ti.com>
+[g-tammana@ti.com: rebase from ti-linux-k4.19.y]
+Signed-off-by: Jyri Sarha <jsarha@ti.com>
+Signed-off-by: Neil Armstrong <narmstrong@baylibre.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ arch/arm/boot/dts/am57xx-beagle-x15-common.dtsi | 4 ++++
+ arch/arm/boot/dts/am57xx-idk-common.dtsi        | 4 ++++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/arch/arm/boot/dts/am57xx-beagle-x15-common.dtsi b/arch/arm/boot/dts/am57xx-beagle-x15-common.dtsi
+index 6b82ecf803c5..b5ea44497a4f 100644
+--- a/arch/arm/boot/dts/am57xx-beagle-x15-common.dtsi
++++ b/arch/arm/boot/dts/am57xx-beagle-x15-common.dtsi
+@@ -637,3 +637,7 @@ &dsp2 {
+ 	status = "okay";
+ 	memory-region = <&dsp2_memory_region>;
+ };
++
++&bb2d {
++	status = "okay";
++};
