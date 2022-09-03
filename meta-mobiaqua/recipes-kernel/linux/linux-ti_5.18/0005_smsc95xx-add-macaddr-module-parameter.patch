@@ -8,9 +8,9 @@ index 465e11dcd..7346527eb 100644
  	u8 suspend_flags;
 +	bool mac_set_from_param;
 +	bool mac_is_random;
- 	struct mii_bus *mdiobus;
- 	struct phy_device *phydev;
- };
+ 	struct irq_chip irqchip;
+ 	struct irq_domain *irqdomain;
+ 	struct fwnode_handle *irqfwnode;
 @@ -67,6 +69,11 @@ static bool turbo_mode = true;
  module_param(turbo_mode, bool, 0644);
  MODULE_PARM_DESC(turbo_mode, "Enable multiple frames per Rx transaction");
