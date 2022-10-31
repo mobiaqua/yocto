@@ -1,0 +1,110 @@
+From db84d92f9188c1ed613f8445a36ca87faa9b8d05 Mon Sep 17 00:00:00 2001
+From: Subramaniam Chanderashekarapuram <subramaniam.ca@ti.com>
+Date: Mon, 18 Aug 2014 17:13:17 -0500
+Subject: [PATCH] remoteproc: add an api to do pa to da conversion
+
+Added an api to provide memory translation from a
+physical address to a device virtual address.
+Since, carveouts and mappings are stored separately,
+we need to traverse both lists.
+
+Also stored the physical addresses for RSC_DEVMEM entries
+to enable pa to da conversion for dev mem address spaces too.
+
+Signed-off-by: Subramaniam Chanderashekarapuram <subramaniam.ca@ti.com>
+Signed-off-by: Fernando Guzman Lugo <fernando.lugo@ti.com>
+Signed-off-by: Suman Anna <s-anna@ti.com>
+---
+ drivers/remoteproc/remoteproc_core.c | 56 ++++++++++++++++++++++++++++
+ include/linux/remoteproc.h           |  1 +
+ 2 files changed, 57 insertions(+)
+
+diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
+index 5920dd69d5ad..381ac681bd7b 100644
+--- a/drivers/remoteproc/remoteproc_core.c
++++ b/drivers/remoteproc/remoteproc_core.c
+@@ -227,6 +227,61 @@ void *rproc_da_to_va(struct rproc *rproc, u64 da, size_t len)
+ }
+ EXPORT_SYMBOL(rproc_da_to_va);
+ 
++/**
++ * rproc_pa_to_da() - lookup the rproc device address for a physical address
++ * @rproc: handle of a remote processor
++ * @pa: physical address of the buffer to translate
++ * @da: device address to return
++ *
++ * Communication clients of remote processors usually would need a means to
++ * convert a host buffer pointer to an equivalent device virtual address pointer
++ * that the code running on the remote processor can operate on. These buffer
++ * pointers can either be from the physically contiguous memory regions (or
++ * "carveouts") or can be some memory-mapped Device IO memory. This function
++ * provides a means to translate a given physical address to its associated
++ * device address.
++ *
++ * The function looks through both the carveouts and the device memory mappings
++ * since both of them are stored in separate lists.
++ *
++ * Return: 0 on success, or an appropriate error code otherwise. The translated
++ * device address is returned through the appropriate function argument.
++ */
++int rproc_pa_to_da(struct rproc *rproc, phys_addr_t pa, u64 *da)
++{
++	int ret = -EINVAL;
++	struct rproc_mem_entry *maps = NULL;
++
++	if (!rproc || !da)
++		return -EINVAL;
++
++	if (mutex_lock_interruptible(&rproc->lock))
++		return -EINTR;
++
++	if (rproc->state == RPROC_RUNNING || rproc->state == RPROC_SUSPENDED) {
++		/* Look in the mappings first */
++		list_for_each_entry(maps, &rproc->mappings, node) {
++			if (pa >= maps->dma && pa < (maps->dma + maps->len)) {
++				*da = maps->da + (pa - maps->dma);
++				ret = 0;
++				goto exit;
++			}
++		}
++		/* If not, check in the carveouts */
++		list_for_each_entry(maps, &rproc->carveouts, node) {
++			if (pa >= maps->dma && pa < (maps->dma + maps->len)) {
++				*da = maps->da + (pa - maps->dma);
++				ret = 0;
++				break;
++			}
++		}
++	}
++exit:
++	mutex_unlock(&rproc->lock);
++	return ret;
++}
++EXPORT_SYMBOL(rproc_pa_to_da);
++
+ /**
+  * rproc_find_carveout_by_name() - lookup the carveout region by a name
+  * @rproc: handle of a remote processor
+@@ -757,6 +812,7 @@ static int rproc_handle_devmem(struct rproc *rproc, struct fw_rsc_devmem *rsc,
+ 	 * We can't trust the remote processor not to change the resource
+ 	 * table, so we must maintain this info independently.
+ 	 */
++	mapping->dma = rsc->pa;
+ 	mapping->da = rsc->da;
+ 	mapping->len = rsc->len;
+ 	list_add_tail(&mapping->node, &rproc->mappings);
+diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
+index 58e3e417a673..4e2cb9d08cd4 100644
+--- a/include/linux/remoteproc.h
++++ b/include/linux/remoteproc.h
+@@ -665,6 +665,7 @@ int rproc_coredump_add_custom_segment(struct rproc *rproc,
+ 				      void *priv);
+ int rproc_coredump_set_elf_info(struct rproc *rproc, u8 class, u16 machine);
+ int rproc_get_id(struct rproc *rproc);
++int rproc_pa_to_da(struct rproc *rproc, phys_addr_t pa, u64 *da);
+ 
+ static inline struct rproc_vdev *vdev_to_rvdev(struct virtio_device *vdev)
+ {
+-- 
+2.32.0 (Apple Git-132)
+

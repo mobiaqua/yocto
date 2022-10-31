@@ -1,0 +1,3112 @@
+diff --git a/drivers/gpu/drm/omapdrm/Kconfig b/drivers/gpu/drm/omapdrm/Kconfig
+index 455e1a91f..0a80a56d7 100644
+--- a/drivers/gpu/drm/omapdrm/Kconfig
++++ b/drivers/gpu/drm/omapdrm/Kconfig
+@@ -12,6 +12,17 @@ config DRM_OMAP
+ 
+ if DRM_OMAP
+ 
++config DRM_OMAP_WB
++	bool "Enable writeback support for OMAP DRM driver"
++	depends on DRM_OMAP
++	depends on (VIDEO_V4L2 = y) || (VIDEO_V4L2 = m && DRM_OMAP = m)
++	depends on VIDEO_DEV && HAS_DMA
++	select VIDEOBUF2_DMA_CONTIG
++	select V4L2_MEM2MEM_DEV
++	default n
++	help
++	  Select this to enable memory-to-memory/capture writeback support.
++
+ config OMAP2_DSS_DEBUG
+ 	bool "Debug support"
+ 	default n
+diff --git a/drivers/gpu/drm/omapdrm/Makefile b/drivers/gpu/drm/omapdrm/Makefile
+index 710b4e0ab..25bfe429d 100644
+--- a/drivers/gpu/drm/omapdrm/Makefile
++++ b/drivers/gpu/drm/omapdrm/Makefile
+@@ -19,6 +19,8 @@ omapdrm-y := omap_drv.o \
+ 
+ omapdrm-$(CONFIG_DRM_FBDEV_EMULATION) += omap_fbdev.o
+ 
++omapdrm-$(CONFIG_DRM_OMAP_WB) += omap_wb.o omap_wb_cap.o omap_wb_m2m.o
++
+ omapdrm-y += dss/base.o dss/output.o dss/dss.o dss/dispc.o \
+ 		dss/dispc_coefs.o dss/pll.o dss/video-pll.o
+ omapdrm-$(CONFIG_OMAP2_DSS_DPI) += dss/dpi.o
+diff --git a/drivers/gpu/drm/omapdrm/dss/dispc.c b/drivers/gpu/drm/omapdrm/dss/dispc.c
+index a3e2c47b9..e023d1d1e 100644
+--- a/drivers/gpu/drm/omapdrm/dss/dispc.c
++++ b/drivers/gpu/drm/omapdrm/dss/dispc.c
+@@ -704,8 +704,8 @@ void dispc_mgr_enable(struct dispc_device *dispc,
+ 	mgr_fld_read(dispc, channel, DISPC_MGR_FLD_ENABLE);
+ }
+ 
+-static bool dispc_mgr_is_enabled(struct dispc_device *dispc,
+-				 enum omap_channel channel)
++bool dispc_mgr_is_enabled(struct dispc_device *dispc,
++			  enum omap_channel channel)
+ {
+ 	return !!mgr_fld_read(dispc, channel, DISPC_MGR_FLD_ENABLE);
+ }
+@@ -877,6 +877,24 @@ static void dispc_ovl_write_color_conv_coef(struct dispc_device *dispc,
+ #undef CVAL
+ }
+ 
++static void dispc_wb_write_color_conv_coef(struct dispc_device *dispc,
++					   const struct csc_coef_rgb2yuv *ct)
++{
++	const enum omap_plane_id plane = OMAP_DSS_WB;
++
++#define CVAL(x, y) (FLD_VAL(x, 26, 16) | FLD_VAL(y, 10, 0))
++
++	dispc_write_reg(dispc, DISPC_OVL_CONV_COEF(plane, 0), CVAL(ct->yg,  ct->yr));
++	dispc_write_reg(dispc, DISPC_OVL_CONV_COEF(plane, 1), CVAL(ct->crr, ct->yb));
++	dispc_write_reg(dispc, DISPC_OVL_CONV_COEF(plane, 2), CVAL(ct->crb, ct->crg));
++	dispc_write_reg(dispc, DISPC_OVL_CONV_COEF(plane, 3), CVAL(ct->cbg, ct->cbr));
++	dispc_write_reg(dispc, DISPC_OVL_CONV_COEF(plane, 4), CVAL(0, ct->cbb));
++
++	REG_FLD_MOD(dispc, DISPC_OVL_ATTRIBUTES(plane), ct->full_range, 11, 11);
++
++#undef CVAL
++}
++
+ /* YUV -> RGB, ITU-R BT.601, full range */
+ static const struct csc_coef_yuv2rgb coefs_yuv2rgb_bt601_full = {
+ 	256,   0,  358,		/* ry, rcb, rcr |1.000  0.000  1.402|*/
+@@ -909,6 +927,30 @@ static const struct csc_coef_yuv2rgb coefs_yuv2rgb_bt709_lim = {
+ 	false,			/* limited range */
+ };
+ 
++/* RGB -> YUV, ITU-R BT.601, limited range */
++static const struct csc_coef_rgb2yuv coefs_rgb2yuv_bt601_lim = {
++	 66, 129,  25,		/* yr,   yg,  yb | 0.257  0.504  0.098|*/
++	-38, -74, 112,		/* cbr, cbg, cbb |-0.148 -0.291  0.439|*/
++	112, -94, -18,		/* crr, crg, crb | 0.439 -0.368 -0.071|*/
++	false,			/* limited range */
++};
++
++/* RGB -> YUV, ITU-R BT.601, full range */
++static const struct csc_coef_rgb2yuv coefs_rgb2yuv_bt601_full = {
++	 77,  150,  29,		/* yr,   yg,  yb | 0.299  0.587  0.114|*/
++	-43,  -85, 128,		/* cbr, cbg, cbb |-0.173 -0.339  0.511|*/
++	128, -107, -21,		/* crr, crg, crb | 0.511 -0.428 -0.083|*/
++	true,			/* full range */
++};
++
++/* RGB -> YUV, ITU-R BT.709, limited range */
++static const struct csc_coef_rgb2yuv coefs_rgb2yuv_bt701_lim = {
++	 47,  157,   16,	/* yr,   yg,  yb | 0.1826  0.6142  0.0620|*/
++	-26,  -87,  112,	/* cbr, cbg, cbb |-0.1006 -0.3386  0.4392|*/
++	112, -102,  -10,	/* crr, crg, crb | 0.4392 -0.3989 -0.0403|*/
++	false,			/* limited range */
++};
++
+ static void dispc_ovl_set_csc(struct dispc_device *dispc,
+ 			      enum omap_plane_id plane,
+ 			      enum drm_color_encoding color_encoding,
+@@ -3959,6 +4001,9 @@ static void _omap_dispc_initial_config(struct dispc_device *dispc)
+ 	    dispc->feat->has_gamma_table)
+ 		REG_FLD_MOD(dispc, DISPC_CONFIG, 1, 9, 9);
+ 
++	if (dispc->feat->has_writeback)
++		dispc_wb_write_color_conv_coef(dispc, &coefs_rgb2yuv_bt601_full);
++
+ 	dispc_set_loadmode(dispc, OMAP_DSS_LOAD_FRAME_ONLY);
+ 
+ 	dispc_init_fifos(dispc);
+diff --git a/drivers/gpu/drm/omapdrm/dss/dss.h b/drivers/gpu/drm/omapdrm/dss/dss.h
+index 4ff02fbc0..89a8a3897 100644
+--- a/drivers/gpu/drm/omapdrm/dss/dss.h
++++ b/drivers/gpu/drm/omapdrm/dss/dss.h
+@@ -423,6 +423,9 @@ u32 dispc_get_memory_bandwidth_limit(struct dispc_device *dispc);
+ void dispc_mgr_enable(struct dispc_device *dispc,
+ 			     enum omap_channel channel, bool enable);
+ 
++bool dispc_mgr_is_enabled(struct dispc_device *dispc,
++			  enum omap_channel channel);
++
+ bool dispc_mgr_go_busy(struct dispc_device *dispc,
+ 			      enum omap_channel channel);
+ 
+diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_drv.c
+index 52b979ae8..4f62b44d2 100644
+--- a/drivers/gpu/drm/omapdrm/omap_drv.c
++++ b/drivers/gpu/drm/omapdrm/omap_drv.c
+@@ -810,6 +810,14 @@ static int omapdrm_init(struct omap_drm_private *priv, struct device *dev)
+ 	drm_kms_helper_poll_init(ddev);
+ 	omap_modeset_enable_external_hpd(ddev);
+ 
++	if (dispc_has_writeback(priv->dispc)) {
++		ret = omap_wb_init(ddev);
++		if (ret)
++			dev_warn(priv->dev, "failed to initialize writeback\n");
++		else
++			priv->wb_initialized = true;
++	}
++
+ 	/*
+ 	 * Register the DRM device with the core and the connectors with
+ 	 * sysfs.
+@@ -821,7 +829,11 @@ static int omapdrm_init(struct omap_drm_private *priv, struct device *dev)
+ 	return 0;
+ 
+ err_cleanup_helpers:
++	if (priv->wb_initialized)
++		omap_wb_cleanup(ddev);
++
+ 	omap_modeset_disable_external_hpd(ddev);
++
+ 	drm_kms_helper_poll_fini(ddev);
+ 
+ 	omap_fbdev_fini(ddev);
+@@ -848,6 +860,9 @@ static void omapdrm_cleanup(struct omap_drm_private *priv)
+ 
+ 	drm_dev_unregister(ddev);
+ 
++	if (priv->wb_initialized)
++		omap_wb_cleanup(ddev);
++
+ 	omap_modeset_disable_external_hpd(ddev);
+ 	drm_kms_helper_poll_fini(ddev);
+ 
+diff --git a/drivers/gpu/drm/omapdrm/omap_drv.h b/drivers/gpu/drm/omapdrm/omap_drv.h
+index aeba2d3e2..fbc95e9c0 100644
+--- a/drivers/gpu/drm/omapdrm/omap_drv.h
++++ b/drivers/gpu/drm/omapdrm/omap_drv.h
+@@ -106,6 +106,9 @@ struct omap_drm_private {
+ 
+ 	/* memory bandwidth limit if it is needed on the platform */
+ 	unsigned int max_bandwidth;
++
++	void *wb_private;	      /* Write-back private data */
++	bool wb_initialized;
+ };
+ 
+ 
+@@ -115,4 +118,24 @@ struct omap_global_state * __must_check omap_get_global_state(struct drm_atomic_
+ 
+ struct omap_global_state *omap_get_existing_global_state(struct omap_drm_private *priv);
+ 
++#if IS_ENABLED(CONFIG_DRM_OMAP_WB)
++
++#define OMAP_WB_IRQ_MASK (DISPC_IRQ_FRAMEDONEWB | \
++			  DISPC_IRQ_WBBUFFEROVERFLOW | \
++			  DISPC_IRQ_WBUNCOMPLETEERROR)
++
++int omap_wb_init(struct drm_device *drmdev);
++void omap_wb_cleanup(struct drm_device *drmdev);
++void omap_wb_irq(void *priv, u32 irqstatus);
++
++#else
++
++#define OMAP_WB_IRQ_MASK (0)
++
++static inline int omap_wb_init(struct drm_device *drmdev) { return 0; }
++static inline void omap_wb_cleanup(struct drm_device *drmdev) { }
++static inline void omap_wb_irq(void *priv, u32 irqstatus) { }
++
++#endif
++
+ #endif /* __OMAPDRM_DRV_H__ */
+diff --git a/drivers/gpu/drm/omapdrm/omap_irq.c b/drivers/gpu/drm/omapdrm/omap_irq.c
+index 4aca14dab..73e5ffdd9 100644
+--- a/drivers/gpu/drm/omapdrm/omap_irq.c
++++ b/drivers/gpu/drm/omapdrm/omap_irq.c
+@@ -235,6 +235,7 @@ static irqreturn_t omap_irq_handler(int irq, void *arg)
+ 
+ 	omap_irq_ocp_error_handler(dev, irqstatus);
+ 	omap_irq_fifo_underflow(priv, irqstatus);
++	omap_wb_irq(priv->wb_private, irqstatus);
+ 
+ 	spin_lock_irqsave(&priv->wait_lock, flags);
+ 	list_for_each_entry_safe(wait, n, &priv->wait_list, node) {
+@@ -276,6 +277,9 @@ int omap_drm_irq_install(struct drm_device *dev)
+ 	for (i = 0; i < num_mgrs; ++i)
+ 		priv->irq_mask |= dispc_mgr_get_sync_lost_irq(priv->dispc, i);
+ 
++	if (dispc_has_writeback(priv->dispc))
++		priv->irq_mask |= OMAP_WB_IRQ_MASK;
++
+ 	dispc_runtime_get(priv->dispc);
+ 	dispc_clear_irqstatus(priv->dispc, 0xffffffff);
+ 	dispc_runtime_put(priv->dispc);
+diff --git a/drivers/gpu/drm/omapdrm/omap_overlay.c b/drivers/gpu/drm/omapdrm/omap_overlay.c
+index 10730c9b2..9bf101b48 100644
+--- a/drivers/gpu/drm/omapdrm/omap_overlay.c
++++ b/drivers/gpu/drm/omapdrm/omap_overlay.c
+@@ -149,6 +149,81 @@ void omap_overlay_update_state(struct omap_drm_private *priv,
+ 	}
+ }
+ 
++int omap_overlay_assign_wb(struct omap_drm_private *priv,
++			   struct drm_plane *plane,
++			   u32 caps, u32 fourcc,
++			   struct omap_hw_overlay **overlay)
++{
++	struct omap_global_state *old_global_state;
++	struct drm_plane **overlay_map;
++	struct omap_hw_overlay *ovl;
++
++	/*
++	 * As there is no state here we can't really grab the global obj lock.
++	 * This might cause issue!
++	 */
++	old_global_state = omap_get_existing_global_state(priv);
++	DBG("old_global_state: %p", old_global_state);
++
++	overlay_map = old_global_state->hwoverlay_to_plane;
++
++	if (!*overlay) {
++		ovl = omap_plane_find_free_overlay(plane->dev, overlay_map,
++						   caps, fourcc);
++		if (!ovl)
++			return -ENOMEM;
++
++		overlay_map[ovl->idx] = plane;
++		*overlay = ovl;
++
++		DBG("%s: assign to WB plane %s for caps %x",
++		    (*overlay)->name, plane->name, caps);
++	}
++
++	return 0;
++}
++
++void omap_overlay_release_wb(struct omap_drm_private *priv,
++			     struct drm_plane *plane,
++			     struct omap_hw_overlay *overlay)
++{
++	struct omap_global_state *old_global_state;
++	struct drm_plane **overlay_map;
++
++	if (!overlay)
++		return;
++
++	/*
++	 * As there is no state here we can't really grab the global obj lock.
++	 * This might cause issue!
++	 */
++	old_global_state = omap_get_existing_global_state(priv);
++	DBG("old_global_state: %p", old_global_state);
++
++	overlay_map = old_global_state->hwoverlay_to_plane;
++
++	if (WARN_ON(!overlay_map[overlay->idx]))
++		return;
++	/*
++	 * Check that the overlay we are releasing is actually
++	 * assigned to the plane we are trying to release it from.
++	 */
++	if (overlay_map[overlay->idx] == plane) {
++		DBG("%s: release from WB plane %s", overlay->name, plane->name);
++
++		/*
++		 * As this might get called without having done any other
++		 * actual h/w access make sure the module is enabled before
++		 * trying to access it.
++		 */
++		dispc_runtime_get(priv->dispc);
++		dispc_ovl_enable(priv->dispc, overlay->id,
++				 false);
++		dispc_runtime_put(priv->dispc);
++		overlay_map[overlay->idx] = NULL;
++	}
++}
++
+ static void omap_overlay_destroy(struct omap_hw_overlay *overlay)
+ {
+ 	kfree(overlay);
+diff --git a/drivers/gpu/drm/omapdrm/omap_overlay.h b/drivers/gpu/drm/omapdrm/omap_overlay.h
+index e36a43f35..578f88952 100644
+--- a/drivers/gpu/drm/omapdrm/omap_overlay.h
++++ b/drivers/gpu/drm/omapdrm/omap_overlay.h
+@@ -32,4 +32,12 @@ int omap_overlay_assign(struct drm_atomic_state *s, struct drm_plane *plane,
+ 			struct omap_hw_overlay **r_overlay);
+ void omap_overlay_release(struct drm_atomic_state *s, struct omap_hw_overlay *overlay);
+ void omap_overlay_update_state(struct omap_drm_private *priv, struct omap_hw_overlay *overlay);
++int omap_overlay_assign_wb(struct omap_drm_private *priv,
++			   struct drm_plane *plane,
++			   u32 caps, u32 fourcc,
++			   struct omap_hw_overlay **overlay);
++void omap_overlay_release_wb(struct omap_drm_private *priv,
++			     struct drm_plane *plane,
++			     struct omap_hw_overlay *overlay);
++
+ #endif /* __OMAPDRM_OVERLAY_H__ */
+diff --git a/drivers/gpu/drm/omapdrm/omap_plane.c b/drivers/gpu/drm/omapdrm/omap_plane.c
+index b35205c4e..48fc56f81 100644
+--- a/drivers/gpu/drm/omapdrm/omap_plane.c
++++ b/drivers/gpu/drm/omapdrm/omap_plane.c
+@@ -32,6 +32,12 @@ struct omap_plane_state {
+ struct omap_plane {
+ 	struct drm_plane base;
+ 	enum omap_plane_id id;
++
++	/*
++	 * WB has no notion of atomic state we need to keep
++	 * a reference to the allocated overlay here.
++	 */
++	struct omap_hw_overlay *reserved_wb_overlay;
+ };
+ 
+ bool is_omap_plane_dual_overlay(struct drm_plane_state *state)
+@@ -204,6 +210,7 @@ static int omap_plane_atomic_check(struct drm_plane *plane,
+ 	struct drm_plane_state *old_plane_state = drm_atomic_get_old_plane_state(state,
+ 										 plane);
+ 	struct omap_drm_private *priv = plane->dev->dev_private;
++	struct omap_plane *omap_plane = to_omap_plane(plane);
+ 	struct omap_plane_state *omap_state = to_omap_plane_state(new_plane_state);
+ 	struct omap_global_state *omap_overlay_global_state;
+ 	struct drm_crtc_state *crtc_state;
+@@ -216,6 +223,9 @@ static int omap_plane_atomic_check(struct drm_plane *plane,
+ 	u32 fourcc;
+ 	int ret;
+ 
++	if (omap_plane->reserved_wb_overlay)
++		return -EBUSY;
++
+ 	omap_overlay_global_state = omap_get_global_state(state);
+ 	if (IS_ERR(omap_overlay_global_state))
+ 		return PTR_ERR(omap_overlay_global_state);
+@@ -587,3 +597,66 @@ struct drm_plane *omap_plane_init(struct drm_device *dev,
+ 	kfree(omap_plane);
+ 	return NULL;
+ }
++
++enum omap_plane_id omap_plane_id_wb(struct drm_plane *plane)
++{
++	struct omap_plane *omap_plane = to_omap_plane(plane);
++
++	return omap_plane->reserved_wb_overlay->id;
++}
++
++struct drm_plane *omap_plane_reserve_wb(struct drm_device *dev)
++{
++	struct omap_drm_private *priv = dev->dev_private;
++	int i, ret;
++
++	/*
++	 * Look from the last plane to the first to lessen chances of the
++	 * display side trying to use the same plane as writeback.
++	 */
++	for (i = priv->num_planes - 1; i >= 0; --i) {
++		struct drm_plane *plane = priv->planes[i];
++		struct omap_plane *omap_plane = to_omap_plane(plane);
++		struct omap_hw_overlay *new_ovl = NULL;
++		u32 fourcc = DRM_FORMAT_YUYV;
++		u32 caps = OMAP_DSS_OVL_CAP_SCALE;
++
++		if (plane->state->crtc || plane->state->fb)
++			continue;
++
++		if (omap_plane->reserved_wb_overlay)
++			continue;
++
++		ret = omap_overlay_assign_wb(priv, plane, caps, fourcc,
++					     &new_ovl);
++		if (ret) {
++			DBG("%s: failed to assign hw_overlay for wb!",
++			    plane->name);
++			return NULL;
++		}
++
++		omap_plane->reserved_wb_overlay = new_ovl;
++
++		return plane;
++	}
++
++	return NULL;
++}
++
++void omap_plane_release_wb(struct drm_plane *plane)
++{
++	struct omap_drm_private *priv = plane->dev->dev_private;
++	struct omap_plane *omap_plane;
++
++	/*
++	 * This is also called on module unload at which point plane might
++	 * not be set. In that case just return as there is nothing to do.
++	 */
++	if (!plane)
++		return;
++
++	omap_plane = to_omap_plane(plane);
++
++	omap_overlay_release_wb(priv, plane, omap_plane->reserved_wb_overlay);
++	omap_plane->reserved_wb_overlay = NULL;
++}
+diff --git a/drivers/gpu/drm/omapdrm/omap_plane.h b/drivers/gpu/drm/omapdrm/omap_plane.h
+index a9a33e127..378b06345 100644
+--- a/drivers/gpu/drm/omapdrm/omap_plane.h
++++ b/drivers/gpu/drm/omapdrm/omap_plane.h
+@@ -24,4 +24,8 @@ void omap_plane_install_properties(struct drm_plane *plane,
+ 		struct drm_mode_object *obj);
+ bool is_omap_plane_dual_overlay(struct drm_plane_state *state);
+ 
++enum omap_plane_id omap_plane_id_wb(struct drm_plane *plane);
++struct drm_plane *omap_plane_reserve_wb(struct drm_device *dev);
++void omap_plane_release_wb(struct drm_plane *plane);
++
+ #endif /* __OMAPDRM_PLANE_H__ */
+diff --git a/drivers/gpu/drm/omapdrm/omap_wb.c b/drivers/gpu/drm/omapdrm/omap_wb.c
+new file mode 100644
+index 000000000..7655a747c
+--- /dev/null
++++ b/drivers/gpu/drm/omapdrm/omap_wb.c
+@@ -0,0 +1,178 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2016-2018 Texas Instruments Incorporated -  http://www.ti.com/
++ * Author: Benoit Parrot <bparrot@ti.com>
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++
++#include "omap_wb.h"
++
++unsigned int wbdebug;
++module_param(wbdebug, uint, 0644);
++MODULE_PARM_DESC(wbdebug, "activates debug info");
++
++struct wb_fmt wb_formats[] = {
++	{
++		.fourcc		= V4L2_PIX_FMT_NV12,
++		.coplanar	= 0,
++		.depth		= {8, 4},
++	},
++	{
++		.fourcc		= V4L2_PIX_FMT_NV12M,
++		.coplanar	= 1,
++		.depth		= {8, 4},
++	},
++	{
++		.fourcc		= V4L2_PIX_FMT_YUYV,
++		.coplanar	= 0,
++		.depth		= {16, 0},
++	},
++	{
++		.fourcc		= V4L2_PIX_FMT_UYVY,
++		.coplanar	= 0,
++		.depth		= {16, 0},
++	},
++	{
++		/* "XR24", DRM_FORMAT_XRGB8888 */
++		.fourcc		= V4L2_PIX_FMT_XBGR32,
++		.coplanar	= 0,
++		.depth		= {32, 0},
++	},
++};
++
++unsigned int num_wb_formats = ARRAY_SIZE(wb_formats);
++
++/* find our format description corresponding to the passed v4l2_format */
++struct wb_fmt *find_format(struct v4l2_format *f)
++{
++	struct wb_fmt *fmt;
++	unsigned int k;
++
++	for (k = 0; k < num_wb_formats; k++) {
++		fmt = &wb_formats[k];
++		if (fmt->fourcc == f->fmt.pix_mp.pixelformat)
++			return fmt;
++	}
++
++	return NULL;
++}
++
++int omap_wb_fourcc_v4l2_to_drm(u32 fourcc)
++{
++	switch (fourcc) {
++	case V4L2_PIX_FMT_NV12:
++	case V4L2_PIX_FMT_NV12M:
++		return DRM_FORMAT_NV12;
++	case V4L2_PIX_FMT_YUYV:
++		return DRM_FORMAT_YUYV;
++	case V4L2_PIX_FMT_UYVY:
++		return DRM_FORMAT_UYVY;
++	case V4L2_PIX_FMT_XBGR32:
++		return DRM_FORMAT_XRGB8888;
++	default:
++		WARN(1, "WB: unsupported fourcc\n");
++		return 0;
++	}
++}
++
++void omap_wb_irq(void *priv, u32 irqstatus)
++{
++	struct wb_dev *dev = (struct wb_dev *)priv;
++	const u32 mask = OMAP_WB_IRQ_MASK |
++			 DISPC_IRQ_VSYNC |
++			 DISPC_IRQ_VSYNC2 |
++			 DISPC_IRQ_VSYNC3 |
++			 DISPC_IRQ_EVSYNC_EVEN |
++			 DISPC_IRQ_EVSYNC_ODD;
++
++	if (!dev)
++		return;
++
++	irqstatus &= mask;
++	if (!irqstatus)
++		return;
++
++	if (!atomic_read(&dev->irq_enabled))
++		return;
++
++	switch (dev->mode) {
++	case OMAP_WB_NOT_CONFIGURED:
++		break;
++	case OMAP_WB_MEM2MEM_OVL:
++		wbm2m_irq(dev->m2m, irqstatus);
++		break;
++	case OMAP_WB_MEM2MEM_MGR:
++		/* To be added */
++		break;
++	case OMAP_WB_CAPTURE_MGR:
++		wbcap_irq(dev->cap, irqstatus);
++		break;
++	default:
++		WARN_ONCE(1, "WB: unknown WB mode: 0x%x\n", dev->mode);
++		break;
++	}
++}
++
++/*
++ * The initial setup of this device instance. Note that the initial state of
++ * the driver should be complete. So the initial format, standard, timings
++ * and video input should all be initialized to some reasonable value.
++ */
++int omap_wb_init(struct drm_device *drmdev)
++{
++	struct omap_drm_private *priv = drmdev->dev_private;
++	struct wb_dev *dev;
++	int ret = 0;
++
++	/* Allocate a new instance */
++	dev = devm_kzalloc(drmdev->dev, sizeof(*dev), GFP_KERNEL);
++	if (!dev)
++		return -ENOMEM;
++
++	dev->drm_dev = drmdev;
++
++	/* set pseudo v4l2 device name so we can use v4l2_printk */
++	strlcpy(dev->v4l2_dev.name, WB_MODULE_NAME,
++		sizeof(dev->v4l2_dev.name));
++
++	priv->wb_private = dev;
++
++	mutex_init(&dev->lock);
++
++	atomic_set(&dev->irq_enabled, 0);
++
++	dev->mode = OMAP_WB_NOT_CONFIGURED;
++
++	ret = wbcap_init(dev);
++	if (ret) {
++		log_err(dev, "Failed to initialize wb capture\n");
++		goto error;
++	}
++
++	ret = wbm2m_init(dev);
++	if (ret) {
++		log_err(dev, "Failed to initialize wb m2m\n");
++		goto free_cap;
++	}
++
++	log_dbg(dev, "WB loaded\n");
++	return 0;
++
++free_cap:
++	wbcap_cleanup(dev);
++error:
++	return ret;
++}
++
++void omap_wb_cleanup(struct drm_device *drmdev)
++{
++	struct omap_drm_private *priv = drmdev->dev_private;
++	struct wb_dev *dev = priv->wb_private;
++
++	log_dbg(dev, "Cleanup WB\n");
++
++	wbcap_cleanup(dev);
++	wbm2m_cleanup(dev);
++}
+diff --git a/drivers/gpu/drm/omapdrm/omap_wb.h b/drivers/gpu/drm/omapdrm/omap_wb.h
+new file mode 100644
+index 000000000..43c44cf0a
+--- /dev/null
++++ b/drivers/gpu/drm/omapdrm/omap_wb.h
+@@ -0,0 +1,214 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * Copyright (C) 2016-2018 Texas Instruments Incorporated -  http://www.ti.com/
++ * Author: Benoit Parrot <bparrot@ti.com>
++ */
++
++#ifndef __OMAP_WB_H__
++#define __OMAP_WB_H__
++
++#include <linux/types.h>
++#include <linux/kernel.h>
++#include <linux/mutex.h>
++#include <linux/wait.h>
++#include <linux/hrtimer.h>
++#include <drm/drm_fourcc.h>
++
++#include <linux/videodev2.h>
++#include <media/v4l2-device.h>
++#include <media/v4l2-dev.h>
++#include <media/v4l2-ioctl.h>
++#include <media/v4l2-ctrls.h>
++#include <media/v4l2-event.h>
++#include <media/videobuf2-v4l2.h>
++#include <media/videobuf2-dma-contig.h>
++
++#include "dss/omapdss.h"
++#include "omap_drv.h"
++
++#define WB_MODULE_NAME "omapwb"
++#define WBM2M_MODULE_NAME "omapwb-m2m"
++#define WBCAP_MODULE_NAME "omapwb-cap"
++
++extern unsigned int wbdebug;
++
++#define log_dbg(dev, fmt, arg...)	\
++		v4l2_dbg(1, wbdebug, &dev->v4l2_dev, "%s: " fmt, \
++			 __func__, ## arg)
++#define log_err(dev, fmt, arg...)	\
++		v4l2_err(&dev->v4l2_dev, fmt, ## arg)
++#define log_info(dev, fmt, arg...)	\
++		v4l2_info(&dev->v4l2_dev, fmt, ## arg)
++
++/* minimum and maximum frame sizes */
++#define MIN_W		32
++#define MIN_H		32
++#define MAX_W		2048
++#define MAX_H		2048
++
++/* required alignments */
++#define S_ALIGN		0	/* multiple of 1 */
++#define H_ALIGN		0	/* multiple of 2 */
++
++/* used as plane indices */
++#define MAX_PLANES	2
++#define LUMA_PLANE	0
++#define CHROMA_PLANE	1
++
++enum omap_wb_mode {
++	OMAP_WB_NOT_CONFIGURED = 0,
++	/* mem2mem from single ovl to wb */
++	OMAP_WB_MEM2MEM_OVL = 1,
++	/* mem2mem from N overlays via single mgr to wb */
++	OMAP_WB_MEM2MEM_MGR = 2,
++	/* capture from single mgr to wb */
++	OMAP_WB_CAPTURE_MGR = 3
++};
++
++enum omap_wb_state {
++	WB_STATE_NONE = 0,
++	WB_STATE_FIRST_FRAME,
++	WB_STATE_CAPTURING,
++	WB_STATE_STOPPING,
++	WB_STATE_STOPPED,
++};
++
++/* driver info for each of the supported video formats */
++struct wb_fmt {
++	u32	fourcc;			/* standard format identifier */
++	u8	coplanar;		/* set for unpacked Luma and Chroma */
++	u8	depth[MAX_PLANES];	/* Bits per pixel per plane*/
++};
++
++extern struct wb_fmt wb_formats[];
++extern unsigned int num_wb_formats;
++
++struct wb_buffer {
++	struct vb2_v4l2_buffer	vb;
++	struct list_head	list;
++};
++
++/*
++ * per-queue, driver-specific private data.
++ * MEM-2-MEM: Source: V4L2_BUF_TYPE_VIDEO_OUTPUT*
++ *            Destination: V4L2_BUF_TYPE_VIDEO_CAPTURE*
++ * CAPTURE:   Destination: V4L2_BUF_TYPE_VIDEO_CAPTURE* only
++ */
++struct wb_q_data {
++	/* format info */
++	struct v4l2_format	format;
++	/* crop/compose rectangle */
++	struct v4l2_rect	c_rect;
++	/* format info */
++	struct wb_fmt		*fmt;
++};
++
++enum {
++	Q_DATA_SRC = 0,
++	Q_DATA_DST = 1,
++};
++
++/* find our format description corresponding to the passed v4l2_format */
++struct wb_fmt *find_format(struct v4l2_format *f);
++
++struct wb_dev {
++	struct v4l2_device	v4l2_dev;
++	struct drm_device	*drm_dev;
++
++	atomic_t		irq_enabled;
++
++	/* v4l2_ioctl mutex */
++	struct mutex		lock;
++
++	enum omap_wb_mode	mode;
++	struct wbcap_dev	*cap;
++	struct wbm2m_dev	*m2m;
++};
++
++/*
++ * there is one wbcap_dev structure in the driver.
++ */
++struct wbcap_dev {
++	struct v4l2_device	v4l2_dev;
++	struct video_device	vdev;
++	struct v4l2_fh		fh;
++	struct wb_dev		*dev;
++	struct v4l2_ctrl_handler hdl;
++
++	/* dst queue data */
++	struct wb_q_data	q_data[2];
++
++	unsigned int		input;
++
++	struct vb2_queue	queue;
++	struct vb2_alloc_ctx	*alloc_ctx;
++
++	spinlock_t		qlock;
++	struct list_head	buf_list;
++
++	/* Current  v4l2_buffer */
++	struct wb_buffer	*cur_frm;
++	/* Next v4l2_buffer */
++	struct wb_buffer	*next_frm;
++
++	unsigned int		field;
++	unsigned int		sequence;
++
++	bool			stopping;
++	wait_queue_head_t	event;
++
++	enum omap_wb_state	state;
++
++	/* timer used to wait for wb go bit to be cleared */
++	struct hrtimer		wbgo_timer;
++};
++
++/*
++ * there is one wbm2m_dev structure in the driver.
++ */
++struct wbm2m_dev {
++	struct v4l2_device	v4l2_dev;
++	struct video_device	vfd;
++	struct v4l2_m2m_dev	*m2m_dev;
++	struct wb_dev		*dev;
++	struct drm_plane	*plane;
++
++	/* v4l2 buffers lock */
++	spinlock_t		lock;
++
++	struct vb2_alloc_ctx	*alloc_ctx;
++};
++
++/*
++ * There is one wbm2m_ctx structure for each m2m context.
++ */
++struct wbm2m_ctx {
++	struct v4l2_fh		fh;
++	struct wbm2m_dev	*dev;
++	struct v4l2_ctrl_handler hdl;
++
++	/* current frame seq */
++	unsigned int		sequence;
++	/* abort after next irq */
++	unsigned int		aborting;
++
++	/* src & dst queue data */
++	struct wb_q_data	q_data[2];
++};
++
++static inline struct wb_buffer *to_wb_buffer(struct vb2_buffer *vb2)
++{
++	return container_of(vb2, struct wb_buffer, vb.vb2_buf);
++}
++
++int omap_wb_fourcc_v4l2_to_drm(u32 fourcc);
++
++void wbm2m_irq(struct wbm2m_dev *dev, uint32_t irqstatus);
++int wbm2m_init(struct wb_dev *dev);
++void wbm2m_cleanup(struct wb_dev *dev);
++
++void wbcap_irq(struct wbcap_dev *dev, u32 irqstatus);
++int wbcap_init(struct wb_dev *dev);
++void wbcap_cleanup(struct wb_dev *dev);
++
++#endif /* __OMAP_WB_H__ */
+diff --git a/drivers/gpu/drm/omapdrm/omap_wb_cap.c b/drivers/gpu/drm/omapdrm/omap_wb_cap.c
+new file mode 100644
+index 000000000..5be19271c
+--- /dev/null
++++ b/drivers/gpu/drm/omapdrm/omap_wb_cap.c
+@@ -0,0 +1,1045 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2016-2018 Texas Instruments Incorporated -  http://www.ti.com/
++ * Author: Benoit Parrot <bparrot@ti.com>
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++
++#include <drm/drm_vblank.h>
++
++#include "omap_wb.h"
++
++static int omap_channel_to_wb_channel(int oc)
++{
++	switch (oc) {
++	case OMAP_DSS_CHANNEL_LCD:
++		return DSS_WB_LCD1_MGR;
++	case OMAP_DSS_CHANNEL_DIGIT:
++		return DSS_WB_TV_MGR;
++	case OMAP_DSS_CHANNEL_LCD2:
++		return DSS_WB_LCD2_MGR;
++	case OMAP_DSS_CHANNEL_LCD3:
++		return DSS_WB_LCD3_MGR;
++	default:
++		return DSS_WB_LCD1_MGR;
++	}
++}
++
++static char *omap_channel_to_name(int oc)
++{
++	switch (oc) {
++	case OMAP_DSS_CHANNEL_LCD:
++		return "LCD1";
++	case OMAP_DSS_CHANNEL_DIGIT:
++		return "DIGIT/TV";
++	case OMAP_DSS_CHANNEL_LCD2:
++		return "LCD2";
++	case OMAP_DSS_CHANNEL_LCD3:
++		return "LCD3";
++	default:
++		return "LCD1";
++	}
++}
++
++/* driver info for each of the supported input overlay/mgr */
++struct wb_input {
++	char name[64];
++	u32 wb_channel;
++	u32 omap_channel;
++	u32 crtc_index;
++};
++
++static struct wb_input wb_inputs[8];
++static int num_wb_input;
++
++static bool is_input_active(struct wbcap_dev *wbcap)
++{
++	struct omap_drm_private *priv = wbcap->dev->drm_dev->dev_private;
++	u32 oc = wb_inputs[wbcap->input].omap_channel;
++
++	return dispc_mgr_is_enabled(priv->dispc, oc);
++}
++
++static bool is_input_enabled(struct wbcap_dev *wbcap)
++{
++	struct omap_drm_private *priv = wbcap->dev->drm_dev->dev_private;
++	struct drm_crtc *crtc;
++	struct wb_input *input;
++
++	input = &wb_inputs[wbcap->input];
++	crtc = priv->pipes[input->crtc_index].crtc;
++
++	return crtc->enabled;
++}
++
++static void build_input_table(struct wbcap_dev *wbcap)
++{
++	struct omap_drm_private *priv = wbcap->dev->drm_dev->dev_private;
++	struct drm_crtc *crtc;
++	struct wb_input *input;
++	int i;
++
++	for (i = 0; i < priv->num_pipes; i++) {
++		crtc = priv->pipes[i].crtc;
++		input = &wb_inputs[i];
++
++		input->crtc_index = i;
++		input->omap_channel = omap_crtc_channel(crtc);
++		input->wb_channel =
++			omap_channel_to_wb_channel(input->omap_channel);
++		snprintf(input->name, sizeof(input->name), "CRTC#%d - %s",
++			 i, omap_channel_to_name(input->omap_channel));
++
++		log_dbg(wbcap, "Input# %d, name:'%s' omap_channel:%d wb_channel:%d\n",
++			i, input->name, input->omap_channel, input->wb_channel);
++	}
++	num_wb_input = i;
++}
++
++static struct wb_q_data *get_q_data(struct wbcap_dev *dev,
++				    enum v4l2_buf_type type)
++{
++	switch (type) {
++	case V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE:
++	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
++		return &dev->q_data[Q_DATA_DST];
++	default:
++		return NULL;
++	}
++	return NULL;
++}
++
++static bool wb_cap_setup(struct wbcap_dev *dev,
++			 enum dss_writeback_channel wb_channel,
++			 const struct omap_dss_writeback_info *wb_info)
++{
++	struct omap_drm_private *priv = dev->dev->drm_dev->dev_private;
++	struct drm_crtc *crtc;
++	struct videomode *ct;
++	int r;
++
++	crtc = priv->pipes[wb_inputs[dev->input].crtc_index].crtc;
++	ct = omap_crtc_timings(crtc);
++
++	/* configure wb */
++	r = dispc_wb_setup(priv->dispc, wb_info, false, ct, wb_channel);
++	if (r)
++		return false;
++
++	if (is_input_active(dev)) {
++		dispc_ovl_enable(priv->dispc, OMAP_DSS_WB, true);
++		dispc_wb_go(priv->dispc);
++	} else {
++		log_err(dev, "CHANNEL %u not enabled, skip WB GO\n",
++			wb_inputs[dev->input].omap_channel);
++	}
++
++	return true;
++}
++
++static bool is_input_irq_vsync_set(struct wbcap_dev *dev, u32 irqstatus)
++{
++	struct omap_drm_private *priv = dev->dev->drm_dev->dev_private;
++	u32 oc = wb_inputs[dev->input].omap_channel;
++
++	if (irqstatus & dispc_mgr_get_vsync_irq(priv->dispc, oc))
++		return true;
++	return false;
++}
++
++static int wbcap_schedule_next_buffer(struct wbcap_dev *dev)
++{
++	struct wb_buffer *buf;
++	unsigned long addr_y = 0;
++	unsigned long addr_uv = 0;
++	struct wb_q_data *q_data;
++	int num_planes;
++	bool ok;
++	struct omap_dss_writeback_info wb_info = { 0 };
++	struct v4l2_pix_format_mplane *pix;
++	unsigned long flags;
++
++	if (!is_input_active(dev)) {
++		dev->next_frm = NULL;
++		return 0;
++	}
++
++	spin_lock_irqsave(&dev->qlock, flags);
++	if (list_empty(&dev->buf_list)) {
++		dev->next_frm = NULL;
++		spin_unlock_irqrestore(&dev->qlock, flags);
++		return 0;
++	}
++
++	buf = list_entry(dev->buf_list.next, struct wb_buffer, list);
++	dev->next_frm = buf;
++	list_del(&buf->list);
++	spin_unlock_irqrestore(&dev->qlock, flags);
++
++	q_data = get_q_data(dev, buf->vb.vb2_buf.type);
++	if (!q_data)
++		return -EINVAL;
++
++	pix = &q_data->format.fmt.pix_mp;
++	num_planes = pix->num_planes;
++
++	addr_y = vb2_dma_contig_plane_dma_addr(&buf->vb.vb2_buf, 0);
++	if (num_planes == 2)
++		addr_uv = vb2_dma_contig_plane_dma_addr(&buf->vb.vb2_buf, 1);
++	else if (pix->pixelformat == V4L2_PIX_FMT_NV12)
++		addr_uv = addr_y + (pix->plane_fmt[0].bytesperline *
++				    pix->height);
++
++	/* fill WB DSS info */
++	wb_info.paddr = (u32)addr_y;
++	wb_info.p_uv_addr = (u32)addr_uv;
++	wb_info.buf_width = pix->plane_fmt[0].bytesperline /
++			    (q_data->fmt->depth[LUMA_PLANE] / 8);
++
++	wb_info.width = pix->width;
++	wb_info.height = pix->height;
++	wb_info.fourcc = omap_wb_fourcc_v4l2_to_drm(pix->pixelformat);
++	wb_info.pre_mult_alpha = 1;
++
++	wb_info.rotation = DRM_MODE_ROTATE_0;
++	wb_info.rotation_type = OMAP_DSS_ROT_NONE;
++
++	ok = wb_cap_setup(dev,
++			  wb_inputs[dev->input].wb_channel,
++			  &wb_info);
++	if (!ok)
++		return -EINVAL;
++
++	return 0;
++}
++
++static void wbcap_process_buffer_complete(struct wbcap_dev *dev)
++{
++	dev->cur_frm->vb.vb2_buf.timestamp = ktime_get_ns();
++	dev->cur_frm->vb.field = dev->field;
++	dev->cur_frm->vb.sequence = dev->sequence++;
++
++	vb2_buffer_done(&dev->cur_frm->vb.vb2_buf, VB2_BUF_STATE_DONE);
++	dev->cur_frm = dev->next_frm;
++}
++
++static enum hrtimer_restart wbcap_wbgo_timer(struct hrtimer *timer)
++{
++	struct wbcap_dev *dev = container_of(timer,
++					     struct wbcap_dev, wbgo_timer);
++	struct omap_drm_private *priv = dev->dev->drm_dev->dev_private;
++
++	if (dispc_wb_go_busy(priv->dispc))
++		log_err(dev, "WARNING, WB BUSY at hrtimer, state %u\n",
++			dev->state);
++
++	switch (dev->state) {
++	case WB_STATE_NONE:
++		break;
++
++	case WB_STATE_FIRST_FRAME:
++		dev->cur_frm = dev->next_frm;
++		wbcap_schedule_next_buffer(dev);
++		dev->state = WB_STATE_CAPTURING;
++		break;
++
++	case WB_STATE_CAPTURING:
++		if (dev->cur_frm && dev->next_frm) {
++			/*
++			 * We have cur_frm that was just captured, and next_frm
++			 * to which the HW will start capturing.
++			 * This means cur_frm is now released from DSS HW.
++			 */
++			wbcap_process_buffer_complete(dev);
++			dev->next_frm = NULL;
++		} else {
++			/*
++			 * We have cur_frm which has a captured frame,
++			 * but we don't have next_frm.
++			 * This means cur_frm is will still be used by
++			 * DSS for capture
++			 */
++		}
++
++		if (dev->stopping) {
++			/* XXX should we set WB GO? */
++			dispc_ovl_enable(priv->dispc, OMAP_DSS_WB,
++					 false);
++			dev->state = WB_STATE_STOPPING;
++		} else {
++			wbcap_schedule_next_buffer(dev);
++		}
++		break;
++
++	case WB_STATE_STOPPING:
++		if (dev->cur_frm)
++			wbcap_process_buffer_complete(dev);
++
++		dev->state = WB_STATE_STOPPED;
++		atomic_dec(&dev->dev->irq_enabled);
++		dev->stopping = false;
++		wake_up(&dev->event);
++		break;
++
++	case WB_STATE_STOPPED:
++		log_err(dev, "ERROR: timer triggered in the stopped state. This shouldn't happen\n");
++		break;
++	}
++
++	return HRTIMER_NORESTART;
++}
++
++static void wbcap_handle_vsync(struct wbcap_dev *dev)
++{
++	/*
++	 * In writeback capture mode, the GO bit doesn't get reset
++	 * at the manager's VSYNC interrupt. It takes an extra
++	 * 'WBDELAYCOUNTER' time after VSYNC when the writeback
++	 * FIFOs are flushed and the shadow registers are taken in.
++	 * There isn't any DSS interrupt to notify this point in time.
++	 * The correct solution is to set a timer far enough that it
++	 * should cover the period defined by WBDELAYCOUNTER.
++	 * The max value allowed in WBDELAYCOUNTER is 255 which
++	 * correspond to 255 lines. So waiting anywhere from 1/4 to
++	 * 1/2 a frame (i.e. 2ms at 60  to 120 fps) should be safe
++	 * enough.
++	 */
++
++	hrtimer_start_range_ns(&dev->wbgo_timer, ms_to_ktime(3), 1000000,
++			       HRTIMER_MODE_REL);
++}
++
++void wbcap_irq(struct wbcap_dev *dev, u32 irqstatus)
++{
++	if (irqstatus & DISPC_IRQ_FRAMEDONEWB)
++		log_dbg(dev, "WB: FRAMEDONE\n");
++
++	if (irqstatus & DISPC_IRQ_WBBUFFEROVERFLOW)
++		log_err(dev, "WB: UNDERFLOW\n");
++
++	if (irqstatus & DISPC_IRQ_WBUNCOMPLETEERROR)
++		log_err(dev, "WB: WBUNCOMPLETEERROR\n");
++
++	if (is_input_irq_vsync_set(dev, irqstatus)) {
++		if (dev->field != V4L2_FIELD_NONE) {
++			if (irqstatus & DISPC_IRQ_EVSYNC_EVEN)
++				dev->field = V4L2_FIELD_BOTTOM;
++			else if (irqstatus & DISPC_IRQ_EVSYNC_ODD)
++				dev->field = V4L2_FIELD_TOP;
++		}
++		wbcap_handle_vsync(dev);
++	}
++}
++
++/*
++ * Setup the constraints of the queue: besides setting the number of planes
++ * per buffer and the size and allocation context of each plane, it also
++ * checks if sufficient buffers have been allocated. Usually 3 is a good
++ * minimum number: many DMA engines need a minimum of 2 buffers in the
++ * queue and you need to have another available for userspace processing.
++ */
++static int queue_setup(struct vb2_queue *vq,
++		       unsigned int *nbuffers, unsigned int *nplanes,
++		       unsigned int sizes[], struct device *alloc_devs[])
++{
++	int i;
++	struct wbcap_dev *wbcap = vb2_get_drv_priv(vq);
++	struct wb_q_data *q_data;
++
++	q_data = get_q_data(wbcap, vq->type);
++
++	if (!q_data)
++		return -EINVAL;
++
++	if (vq->num_buffers + *nbuffers < 2)
++		*nbuffers = 2 - vq->num_buffers;
++
++	*nplanes = q_data->format.fmt.pix_mp.num_planes;
++
++	for (i = 0; i < *nplanes; i++)
++		sizes[i] = q_data->format.fmt.pix_mp.plane_fmt[i].sizeimage;
++
++	log_dbg(wbcap, "get %d buffer(s) of size %d\n", *nbuffers,
++		sizes[LUMA_PLANE]);
++	if (*nplanes == 2)
++		log_dbg(wbcap, " and %d\n", sizes[CHROMA_PLANE]);
++
++	return 0;
++}
++
++/*
++ * Prepare the buffer for queueing to the DMA engine: check and set the
++ * payload size.
++ */
++static int buffer_prepare(struct vb2_buffer *vb)
++{
++	struct wbcap_dev *wbcap = vb2_get_drv_priv(vb->vb2_queue);
++	struct wb_q_data *q_data;
++	struct v4l2_pix_format_mplane *mp;
++	int i, num_planes;
++
++	q_data = get_q_data(wbcap, vb->vb2_queue->type);
++	if (!q_data)
++		return -EINVAL;
++	num_planes = q_data->format.fmt.pix_mp.num_planes;
++
++	for (i = 0; i < num_planes; i++) {
++		mp = &q_data->format.fmt.pix_mp;
++		if (vb2_plane_size(vb, i) < mp->plane_fmt[i].sizeimage) {
++			log_err(wbcap,
++				"data will not fit into plane (%lu < %lu)\n",
++				vb2_plane_size(vb, i),
++				(long)mp->plane_fmt[i].sizeimage);
++			return -EINVAL;
++		}
++		vb2_set_plane_payload(vb, i, mp->plane_fmt[i].sizeimage);
++	}
++
++	return 0;
++}
++
++/*
++ * Queue this buffer to the DMA engine.
++ */
++static void buffer_queue(struct vb2_buffer *vb)
++{
++	struct wbcap_dev *wbcap = vb2_get_drv_priv(vb->vb2_queue);
++	struct wb_buffer *buf = to_wb_buffer(vb);
++	unsigned long flags;
++
++	spin_lock_irqsave(&wbcap->qlock, flags);
++	list_add_tail(&buf->list, &wbcap->buf_list);
++
++	spin_unlock_irqrestore(&wbcap->qlock, flags);
++}
++
++static void return_all_buffers(struct wbcap_dev *wbcap,
++			       enum vb2_buffer_state state)
++{
++	struct wb_buffer *buf, *node;
++	unsigned long flags;
++
++	spin_lock_irqsave(&wbcap->qlock, flags);
++	list_for_each_entry_safe(buf, node, &wbcap->buf_list, list) {
++		vb2_buffer_done(&buf->vb.vb2_buf, state);
++		list_del(&buf->list);
++	}
++
++	if (wbcap->cur_frm) {
++		vb2_buffer_done(&wbcap->cur_frm->vb.vb2_buf, state);
++		wbcap->cur_frm = NULL;
++	}
++
++	if (wbcap->next_frm) {
++		vb2_buffer_done(&wbcap->next_frm->vb.vb2_buf, state);
++		wbcap->next_frm = NULL;
++	}
++
++	spin_unlock_irqrestore(&wbcap->qlock, flags);
++}
++
++/*
++ * Start streaming. First check if the minimum number of buffers have been
++ * queued. If not, then return -ENOBUFS and the vb2 framework will call
++ * this function again the next time a buffer has been queued until enough
++ * buffers are available to actually start the DMA engine.
++ */
++static int start_streaming(struct vb2_queue *vq, unsigned int count)
++{
++	struct wbcap_dev *wbcap = vb2_get_drv_priv(vq);
++	struct omap_drm_private *priv = wbcap->dev->drm_dev->dev_private;
++	struct drm_crtc *crtc;
++	int ret;
++	struct wb_q_data *q_data;
++
++	dispc_runtime_get(priv->dispc);
++
++	wbcap->sequence = 0;
++	q_data = get_q_data(wbcap, wbcap->queue.type);
++	if (!q_data) {
++		log_err(wbcap, "ERROR: getting q_data failed\n");
++		return_all_buffers(wbcap, VB2_BUF_STATE_QUEUED);
++		dispc_runtime_put(priv->dispc);
++		return -EINVAL;
++	}
++
++	if (q_data->format.fmt.pix_mp.field == V4L2_FIELD_ALTERNATE)
++		wbcap->field = V4L2_FIELD_TOP;
++	else
++		wbcap->field = V4L2_FIELD_NONE;
++
++	log_dbg(wbcap, "Input (%s) is %s : %s\n",
++		wb_inputs[wbcap->input].name,
++		is_input_enabled(wbcap) ? "enabled" : "disabled",
++		is_input_active(wbcap) ? "active" : "inactive");
++
++	if (!is_input_active(wbcap)) {
++		log_err(wbcap, "ERROR: Selected input (%s) is not active, bailing out\n",
++			wb_inputs[wbcap->input].name);
++		return_all_buffers(wbcap, VB2_BUF_STATE_QUEUED);
++		dispc_runtime_put(priv->dispc);
++		return -EINVAL;
++	}
++
++	/* Enable vsync irq on the input crtc */
++	crtc = priv->pipes[wb_inputs[wbcap->input].crtc_index].crtc;
++	ret = drm_crtc_vblank_get(crtc);
++	WARN_ON(ret != 0);
++
++	if (wbcap_schedule_next_buffer(wbcap)) {
++		return_all_buffers(wbcap, VB2_BUF_STATE_QUEUED);
++		dispc_runtime_put(priv->dispc);
++		return -EINVAL;
++	}
++
++	wbcap->state = WB_STATE_FIRST_FRAME;
++	atomic_inc(&wbcap->dev->irq_enabled);
++	return 0;
++}
++
++/*
++ * Stop the DMA engine. Any remaining buffers in the DMA queue are dequeued
++ * and passed on to the vb2 framework marked as STATE_ERROR.
++ */
++static void stop_streaming(struct vb2_queue *vq)
++{
++	struct wbcap_dev *wbcap = vb2_get_drv_priv(vq);
++	struct omap_drm_private *priv = wbcap->dev->drm_dev->dev_private;
++	struct drm_crtc *crtc;
++	int ret;
++
++	log_dbg(wbcap, "Stopping WB\n");
++	log_dbg(wbcap, "current state: %d\n", wbcap->state);
++
++	wbcap->stopping = true;
++	ret = wait_event_timeout(wbcap->event,
++				 !wbcap->stopping,
++				 msecs_to_jiffies(250));
++
++	log_dbg(wbcap, "Returning VB2 buffers\n");
++
++	if (dispc_wb_go_busy(priv->dispc))
++		log_err(wbcap, "WARNING, WB BUSY when stopping\n");
++
++	/* Release all active buffers */
++	return_all_buffers(wbcap, VB2_BUF_STATE_ERROR);
++
++	/* Disable vsync irq on the input crtc */
++	crtc = priv->pipes[wb_inputs[wbcap->input].crtc_index].crtc;
++	drm_crtc_vblank_put(crtc);
++
++	dispc_runtime_put(priv->dispc);
++}
++
++/*
++ * The vb2 queue ops. Note that since q->lock is set we can use the standard
++ * vb2_ops_wait_prepare/finish helper functions. If q->lock would be NULL,
++ * then this driver would have to provide these ops.
++ */
++static struct vb2_ops wbcap_qops = {
++	.queue_setup		= queue_setup,
++	.buf_prepare		= buffer_prepare,
++	.buf_queue		= buffer_queue,
++	.start_streaming	= start_streaming,
++	.stop_streaming		= stop_streaming,
++	.wait_prepare		= vb2_ops_wait_prepare,
++	.wait_finish		= vb2_ops_wait_finish,
++};
++
++/*
++ * Required ioctl querycap. Note that the version field is prefilled with
++ * the version of the kernel.
++ */
++static int wbcap_querycap(struct file *file, void *priv,
++			  struct v4l2_capability *cap)
++{
++	struct wbcap_dev *wbcap = video_drvdata(file);
++
++	strscpy(cap->driver, WBCAP_MODULE_NAME, sizeof(cap->driver));
++	strscpy(cap->card, WBCAP_MODULE_NAME, sizeof(cap->card));
++	snprintf(cap->bus_info, sizeof(cap->bus_info), "platform:%s",
++		 wbcap->v4l2_dev.name);
++	return 0;
++}
++
++/*
++ * Helper function to check and correct struct v4l2_pix_format. It's used
++ * not only in VIDIOC_TRY/S_FMT, but also elsewhere if changes to the SDTV
++ * standard, HDTV timings or the video input would require updating the
++ * current format.
++ */
++static int wbcap_fill_pix_format(struct wbcap_dev *wbcap,
++				 struct v4l2_format *f)
++{
++	struct wb_fmt *fmt = find_format(f);
++	struct v4l2_pix_format_mplane *pix = &f->fmt.pix_mp;
++	struct v4l2_plane_pix_format *plane_fmt;
++	unsigned int w_align;
++	int i, depth, depth_bytes;
++
++	if (!fmt) {
++		log_dbg(wbcap, "Fourcc format (0x%08x) invalid.\n",
++			pix->pixelformat);
++		fmt = &wb_formats[1];
++	}
++
++	/* we only allow V4L2_FIELD_NONE or V4L2_FIELD_ALTERNATE */
++	if (pix->field != V4L2_FIELD_NONE &&
++	    pix->field != V4L2_FIELD_ALTERNATE)
++		pix->field = V4L2_FIELD_NONE;
++
++	depth = fmt->depth[LUMA_PLANE];
++
++	/*
++	 * The line stride needs to be even is even.
++	 * Special case is with YUV422 interleaved format an even number
++	 * of pixels is required also.
++	 */
++	depth_bytes = depth >> 3;
++
++	w_align = 0;
++	if ((depth_bytes == 3) || (depth_bytes == 1))
++		w_align = 1;
++	else if ((depth_bytes == 2) &&
++		 (fmt->fourcc == V4L2_PIX_FMT_YUYV ||
++		  fmt->fourcc == V4L2_PIX_FMT_UYVY))
++		w_align = 1;
++
++	v4l_bound_align_image(&pix->width, MIN_W, MAX_W, w_align,
++			      &pix->height, MIN_H, MAX_H, H_ALIGN,
++			      S_ALIGN);
++	pix->num_planes = fmt->coplanar ? 2 : 1;
++	pix->pixelformat = fmt->fourcc;
++
++	pix->colorspace = V4L2_COLORSPACE_SRGB;
++	pix->ycbcr_enc = V4L2_YCBCR_ENC_DEFAULT;
++	pix->quantization = V4L2_QUANTIZATION_DEFAULT;
++	pix->xfer_func = V4L2_XFER_FUNC_DEFAULT;
++
++	memset(pix->reserved, 0, sizeof(pix->reserved));
++	for (i = 0; i < pix->num_planes; i++) {
++		plane_fmt = &pix->plane_fmt[i];
++		depth = fmt->depth[i];
++
++		if (i == LUMA_PLANE)
++			plane_fmt->bytesperline = pix->width * depth / 8;
++		else
++			plane_fmt->bytesperline = pix->width;
++
++		plane_fmt->sizeimage = (pix->height * pix->width *
++					depth) / 8;
++
++		if (fmt->fourcc == V4L2_PIX_FMT_NV12) {
++			/*
++			 * Since we are using a single plane buffer
++			 * we need to adjust the reported sizeimage
++			 * to include the colocated UV part.
++			 */
++			plane_fmt->sizeimage += (pix->height / 2 *
++				plane_fmt->bytesperline);
++		}
++
++		memset(plane_fmt->reserved, 0, sizeof(plane_fmt->reserved));
++	}
++
++	return 0;
++}
++
++static int wbcap_try_fmt_vid_cap(struct file *file, void *priv,
++				 struct v4l2_format *f)
++{
++	struct wbcap_dev *wbcap = video_drvdata(file);
++	struct omap_drm_private *drmpriv = wbcap->dev->drm_dev->dev_private;
++	struct drm_crtc *crtc;
++	struct videomode *ct;
++
++	log_dbg(wbcap, "requested fourcc:%4.4s size: %dx%d\n",
++		(char *)&f->fmt.pix_mp.pixelformat,
++		f->fmt.pix_mp.width, f->fmt.pix_mp.height);
++
++	/*
++	 * Scaling currently does not work properly for Capture mode.
++	 * So we are temporarily forcing the frame size to be the
++	 * same as the source crtc for now.
++	 */
++	crtc = drmpriv->pipes[wb_inputs[wbcap->input].crtc_index].crtc;
++	ct = omap_crtc_timings(crtc);
++
++	f->fmt.pix.width = ct->hactive;
++	f->fmt.pix.height = ct->vactive;
++
++	if (ct->flags & DISPLAY_FLAGS_INTERLACED) {
++		f->fmt.pix.height /= 2;
++		f->fmt.pix_mp.field = V4L2_FIELD_ALTERNATE;
++	}
++
++	log_dbg(wbcap, "replied fourcc:%4.4s size: %dx%d\n",
++		(char *)&f->fmt.pix_mp.pixelformat,
++		f->fmt.pix_mp.width, f->fmt.pix_mp.height);
++
++	return wbcap_fill_pix_format(wbcap, f);
++}
++
++static int wbcap_s_fmt_vid_cap(struct file *file, void *priv,
++			       struct v4l2_format *f)
++{
++	struct wbcap_dev *wbcap = video_drvdata(file);
++	int ret;
++	struct wb_q_data *q_data;
++
++	log_dbg(wbcap, "type:%d\n", f->type);
++
++	ret = wbcap_try_fmt_vid_cap(file, priv, f);
++	if (ret)
++		return ret;
++
++	q_data = get_q_data(wbcap, f->type);
++	if (!q_data)
++		return -EINVAL;
++
++	/*
++	 * It is not allowed to change the format while buffers for use with
++	 * streaming have already been allocated.
++	 */
++	if (vb2_is_busy(&wbcap->queue))
++		return -EBUSY;
++
++	q_data->format = *f;
++	q_data->fmt = find_format(f);
++
++	log_dbg(wbcap, "Setting format for type %d, %dx%d, fmt: %4.4s bpl_y %d",
++		f->type, f->fmt.pix_mp.width, f->fmt.pix_mp.height,
++		(char *)&f->fmt.pix_mp.pixelformat,
++		f->fmt.pix_mp.plane_fmt[LUMA_PLANE].bytesperline);
++	if (f->fmt.pix_mp.num_planes == 2)
++		log_dbg(wbcap, " bpl_uv %d\n",
++			f->fmt.pix_mp.plane_fmt[CHROMA_PLANE].bytesperline);
++
++	return 0;
++}
++
++static int wbcap_g_fmt_vid_cap(struct file *file, void *priv,
++			       struct v4l2_format *f)
++{
++	struct wbcap_dev *wbcap = video_drvdata(file);
++	struct wb_q_data *q_data;
++
++	log_dbg(wbcap, "type:%d\n", f->type);
++
++	q_data = get_q_data(wbcap, f->type);
++	if (!q_data)
++		return -EINVAL;
++
++	*f = q_data->format;
++	return 0;
++}
++
++static int wbcap_enum_fmt_vid_cap(struct file *file, void *priv,
++				  struct v4l2_fmtdesc *f)
++{
++	if (f->index >= num_wb_formats)
++		return -EINVAL;
++
++	f->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
++	f->pixelformat = wb_formats[f->index].fourcc;
++	return 0;
++}
++
++static int wbcap_enum_input(struct file *file, void *priv,
++			    struct v4l2_input *i)
++{
++	if (i->index >= num_wb_input)
++		return -EINVAL;
++
++	i->type = V4L2_INPUT_TYPE_CAMERA;
++	strlcpy(i->name, wb_inputs[i->index].name, sizeof(i->name));
++	return 0;
++}
++
++static int wbcap_s_input(struct file *file, void *priv, unsigned int i)
++{
++	struct wbcap_dev *wbcap = video_drvdata(file);
++	struct wb_q_data *q_data;
++
++	log_dbg(wbcap, "%d\n", i);
++
++	q_data = get_q_data(wbcap, wbcap->queue.type);
++	if (!q_data)
++		return -EINVAL;
++
++	if (i >= num_wb_input)
++		return -EINVAL;
++
++	/*
++	 * Changing the input implies a format change, which is not allowed
++	 * while buffers for use with streaming have already been allocated.
++	 */
++	if (vb2_is_busy(&wbcap->queue))
++		return -EBUSY;
++
++	wbcap->input = i;
++
++	/* Update the internal format to match the selected input */
++	wbcap_try_fmt_vid_cap(file, priv, &q_data->format);
++	return 0;
++}
++
++static int wbcap_g_input(struct file *file, void *priv, unsigned int *i)
++{
++	struct wbcap_dev *wbcap = video_drvdata(file);
++
++	log_dbg(wbcap, "%d\n", wbcap->input);
++
++	*i = wbcap->input;
++	return 0;
++}
++
++/*
++ * File operations
++ */
++static int wbcap_open(struct file *file)
++{
++	struct wbcap_dev *dev = video_drvdata(file);
++	int ret;
++
++	log_dbg(dev, "enter\n");
++
++	if (mutex_lock_interruptible(&dev->dev->lock)) {
++		ret = -ERESTARTSYS;
++		goto unlock;
++	}
++
++	if ((dev->dev->mode != OMAP_WB_NOT_CONFIGURED) &&
++	    (dev->dev->mode != OMAP_WB_CAPTURE_MGR)) {
++		/* WB is already open for other modes */
++		ret = -EBUSY;
++		goto unlock;
++	}
++
++	ret = v4l2_fh_open(file);
++	if (ret) {
++		log_err(dev, "v4l2_fh_open failed\n");
++		goto unlock;
++	}
++
++	if (v4l2_fh_is_singular_file(file))
++		dev->dev->mode = OMAP_WB_CAPTURE_MGR;
++
++unlock:
++	mutex_unlock(&dev->dev->lock);
++	return ret;
++}
++
++static int wbcap_release(struct file *file)
++{
++	struct wbcap_dev *dev = video_drvdata(file);
++	bool fh_singular;
++	int ret;
++
++	log_dbg(dev, "releasing\n");
++
++	mutex_lock(&dev->dev->lock);
++
++	/* Save the singular status before we call the clean-up helper */
++	fh_singular = v4l2_fh_is_singular_file(file);
++
++	/* the release helper will cleanup any on-going streaming */
++	ret = _vb2_fop_release(file, NULL);
++
++	if (fh_singular)
++		dev->dev->mode = OMAP_WB_NOT_CONFIGURED;
++
++	mutex_unlock(&dev->dev->lock);
++
++	return ret;
++}
++
++/*
++ * The set of all supported ioctls. Note that all the streaming ioctls
++ * use the vb2 helper functions that take care of all the locking and
++ * that also do ownership tracking (i.e. only the filehandle that requested
++ * the buffers can call the streaming ioctls, all other filehandles will
++ * receive -EBUSY if they attempt to call the same streaming ioctls).
++ *
++ * The last three ioctls also use standard helper functions: these implement
++ * standard behavior for drivers with controls.
++ */
++static const struct v4l2_ioctl_ops wbcap_ioctl_ops = {
++	.vidioc_querycap = wbcap_querycap,
++	.vidioc_try_fmt_vid_cap_mplane = wbcap_try_fmt_vid_cap,
++	.vidioc_s_fmt_vid_cap_mplane = wbcap_s_fmt_vid_cap,
++	.vidioc_g_fmt_vid_cap_mplane = wbcap_g_fmt_vid_cap,
++	.vidioc_enum_fmt_vid_cap = wbcap_enum_fmt_vid_cap,
++
++	.vidioc_enum_input = wbcap_enum_input,
++	.vidioc_g_input = wbcap_g_input,
++	.vidioc_s_input = wbcap_s_input,
++
++	.vidioc_reqbufs = vb2_ioctl_reqbufs,
++	.vidioc_create_bufs = vb2_ioctl_create_bufs,
++	.vidioc_prepare_buf = vb2_ioctl_prepare_buf,
++	.vidioc_querybuf = vb2_ioctl_querybuf,
++	.vidioc_qbuf = vb2_ioctl_qbuf,
++	.vidioc_dqbuf = vb2_ioctl_dqbuf,
++	.vidioc_expbuf = vb2_ioctl_expbuf,
++	.vidioc_streamon = vb2_ioctl_streamon,
++	.vidioc_streamoff = vb2_ioctl_streamoff,
++
++	.vidioc_log_status = v4l2_ctrl_log_status,
++	.vidioc_subscribe_event = v4l2_ctrl_subscribe_event,
++	.vidioc_unsubscribe_event = v4l2_event_unsubscribe,
++};
++
++/*
++ * The set of file operations. Note that all these ops are standard core
++ * helper functions.
++ */
++static const struct v4l2_file_operations wbcap_fops = {
++	.owner = THIS_MODULE,
++	.open = wbcap_open,
++	.release = wbcap_release,
++	.unlocked_ioctl = video_ioctl2,
++	.read = vb2_fop_read,
++	.mmap = vb2_fop_mmap,
++	.poll = vb2_fop_poll,
++};
++
++/*
++ * The initial setup of this device instance. Note that the initial state of
++ * the driver should be complete. So the initial format, standard, timings
++ * and video input should all be initialized to some reasonable value.
++ */
++int wbcap_init(struct wb_dev *dev)
++{
++	struct wbcap_dev *wbcap;
++	struct video_device *vdev;
++	struct vb2_queue *q;
++	struct wb_q_data *q_data;
++	int ret;
++
++	if (!dev)
++		return -ENOMEM;
++
++	/* Allocate a new instance */
++	wbcap = devm_kzalloc(dev->drm_dev->dev, sizeof(*wbcap), GFP_KERNEL);
++	if (!wbcap)
++		return -ENOMEM;
++
++	dev->cap = wbcap;
++	wbcap->dev = dev;
++
++	/* Fill in the initial format-related settings */
++	q_data = &wbcap->q_data[Q_DATA_DST];
++	q_data->fmt = &wb_formats[1];
++	q_data->format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
++	q_data->format.fmt.pix_mp.pixelformat = q_data->fmt->fourcc;
++	q_data->format.fmt.pix_mp.width = 1920;
++	q_data->format.fmt.pix_mp.height = 1080;
++	wbcap_fill_pix_format(wbcap, &q_data->format);
++
++	/* Initialize the top-level structure */
++	strlcpy(wbcap->v4l2_dev.name, WBCAP_MODULE_NAME,
++		sizeof(wbcap->v4l2_dev.name));
++	ret = v4l2_device_register(dev->drm_dev->dev, &wbcap->v4l2_dev);
++	if (ret)
++		return ret;
++
++	/*
++	 * This lock is now created by the main level.
++	 * We might need one per sub structure in the future
++	 *
++	 *  mutex_init(&dev->lock);
++	 */
++
++	/* Initialize the vb2 queue */
++	q = &wbcap->queue;
++	q->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
++	q->io_modes = VB2_MMAP | VB2_DMABUF | VB2_READ;
++	q->drv_priv = wbcap;
++	q->buf_struct_size = sizeof(struct wb_buffer);
++	q->ops = &wbcap_qops;
++	q->mem_ops = &vb2_dma_contig_memops;
++	q->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC;
++	q->dev = wbcap->v4l2_dev.dev;
++
++	/*
++	 * Assume that this DMA engine needs to have at least two buffers
++	 * available before it can be started. The start_streaming() op
++	 * won't be called until at least this many buffers are queued up.
++	 */
++	q->min_buffers_needed = 2;
++	/*
++	 * The serialization lock for the streaming ioctls. This is the same
++	 * as the main serialization lock, but if some of the non-streaming
++	 * ioctls could take a long time to execute, then you might want to
++	 * have a different lock here to prevent VIDIOC_DQBUF from being
++	 * blocked while waiting for another action to finish. This is
++	 * generally not needed for PCI devices, but USB devices usually do
++	 * want a separate lock here.
++	 */
++	q->lock = &dev->lock;
++	/*
++	 * Since this driver can only do 32-bit DMA we must make sure that
++	 * the vb2 core will allocate the buffers in 32-bit DMA memory.
++	 */
++	q->gfp_flags = GFP_DMA32;
++	ret = vb2_queue_init(q);
++	if (ret)
++		goto free_hdl;
++
++	INIT_LIST_HEAD(&wbcap->buf_list);
++	spin_lock_init(&wbcap->qlock);
++
++	/* Initialize the video_device structure */
++	vdev = &wbcap->vdev;
++	strlcpy(vdev->name, WBCAP_MODULE_NAME, sizeof(vdev->name));
++	/*
++	 * There is nothing to clean up, so release is set to an empty release
++	 * function. The release callback must be non-NULL.
++	 */
++	vdev->release = video_device_release_empty;
++	vdev->fops = &wbcap_fops,
++	vdev->ioctl_ops = &wbcap_ioctl_ops,
++	vdev->device_caps = V4L2_CAP_VIDEO_CAPTURE_MPLANE | V4L2_CAP_READWRITE |
++			    V4L2_CAP_STREAMING;
++	/*
++	 * The main serialization lock. All ioctls are serialized by this
++	 * lock. Exception: if q->lock is set, then the streaming ioctls
++	 * are serialized by that separate lock.
++	 */
++	vdev->lock = &dev->lock;
++	vdev->queue = q;
++	vdev->v4l2_dev = &wbcap->v4l2_dev;
++	video_set_drvdata(vdev, wbcap);
++
++	hrtimer_init(&wbcap->wbgo_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	wbcap->wbgo_timer.function = wbcap_wbgo_timer;
++
++	init_waitqueue_head(&wbcap->event);
++	wbcap->stopping = false;
++
++	build_input_table(wbcap);
++
++	ret = video_register_device(vdev, VFL_TYPE_VIDEO, 11);
++	if (ret)
++		goto free_hdl;
++
++	log_dbg(wbcap, "Device registered as %s\n",
++		video_device_node_name(vdev));
++	return 0;
++
++free_hdl:
++	v4l2_device_unregister(&wbcap->v4l2_dev);
++	return ret;
++}
++
++void wbcap_cleanup(struct wb_dev *dev)
++{
++	log_dbg(dev, "Cleanup WB Capture\n");
++
++	video_unregister_device(&dev->cap->vdev);
++	v4l2_device_unregister(&dev->cap->v4l2_dev);
++}
+diff --git a/drivers/gpu/drm/omapdrm/omap_wb_m2m.c b/drivers/gpu/drm/omapdrm/omap_wb_m2m.c
+new file mode 100644
+index 000000000..3021ee080
+--- /dev/null
++++ b/drivers/gpu/drm/omapdrm/omap_wb_m2m.c
+@@ -0,0 +1,1198 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2015-2018 Texas Instruments Incorporated -  http://www.ti.com/
++ * Benoit Parrot <bparrot@ti.com>
++ *
++ * Based on the virtual v4l2-mem2mem example device
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <media/v4l2-mem2mem.h>
++
++#include "omap_wb.h"
++
++MODULE_DESCRIPTION("TI OMAP WB M2M driver");
++MODULE_AUTHOR("Benoit Parrot <bparrot@ti.com>");
++MODULE_LICENSE("GPL v2");
++
++/*
++ * M2M devices get 2 queues.
++ * Return the queue given the type.
++ */
++static struct wb_q_data *get_q_data(struct wbm2m_ctx *ctx,
++				    enum v4l2_buf_type type)
++{
++	switch (type) {
++	case V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE:
++	case V4L2_BUF_TYPE_VIDEO_OUTPUT:
++		return &ctx->q_data[Q_DATA_SRC];
++	case V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE:
++	case V4L2_BUF_TYPE_VIDEO_CAPTURE:
++		return &ctx->q_data[Q_DATA_DST];
++	default:
++		return NULL;
++	}
++	return NULL;
++}
++
++static bool wbm2m_convert(struct wbm2m_dev *dev, enum omap_plane_id src_plane,
++			  const struct omap_overlay_info *src_info,
++			  const struct omap_dss_writeback_info *wb_info)
++{
++	struct omap_drm_private *priv = dev->dev->drm_dev->dev_private;
++	enum dss_writeback_channel wb_channel;
++	struct videomode t = { 0 };
++	int r;
++
++	t.hactive = src_info->out_width;
++	t.vactive = src_info->out_height;
++
++	/* configure input */
++
++	r = dispc_ovl_setup(priv->dispc, src_plane, src_info, &t,
++			    true, OMAP_DSS_CHANNEL_WB);
++	if (r)
++		return false;
++
++	dispc_ovl_enable(priv->dispc, src_plane, true);
++
++	/* configure output */
++
++	switch (src_plane) {
++	case OMAP_DSS_GFX:
++		wb_channel = DSS_WB_OVL0; break;
++	case OMAP_DSS_VIDEO1:
++		wb_channel = DSS_WB_OVL1; break;
++	case OMAP_DSS_VIDEO2:
++		wb_channel = DSS_WB_OVL2; break;
++	case OMAP_DSS_VIDEO3:
++		wb_channel = DSS_WB_OVL3; break;
++	default:
++		/*
++		 * if src_plane is not valid it should have been flagged
++		 * during the dispc_ovl_setup() step above. Let's set a default
++		 * at any rate.
++		 */
++		wb_channel = DSS_WB_OVL3; break;
++	}
++
++	r = dispc_wb_setup(priv->dispc, wb_info, true, &t,
++			   wb_channel);
++	if (r) {
++		dispc_ovl_enable(priv->dispc, src_plane, false);
++		return false;
++	}
++
++	dispc_ovl_enable(priv->dispc, OMAP_DSS_WB, true);
++
++	return true;
++}
++
++/*
++ * mem2mem callbacks
++ */
++
++/**
++ * job_ready() - check whether an instance is ready to be scheduled to run
++ */
++static int job_ready(void *priv)
++{
++	struct wbm2m_ctx *ctx = priv;
++
++	/*
++	 * This check is needed as this might be called directly from driver
++	 * When called by m2m framework, this will always satisy, but when
++	 * called from wbm2m_irq, this might fail.
++	 * (src stream with zero buffers)
++	 */
++	if (v4l2_m2m_num_src_bufs_ready(ctx->fh.m2m_ctx) <= 0 ||
++	    v4l2_m2m_num_dst_bufs_ready(ctx->fh.m2m_ctx) <= 0)
++		return 0;
++
++	return 1;
++}
++
++static void job_abort(void *priv)
++{
++	struct wbm2m_ctx *ctx = priv;
++
++	/* Will cancel the transaction in the next interrupt handler */
++	ctx->aborting = 1;
++
++	log_dbg(ctx->dev, "Aborting transaction\n");
++	v4l2_m2m_job_finish(ctx->dev->m2m_dev, ctx->fh.m2m_ctx);
++}
++
++/* device_run() - prepares and starts the device
++ *
++ * This function is only called when both the source and destination
++ * buffers are in place.
++ */
++static void device_run(void *priv)
++{
++	struct wbm2m_ctx *ctx = priv;
++	struct wbm2m_dev *dev = ctx->dev;
++	struct wb_q_data *d_q_data = &ctx->q_data[Q_DATA_DST];
++	struct wb_q_data *s_q_data = &ctx->q_data[Q_DATA_SRC];
++	struct vb2_buffer *s_vb, *d_vb;
++	struct vb2_v4l2_buffer *src_vb, *dst_vb;
++	dma_addr_t src_dma_addr[2] = {0, 0};
++	dma_addr_t dst_dma_addr[2] = {0, 0};
++	struct omap_overlay_info src_info = { 0 };
++	struct omap_dss_writeback_info wb_info = { 0 };
++	struct v4l2_pix_format_mplane *spix, *dpix;
++	struct v4l2_rect *srect, *drect;
++	u32 stride, depth;
++	bool ok;
++
++	src_vb = v4l2_m2m_next_src_buf(ctx->fh.m2m_ctx);
++	if (!src_vb) {
++		log_err(dev, "getting next source buffer failed\n");
++		return;
++	}
++
++	s_vb = &src_vb->vb2_buf;
++	if (!s_vb) {
++		log_err(dev, "getting next src vb2_buf addr failed\n");
++		return;
++	}
++
++	dst_vb = v4l2_m2m_next_dst_buf(ctx->fh.m2m_ctx);
++	if (!dst_vb) {
++		log_err(dev, "getting next dest buffer failed\n");
++		return;
++	}
++
++	d_vb = &dst_vb->vb2_buf;
++	if (!d_vb) {
++		log_err(dev, "getting next dest vb2_buf addr failed\n");
++		return;
++	}
++
++	srect = &s_q_data->c_rect;
++	spix = &s_q_data->format.fmt.pix_mp;
++	src_dma_addr[0] = vb2_dma_contig_plane_dma_addr(s_vb, 0);
++	if (spix->num_planes == 2)
++		src_dma_addr[1] = vb2_dma_contig_plane_dma_addr(s_vb, 1);
++	else if (spix->pixelformat == V4L2_PIX_FMT_NV12)
++		src_dma_addr[1] = src_dma_addr[0] +
++			(spix->plane_fmt[0].bytesperline * spix->height);
++	if (!src_dma_addr[0]) {
++		log_err(dev,
++			"acquiring source buffer(%d) dma_addr failed\n",
++			s_vb->index);
++		return;
++	}
++
++	drect = &d_q_data->c_rect;
++	dpix = &d_q_data->format.fmt.pix_mp;
++	dst_dma_addr[0] = vb2_dma_contig_plane_dma_addr(d_vb, 0);
++	if (dpix->num_planes == 2)
++		dst_dma_addr[1] = vb2_dma_contig_plane_dma_addr(d_vb, 1);
++	else if (dpix->pixelformat == V4L2_PIX_FMT_NV12)
++		dst_dma_addr[1] = dst_dma_addr[0] +
++			(dpix->plane_fmt[0].bytesperline * dpix->height);
++	if (!dst_dma_addr[0]) {
++		log_err(dev,
++			"acquiring destination buffer(%d) dma_addr failed\n",
++			d_vb->index);
++		return;
++	}
++
++	/* fill source DSS info */
++	src_info.paddr = (u32)src_dma_addr[0];
++	src_info.p_uv_addr = (u32)src_dma_addr[1];
++
++	/* update addr based on cropping window */
++	stride = spix->plane_fmt[0].bytesperline;
++	depth = s_q_data->fmt->depth[0];
++	src_info.paddr += srect->top * stride + (srect->left * depth / 8);
++
++	if (src_info.p_uv_addr) {
++		u32 top = srect->top;
++
++		if (spix->pixelformat == V4L2_PIX_FMT_NV12 ||
++		    spix->pixelformat == V4L2_PIX_FMT_NV12M) {
++			top >>= 1;
++			depth = 8;
++		}
++		src_info.p_uv_addr += top * stride + (srect->left * depth / 8);
++	}
++
++	src_info.screen_width = spix->plane_fmt[0].bytesperline /
++				(s_q_data->fmt->depth[0] / 8);
++
++	src_info.width = srect->width;
++	src_info.height = srect->height;
++
++	src_info.pos_x = 0;
++	src_info.pos_y = 0;
++	src_info.out_width = srect->width;
++	src_info.out_height = srect->height;
++
++	src_info.fourcc = omap_wb_fourcc_v4l2_to_drm(spix->pixelformat);
++	src_info.global_alpha = 0xff;
++
++	src_info.rotation = DRM_MODE_ROTATE_0;
++	src_info.rotation_type = OMAP_DSS_ROT_NONE;
++
++	log_dbg(dev, "SRC: ctx %pa buf_index %d %dx%d, sw %d\n",
++		&ctx, s_vb->index,
++		src_info.width, src_info.height, src_info.screen_width);
++
++	/* fill WB DSS info */
++	wb_info.paddr = (u32)dst_dma_addr[0];
++	wb_info.p_uv_addr = (u32)dst_dma_addr[1];
++
++	wb_info.buf_width = dpix->plane_fmt[0].bytesperline /
++			    (d_q_data->fmt->depth[0] / 8);
++
++	/* update addr based on compose window */
++	stride = dpix->plane_fmt[0].bytesperline;
++	depth = d_q_data->fmt->depth[0];
++	wb_info.paddr += drect->top * stride + (drect->left * depth / 8);
++
++	if (wb_info.p_uv_addr) {
++		u32 top = drect->top;
++
++		if (dpix->pixelformat == V4L2_PIX_FMT_NV12 ||
++		    dpix->pixelformat == V4L2_PIX_FMT_NV12M) {
++			top >>= 1;
++			depth = 8;
++		}
++		wb_info.p_uv_addr += top * stride + (drect->left * depth / 8);
++	}
++
++	wb_info.width = drect->width;
++	wb_info.height = drect->height;
++	wb_info.fourcc = omap_wb_fourcc_v4l2_to_drm(dpix->pixelformat);
++	wb_info.pre_mult_alpha = 1;
++
++	wb_info.rotation = DRM_MODE_ROTATE_0;
++	wb_info.rotation_type = OMAP_DSS_ROT_NONE;
++
++	log_dbg(dev, "DST: ctx %pa buf_index %d %dx%d, sw %d\n",
++		&ctx, d_vb->index,
++		wb_info.width, wb_info.height, wb_info.buf_width);
++
++	ok = wbm2m_convert(dev, omap_plane_id_wb(dev->plane), &src_info,
++			   &wb_info);
++	if (!ok) {
++		log_err(dev,
++			"Conversion setup failed, check source and destination parameters\n"
++			);
++		log_err(dev, "\tSRC: %dx%d, fmt: %4.4s sw %d\n",
++			src_info.width, src_info.height,
++			(char *)&spix->pixelformat,
++			src_info.screen_width);
++		log_err(dev, "\tDST: %dx%d, fmt: %4.4s sw %d\n",
++			wb_info.width, wb_info.height,
++			(char *)&dpix->pixelformat,
++			wb_info.buf_width);
++		return;
++	}
++}
++
++void wbm2m_irq(struct wbm2m_dev *wbm2m, u32 irqstatus)
++{
++	struct wbm2m_ctx *ctx;
++	struct vb2_v4l2_buffer *s_vb, *d_vb;
++	unsigned long flags;
++
++	if (irqstatus & DISPC_IRQ_WBBUFFEROVERFLOW)
++		log_err(wbm2m, "WB: UNDERFLOW\n");
++
++	if (irqstatus & DISPC_IRQ_WBUNCOMPLETEERROR)
++		log_err(wbm2m, "WB: DISPC_IRQ_WBUNCOMPLETEERROR\n");
++
++	/* If DISPC_IRQ_FRAMEDONEWB is not set then we are done */
++	if (!(irqstatus & DISPC_IRQ_FRAMEDONEWB))
++		goto handled;
++
++	log_dbg(wbm2m, "WB: FRAMEDONE\n");
++
++	ctx = v4l2_m2m_get_curr_priv(wbm2m->m2m_dev);
++	if (!ctx) {
++		log_err(wbm2m, "instance released before end of transaction\n");
++		goto handled;
++	}
++
++	log_dbg(ctx->dev, "ctx %pa\n", &ctx);
++
++	s_vb = v4l2_m2m_src_buf_remove(ctx->fh.m2m_ctx);
++	d_vb = v4l2_m2m_dst_buf_remove(ctx->fh.m2m_ctx);
++	if (!s_vb || !d_vb) {
++		log_err(wbm2m, "source or dest vb pointer is NULL!!");
++		goto handled;
++	}
++
++	d_vb->flags = s_vb->flags;
++
++	d_vb->vb2_buf.timestamp = s_vb->vb2_buf.timestamp;
++	if (s_vb->flags & V4L2_BUF_FLAG_TIMECODE)
++		d_vb->timecode = s_vb->timecode;
++
++	d_vb->sequence = ctx->sequence;
++	s_vb->sequence = ctx->sequence;
++	log_dbg(wbm2m, "ctx %pa sequence %d\n",
++		&ctx, ctx->sequence);
++
++	d_vb->field = V4L2_FIELD_NONE;
++	ctx->sequence++;
++
++	spin_lock_irqsave(&wbm2m->lock, flags);
++
++	v4l2_m2m_buf_done(s_vb, VB2_BUF_STATE_DONE);
++	v4l2_m2m_buf_done(d_vb, VB2_BUF_STATE_DONE);
++
++	spin_unlock_irqrestore(&wbm2m->lock, flags);
++
++	v4l2_m2m_job_finish(wbm2m->m2m_dev, ctx->fh.m2m_ctx);
++handled:
++	return;
++}
++
++/*
++ * video ioctls
++ */
++static int wbm2m_querycap(struct file *file, void *priv,
++			  struct v4l2_capability *cap)
++{
++	struct wbm2m_ctx *ctx = file->private_data;
++
++	strscpy(cap->driver, WBM2M_MODULE_NAME, sizeof(cap->driver));
++	strscpy(cap->card, WBM2M_MODULE_NAME, sizeof(cap->card));
++	snprintf(cap->bus_info, sizeof(cap->bus_info), "platform:%s",
++		 ctx->dev->v4l2_dev.name);
++	return 0;
++}
++
++static int wbm2m_enum_fmt(struct file *file, void *priv,
++			  struct v4l2_fmtdesc *f)
++{
++	if (f->index >= num_wb_formats)
++		return -EINVAL;
++
++	f->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
++	f->pixelformat = wb_formats[f->index].fourcc;
++	return 0;
++}
++
++static int wbm2m_g_fmt(struct file *file, void *priv, struct v4l2_format *f)
++{
++	struct wbm2m_ctx *ctx = file->private_data;
++	struct vb2_queue *vq;
++	struct wb_q_data *q_data;
++	struct v4l2_pix_format_mplane *pix = &f->fmt.pix_mp;
++
++	vq = v4l2_m2m_get_vq(ctx->fh.m2m_ctx, f->type);
++	if (!vq)
++		return -EINVAL;
++
++	q_data = get_q_data(ctx, f->type);
++	if (!q_data)
++		return -EINVAL;
++
++	*f = q_data->format;
++
++	if (!V4L2_TYPE_IS_OUTPUT(f->type)) {
++		struct wb_q_data *s_q_data;
++
++		/* get colorspace from the source queue */
++		s_q_data = get_q_data(ctx, V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE);
++
++		f->fmt.pix_mp.colorspace =
++			s_q_data->format.fmt.pix_mp.colorspace;
++	}
++
++	log_dbg(ctx->dev, "ctx %pa type %d, %dx%d, fmt: %4.4s bpl_y %d",
++		&ctx, f->type, pix->width, pix->height,
++		(char *)&pix->pixelformat,
++		pix->plane_fmt[LUMA_PLANE].bytesperline);
++	if (pix->num_planes == 2)
++		log_dbg(ctx->dev, " bpl_uv %d\n",
++			pix->plane_fmt[CHROMA_PLANE].bytesperline);
++
++	return 0;
++}
++
++static int wbm2m_try_fmt(struct file *file, void *priv, struct v4l2_format *f)
++{
++	struct wbm2m_ctx *ctx = file->private_data;
++	struct wb_fmt *fmt = find_format(f);
++	struct v4l2_pix_format_mplane *pix = &f->fmt.pix_mp;
++	struct v4l2_plane_pix_format *plane_fmt;
++	unsigned int w_align;
++	int i, depth, depth_bytes;
++
++	if (!fmt) {
++		log_dbg(ctx->dev, "Fourcc format (0x%08x) invalid.\n",
++			pix->pixelformat);
++		fmt = &wb_formats[1];
++	}
++
++	/* we only allow V4L2_FIELD_NONE */
++	if (pix->field != V4L2_FIELD_NONE)
++		pix->field = V4L2_FIELD_NONE;
++
++	depth = fmt->depth[LUMA_PLANE];
++
++	/*
++	 * The line stride needs to be even is even.
++	 * Special case is with YUV422 interleaved format an even number
++	 * of pixels is required also.
++	 */
++	depth_bytes = depth >> 3;
++
++	w_align = 0;
++	if ((depth_bytes == 3) || (depth_bytes == 1))
++		w_align = 1;
++	else if ((depth_bytes == 2) &&
++		 (fmt->fourcc == V4L2_PIX_FMT_YUYV ||
++		  fmt->fourcc == V4L2_PIX_FMT_UYVY))
++		w_align = 1;
++
++	v4l_bound_align_image(&pix->width, MIN_W, MAX_W, w_align,
++			      &pix->height, MIN_H, MAX_H, H_ALIGN,
++			      S_ALIGN);
++	pix->num_planes = fmt->coplanar ? 2 : 1;
++	pix->pixelformat = fmt->fourcc;
++
++	/* Probably need something better here */
++	if (!pix->colorspace) {
++		if (fmt->fourcc == V4L2_PIX_FMT_RGB24 ||
++		    fmt->fourcc == V4L2_PIX_FMT_BGR24 ||
++		    fmt->fourcc == V4L2_PIX_FMT_RGB32 ||
++		    fmt->fourcc == V4L2_PIX_FMT_BGR32) {
++			pix->colorspace = V4L2_COLORSPACE_SRGB;
++		} else {
++			if (pix->height > 1280)	/* HD */
++				pix->colorspace = V4L2_COLORSPACE_REC709;
++			else			/* SD */
++				pix->colorspace = V4L2_COLORSPACE_SMPTE170M;
++		}
++	}
++
++	memset(pix->reserved, 0, sizeof(pix->reserved));
++	for (i = 0; i < pix->num_planes; i++) {
++		plane_fmt = &pix->plane_fmt[i];
++		depth = fmt->depth[i];
++
++		if (i == LUMA_PLANE)
++			plane_fmt->bytesperline = pix->width * depth / 8;
++		else
++			plane_fmt->bytesperline = pix->width;
++
++		plane_fmt->sizeimage = (pix->height * pix->width *
++					depth) / 8;
++
++		if (fmt->fourcc == V4L2_PIX_FMT_NV12) {
++			/*
++			 * Since we are using a single plane buffer
++			 * we need to adjust the reported sizeimage
++			 * to include the colocated UV part.
++			 */
++			plane_fmt->sizeimage += (pix->height / 2 *
++				plane_fmt->bytesperline);
++		}
++
++		memset(plane_fmt->reserved, 0, sizeof(plane_fmt->reserved));
++	}
++
++	return 0;
++}
++
++static int __wbm2m_s_fmt(struct wbm2m_ctx *ctx, struct v4l2_format *f)
++{
++	struct v4l2_pix_format_mplane *pix = &f->fmt.pix_mp;
++	struct wb_q_data *q_data;
++	struct vb2_queue *vq;
++
++	vq = v4l2_m2m_get_vq(ctx->fh.m2m_ctx, f->type);
++	if (!vq)
++		return -EINVAL;
++
++	if (vb2_is_busy(vq)) {
++		log_err(ctx->dev, "queue busy\n");
++		return -EBUSY;
++	}
++
++	q_data = get_q_data(ctx, f->type);
++	if (!q_data)
++		return -EINVAL;
++
++	q_data->fmt = find_format(f);
++	q_data->format = *f;
++
++	q_data->c_rect.left	= 0;
++	q_data->c_rect.top	= 0;
++	q_data->c_rect.width	= pix->width;
++	q_data->c_rect.height	= pix->height;
++
++	log_dbg(ctx->dev, "ctx %pa type %d, %dx%d, fmt: %4.4s bpl_y %d",
++		&ctx, f->type, pix->width, pix->height,
++		(char *)&pix->pixelformat,
++		pix->plane_fmt[LUMA_PLANE].bytesperline);
++	if (pix->num_planes == 2)
++		log_dbg(ctx->dev, " bpl_uv %d\n",
++			pix->plane_fmt[CHROMA_PLANE].bytesperline);
++
++	return 0;
++}
++
++static int wbm2m_s_fmt(struct file *file, void *priv, struct v4l2_format *f)
++{
++	int ret;
++	struct wbm2m_ctx *ctx = file->private_data;
++
++	ret = wbm2m_try_fmt(file, priv, f);
++	if (ret)
++		return ret;
++
++	ret = __wbm2m_s_fmt(ctx, f);
++	if (ret)
++		return ret;
++
++	ctx->sequence = 0;
++
++	return 0;
++}
++
++static int __wbm2m_try_selection(struct wbm2m_ctx *ctx,
++				 struct v4l2_selection *s)
++{
++	struct wb_q_data *q_data;
++	struct v4l2_pix_format_mplane *pix;
++	unsigned int w_align;
++	int depth_bytes;
++
++	if ((s->type != V4L2_BUF_TYPE_VIDEO_CAPTURE) &&
++	    (s->type != V4L2_BUF_TYPE_VIDEO_OUTPUT))
++		return -EINVAL;
++
++	q_data = get_q_data(ctx, s->type);
++	if (!q_data)
++		return -EINVAL;
++
++	pix = &q_data->format.fmt.pix_mp;
++
++	switch (s->target) {
++	case V4L2_SEL_TGT_COMPOSE:
++		/*
++		 * COMPOSE target is only valid for capture buffer type, return
++		 * error for output buffer type
++		 */
++		if (s->type == V4L2_BUF_TYPE_VIDEO_OUTPUT)
++			return -EINVAL;
++		break;
++	case V4L2_SEL_TGT_CROP:
++		/*
++		 * CROP target is only valid for output buffer type, return
++		 * error for capture buffer type
++		 */
++		if (s->type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
++			return -EINVAL;
++		break;
++	/*
++	 * bound and default crop/compose targets are invalid targets to
++	 * try/set
++	 */
++	default:
++		return -EINVAL;
++	}
++
++	if (s->r.top < 0 || s->r.left < 0) {
++		log_err(ctx->dev, "negative values for top and left\n");
++		s->r.top = 0;
++		s->r.left = 0;
++	}
++
++	depth_bytes = q_data->fmt->depth[LUMA_PLANE] >> 3;
++
++	w_align = 0;
++	if ((depth_bytes == 3) || (depth_bytes == 1))
++		w_align = 1;
++	else if ((depth_bytes == 2) &&
++		 (pix->pixelformat == V4L2_PIX_FMT_YUYV ||
++		  pix->pixelformat == V4L2_PIX_FMT_UYVY))
++		w_align = 1;
++
++	v4l_bound_align_image(&s->r.width, MIN_W, pix->width, w_align,
++			      &s->r.height, MIN_H, pix->height,
++			      H_ALIGN, S_ALIGN);
++
++	/* adjust left/top if cropping rectangle is out of bounds */
++	if (s->r.left + s->r.width > pix->width)
++		s->r.left = pix->width - s->r.width;
++	if (s->r.top + s->r.height > pix->height)
++		s->r.top = pix->height - s->r.height;
++
++	return 0;
++}
++
++static int wbm2m_g_selection(struct file *file, void *fh,
++			     struct v4l2_selection *s)
++{
++	struct wbm2m_ctx *ctx = file->private_data;
++	struct wb_q_data *q_data;
++	struct v4l2_pix_format_mplane *pix;
++	bool use_c_rect = false;
++
++	if ((s->type != V4L2_BUF_TYPE_VIDEO_CAPTURE) &&
++	    (s->type != V4L2_BUF_TYPE_VIDEO_OUTPUT))
++		return -EINVAL;
++
++	q_data = get_q_data(ctx, s->type);
++	if (!q_data)
++		return -EINVAL;
++
++	pix = &q_data->format.fmt.pix_mp;
++
++	switch (s->target) {
++	case V4L2_SEL_TGT_COMPOSE_DEFAULT:
++	case V4L2_SEL_TGT_COMPOSE_BOUNDS:
++		if (s->type == V4L2_BUF_TYPE_VIDEO_OUTPUT)
++			return -EINVAL;
++		break;
++	case V4L2_SEL_TGT_CROP_BOUNDS:
++	case V4L2_SEL_TGT_CROP_DEFAULT:
++		if (s->type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
++			return -EINVAL;
++		break;
++	case V4L2_SEL_TGT_COMPOSE:
++		if (s->type == V4L2_BUF_TYPE_VIDEO_OUTPUT)
++			return -EINVAL;
++		use_c_rect = true;
++		break;
++	case V4L2_SEL_TGT_CROP:
++		if (s->type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
++			return -EINVAL;
++		use_c_rect = true;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	if (use_c_rect) {
++		/*
++		 * for CROP/COMPOSE target type, return c_rect params from the
++		 * respective buffer type
++		 */
++		s->r = q_data->c_rect;
++	} else {
++		/*
++		 * for DEFAULT/BOUNDS target type, return width and height from
++		 * S_FMT of the respective buffer type
++		 */
++		s->r.left = 0;
++		s->r.top = 0;
++		s->r.width = pix->width;
++		s->r.height = pix->height;
++	}
++
++	return 0;
++}
++
++static int wbm2m_s_selection(struct file *file, void *fh,
++			     struct v4l2_selection *s)
++{
++	struct wbm2m_ctx *ctx = file->private_data;
++	struct wb_q_data *q_data;
++	struct v4l2_selection sel = *s;
++	int ret;
++
++	ret = __wbm2m_try_selection(ctx, &sel);
++	if (ret)
++		return ret;
++
++	q_data = get_q_data(ctx, sel.type);
++	if (!q_data)
++		return -EINVAL;
++
++	if ((q_data->c_rect.left == sel.r.left) &&
++	    (q_data->c_rect.top == sel.r.top) &&
++	    (q_data->c_rect.width == sel.r.width) &&
++	    (q_data->c_rect.height == sel.r.height)) {
++		log_dbg(ctx->dev,
++			"type: %d, requested crop/compose values are already set\n",
++			sel.type);
++		return 0;
++	}
++
++	q_data->c_rect = sel.r;
++
++	ctx->sequence = 0;
++
++	return 0;
++}
++
++static const struct v4l2_ioctl_ops wbm2m_ioctl_ops = {
++	.vidioc_querycap		= wbm2m_querycap,
++
++	.vidioc_enum_fmt_vid_cap	= wbm2m_enum_fmt,
++	.vidioc_g_fmt_vid_cap_mplane	= wbm2m_g_fmt,
++	.vidioc_try_fmt_vid_cap_mplane	= wbm2m_try_fmt,
++	.vidioc_s_fmt_vid_cap_mplane	= wbm2m_s_fmt,
++
++	.vidioc_enum_fmt_vid_out	= wbm2m_enum_fmt,
++	.vidioc_g_fmt_vid_out_mplane	= wbm2m_g_fmt,
++	.vidioc_try_fmt_vid_out_mplane	= wbm2m_try_fmt,
++	.vidioc_s_fmt_vid_out_mplane	= wbm2m_s_fmt,
++
++	.vidioc_g_selection		= wbm2m_g_selection,
++	.vidioc_s_selection		= wbm2m_s_selection,
++
++	.vidioc_reqbufs			= v4l2_m2m_ioctl_reqbufs,
++	.vidioc_create_bufs		= v4l2_m2m_ioctl_create_bufs,
++	.vidioc_prepare_buf		= v4l2_m2m_ioctl_prepare_buf,
++	.vidioc_querybuf		= v4l2_m2m_ioctl_querybuf,
++	.vidioc_qbuf			= v4l2_m2m_ioctl_qbuf,
++	.vidioc_dqbuf			= v4l2_m2m_ioctl_dqbuf,
++	.vidioc_expbuf			= v4l2_m2m_ioctl_expbuf,
++	.vidioc_streamon		= v4l2_m2m_ioctl_streamon,
++	.vidioc_streamoff		= v4l2_m2m_ioctl_streamoff,
++
++	.vidioc_subscribe_event		= v4l2_ctrl_subscribe_event,
++	.vidioc_unsubscribe_event	= v4l2_event_unsubscribe,
++};
++
++/*
++ * Queue operations
++ */
++static int wbm2m_queue_setup(struct vb2_queue *vq,
++			     unsigned int *nbuffers, unsigned int *nplanes,
++			     unsigned int sizes[], struct device *alloc_devs[])
++{
++	int i;
++	struct wbm2m_ctx *ctx = vb2_get_drv_priv(vq);
++	struct wb_q_data *q_data;
++
++	q_data = get_q_data(ctx, vq->type);
++	if (!q_data)
++		return -EINVAL;
++
++	*nplanes = q_data->format.fmt.pix_mp.num_planes;
++
++	for (i = 0; i < *nplanes; i++)
++		sizes[i] = q_data->format.fmt.pix_mp.plane_fmt[i].sizeimage;
++
++	log_dbg(ctx->dev, "get %d buffer(s) of size %d\n", *nbuffers,
++		sizes[LUMA_PLANE]);
++	if (*nplanes == 2)
++		log_dbg(ctx->dev, " and %d\n", sizes[CHROMA_PLANE]);
++
++	return 0;
++}
++
++static int wbm2m_buf_prepare(struct vb2_buffer *vb)
++{
++	struct vb2_v4l2_buffer *vbuf = to_vb2_v4l2_buffer(vb);
++	struct wbm2m_ctx *ctx = vb2_get_drv_priv(vb->vb2_queue);
++	struct wb_q_data *q_data;
++	struct v4l2_pix_format_mplane *mp;
++	int i, num_planes;
++
++	log_dbg(ctx->dev, "type: %d\n", vb->vb2_queue->type);
++
++	q_data = get_q_data(ctx, vb->vb2_queue->type);
++	if (!q_data)
++		return -EINVAL;
++
++	if (vb->vb2_queue->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE)
++		vbuf->field = V4L2_FIELD_NONE;
++
++	num_planes = q_data->format.fmt.pix_mp.num_planes;
++
++	for (i = 0; i < num_planes; i++) {
++		mp = &q_data->format.fmt.pix_mp;
++
++		if (vb->vb2_queue->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
++			if (vb2_get_plane_payload(vb, i) <
++			    mp->plane_fmt[i].sizeimage) {
++				log_dbg(ctx->dev,
++					"the payload is too small for plane plane (%lu < %lu)\n",
++					vb2_get_plane_payload(vb, i),
++					(long)mp->plane_fmt[i].sizeimage);
++				return -EINVAL;
++			}
++		} else {
++			if (vb2_plane_size(vb, i) <
++			    mp->plane_fmt[i].sizeimage) {
++				log_dbg(ctx->dev,
++					"data will not fit into plane (%lu < %lu)\n",
++					vb2_plane_size(vb, i),
++					(long)mp->plane_fmt[i].sizeimage);
++				return -EINVAL;
++			}
++			vb2_set_plane_payload(vb, i,
++					      mp->plane_fmt[i].sizeimage);
++		}
++	}
++
++	if (num_planes == 2) {
++		if (vb->planes[0].m.fd ==
++		    vb->planes[1].m.fd) {
++			/*
++			 * So it appears we are in a single memory buffer
++			 * with 2 plane case. Then we need to also set the
++			 * data_offset properly
++			 */
++			vb->planes[1].data_offset =
++				vb2_get_plane_payload(vb, 0);
++		}
++	}
++	return 0;
++}
++
++static void wbm2m_buf_queue(struct vb2_buffer *vb)
++{
++	struct vb2_v4l2_buffer *vbuf = to_vb2_v4l2_buffer(vb);
++	struct wbm2m_ctx *ctx = vb2_get_drv_priv(vb->vb2_queue);
++
++	log_dbg(ctx->dev, "queueing buffer: %s index %d\n",
++		V4L2_TYPE_IS_OUTPUT(vb->type) ? "OUTPUT" : "CAPTURE",
++		vb->index);
++
++	v4l2_m2m_buf_queue(ctx->fh.m2m_ctx, vbuf);
++}
++
++static int wbm2m_start_streaming(struct vb2_queue *q, unsigned int count)
++{
++	struct wbm2m_ctx *ctx = vb2_get_drv_priv(q);
++	struct omap_drm_private *priv = ctx->dev->dev->drm_dev->dev_private;
++
++	log_dbg(ctx->dev, "ctx %pa queue: %s\n", &ctx,
++		V4L2_TYPE_IS_OUTPUT(q->type) ? "OUTPUT" : "CAPTURE");
++
++	ctx->sequence = 0;
++
++	dispc_runtime_get(priv->dispc);
++	atomic_inc(&ctx->dev->dev->irq_enabled);
++
++	return 0;
++}
++
++static void wbm2m_stop_streaming(struct vb2_queue *q)
++{
++	struct wbm2m_ctx *ctx = vb2_get_drv_priv(q);
++	struct omap_drm_private *priv = ctx->dev->dev->drm_dev->dev_private;
++	struct vb2_v4l2_buffer *vb;
++	unsigned long flags;
++
++	log_dbg(ctx->dev, "ctx %pa queue: %s\n", &ctx,
++		V4L2_TYPE_IS_OUTPUT(q->type) ? "OUTPUT" : "CAPTURE");
++
++	atomic_dec(&ctx->dev->dev->irq_enabled);
++
++	for (;;) {
++		if (V4L2_TYPE_IS_OUTPUT(q->type))
++			vb = v4l2_m2m_src_buf_remove(ctx->fh.m2m_ctx);
++		else
++			vb = v4l2_m2m_dst_buf_remove(ctx->fh.m2m_ctx);
++		if (!vb)
++			break;
++		log_dbg(ctx->dev, "returning from queue: buffer index %d\n",
++			vb->vb2_buf.index);
++		spin_lock_irqsave(&ctx->dev->lock, flags);
++		v4l2_m2m_buf_done(vb, VB2_BUF_STATE_ERROR);
++		spin_unlock_irqrestore(&ctx->dev->lock, flags);
++	}
++
++	/*
++	 * Cleanup the in-transit vb2 buffers that have been
++	 * removed from their respective queue already but for
++	 * which procecessing has not been completed yet.
++	 */
++	if (V4L2_TYPE_IS_OUTPUT(q->type)) {
++		/*
++		 * DRA7xx errata i829 (Reusing Pipe Connected To Writeback
++		 * Pipeline On The Fly To An Active Panel)
++		 */
++		dispc_ovl_enable(priv->dispc,
++				 omap_plane_id_wb(ctx->dev->plane),
++				 false);
++		dispc_ovl_enable(priv->dispc, OMAP_DSS_WB, true);
++		dispc_ovl_enable(priv->dispc, OMAP_DSS_WB, false);
++	}
++
++	dispc_runtime_put(priv->dispc);
++}
++
++static struct vb2_ops wbm2m_qops = {
++	.queue_setup	 = wbm2m_queue_setup,
++	.buf_prepare	 = wbm2m_buf_prepare,
++	.buf_queue	 = wbm2m_buf_queue,
++	.wait_prepare	 = vb2_ops_wait_prepare,
++	.wait_finish	 = vb2_ops_wait_finish,
++	.start_streaming = wbm2m_start_streaming,
++	.stop_streaming  = wbm2m_stop_streaming,
++};
++
++static int queue_init(void *priv, struct vb2_queue *src_vq,
++		      struct vb2_queue *dst_vq)
++{
++	struct wbm2m_ctx *ctx = priv;
++	struct wbm2m_dev *dev = ctx->dev;
++	int ret;
++
++	memset(src_vq, 0, sizeof(*src_vq));
++	src_vq->type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
++	src_vq->io_modes = VB2_MMAP | VB2_DMABUF;
++	src_vq->drv_priv = ctx;
++	src_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
++	src_vq->ops = &wbm2m_qops;
++	src_vq->mem_ops = &vb2_dma_contig_memops;
++	src_vq->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_COPY;
++	src_vq->lock = &dev->dev->lock;
++	src_vq->min_buffers_needed = 1;
++	src_vq->dev = dev->v4l2_dev.dev;
++
++	ret = vb2_queue_init(src_vq);
++	if (ret)
++		return ret;
++
++	memset(dst_vq, 0, sizeof(*dst_vq));
++	dst_vq->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
++	dst_vq->io_modes = VB2_MMAP | VB2_DMABUF;
++	dst_vq->drv_priv = ctx;
++	dst_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
++	dst_vq->ops = &wbm2m_qops;
++	dst_vq->mem_ops = &vb2_dma_contig_memops;
++	dst_vq->timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_COPY;
++	dst_vq->lock = &dev->dev->lock;
++	dst_vq->min_buffers_needed = 1;
++	dst_vq->dev = dev->v4l2_dev.dev;
++
++	return vb2_queue_init(dst_vq);
++}
++
++/*
++ * File operations
++ */
++static int wbm2m_open(struct file *file)
++{
++	struct wbm2m_dev *dev = video_drvdata(file);
++	struct wb_q_data *s_q_data;
++	struct wbm2m_ctx *ctx;
++	struct v4l2_pix_format_mplane *pix;
++	int ret;
++
++	log_dbg(dev, "enter\n");
++
++	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
++	if (!ctx)
++		return -ENOMEM;
++
++	ctx->dev = dev;
++
++	if (mutex_lock_interruptible(&dev->dev->lock)) {
++		ret = -ERESTARTSYS;
++		goto free_ctx;
++	}
++
++	if ((dev->dev->mode != OMAP_WB_NOT_CONFIGURED) &&
++	    (dev->dev->mode != OMAP_WB_MEM2MEM_OVL)) {
++		/* WB is already open for other modes */
++		ret = -EBUSY;
++		goto unlock;
++	}
++
++	v4l2_fh_init(&ctx->fh, video_devdata(file));
++	file->private_data = ctx;
++
++	s_q_data = &ctx->q_data[Q_DATA_SRC];
++	s_q_data->fmt = &wb_formats[1];
++	pix = &s_q_data->format.fmt.pix_mp;
++	pix->pixelformat = s_q_data->fmt->fourcc;
++	s_q_data->format.type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
++	pix->width = 1920;
++	pix->height = 1080;
++	pix->plane_fmt[LUMA_PLANE].bytesperline = (pix->width *
++			s_q_data->fmt->depth[LUMA_PLANE]) >> 3;
++	pix->plane_fmt[LUMA_PLANE].sizeimage =
++			pix->plane_fmt[LUMA_PLANE].bytesperline *
++			pix->height;
++	pix->num_planes = s_q_data->fmt->coplanar ? 2 : 1;
++	pix->colorspace = V4L2_COLORSPACE_REC709;
++	pix->field = V4L2_FIELD_NONE;
++	s_q_data->c_rect.left = 0;
++	s_q_data->c_rect.top = 0;
++	s_q_data->c_rect.width = pix->width;
++	s_q_data->c_rect.height = pix->height;
++
++	ctx->q_data[Q_DATA_DST] = *s_q_data;
++	ctx->q_data[Q_DATA_DST].format.type =
++			V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
++
++	ctx->sequence = 0;
++
++	ctx->fh.m2m_ctx = v4l2_m2m_ctx_init(dev->m2m_dev, ctx, &queue_init);
++
++	if (IS_ERR(ctx->fh.m2m_ctx)) {
++		ret = PTR_ERR(ctx->fh.m2m_ctx);
++		goto exit_fh;
++	}
++
++	v4l2_fh_add(&ctx->fh);
++
++	if (v4l2_fh_is_singular_file(file)) {
++		log_dbg(dev, "first instance created\n");
++
++		drm_modeset_lock_all(dev->dev->drm_dev);
++		dev->plane = omap_plane_reserve_wb(dev->dev->drm_dev);
++		drm_modeset_unlock_all(dev->dev->drm_dev);
++
++		if (!dev->plane) {
++			log_dbg(dev, "Could not reserve plane!\n");
++			ret = -EBUSY;
++			goto free_fh;
++		}
++
++		dev->dev->mode = OMAP_WB_MEM2MEM_OVL;
++	}
++
++	log_dbg(dev, "created instance %pa, m2m_ctx: %pa\n",
++		&ctx, &ctx->fh.m2m_ctx);
++
++	mutex_unlock(&dev->dev->lock);
++
++	return 0;
++
++free_fh:
++	v4l2_fh_del(&ctx->fh);
++	v4l2_m2m_ctx_release(ctx->fh.m2m_ctx);
++exit_fh:
++	v4l2_fh_exit(&ctx->fh);
++unlock:
++	mutex_unlock(&dev->dev->lock);
++free_ctx:
++	kfree(ctx);
++	return ret;
++}
++
++static int wbm2m_release(struct file *file)
++{
++	struct wbm2m_dev *dev = video_drvdata(file);
++	struct wbm2m_ctx *ctx = file->private_data;
++	bool fh_singular;
++
++	log_dbg(dev, "releasing instance %pa\n", &ctx);
++
++	mutex_lock(&dev->dev->lock);
++
++	/* Save the singular status before we call the clean-up helper */
++	fh_singular = v4l2_fh_is_singular_file(file);
++
++	v4l2_fh_del(&ctx->fh);
++	v4l2_fh_exit(&ctx->fh);
++	v4l2_m2m_ctx_release(ctx->fh.m2m_ctx);
++
++	kfree(ctx);
++
++	if (fh_singular) {
++		log_dbg(dev, "last instance released\n");
++
++		drm_modeset_lock_all(dev->dev->drm_dev);
++		omap_plane_release_wb(dev->plane);
++		drm_modeset_unlock_all(dev->dev->drm_dev);
++		dev->dev->mode = OMAP_WB_NOT_CONFIGURED;
++	}
++
++	mutex_unlock(&dev->dev->lock);
++
++	return 0;
++}
++
++static const struct v4l2_file_operations wbm2m_fops = {
++	.owner		= THIS_MODULE,
++	.open		= wbm2m_open,
++	.release	= wbm2m_release,
++	.poll		= v4l2_m2m_fop_poll,
++	.unlocked_ioctl	= video_ioctl2,
++	.mmap		= v4l2_m2m_fop_mmap,
++};
++
++static struct video_device wbm2m_videodev = {
++	.name		= WBM2M_MODULE_NAME,
++	.fops		= &wbm2m_fops,
++	.ioctl_ops	= &wbm2m_ioctl_ops,
++	.minor		= -1,
++	.release	= video_device_release_empty,
++	.vfl_dir	= VFL_DIR_M2M,
++	.device_caps	= V4L2_CAP_VIDEO_M2M_MPLANE | V4L2_CAP_STREAMING,
++};
++
++static struct v4l2_m2m_ops m2m_ops = {
++	.device_run	= device_run,
++	.job_ready	= job_ready,
++	.job_abort	= job_abort,
++};
++
++int wbm2m_init(struct wb_dev *dev)
++{
++	struct wbm2m_dev *wbm2m;
++	struct video_device *vfd;
++	int ret;
++
++	if (!dev)
++		return -ENOMEM;
++
++	/* Allocate a new instance */
++	wbm2m = devm_kzalloc(dev->drm_dev->dev, sizeof(*wbm2m), GFP_KERNEL);
++	if (!wbm2m)
++		return -ENOMEM;
++
++	dev->m2m = wbm2m;
++	wbm2m->dev = dev;
++
++	spin_lock_init(&wbm2m->lock);
++
++	snprintf(wbm2m->v4l2_dev.name, sizeof(wbm2m->v4l2_dev.name),
++		 "%s", WBM2M_MODULE_NAME);
++	ret = v4l2_device_register(dev->drm_dev->dev, &wbm2m->v4l2_dev);
++	if (ret)
++		return ret;
++
++	wbm2m->m2m_dev = v4l2_m2m_init(&m2m_ops);
++	if (IS_ERR(wbm2m->m2m_dev)) {
++		log_err(wbm2m, "Failed to init mem2mem device\n");
++		ret = PTR_ERR(wbm2m->m2m_dev);
++		goto v4l2_dev_unreg;
++	}
++
++	vfd = &wbm2m->vfd;
++	*vfd = wbm2m_videodev;
++	vfd->lock = &dev->lock;
++	vfd->v4l2_dev = &wbm2m->v4l2_dev;
++
++	ret = video_register_device(vfd, VFL_TYPE_VIDEO, 10);
++	if (ret) {
++		log_err(wbm2m, "Failed to register video device\n");
++		goto rel_m2m;
++	}
++
++	video_set_drvdata(vfd, wbm2m);
++	snprintf(vfd->name, sizeof(vfd->name), "%s", wbm2m_videodev.name);
++	log_dbg(wbm2m, "Device registered as %s\n",
++		video_device_node_name(vfd));
++
++	return 0;
++
++rel_m2m:
++	v4l2_m2m_release(wbm2m->m2m_dev);
++v4l2_dev_unreg:
++	v4l2_device_unregister(&wbm2m->v4l2_dev);
++
++	return ret;
++}
++
++void wbm2m_cleanup(struct wb_dev *dev)
++{
++	log_dbg(dev->m2m, "Cleanup WB M2M\n");
++
++	v4l2_m2m_release(dev->m2m->m2m_dev);
++	video_unregister_device(&dev->m2m->vfd);
++	v4l2_device_unregister(&dev->m2m->v4l2_dev);
++}
+-- 
+2.32.0 (Apple Git-132)
+
