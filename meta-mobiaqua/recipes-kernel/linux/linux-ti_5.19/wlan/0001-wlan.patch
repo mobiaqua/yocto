@@ -5792,37 +5792,6 @@ index 8e6c227e8..367c25d5e 100644
 +
 +
  #endif /* BRCMFMAC_PCIE_H */
-diff --git a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pno.c b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pno.c
-index fabfbb0b4..d0a7465be 100644
---- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pno.c
-+++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pno.c
-@@ -158,12 +158,12 @@ static int brcmf_pno_set_random(struct brcmf_if *ifp, struct brcmf_pno_info *pi)
- 	struct brcmf_pno_macaddr_le pfn_mac;
- 	u8 *mac_addr = NULL;
- 	u8 *mac_mask = NULL;
--	int err, i;
-+	int err, i, ri;
- 
--	for (i = 0; i < pi->n_reqs; i++)
--		if (pi->reqs[i]->flags & NL80211_SCAN_FLAG_RANDOM_ADDR) {
--			mac_addr = pi->reqs[i]->mac_addr;
--			mac_mask = pi->reqs[i]->mac_addr_mask;
-+	for (ri = 0; ri < pi->n_reqs; ri++)
-+		if (pi->reqs[ri]->flags & NL80211_SCAN_FLAG_RANDOM_ADDR) {
-+			mac_addr = pi->reqs[ri]->mac_addr;
-+			mac_mask = pi->reqs[ri]->mac_addr_mask;
- 			break;
- 		}
- 
-@@ -185,7 +185,7 @@ static int brcmf_pno_set_random(struct brcmf_if *ifp, struct brcmf_pno_info *pi)
- 	pfn_mac.mac[0] |= 0x02;
- 
- 	brcmf_dbg(SCAN, "enabling random mac: reqid=%llu mac=%pM\n",
--		  pi->reqs[i]->reqid, pfn_mac.mac);
-+		  pi->reqs[ri]->reqid, pfn_mac.mac);
- 	err = brcmf_fil_iovar_data_set(ifp, "pfn_macaddr", &pfn_mac,
- 				       sizeof(pfn_mac));
- 	if (err)
 diff --git a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/sdio.c b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/sdio.c
 index 8effeb7a7..3cf0a549a 100644
 --- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/sdio.c
