@@ -4,4 +4,4 @@ S = "${WORKDIR}/scummvm-${PV}"
 
 FILESPATHPKG:prepend = "scummvm-${PV}:"
 
-SRC_URI[sha256sum] = "d4eaf02e592a1b100d0d59ecf248541e8219252769777efeea182ca7dac4c519"
+SRC_URI[sha256sum] = "2e9451ea62f84596f6d87a4c384015b7202493a9f78256388c15a343d88b34cf"
