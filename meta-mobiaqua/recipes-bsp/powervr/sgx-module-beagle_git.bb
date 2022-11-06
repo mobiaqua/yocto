@@ -10,7 +10,7 @@ PR:append = "+gitr-${SRCREV}"
 
 DEPENDS = "libdrm linux-ti"
 
-SRCREV = "755a66e660ad36741ed309da1b897127f9c1d44f"
+SRCREV = "561d9a51ab71202df99b9c31bae0edffa7cedca5"
 
 SRC_URI = "git://github.com/mobiaqua/sgx-pvr5-module.git;protocol=https;branch=master"
 
