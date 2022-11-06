@@ -417,6 +417,7 @@ python extend_recipe_sysroot() {
             os.unlink(f)
             os.unlink(f.replace(".complete", ""))
             removed.append(os.path.basename(f.replace(".complete", "")))
+
         # If we've removed files from the sysroot above, the task that installed them may still
         # have a stamp file present for the task. This is probably invalid right now but may become
         # valid again if the user were to change configuration back for example. Since we've removed

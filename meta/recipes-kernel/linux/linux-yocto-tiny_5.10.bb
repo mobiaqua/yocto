@@ -6,7 +6,7 @@ KCONFIG_MODE = "--allnoconfig"
 
 require recipes-kernel/linux/linux-yocto.inc
 
-LINUX_VERSION ?= "5.10.130"
+LINUX_VERSION ?= "5.10.149"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 
 DEPENDS += "${@bb.utils.contains('ARCH', 'x86', 'elfutils-native', '', d)}"
@@ -15,16 +15,16 @@ DEPENDS += "openssl-native util-linux-native"
 KMETA = "kernel-meta"
 KCONF_BSP_AUDIT_LEVEL = "2"
 
-SRCREV_machine:qemuarm ?= "bff12aa9748d83efc518e524858913c028f0707a"
-SRCREV_machine ?= "5bdf36bd73803640ee495fc6f36b0207993bf62a"
-SRCREV_meta ?= "96ea2660bb97e15f48f4885b9e436f24c3606bd9"
+SRCREV_machine:qemuarm ?= "bfcb0909af273bd7fb7ff1376637c9e23c344a0e"
+SRCREV_machine ?= "84e9465dec9a7dfe8790c70d44def5aaee8f9968"
+SRCREV_meta ?= "47b7070aa771dec970b79cb84e7b8c9329a93678"
 
 PV = "${LINUX_VERSION}+git${SRCPV}"
 
 SRC_URI = "git://git.yoctoproject.org/linux-yocto.git;branch=${KBRANCH};name=machine \
            git://git.yoctoproject.org/yocto-kernel-cache;type=kmeta;name=meta;branch=yocto-5.10;destsuffix=${KMETA}"
 
-COMPATIBLE_MACHINE = "qemux86|qemux86-64|qemuarm|qemuarmv5"
+COMPATIBLE_MACHINE = "^(qemux86|qemux86-64|qemuarm|qemuarmv5)$"
 
 # Functionality flags
 KERNEL_FEATURES = ""

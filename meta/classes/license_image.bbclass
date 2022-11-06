@@ -105,6 +105,7 @@ def write_license_files(d, license_manifest, pkg_dic, rootfs=True):
                                        "licenses collected for recipe %s"
                                        % (lic, pkg_dic[pkg]["PN"]), d)
     oe.qa.exit_if_errors(d)
+
     # Two options here:
     # - Just copy the manifest
     # - Copy the manifest and the license directories

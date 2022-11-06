@@ -383,6 +383,7 @@ def splitdebuginfo(file, dvar, dv, d):
     dest = dv["libdir"] + os.path.dirname(src) + dv["dir"] + "/" + os.path.basename(src) + dv["append"]
     debugfile = dvar + dest
     sources = []
+
     if file.endswith(".ko") and file.find("/lib/modules/") != -1:
         if oe.package.is_kernel_module_signed(file):
             bb.debug(1, "Skip strip on signed module %s" % file)
@@ -573,6 +574,7 @@ def copydebugsources(debugsrcdir, sources, d):
         else:
             basedir = sbasedir
             parentdir = sparentdir
+
         # If build path exists in sourcefile, it means toolchain did not use
         # -fdebug-prefix-map to compile
         if checkbuildpath(sourcefile, d):
@@ -610,16 +612,19 @@ def copydebugsources(debugsrcdir, sources, d):
         cmd = "find %s%s -type l -print0 -delete | sed s#%s%s/##g | (cd '%s' ; cpio -pd0mL --no-preserve-owner '%s%s')" % \
                 (dvar, debugsrcdir, dvar, debugsrcdir, parentdir, dvar, debugsrcdir)
         subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+
+
         # debugsources.list may be polluted from the host if we used externalsrc,
         # cpio uses copy-pass and may have just created a directory structure
         # matching the one from the host, if thats the case move those files to
         # debugsrcdir to avoid host contamination.
         # Empty dir structure will be deleted in the next step.
+
         # Same check as above for externalsrc
         if workdir not in sdir:
             if os.path.exists(dvar + debugsrcdir + sdir):
                 cmd = "mv %s%s%s/* %s%s" % (dvar, debugsrcdir, sdir, dvar,debugsrcdir)
-        subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+                subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
 
         # The copy by cpio may have resulted in some empty directories!  Remove these
         cmd = "find %s%s -empty -type d -delete" % (dvar, debugsrcdir)
