@@ -40,7 +40,7 @@ index 356bb734..58ff7635 100644
 -        "${CMAKE_COMMAND}" -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE} -G "${CMAKE_GENERATOR}" -B "${GENTAB_BDIR}" "${GENTAB_SDIR}"
 -    BUILD_COMMAND
 -        "${CMAKE_COMMAND}" --build "${GENTAB_BDIR}"
--    INSTALL_COMMAND ${GENTAB_BDIR}/make_tables.exe "${CMAKE_BINARY_DIR}/"
+-    INSTALL_COMMAND ${GENTAB_BDIR}/make_tables.exe "${FluidSynth_BINARY_DIR}/"
 -)
 -add_dependencies(libfluidsynth-OBJ gentables)
 +
