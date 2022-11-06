@@ -1,0 +1,126 @@
+diff --git a/drivers/net/usb/smsc95xx.c b/drivers/net/usb/smsc95xx.c
+index 465e11dcd..7346527eb 100644
+--- a/drivers/net/usb/smsc95xx.c
++++ b/drivers/net/usb/smsc95xx.c
+@@ -59,6 +59,8 @@ struct smsc95xx_priv {
+ 	spinlock_t mac_cr_lock;
+ 	u8 features;
+ 	u8 suspend_flags;
++	bool mac_set_from_param;
++	bool mac_is_random;
+ 	struct irq_chip irqchip;
+ 	struct irq_domain *irqdomain;
+ 	struct fwnode_handle *irqfwnode;
+@@ -67,6 +69,11 @@ static bool turbo_mode = true;
+ module_param(turbo_mode, bool, 0644);
+ MODULE_PARM_DESC(turbo_mode, "Enable multiple frames per Rx transaction");
+ 
++static char *macaddr = ":";
++static bool set_macaddr = false;
++module_param(macaddr, charp, 0);
++MODULE_PARM_DESC(macaddr, "MAC address");
++
+ static int __must_check smsc95xx_read_reg(struct usbnet *dev, u32 index,
+ 					    u32 *data, int in_pm)
+ {
+@@ -765,19 +772,63 @@ static int smsc95xx_ioctl(struct net_dev
+ 	return phy_mii_ioctl(netdev->phydev, rq, cmd);
+ }
+ 
+-static void smsc95xx_init_mac_address(struct usbnet *dev)
++/* set mac address from the macaddr module parameter */
++static int smsc95xx_init_mac_address_from_param(struct usbnet *dev)
+ {
+-	u8 addr[ETH_ALEN];
++	int i, j, got_num, num;
++	u8 mtbl[ETH_ALEN];
++	struct smsc95xx_priv *pdata = dev->driver_priv;
+ 
+-	/* maybe the boot loader passed the MAC address in devicetree */
+-	if (!platform_get_ethdev_address(&dev->udev->dev, dev->net)) {
+-		if (is_valid_ether_addr(dev->net->dev_addr)) {
+-			/* device tree values are valid so use them */
+-			netif_dbg(dev, ifup, dev->net, "MAC address read from the device tree\n");
+-			return;
++	if (macaddr[0] == ':')
++		return 0;
++
++	i = 0;
++	j = 0;
++	num = 0;
++	got_num = 0;
++	while (j < ETH_ALEN) {
++		if (macaddr[i] && macaddr[i] != ':') {
++			got_num++;
++			if ('0' <= macaddr[i] && macaddr[i] <= '9')
++				num = num * 16 + macaddr[i] - '0';
++			else if ('A' <= macaddr[i] && macaddr[i] <= 'F')
++				num = num * 16 + 10 + macaddr[i] - 'A';
++			else if ('a' <= macaddr[i] && macaddr[i] <= 'f')
++				num = num * 16 + 10 + macaddr[i] - 'a';
++			else
++				break;
++			i++;
++		} else if (got_num == 2) {
++			mtbl[j++] = (u8) num;
++			num = 0;
++			got_num = 0;
++			i++;
++		} else {
++			break;
+ 		}
+ 	}
+ 
++	if (j == ETH_ALEN) {
++		netif_dbg(dev, ifup, dev->net, "Overriding MAC address with: "
++				"%02x:%02x:%02x:%02x:%02x:%02x\n", mtbl[0], mtbl[1], mtbl[2],
++				mtbl[3], mtbl[4], mtbl[5]);
++		eth_hw_addr_set(dev->net, mtbl);
++		set_macaddr = true;
++		pdata->mac_set_from_param = true;
++		pdata->mac_is_random = false;
++		return 0;
++	} else {
++		netif_dbg(dev, ifup, dev->net, "failed to parse (valid) MAC from smsc95xx.macaddr\n");
++		set_macaddr = true;
++		return 1;
++	}
++}
++
++static void smsc95xx_init_mac_address(struct usbnet *dev)
++{
++	struct smsc95xx_priv *pdata = dev->driver_priv;
++	u8 addr[ETH_ALEN];
++
+ 	/* try reading mac address from EEPROM */
+ 	if (smsc95xx_read_eeprom(dev, EEPROM_MAC_OFFSET, ETH_ALEN, addr) == 0) {
+ 		eth_hw_addr_set(dev->net, addr);
+@@ -790,16 +841,25 @@ static void smsc95xx_init_mac_address(st
+ 
+ 	/* no useful static MAC address found. generate a random one */
+ 	eth_hw_addr_random(dev->net);
++	pdata->mac_is_random = true;
+ 	netif_dbg(dev, ifup, dev->net, "MAC address set to eth_random_addr\n");
+ }
+ 
+ static int smsc95xx_set_mac_address(struct usbnet *dev)
+ {
+-	u32 addr_lo = dev->net->dev_addr[0] | dev->net->dev_addr[1] << 8 |
+-		dev->net->dev_addr[2] << 16 | dev->net->dev_addr[3] << 24;
+-	u32 addr_hi = dev->net->dev_addr[4] | dev->net->dev_addr[5] << 8;
++	struct smsc95xx_priv *pdata = dev->driver_priv;
++	u32 addr_lo, addr_hi;
+ 	int ret;
+ 
++	if (pdata->mac_is_random && !pdata->mac_set_from_param && !set_macaddr) {
++		netif_dbg(dev, ifup, dev->net, "random MAC address, not yet set from smsc95xx.macaddr, try to set it ...\n");
++		smsc95xx_init_mac_address_from_param(dev);
++	}
++
++	addr_lo = dev->net->dev_addr[0] | dev->net->dev_addr[1] << 8 |
++		dev->net->dev_addr[2] << 16 | dev->net->dev_addr[3] << 24;
++	addr_hi = dev->net->dev_addr[4] | dev->net->dev_addr[5] << 8;
++
+ 	ret = smsc95xx_write_reg(dev, ADDRL, addr_lo);
+ 	if (ret < 0)
+ 		return ret;
