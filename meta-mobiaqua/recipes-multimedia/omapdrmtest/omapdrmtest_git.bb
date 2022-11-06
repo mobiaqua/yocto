@@ -15,6 +15,7 @@ SRC_URI = "git://git.ti.com/glsdk/omapdrmtest.git;protocol=git;branch=master \
            file://0005-Hack-disp-kmscube-reduce-u-v-by-10.patch \
            file://drop-cube.patch \
            file://improve-display-connection.patch \
+           file://bo-flags.patch \
 "
 
 S = "${WORKDIR}/git"
