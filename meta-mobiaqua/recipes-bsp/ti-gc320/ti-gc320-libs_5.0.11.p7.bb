@@ -22,6 +22,7 @@ EXTRA_OEMAKE += "DESTDIR=${D} TARGET_PRODUCT=${TARGET_PRODUCT} LIBDIR=${libdir}"
 
 do_install() {
     oe_runmake install
+    ln -s libGAL.so.5.0.11.p7 ${D}${libdir}/libGAL.so.5
 }
 
 INSANE_SKIP:${PN} += "ldflags"
