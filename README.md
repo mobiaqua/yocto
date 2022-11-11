@@ -1,4 +1,4 @@
-**This is MobiAqua fork of Yocto "Dunfell" distribution.**
+**This is MobiAqua fork of Yocto "Kirkstone" distribution.**
 
 **Only macOS 12 and later on Intel CPU host supported.**
 
