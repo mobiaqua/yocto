@@ -53,11 +53,11 @@
 
 int main(int argc, char *argv[])
 {
-	int	i;
-	char	ifname[FILENAME_MAX], ofname[FILENAME_MAX], ch;
-	FILE	*ifile, *ofile;
-	unsigned long	loadaddr, len;
-	struct stat	sinfo;
+	int i;
+	char ifname[FILENAME_MAX], ofname[FILENAME_MAX], ch;
+	FILE *ifile, *ofile;
+	unsigned long loadaddr, len;
+	struct stat sinfo;
 
 	// Default to x-load.bin and 0x40200800.
 	strcpy(ifname, "x-load.bin");
@@ -92,14 +92,9 @@ int main(int argc, char *argv[])
 		exit(0);
 	}
 
-	// Pad 1 sector of zeroes.
-	//ch = 0x00;
-	//for (i=0; i<0x200; i++)
-	//	fwrite(&ch, 1, 1, ofile);
-
 	fwrite(&len, 1, 4, ofile);
 	fwrite(&loadaddr, 1, 4, ofile);
-	for (i=0; i<len; i++) {
+	for (i = 0; i < len; i++) {
 		fread(&ch, 1, 1, ifile);
 		fwrite(&ch, 1, 1, ofile);
 	}

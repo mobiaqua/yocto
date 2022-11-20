@@ -336,7 +336,7 @@ int main(int argc, char *argv[])
 
 	if (flash_type == NAND)
 		/* The device has to be accessed in RAW mode to fill oob area */
-		if (ioctl(ofd, MTDFILEMODE, (void *) MTD_FILE_MODE_RAW)) {
+		if (ioctl(ofd, MTDFILEMODE, (void *)MTD_FILE_MODE_RAW)) {
 			perror("RAW mode access");
 			goto out_input;
 		}
