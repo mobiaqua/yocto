@@ -120,6 +120,7 @@ class Osc(FetchMethod):
         config_path = os.path.join(ud.oscdir, "oscrc")
         if not os.path.exists(ud.oscdir):
             bb.utils.mkdirhier(ud.oscdir)
+
         if (os.path.exists(config_path)):
             os.remove(config_path)
 
