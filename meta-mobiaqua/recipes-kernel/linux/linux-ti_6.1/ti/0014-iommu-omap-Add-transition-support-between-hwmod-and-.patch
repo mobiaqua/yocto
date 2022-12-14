@@ -1,0 +1,85 @@
+From 9f6939aacbe9a0075449eba51dc291226b089ad1 Mon Sep 17 00:00:00 2001
+From: Suman Anna <s-anna@ti.com>
+Date: Thu, 3 Feb 2022 22:39:07 -0800
+Subject: [PATCH] iommu/omap: Add transition support between hwmod and ti,sysc
+
+The OMAP IOMMU driver relies on hwmod layers and uses platform data
+callbacks for clocking and reset functionality at present. The same
+will be achieved through the ti-sysc parent interconnect node in the
+future using the pm_runtime framework and the inherent parent-child
+relationship.
+
+Add support to the code so that both the newer ti-sysc based logic
+and the older hwmod based logic are supported as the IOMMU DT nodes
+are transitioned to the ti-sysc mode. The existing platform data
+callbacks should continue to be invoked when using hwmods, but
+should not be invoked with ti-sysc.
+
+Signed-off-by: Suman Anna <s-anna@ti.com>
+---
+ drivers/iommu/omap-iommu.c | 9 +++++++++
+ drivers/iommu/omap-iommu.h | 1 +
+ 2 files changed, 10 insertions(+)
+
+diff --git a/drivers/iommu/omap-iommu.c b/drivers/iommu/omap-iommu.c
+index 71f29c0927fc..4728a40121cf 100644
+--- a/drivers/iommu/omap-iommu.c
++++ b/drivers/iommu/omap-iommu.c
+@@ -1021,12 +1021,16 @@ static __maybe_unused int omap_iommu_runtime_suspend(struct device *dev)
+ 
+ 	omap2_iommu_disable(obj);
+ 
++	if (!obj->hwmod_mode)
++		goto skip_hwmod_ops;
++
+ 	if (pdata && pdata->device_idle)
+ 		pdata->device_idle(pdev);
+ 
+ 	if (pdata && pdata->assert_reset)
+ 		pdata->assert_reset(pdev, pdata->reset_name);
+ 
++skip_hwmod_ops:
+ 	if (pdata && pdata->set_pwrdm_constraint) {
+ 		ret = pdata->set_pwrdm_constraint(pdev, false, &obj->pwrst);
+ 		if (ret) {
+@@ -1065,6 +1069,9 @@ static __maybe_unused int omap_iommu_runtime_resume(struct device *dev)
+ 		}
+ 	}
+ 
++	if (!obj->hwmod_mode)
++		goto skip_hwmod_ops;
++
+ 	if (pdata && pdata->deassert_reset) {
+ 		ret = pdata->deassert_reset(pdev, pdata->reset_name);
+ 		if (ret) {
+@@ -1076,6 +1083,7 @@ static __maybe_unused int omap_iommu_runtime_resume(struct device *dev)
+ 	if (pdata && pdata->device_enable)
+ 		pdata->device_enable(pdev);
+ 
++skip_hwmod_ops:
+ 	/* restore the TLBs only during resume, and not for power up */
+ 	if (obj->domain)
+ 		omap_iommu_restore_tlb_entries(obj);
+@@ -1194,6 +1202,7 @@ static int omap_iommu_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	if (of_find_property(of, "ti,iommu-bus-err-back", NULL))
+ 		obj->has_bus_err_back = MMU_GP_REG_BUS_ERR_BACK_EN;
++	obj->hwmod_mode = of_get_property(of, "ti,hwmods", NULL);
+ 
+ 	obj->dev = &pdev->dev;
+ 	obj->ctx = (void *)obj + sizeof(*obj);
+diff --git a/drivers/iommu/omap-iommu.h b/drivers/iommu/omap-iommu.h
+index 18ee713ede78..3bc65a71d0b6 100644
+--- a/drivers/iommu/omap-iommu.h
++++ b/drivers/iommu/omap-iommu.h
+@@ -58,6 +58,7 @@ struct omap_iommu {
+ 	struct device	*dev;
+ 	struct iommu_domain *domain;
+ 	struct dentry	*debug_dir;
++	const char *hwmod_mode;
+ 
+ 	spinlock_t	iommu_lock;	/* global for this whole object */
+ 
+-- 
+2.32.0 (Apple Git-132)
+

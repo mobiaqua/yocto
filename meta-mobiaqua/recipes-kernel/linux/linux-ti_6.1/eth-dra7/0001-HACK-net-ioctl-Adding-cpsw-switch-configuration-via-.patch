@@ -1,0 +1,141 @@
+From b3d233b4c026c31d9550bf117148eac75ec0bff6 Mon Sep 17 00:00:00 2001
+From: Mugunthan V N <mugunthanvnm@ti.com>
+Date: Sat, 12 Jun 2021 04:27:56 +0300
+Subject: [PATCH] HACK: net: ioctl: Adding cpsw switch configuration via ioctl
+
+The CPSW switch can be configured in various combination of switch entry for
+controlling packet flow between the ports.
+
+Add IOCTL and command structure to get/set CPSW switch related settings:
+     - add/delete multicast and vlan ALE entries
+     - get/set individual switch port phy link status
+     - configure unknown vlan handling
+     - set/get STP port state
+     - set/get port VLAN
+     - configure broadcast/multicast rate limit per port
+
+Note. 5.10 should be the last kernel to port this.
+Use CPSW switchdev driver.
+
+Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ include/uapi/linux/net_switch_config.h | 67 ++++++++++++++++++++++++++
+ include/uapi/linux/sockios.h           |  3 ++
+ net/core/dev_ioctl.c                   |  7 +++
+ 3 files changed, 77 insertions(+)
+ create mode 100644 include/uapi/linux/net_switch_config.h
+
+diff --git a/include/uapi/linux/net_switch_config.h b/include/uapi/linux/net_switch_config.h
+new file mode 100644
+index 000000000000..bbd8d69676bf
+--- /dev/null
++++ b/include/uapi/linux/net_switch_config.h
+@@ -0,0 +1,67 @@
++/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
++/*
++ * Texas Instruments Ethernet Switch Driver
++ *
++ * Copyright (C) 2014-2020 Texas Instruments, Inc
++ *
++ * Userspace API for Switch Configuration
++ */
++
++#ifndef __NET_CONFIG_SWITCH_H__
++#define __NET_CONFIG_SWITCH_H__
++
++#include <linux/types.h>
++#include <linux/ethtool.h>
++
++enum {
++	SWITCH_INVALID,
++	SWITCH_ADD_MULTICAST,
++	SWITCH_DEL_MULTICAST,
++	SWITCH_ADD_VLAN,
++	SWITCH_DEL_VLAN,
++	SWITCH_SET_PORT_CONFIG,
++	SWITCH_GET_PORT_CONFIG,
++	SWITCH_ADD_UNKNOWN_VLAN_INFO,
++	SWITCH_GET_PORT_STATE,
++	SWITCH_SET_PORT_STATE,
++	SWITCH_GET_PORT_VLAN_CONFIG,
++	SWITCH_SET_PORT_VLAN_CONFIG,
++	SWITCH_RATELIMIT,
++};
++
++enum {
++	PORT_STATE_DISABLED = 0,
++	PORT_STATE_BLOCKED,
++	PORT_STATE_LEARN,
++	PORT_STATE_FORWARD,
++};
++
++/*
++ * Pass all unused parameters as zero is recomented.
++ */
++struct net_switch_config {
++	unsigned int cmd;	/* API to be invoked by the kernel driver */
++
++	unsigned int	port;
++	unsigned int	vid;		/* VLAN identifier */
++	unsigned char	unreg_multi;	/* unreg multicast Egress Ports */
++	unsigned char	reg_multi;	/* register multicast Egress ports */
++	unsigned char	untag_port;	/* Untag ports */
++	unsigned char	addr[6];
++	unsigned int	super;
++	struct ethtool_cmd ecmd;
++	unsigned char	unknown_vlan_member;
++	unsigned char	unknown_vlan_untag;
++	unsigned int	unknown_vlan_unreg_multi;
++	unsigned int	unknown_vlan_reg_multi;
++	unsigned int	port_state;
++	unsigned int	prio;
++	int		vlan_cfi;
++	unsigned int	bcast_rate_limit;
++	unsigned int	mcast_rate_limit;
++	int		direction;
++
++	unsigned int ret_type;   /* Return  Success/Failure */
++};
++
++#endif /* __NET_CONFIG_SWITCH_H__*/
+diff --git a/include/uapi/linux/sockios.h b/include/uapi/linux/sockios.h
+index 7d1bccbbe..9bb03c6d4 100644
+--- a/include/uapi/linux/sockios.h
++++ b/include/uapi/linux/sockios.h
+@@ -153,6 +153,9 @@
+ #define SIOCSHWTSTAMP	0x89b0		/* set and get config		*/
+ #define SIOCGHWTSTAMP	0x89b1		/* get config			*/
+ 
++/* Switch config calls: parameters in linux/net_switch_config.h */
++#define SIOCSWITCHCONFIG    0x89c0
++
+ /* Device private ioctl calls */
+ 
+ /*
+diff --git a/net/core/dev_ioctl.c b/net/core/dev_ioctl.c
+index 0e87237fd..2798b0a62 100644
+--- a/net/core/dev_ioctl.c
++++ b/net/core/dev_ioctl.c
+@@ -405,6 +405,7 @@ static int dev_ifsioc(struct net *net, struct ifreq *ifr, void __user *data,
+ 		if (cmd == SIOCGMIIPHY ||
+ 		    cmd == SIOCGMIIREG ||
+ 		    cmd == SIOCSMIIREG ||
++		    cmd == SIOCSWITCHCONFIG ||
+ 		    cmd == SIOCSHWTSTAMP ||
+ 		    cmd == SIOCGHWTSTAMP) {
+ 			err = dev_eth_ioctl(dev, ifr, cmd);
+@@ -599,6 +600,12 @@ int dev_ioctl(struct net *net, unsigned int cmd, struct ifreq *ifr,
+ 	case SIOCSIFLINK:
+ 		return -ENOTTY;
+ 
++	case SIOCSWITCHCONFIG:
++		rtnl_lock();
++		ret = dev_ifsioc(net, ifr, data, cmd);
++		rtnl_unlock();
++		return ret;
++
+ 	/*
+ 	 *	Unknown or private ioctl.
+ 	 */
