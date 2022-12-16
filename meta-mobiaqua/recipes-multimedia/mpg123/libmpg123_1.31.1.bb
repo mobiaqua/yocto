@@ -17,7 +17,7 @@ EXTRA_OECONF:armv7a-hf="--with-cpu=neon --with-optimization=4 --enable-network=n
 
 inherit autotools pkgconfig
 
-SRC_URI[sha256sum] = "1b20c9c751bea9be556749bd7f97cf580f52ed11f2540756e9af26ae036e4c59"
+SRC_URI[sha256sum] = "5dcb0936efd44cb583498b6585845206f002a7b19d5066a2683be361954d955a"
 
 S = "${WORKDIR}/mpg123-${PV}"
 
