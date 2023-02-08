@@ -6879,7 +6879,7 @@ index 4e2fc1a08..50a0cdadc 100644
  
 -	/* In reconfig don't transmit now, but mark for waking later */
 -	if (local->in_reconfig) {
--		set_bit(IEEE80211_TXQ_STOP_NETIF_TX, &txq->flags);
+-		set_bit(IEEE80211_TXQ_DIRTY, &txq->flags);
 +	if (local->in_reconfig)
  		return;
 -	}
@@ -7975,15 +7975,6 @@ index 6d054fed0..dbd42dcaa 100644
  	/*
  	 * Pad out the previous subframe to a multiple of 4 by adding the
  	 * padding to the next one, that's being added. Note that head->len
-@@ -3647,7 +3613,7 @@ struct sk_buff *ieee80211_tx_dequeue(struct ieee80211_hw *hw,
- 	    test_bit(IEEE80211_TXQ_STOP_NETIF_TX, &txqi->flags))
- 		goto out;
- 
--	if (vif->txqs_stopped[txq->ac]) {
-+	if (vif->txqs_stopped[ieee80211_ac_from_tid(txq->tid)]) {
- 		set_bit(IEEE80211_TXQ_STOP_NETIF_TX, &txqi->flags);
- 		goto out;
- 	}
 @@ -4509,6 +4475,7 @@ netdev_tx_t ieee80211_subif_start_xmit_8023(struct sk_buff *skb,
  	struct ethhdr *ehdr = (struct ethhdr *)skb->data;
  	struct ieee80211_key *key;
