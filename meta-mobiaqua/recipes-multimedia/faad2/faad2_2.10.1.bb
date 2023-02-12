@@ -11,8 +11,18 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=381c8cbe277a7bc1ee2ae6083a04c958"
 # MobiAqua: added optimisations
 FULL_OPTIMIZATION:append = " -fexpensive-optimizations -mvectorize-with-neon-quad -O4 -ffast-math"
 
-SRC_URI = "${SOURCEFORGE_MIRROR}/faac/faad2-src/faad2-2.8.0/${BP}.tar.gz"
-SRC_URI[md5sum] = "28f6116efdbe9378269f8a6221767d1f"
-SRC_URI[sha256sum] = "985c3fadb9789d2815e50f4ff714511c79c2710ac27a4aaaf5c0c2662141426d"
+# MobiAqua: disabled
+#PV .= "+git${SRCPV}"
+
+SRC_URI = "git://github.com/knik0/faad2.git;branch=master;protocol=https"
+SRCREV = "3918dee56063500d0aa23d6c3c94b211ac471a8c"
+
+S = "${WORKDIR}/git"
 
 inherit autotools lib_package
+
+# MobiAqua: process version in missing header
+do_configure:prepend() {
+    cp ${S}/include/faad.h.in ${S}/include/faad.h
+    sed -i 's|@VERSION@|${PV}|g' ${S}/include/faad.h
+}
