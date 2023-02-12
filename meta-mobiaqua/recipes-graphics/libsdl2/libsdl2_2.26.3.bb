@@ -8,7 +8,7 @@ BUGTRACKER = "http://bugzilla.libsdl.org/"
 SECTION = "libs"
 
 LICENSE = "Zlib"
-LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=68a088513da90254b2fbe664f42af315"
+LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=31f575634fd56b27fc6b6cbe8dc9bd38"
 
 # arm-neon adds MIT license
 LICENSE:append = " ${@bb.utils.contains('PACKAGECONFIG', 'arm-neon', '& MIT', '', d)}"
@@ -26,7 +26,7 @@ DEPENDS = "virtual/libgles2 virtual/libgbm alsa-lib"
 SRC_URI = "http://www.libsdl.org/release/SDL2-${PV}.tar.gz \
 "
 
-SRC_URI[sha256sum] = "02537cc7ebd74071631038b237ec4bfbb3f4830ba019e569434da33f42373e04"
+SRC_URI[sha256sum] = "c661205a553b7d252425f4b751ff13209e5e020b876bbfa1598494af61790057"
 
 S = "${WORKDIR}/SDL2-${PV}"
 
