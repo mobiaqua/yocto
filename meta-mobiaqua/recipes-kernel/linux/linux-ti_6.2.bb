@@ -5,7 +5,7 @@ DEPENDS += "openssl-native ncurses-native elf-native kmod-native"
 COMPATIBLE_MACHINE = "(board-tv|igep0030)"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.2"
+LINUX_VERSION = "6.2.2"
 PV = "${LINUX_VERSION}"
 KMETA = "kernel-meta"
 KCONF_BSP_AUDIT_LEVEL = "1"
@@ -70,7 +70,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
            file://defconfig \
            "
 
-SRC_URI[sha256sum] = "74862fa8ab40edae85bb3385c0b71fe103288bce518526d63197800b3cbdecb1"
+SRC_URI[sha256sum] = "c12755a2bb0e19e83457727e949ee1020cc268f44222488256223da8eeecbfb0"
 
 S = "${WORKDIR}/linux-${PV}"
 
