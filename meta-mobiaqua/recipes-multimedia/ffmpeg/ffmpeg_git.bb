@@ -82,12 +82,12 @@ FILES:libavfilter = "${libdir}/libavfilter*.so.*"
 FILES:libavfilter-dev = "${libdir}/libavfilter*.so ${libdir}/pkgconfig/libavfilter.pc ${libdir}/libavfilter*.a"
 FILES:libavfilter-dbg += "${libdir}/.debug/libavfilter*"
 
-SRCREV = "7268323193d55365f914de39fadd5dbdb1f68976"
+SRCREV = "3980415627a187d188dc25669cea6b12912eb178"
 
-PV = "5.1.2+git${SRCPV}"
+PV = "6.0+git${SRCPV}"
 PR = "r1"
 
-SRC_URI = "git://source.ffmpeg.org/ffmpeg.git;branch=release/5.1 \
+SRC_URI = "git://source.ffmpeg.org/ffmpeg.git;branch=release/6.0 \
           "
 
 S = "${WORKDIR}/git"
