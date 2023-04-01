@@ -16,11 +16,9 @@ SRC_URI = "http://linuxtv.org/downloads/v4l-utils/v4l-utils-${PV}.tar.bz2 \
            file://0001-Revert-media-ctl-Don-t-install-libmediactl-and-libv4.patch \
            file://0002-original-patch-mediactl-pkgconfig.patch \
            file://0003-original-patch-export-mediactl-headers.patch \
-           file://0007-Do-not-use-getsubopt.patch \
            "
 
-SRC_URI[md5sum] = "8aa73287320a49e9170a8255d7b2c7e6"
-SRC_URI[sha256sum] = "65c6fbe830a44ca105c443b027182c1b2c9053a91d1e72ad849dfab388b94e31"
+SRC_URI[sha256sum] = "cbb7fe8a6307f5ce533a05cded70bb93c3ba06395ab9b6d007eb53b75d805f5b"
 
 EXTRA_OECONF = "--disable-qv4l2 --enable-shared --with-udevdir=${base_libdir}/udev \
                 --disable-v4l2-compliance-32 --disable-v4l2-ctl-32"
