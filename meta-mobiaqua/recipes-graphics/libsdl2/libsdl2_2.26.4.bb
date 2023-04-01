@@ -26,7 +26,7 @@ DEPENDS = "virtual/libgles2 virtual/libgbm alsa-lib"
 SRC_URI = "http://www.libsdl.org/release/SDL2-${PV}.tar.gz \
 "
 
-SRC_URI[sha256sum] = "c661205a553b7d252425f4b751ff13209e5e020b876bbfa1598494af61790057"
+SRC_URI[sha256sum] = "1a0f686498fb768ad9f3f80b39037a7d006eac093aad39cb4ebcc832a8887231"
 
 S = "${WORKDIR}/SDL2-${PV}"
 
