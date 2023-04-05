@@ -18,16 +18,12 @@ CPU_VER=`cat /proc/cpuinfo | grep Hardware | cut -d : -f2`
 
 case $CPU_VER in
     " Generic OMAP4 (Flattened Device Tree)")
-    [ "$VERBOSE" != no ] && echo "omapdrm_pvr_pandaboard"
-    $LOAD_MODULE omapdrm_pvr_pandaboard
+    [ "$VERBOSE" != no ] && echo "omapdrm_pvr_ti443x"
+    $LOAD_MODULE omapdrm_pvr_ti443x
     ;;
-    " Generic OMAP5 (Flattened Device Tree)")
-    [ "$VERBOSE" != no ] && echo "omapdrm_pvr_igepv5"
-    $LOAD_MODULE omapdrm_pvr_igev5
-    ;;
-    " Generic DRA74X (Flattened Device Tree)")
-    [ "$VERBOSE" != no ] && echo "omapdrm_pvr_beaglex15"
-    $LOAD_MODULE omapdrm_pvr_beaglex15
+    " Generic OMAP5 (Flattened Device Tree)"|" Generic DRA74X (Flattened Device Tree)")
+    [ "$VERBOSE" != no ] && echo "omapdrm_pvr_ti572x"
+    $LOAD_MODULE omapdrm_pvr_ti572x
     ;;
 esac
 

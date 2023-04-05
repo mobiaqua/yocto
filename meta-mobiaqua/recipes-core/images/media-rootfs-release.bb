@@ -6,7 +6,7 @@ PV = "1.0.0"
 PR = "r0"
 
 INSTALL_PKGS += "u-boot-pandaboard u-boot-beagleboard sgx-module-init sgx-pvrsrvinit \
-                 sgx-pvr-gbm sgx-module-panda sgx-module-beagle ti-gc320-driver \
+                 sgx-pvr-gbm sgx-module-ti443x sgx-module-ti572x ti-gc320-driver \
                  ti-gc320-libs libdce libdce-firmware wl127x-fw vpdma-fw brcmfmac-fw \
                  wireless-regdb-static libavcodec libavformat libavutil libswscale \
                  libswresample \
