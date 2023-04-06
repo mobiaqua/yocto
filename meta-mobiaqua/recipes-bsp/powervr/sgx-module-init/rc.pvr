@@ -20,10 +20,12 @@ case $CPU_VER in
     " Generic OMAP4 (Flattened Device Tree)")
     [ "$VERBOSE" != no ] && echo "omapdrm_pvr_ti443x"
     $LOAD_MODULE omapdrm_pvr_ti443x
+    export LD_LIBRARY_PATH=/usr/lib/gles-ti443x
     ;;
     " Generic OMAP5 (Flattened Device Tree)"|" Generic DRA74X (Flattened Device Tree)")
     [ "$VERBOSE" != no ] && echo "omapdrm_pvr_ti572x"
     $LOAD_MODULE omapdrm_pvr_ti572x
+    export LD_LIBRARY_PATH=/usr/lib/gles-ti572x
     ;;
 esac
 
