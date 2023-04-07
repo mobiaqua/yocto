@@ -601,7 +601,7 @@ const WSEGL_FunctionTable *WSEGL_GetFunctionTablePointer(void)
 {
     unsigned *handle;
 
-    if ((handle = dlopen("/usr/lib/libsrv_init.so", RTLD_LAZY | RTLD_GLOBAL)) == NULL)
+    if ((handle = dlopen("libsrv_init.so", RTLD_LAZY | RTLD_GLOBAL)) == NULL)
     {
         return NULL;
     }

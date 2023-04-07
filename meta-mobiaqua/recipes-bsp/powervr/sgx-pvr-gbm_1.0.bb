@@ -8,8 +8,11 @@ DEPENDS = "libdrm pkgconfig-native virtual/libgbm virtual/egl"
 SRC_URI = "\
 	   file://LICENSE.GPL \
 	   file://MIT-COPYING \
+	   file://gbm.h \
+	   file://gbm_backend_abi.h \
 	   file://gbm_pvr.c \
 	   file://gbm_pvrint.h \
+	   file://gbmint.h \
 	   file://img_defs.h \
 	   file://img_types.h \
 	   file://pdumpdefs.h \
@@ -17,6 +20,7 @@ SRC_URI = "\
 	   file://pvrws_GBM.h \
 	   file://services.h \
 	   file://servicesext.h \
+	   file://wsegl.h \
 "
 
 S = "${WORKDIR}"

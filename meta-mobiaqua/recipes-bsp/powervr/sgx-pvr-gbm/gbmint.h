@@ -1,4 +1,7 @@
 /*
+ * Copyright © 2011 Intel Corporation
+ * Copyright © 2021 NVIDIA Corporation
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
  * to deal in the Software without restriction, including without limitation
@@ -19,42 +22,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  *
+ * Authors:
+ *    Benjamin Franzke <benjaminfranzke@googlemail.com>
+ *    James Jones <jajones@nvidia.com>
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <dlfcn.h>
+#ifndef INTERNAL_H_
+#define INTERNAL_H_
 
-typedef int SrvInitFunc(void);
+#include "gbm_backend_abi.h"
 
-static SrvInitFunc *SrvInit;
+/* GCC visibility */
+#if defined(__GNUC__)
+#define GBM_EXPORT __attribute__ ((visibility("default")))
+#else
+#define GBM_EXPORT
+#endif
 
-int main(int argc, char **argv)
-{
-    int status;
-    void *handle;
+/**
+ * \file gbmint.h
+ * \brief Internal implementation details of gbm
+ */
 
-    handle = dlopen("libsrv_init.so", RTLD_NOW | RTLD_GLOBAL);
-    if (!handle) {
-        fprintf(stderr, "Failed to load SGX 'srv_init' library: %s\n", dlerror());
-        return 1;
-    }
+extern struct gbm_core gbm_core;
 
-    SrvInit = dlsym(handle, "SrvInit");
-    if (!SrvInit) {
-        fprintf(stderr, "Failed to find symbol: %s\n", dlerror());
-        dlclose(handle);
-        return 1;
-    }
-
-    status = SrvInit();
-    if (status)
-    {
-        fprintf(stderr, "SrvInit: Failed to init SGX services, error code: %d\n", status);
-        dlclose(handle);
-        return 1;
-    }
-
-    dlclose(handle);
-    return 0;
-}
+#endif

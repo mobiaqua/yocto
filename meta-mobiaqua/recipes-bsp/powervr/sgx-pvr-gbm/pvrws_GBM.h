@@ -27,7 +27,7 @@ typedef struct gbm_device     *NativeDisplayType;
 typedef struct gbm_surface    *NativeWindowType;
 typedef struct gbm_bo         *NativePixmapType;
 
-#include <wsegl/wsegl.h>
+#include "wsegl.h"
 
 #define SUPPORT_DMABUF
 #include "services.h"
