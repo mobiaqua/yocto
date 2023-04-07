@@ -157,11 +157,6 @@ enum gbm_bo_format {
 #define GBM_FORMAT_RGBA1010102	__gbm_fourcc_code('R', 'A', '3', '0') /* [31:0] R:G:B:A 10:10:10:2 little endian */
 #define GBM_FORMAT_BGRA1010102	__gbm_fourcc_code('B', 'A', '3', '0') /* [31:0] B:G:R:A 10:10:10:2 little endian */
 
-/* 64 bpp RGB */
-#define GBM_FORMAT_XBGR16161616	__gbm_fourcc_code('X', 'B', '4', '8') /* [63:0] x:B:G:R 16:16:16:16 little endian */
-
-#define GBM_FORMAT_ABGR16161616	__gbm_fourcc_code('A', 'B', '4', '8') /* [63:0] A:B:G:R 16:16:16:16 little endian */
-
 /*
  * Floating point 64bpp RGB
  * IEEE 754-2008 binary16 half-precision float
@@ -178,6 +173,8 @@ enum gbm_bo_format {
 #define GBM_FORMAT_VYUY		__gbm_fourcc_code('V', 'Y', 'U', 'Y') /* [31:0] Y1:Cb0:Y0:Cr0 8:8:8:8 little endian */
 
 #define GBM_FORMAT_AYUV		__gbm_fourcc_code('A', 'Y', 'U', 'V') /* [31:0] A:Y:Cb:Cr 8:8:8:8 little endian */
+
+#define GBM_FORMAT_YVU444_PACK10_IMG __gbm_fourcc_code('I', 'M', 'G', '2') /* [31:0] unused:Y:Cr:Cb 2:10:10:10 little endian */
 
 /*
  * 2 plane YCbCr
@@ -256,14 +253,21 @@ enum gbm_bo_flags {
     * OpenCL, and Vulkan applications.
     */
    GBM_BO_USE_PROTECTED = (1 << 5),
+};
 
+/**
+ * Flags to control the behaviour of a blit - these are passed to
+ * gbm_bo_blit().
+ */
+enum gbm_blit_flags {
    /**
-    * The buffer will be used for front buffer rendering.  On some
-    * platforms this may (for example) disable framebuffer compression
-    * to avoid problems with compression flags data being out of sync
-    * with pixel data.
+    * Force blit execution in finite time
     */
-   GBM_BO_USE_FRONT_RENDERING = (1 << 6),
+   GBM_BLIT_FLAG_FLUSH  = 0x0001,
+   /**
+    * Flush, and wait for the blit to complete
+    */
+   GBM_BLIT_FLAG_FINISH = 0x0002
 };
 
 int
@@ -461,6 +465,12 @@ gbm_surface_destroy(struct gbm_surface *surface);
 
 char *
 gbm_format_get_name(uint32_t gbm_format, struct gbm_format_name_desc *desc);
+
+int
+gbm_bo_blit(struct gbm_bo *dst_bo, struct gbm_bo *src_bo,
+            int dst_x0, int dst_y0, int dst_width, int dst_height,
+            int src_x0, int src_y0, int src_width, int src_height,
+            enum gbm_blit_flags flags);
 
 #ifdef __cplusplus
 }
