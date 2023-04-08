@@ -50,7 +50,7 @@ do_install() {
 	install -m 0644 pvr_gbm.so ${D}${libdir}/gbm
 	install -m 0644 libpvrws_GBM.so ${D}${libdir}
 	install -d ${D}${sysconfdir}/profile.d
-	echo "export GBM_BACKEND=pvr" > ${D}${sysconfdir}/profile.d/pvr_gbm.sh
+	echo "#export GBM_BACKEND=pvr" > ${D}${sysconfdir}/profile.d/pvr_gbm.sh
 	chmod 755 ${D}${sysconfdir}/profile.d/pvr_gbm.sh
 }
 
