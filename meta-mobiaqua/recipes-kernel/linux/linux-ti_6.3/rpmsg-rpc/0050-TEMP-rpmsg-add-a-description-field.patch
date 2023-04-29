@@ -1,0 +1,183 @@
+diff --git a/drivers/rpmsg/rpmsg_core.c b/drivers/rpmsg/rpmsg_core.c
+index a71de08ac..a113c3ce6 100644
+--- a/drivers/rpmsg/rpmsg_core.c
++++ b/drivers/rpmsg/rpmsg_core.c
+@@ -409,6 +409,7 @@ static DEVICE_ATTR_RW(field)
+ 
+ /* for more info, see Documentation/ABI/testing/sysfs-bus-rpmsg */
+ rpmsg_show_attr(name, id.name, "%s\n");
++rpmsg_show_attr(desc, desc, "%s\n");
+ rpmsg_show_attr(src, src, "0x%x\n");
+ rpmsg_show_attr(dst, dst, "0x%x\n");
+ rpmsg_show_attr(announce, announce ? "true" : "false", "%s\n");
+@@ -430,6 +431,7 @@ static DEVICE_ATTR_RO(modalias);
+ 
+ static struct attribute *rpmsg_dev_attrs[] = {
+ 	&dev_attr_name.attr,
++	&dev_attr_desc.attr,
+ 	&dev_attr_modalias.attr,
+ 	&dev_attr_dst.attr,
+ 	&dev_attr_src.attr,
+diff --git a/drivers/rpmsg/rpmsg_ns.c b/drivers/rpmsg/rpmsg_ns.c
+index 762ff1ae2..f54988ff4 100644
+--- a/drivers/rpmsg/rpmsg_ns.c
++++ b/drivers/rpmsg/rpmsg_ns.c
+@@ -11,6 +11,23 @@
+ 
+ #include "rpmsg_internal.h"
+ 
++/**
++ * struct rpmsg_ns_msg_ext - dynamic name service announcement message v2
++ * @name: name of remote service that is published
++ * @desc: description of remote service
++ * @addr: address of remote service that is published
++ * @flags: indicates whether service is created or destroyed
++ *
++ * Interchangeable nameservice message with rpmsg_ns_msg. This one has
++ * the addition of the desc field for extra flexibility.
++ */
++struct rpmsg_ns_msg_ext {
++	char name[RPMSG_NAME_SIZE];
++	char desc[RPMSG_NAME_SIZE];
++	u32 addr;
++	u32 flags;
++} __packed;
++
+ /**
+  * rpmsg_ns_register_device() - register name service device based on rpdev
+  * @rpdev: prepared rpdev to be used for creating endpoints
+@@ -34,17 +34,29 @@ static int rpmsg_ns_cb(struct rpmsg_device *rpdev, void *data, int len,
+ 		       void *priv, u32 src)
+ {
+ 	struct rpmsg_ns_msg *msg = data;
++	struct rpmsg_ns_msg_ext *msg_ext = data;
+ 	struct rpmsg_device *newch;
+ 	struct rpmsg_channel_info chinfo;
+ 	struct device *dev = rpdev->dev.parent;
+ 	int ret;
++	u32 addr;
++	u32 flags;
+ 
+ #if defined(CONFIG_DYNAMIC_DEBUG)
+ 	dynamic_hex_dump("NS announcement: ", DUMP_PREFIX_NONE, 16, 1,
+ 			 data, len, true);
+ #endif
+ 
+-	if (len != sizeof(*msg)) {
++	if (len == sizeof(*msg)) {
++		addr = rpmsg32_to_cpu(rpdev, msg->addr);
++		flags = rpmsg32_to_cpu(rpdev, msg->flags);
++		chinfo.desc[0] = '\0';
++	} else if (len == sizeof(*msg_ext)) {
++		addr = rpmsg32_to_cpu(rpdev, msg_ext->addr);
++		flags = rpmsg32_to_cpu(rpdev, msg_ext->flags);
++		msg_ext->desc[RPMSG_NAME_SIZE - 1] = '\0';
++		strncpy(chinfo.desc, msg_ext->desc, sizeof(chinfo.desc));
++	} else {
+ 		dev_err(dev, "malformed ns msg (%d)\n", len);
+ 		return -EINVAL;
+ 	}
+@@ -54,13 +66,13 @@ static int rpmsg_ns_cb(struct rpmsg_device *rpdev, void *data, int len,
+ 
+ 	strncpy(chinfo.name, msg->name, sizeof(chinfo.name));
+ 	chinfo.src = RPMSG_ADDR_ANY;
+-	chinfo.dst = rpmsg32_to_cpu(rpdev, msg->addr);
++	chinfo.dst = addr;
+ 
+ 	dev_info(dev, "%sing channel %s addr 0x%x\n",
+-		 rpmsg32_to_cpu(rpdev, msg->flags) & RPMSG_NS_DESTROY ?
++		 flags & RPMSG_NS_DESTROY ?
+ 		 "destroy" : "creat", msg->name, chinfo.dst);
+ 
+-	if (rpmsg32_to_cpu(rpdev, msg->flags) & RPMSG_NS_DESTROY) {
++	if (flags & RPMSG_NS_DESTROY) {
+ 		ret = rpmsg_release_channel(rpdev, &chinfo);
+ 		if (ret)
+ 			dev_err(dev, "rpmsg_destroy_channel failed: %d\n", ret);
+diff --git a/drivers/rpmsg/virtio_rpmsg_bus.c b/drivers/rpmsg/virtio_rpmsg_bus.c
+index 8e49a3bac..1787cd617 100644
+--- a/drivers/rpmsg/virtio_rpmsg_bus.c
++++ b/drivers/rpmsg/virtio_rpmsg_bus.c
+@@ -380,6 +397,24 @@ static void virtio_rpmsg_release_device(struct device *dev)
+ 	kfree(vch);
+ }
+ 
++static int virtio_rpmsg_desc_match(struct device *dev, void *data)
++{
++	struct rpmsg_channel_info *chinfo = data;
++	struct rpmsg_device *rpdev = to_rpmsg_device(dev);
++
++	if (!*chinfo->desc)
++		return 0;
++
++	if (strncmp(chinfo->name, rpdev->id.name, RPMSG_NAME_SIZE))
++		return 0;
++
++	if (strncmp(chinfo->desc, rpdev->desc, RPMSG_NAME_SIZE))
++		return 0;
++
++	/* found a match ! */
++	return 1;
++}
++
+ /*
+  * create an rpmsg channel using its name and address info.
+  * this function will be used to create both static and dynamic
+@@ -403,6 +438,15 @@ static struct rpmsg_device *__rpmsg_create_channel(struct virtproc_info *vrp,
+ 		return NULL;
+ 	}
+ 
++	tmp = device_find_child(dev, chinfo, virtio_rpmsg_desc_match);
++	if (tmp) {
++		/* decrement the matched device's refcount back */
++		put_device(tmp);
++		dev_err(dev, "channel %s:%x:%x failed, desc '%s' already exists\n",
++			chinfo->name, chinfo->src, chinfo->dst, chinfo->desc);
++		return NULL;
++	}
++
+ 	vch = kzalloc(sizeof(*vch), GFP_KERNEL);
+ 	if (!vch)
+ 		return NULL;
+@@ -416,6 +460,7 @@ static struct rpmsg_device *__rpmsg_create_channel(struct virtproc_info *vrp,
+ 	rpdev->dst = chinfo->dst;
+ 	rpdev->ops = &virtio_rpmsg_ops;
+ 	rpdev->little_endian = virtio_is_little_endian(vrp->vdev);
++	strncpy(rpdev->desc, chinfo->desc, RPMSG_NAME_SIZE);
+ 
+ 	/*
+ 	 * rpmsg server channels has predefined local address (for now),
+diff --git a/include/linux/rpmsg.h b/include/linux/rpmsg.h
+index a8dcf8a9a..929c03baf 100644
+--- a/include/linux/rpmsg.h
++++ b/include/linux/rpmsg.h
+@@ -28,11 +28,13 @@ struct rpmsg_endpoint_ops;
+ /**
+  * struct rpmsg_channel_info - channel info representation
+  * @name: name of service
++ * @desc: description of service
+  * @src: local address
+  * @dst: destination address
+  */
+ struct rpmsg_channel_info {
+ 	char name[RPMSG_NAME_SIZE];
++	char desc[RPMSG_NAME_SIZE];
+ 	u32 src;
+ 	u32 dst;
+ };
+@@ -42,6 +44,7 @@ struct rpmsg_channel_info {
+  * @driver_override: driver name to force a match; do not set directly,
+  *                   because core frees it; use driver_set_override() to
+  *                   set or clear it.
++ * @desc: description of remote service
+  * @src: local address
+  * @dst: destination address
+  * @ept: the rpmsg endpoint of this channel
+@@ -52,6 +55,7 @@ struct rpmsg_device {
+ 	struct device dev;
+ 	struct rpmsg_device_id id;
+ 	const char *driver_override;
++	char desc[RPMSG_NAME_SIZE];
+ 	u32 src;
+ 	u32 dst;
+ 	struct rpmsg_endpoint *ept;
