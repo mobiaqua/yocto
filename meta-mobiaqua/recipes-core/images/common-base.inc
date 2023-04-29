@@ -15,7 +15,7 @@ INSTALL_PKGS = "\
 "
 DEPEDS += "virtual/gles2"
 RRECOMMENDS += ""
-RDEPENDS += "ntpdate tzdata tzdata-europe \
+RDEPENDS += "chrony tzdata tzdata-europe \
 "
 
 IMAGE_LINGUAS = " "
