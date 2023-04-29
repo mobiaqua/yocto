@@ -22,7 +22,7 @@ do_configure () {
 	esac
 	target="$os-${HOST_ARCH}"
 	case $target in
-	linux-arc)
+	linux-arc | linux-microblaze*)
 		target=linux-latomic
 		;;
 	linux-arm*)
@@ -50,7 +50,7 @@ do_configure () {
 	linux-*-mips64 | linux-mips64 | linux-*-mips64el | linux-mips64el)
 		target=linux64-mips64
 		;;
-	linux-microblaze* | linux-nios2* | linux-sh3 | linux-sh4 | linux-arc*)
+	linux-nios2* | linux-sh3 | linux-sh4 | linux-arc*)
 		target=linux-generic32
 		;;
 	linux-powerpc)
