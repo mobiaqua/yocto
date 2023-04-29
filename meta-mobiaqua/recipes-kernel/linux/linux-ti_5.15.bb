@@ -66,6 +66,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v5.x/linux-${LINUX_VERSION}.tar.xz \
            file://wlan/0001-wlan.patch \
            file://0001_fix_nonlinux_compile.patch \
            file://0002-bootup-hacks-move-mmc-early.patch \
+           file://0003-Kbuild.include.patch \
            file://0004_wait-for-rootfs.patch \
            file://0005_smsc95xx-add-macaddr-module-parameter.patch \
            file://0007_omap4-sgx.patch \

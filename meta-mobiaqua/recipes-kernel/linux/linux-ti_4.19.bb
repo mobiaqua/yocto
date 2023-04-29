@@ -15,6 +15,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/linux-ti_4.19:"
 SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v4.x/linux-${LINUX_VERSION}.tar.xz \
            file://ti-upstream.patch \
            file://fix_nonlinux_compile.patch \
+           file://0003-Kbuild.include.patch \
            file://0001-bootup-hacks-move-mmc-early.patch \
            file://0003-bootup-hacks-xor-select-neon-or-arm4regs.patch \
            file://wait-for-rootfs.patch \
