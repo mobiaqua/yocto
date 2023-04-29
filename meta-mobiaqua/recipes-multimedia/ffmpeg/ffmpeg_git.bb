@@ -82,7 +82,7 @@ FILES:libavfilter = "${libdir}/libavfilter*.so.*"
 FILES:libavfilter-dev = "${libdir}/libavfilter*.so ${libdir}/pkgconfig/libavfilter.pc ${libdir}/libavfilter*.a"
 FILES:libavfilter-dbg += "${libdir}/.debug/libavfilter*"
 
-SRCREV = "3980415627a187d188dc25669cea6b12912eb178"
+SRCREV = "27205c0b476a1095bc38759ad9df001e799e4843"
 
 PV = "6.0+git${SRCPV}"
 PR = "r1"
