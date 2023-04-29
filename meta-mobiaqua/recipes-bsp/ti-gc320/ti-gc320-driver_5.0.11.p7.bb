@@ -15,7 +15,7 @@ DEPENDS = "linux-ti"
 # Need to branch out with ${PV} var
 BRANCH = "ti-${PV}-k5.10"
 
-SRCREV = "3edc0a9db00931623ae303ad81c31f2f8a2012e2"
+SRCREV = "56feefb1aac728ada39ee6e56ded19648d3c9783"
 
 SRC_URI = "git://github.com/mobiaqua/ti-gc320-driver.git;protocol=https;branch=${BRANCH}"
 

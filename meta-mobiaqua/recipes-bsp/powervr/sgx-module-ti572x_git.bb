@@ -18,7 +18,7 @@ SRC_URI = "git://github.com/mobiaqua/sgx-pvr5-module.git;protocol=https;branch=m
 
 S = "${WORKDIR}/git"
 
-SRCREV = "9486e52037624b687487c1a588bd85ce76c0ba7e"
+SRCREV = "06a92e1338ca36beb6bcf09bfd8b3f376707f047"
 
 MAKE_TARGETS = "-C eurasiacon/build/linux2/omap_linux BUILD=release TARGET_PRODUCT=ti572x KERNELDIR=${STAGING_KERNEL_DIR}"
 
