@@ -10,7 +10,7 @@ INSTALL_PKGS += "u-boot-pandaboard u-boot-beagleboard sgx-module-init sgx-pvrsrv
                  ti-gc320-driver ti-gc320-libs libegl-mesa libgles1-mesa libgles2-mesa \
                  libdce libdce-firmware wl127x-fw \
                  vpdma-fw brcmfmac-fw wireless-regdb-static libavcodec libavformat \
-                 libavutil libswscale libswresample \
+                 libavutil libswscale libswresample mplayer-mini kmscube mpv \
 "
 
 RDEPENDS += ""
