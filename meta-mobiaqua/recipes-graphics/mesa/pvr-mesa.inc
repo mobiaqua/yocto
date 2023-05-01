@@ -37,7 +37,6 @@ PACKAGECONFIG[video-codecs] = ""
 PACKAGECONFIG[virgl] = ""
 PACKAGECONFIG[sgx] = "-Dgallium-sgx-alias=omapdrm,"
 
-PACKAGE_ARCH = "${MACHINE_ARCH}"
 PV = "22.0.3+pvr"
 
 do_install:append () {
