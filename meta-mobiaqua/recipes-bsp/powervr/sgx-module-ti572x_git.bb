@@ -20,9 +20,11 @@ S = "${WORKDIR}/git"
 
 SRCREV = "06a92e1338ca36beb6bcf09bfd8b3f376707f047"
 
-MAKE_TARGETS = "-C eurasiacon/build/linux2/omap_linux BUILD=release TARGET_PRODUCT=ti572x KERNELDIR=${STAGING_KERNEL_DIR}"
+BUILD_TYPE = "release"
+
+MAKE_TARGETS = "-C eurasiacon/build/linux2/omap_linux BUILD=${BUILD_TYPE} TARGET_PRODUCT=ti572x KERNELDIR=${STAGING_KERNEL_DIR}"
 
 do_install() {
 	mkdir -p ${D}/lib/modules/${KERNEL_VERSION}/kernel/drivers/gpu/pvr
-	cp ${S}/eurasiacon/binary2_omap_linux_release/target_armhf/kbuild/omapdrm_pvr_ti572x.ko ${D}/lib/modules/${KERNEL_VERSION}/kernel/drivers/gpu/pvr
+	cp ${S}/eurasiacon/binary2_omap_linux_${BUILD_TYPE}/target_armhf/kbuild/omapdrm_pvr_ti572x.ko ${D}/lib/modules/${KERNEL_VERSION}/kernel/drivers/gpu/pvr
 }
