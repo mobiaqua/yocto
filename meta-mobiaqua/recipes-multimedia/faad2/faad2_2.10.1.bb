@@ -9,7 +9,9 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=381c8cbe277a7bc1ee2ae6083a04c958"
 #LICENSE_FLAGS = "commercial"
 
 # MobiAqua: added optimisations
-FULL_OPTIMIZATION:append = " -fexpensive-optimizations -mvectorize-with-neon-quad -O4 -ffast-math"
+FULL_OPTIMIZATION:append = " -fexpensive-optimizations -O4 -ffast-math"
+FULL_OPTIMIZATION:append:panda = " -mvectorize-with-neon-quad"
+FULL_OPTIMIZATION:append:beagle = " -mvectorize-with-neon-quad"
 
 # MobiAqua: disabled
 #PV .= "+git${SRCPV}"

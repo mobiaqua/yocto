@@ -11,6 +11,7 @@ KMETA = "kernel-meta"
 KCONF_BSP_AUDIT_LEVEL = "1"
 KERNEL_DEVICETREE:panda = "omap4-panda.dtb omap4-panda-es.dtb"
 KERNEL_DEVICETREE:beagle = "am57xx-beagle-x15-revc.dtb am5729-beagleboneai.dtb"
+KERNEL_DEVICETREE:beagle64 = "ti/k3-j721e-beagleboneai64.dtb"
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-ti_6.3:"
 
 SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \

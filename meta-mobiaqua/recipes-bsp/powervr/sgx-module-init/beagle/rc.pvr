@@ -12,3 +12,10 @@
 
 LOAD_MODULE=/sbin/modprobe
 
+[ "$VERBOSE" != no ] && echo -n "Loading PVR modules: omapdrm_pvr_ti572x"
+
+$LOAD_MODULE omapdrm_pvr_ti572x
+
+export LD_LIBRARY_PATH=/usr/lib/gles-ti572x
+
+[ -e /usr/bin/pvrsrvinit ] && /usr/bin/pvrsrvinit

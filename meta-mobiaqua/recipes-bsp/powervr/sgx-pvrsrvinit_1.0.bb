@@ -4,6 +4,8 @@ ERROR_QA:remove = "license-checksum"
 
 DEPENDS = ""
 
+COMPATIBLE_MACHINE = "panda|beagle|igep0030"
+
 SRC_URI = "file://pvrsrvinit.c"
 
 S = "${WORKDIR}"

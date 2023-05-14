@@ -15,7 +15,9 @@ LICENSE:append = " ${@bb.utils.contains('PACKAGECONFIG', 'arm-neon', '& MIT', ''
 LIC_FILES_CHKSUM:append = " ${@bb.utils.contains('PACKAGECONFIG', 'arm-neon', 'file://src/video/arm/pixman-arm-neon-asm.h;md5=9a9cc1e51abbf1da58f4d9528ec9d49b;beginline=1;endline=24', '', d)}"
 
 # MobiAqua: added optimisations
-FULL_OPTIMIZATION:append = " -fexpensive-optimizations -mvectorize-with-neon-quad -O4 -ffast-math"
+FULL_OPTIMIZATION:append = " -fexpensive-optimizations -O4 -ffast-math"
+FULL_OPTIMIZATION:append:panda = " -mvectorize-with-neon-quad"
+FULL_OPTIMIZATION:append:beagle = " -mvectorize-with-neon-quad"
 
 PROVIDES = "virtual/libsdl2"
 

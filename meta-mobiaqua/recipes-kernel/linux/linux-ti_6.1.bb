@@ -2,7 +2,7 @@ require recipes-kernel/linux/linux-yocto.inc
 
 INC_PR = "r0"
 DEPENDS += "openssl-native ncurses-native elf-native kmod-native"
-COMPATIBLE_MACHINE = "(panda|beagle)"
+COMPATIBLE_MACHINE = "(panda|beagle|beagle64)"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 LINUX_VERSION = "6.1.28"
@@ -11,6 +11,7 @@ KMETA = "kernel-meta"
 KCONF_BSP_AUDIT_LEVEL = "1"
 KERNEL_DEVICETREE:panda = "omap4-panda.dtb omap4-panda-es.dtb"
 KERNEL_DEVICETREE:beagle = "am57xx-beagle-x15-revc.dtb am5729-beagleboneai.dtb"
+KERNEL_DEVICETREE:beagle64 = "ti/k3-j721e-beagleboneai64.dtb"
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-ti_6.1:"
 
 SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \

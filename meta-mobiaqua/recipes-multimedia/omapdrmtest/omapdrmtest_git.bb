@@ -3,6 +3,8 @@ DEPENDS = "libdce libdrm ffmpeg virtual/libgbm virtual/egl"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://viddec3test.c;beginline=1;endline=16;md5=c391f44e40a29096285e3121923041df"
 
+COMPATIBLE_MACHINE = "panda|beagle|igep0030"
+
 inherit autotools pkgconfig
 
 PV = "1.0"

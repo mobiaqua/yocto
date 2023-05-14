@@ -12,13 +12,18 @@ SRC_URI = "file://omap4-ipu-fw.xem3 \
 
 S = "${WORKDIR}"
 
-do_install() {
+do_install:panda() {
 	install -d ${D}${base_libdir}/firmware
 
-	install -m 0644 ${S}/omap4-ipu-fw.xem3 ${D}${base_libdir}/firmware/
-#	install -m 0644 ${S}/omap5-ipu-fw.xem4 ${D}${base_libdir}/firmware/
-	install -m 0644 ${S}/dra7-ipu2-fw.xem4 ${D}${base_libdir}/firmware/
 	install -m 0644 ${S}/ipu-fw.licenses ${D}${base_libdir}/firmware/
+	install -m 0644 ${S}/omap4-ipu-fw.xem3 ${D}${base_libdir}/firmware/
+}
+
+do_install:beagle() {
+	install -d ${D}${base_libdir}/firmware
+
+	install -m 0644 ${S}/ipu-fw.licenses ${D}${base_libdir}/firmware/
+	install -m 0644 ${S}/dra7-ipu2-fw.xem4 ${D}${base_libdir}/firmware/
 }
 
 FILES:${PN} += "${base_libdir}/firmware/"

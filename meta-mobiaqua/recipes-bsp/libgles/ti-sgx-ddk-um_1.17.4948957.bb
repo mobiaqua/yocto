@@ -18,37 +18,38 @@ RDEPENDS:${PN} += "libdrm libdrm-omap"
 
 S = "${WORKDIR}/git"
 
-do_install () {
-    #'ti335x ti343x ti437x ti443x jacinto6evm ti654x'
-    products="ti443x jacinto6evm"
-    for product in $products
+do_install:panda () {
+    install -d ${D}${libdir}/gles-ti443x
+    for library in GLESv1_PVR_MESA GLESv2_PVR_MESA PVRScopeServices dbm glslcompiler pvr_dri_support srv_init srv_um usc
     do
-        target=$product
-        if [ "$product" = "jacinto6evm" ]; then
-            target=ti572x
-        fi
-        install -d ${D}${libdir}/gles-${target}
-        for library in GLESv1_PVR_MESA GLESv2_PVR_MESA PVRScopeServices dbm glslcompiler pvr_dri_support srv_init srv_um usc
-        do
-            cp -p ${S}/targetfs/${product}/lib/lib${library}.so.${PV} ${D}${libdir}/gles-${target}/lib${library}.so
-            ln -s lib${library}.so ${D}${libdir}/gles-${target}/lib${library}.so.1
-        done
+        cp -p ${S}/targetfs/ti443x/lib/lib${library}.so.${PV} ${D}${libdir}/gles-ti443x/lib${library}.so
+        ln -s lib${library}.so ${D}${libdir}/gles-ti443x/lib${library}.so.1
     done
 
     install -d ${D}${sysconfdir}/profile.d
     echo "#!/bin/sh
 
-CPU_VER=\`cat /proc/cpuinfo | grep Hardware | cut -d : -f2\`
-case \$CPU_VER in
-    \" Generic OMAP4 (Flattened Device Tree)\")
-    export LD_LIBRARY_PATH=/usr/lib/gles-ti443x
-    ;;
-    \" Generic OMAP5 (Flattened Device Tree)\"|\" Generic DRA74X (Flattened Device Tree)\")
-    export LD_LIBRARY_PATH=/usr/lib/gles-ti572x
-    ;;
-esac" > ${D}${sysconfdir}/profile.d/sgx_gles.sh
+export LD_LIBRARY_PATH=/usr/lib/gles-ti443x
+" > ${D}${sysconfdir}/profile.d/sgx_gles.sh
     chmod 755 ${D}${sysconfdir}/profile.d/sgx_gles.sh
 }
+
+do_install:beagle () {
+    install -d ${D}${libdir}/gles-ti572x
+    for library in GLESv1_PVR_MESA GLESv2_PVR_MESA PVRScopeServices dbm glslcompiler pvr_dri_support srv_init srv_um usc
+    do
+        cp -p ${S}/targetfs/jacinto6evm/lib/lib${library}.so.${PV} ${D}${libdir}/gles-ti572x/lib${library}.so
+        ln -s lib${library}.so ${D}${libdir}/gles-ti572x/lib${library}.so.1
+    done
+
+    install -d ${D}${sysconfdir}/profile.d
+    echo "#!/bin/sh
+
+export LD_LIBRARY_PATH=/usr/lib/gles-ti572x
+" > ${D}${sysconfdir}/profile.d/sgx_gles.sh
+    chmod 755 ${D}${sysconfdir}/profile.d/sgx_gles.sh
+}
+
 
 PACKAGES = "${PN}"
 PACKAGEFUNCS:remove = "package_do_shlibs"

@@ -9,7 +9,9 @@ SRC_URI += " \
 "
 
 # MobiAqua: added optimisations
-FULL_OPTIMIZATION:append = " -fexpensive-optimizations -mvectorize-with-neon-quad -O4 -ffast-math"
+FULL_OPTIMIZATION:append = " -fexpensive-optimizations -O4 -ffast-math"
+FULL_OPTIMIZATION:append:panda = " -mvectorize-with-neon-quad"
+FULL_OPTIMIZATION:append:beagle = " -mvectorize-with-neon-quad"
 
 # MobiAqua: added "-DCMAKE_SKIP_BUILD_RPATH=TRUE"
 EXTRA_OECMAKE = "-Denable-floats=ON -DLIB_SUFFIX=${@d.getVar('baselib').replace('lib', '')} -DCMAKE_SKIP_BUILD_RPATH=TRUE"

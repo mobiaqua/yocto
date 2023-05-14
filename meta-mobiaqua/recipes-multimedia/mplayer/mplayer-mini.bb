@@ -5,17 +5,19 @@ HOMEPAGE = "http://www.mplayerhq.hu/"
 DEPENDS = "ffmpeg zlib freetype fontconfig alsa-lib libmpg123 ncurses"
 DEPENDS:append:panda = " libdce libdrm virtual/libgbm virtual/egl virtual/libgles2"
 DEPENDS:append:beagle = " libdce libdrm virtual/libgbm virtual/egl virtual/libgles2"
+DEPENDS:append:beagle64 = " libdrm virtual/libgbm virtual/egl virtual/libgles2"
 RDEPENDS:${PN} = "mplayer-common glibc-gconv-cp1250 ttf-dejavu-sans"
 
 DEPENDS:append:panda = " ${@['','gdb-cross-arm'][d.getVar('BUILD_DEBUG') == '1']}"
 DEPENDS:append:beagle = " ${@['','gdb-cross-arm'][d.getVar('BUILD_DEBUG') == '1']}"
+DEPENDS:append:beagle64 = " ${@['','gdb-cross-arm'][d.getVar('BUILD_DEBUG') == '1']}"
 
 LICENSE = "GPL-2.0-or-later"
 ERROR_QA:remove = "license-checksum"
 
 RCONFLICTS:${PN} = "mplayer"
 
-SRCREV = "859a7040746d20b60a94c99e2c831aa14da09d6b"
+SRCREV = "fd4f3b601b24aaa294044f1f174dbdc8f62856e6"
 SRC_URI = "git://github.com/mobiaqua/mplayer-mini.git;protocol=https;branch=master"
 
 PV = "1.0+git"
@@ -34,7 +36,9 @@ EXTRA_OECONF = " \
 	--ar=${TARGET_PREFIX}ar \
 "
 
-FULL_OPTIMIZATION:append = " -fexpensive-optimizations -mvectorize-with-neon-quad -O4 -ffast-math"
+FULL_OPTIMIZATION:append = " -fexpensive-optimizations -O4 -ffast-math"
+FULL_OPTIMIZATION:append:panda = " -mvectorize-with-neon-quad"
+FULL_OPTIMIZATION:append:beagle = " -mvectorize-with-neon-quad"
 
 do_configure:prepend:panda() {
 	export DCE_CFLAGS=`pkg-config --cflags libdce`
@@ -58,6 +62,19 @@ do_configure:prepend:beagle() {
 	export EGL_LIBS=`pkg-config --libs egl`
 }
 
+do_configure:prepend:beagle64() {
+	export DRM_CFLAGS=`pkg-config --cflags libdrm`
+	export DRM_LIBS=`pkg-config --libs libdrm`
+	export GBM_CFLAGS=`pkg-config --cflags gbm`
+	export GBM_LIBS=`pkg-config --libs gbm`
+	export EGL_CFLAGS=`pkg-config --cflags egl`
+	export EGL_LIBS=`pkg-config --libs egl`
+}
+
+EXTRA_CFLAGS:panda = " -DOMAP_DRM=1 -DOMAP_DCE=1"
+EXTRA_CFLAGS:beagle = " -DOMAP_DRM=1 -DOMAP_DCE=1"
+EXTRA_CFLAGS:beagle64 = " -DOMAP_DRM=0 -DOMAP_DCE=0"
+
 do_configure() {
 	cd ${S}
 	sed -i 's|/usr/include|${STAGING_INCDIR}|g' ${S}/configure
@@ -67,7 +84,7 @@ do_configure() {
 
 	./configure ${EXTRA_OECONF} \
 		--extra-libs="${DCE_LIBS} ${DRM_LIBS} ${GBM_LIBS} ${EGL_LIBS} -lGLESv2" \
-		--extra-cflags="${DCE_CFLAGS} ${DRM_CFLAGS} ${GBM_CFLAGS} ${EGL_CFLAGS}"
+		--extra-cflags="${EXTRA_CFLAGS} ${DCE_CFLAGS} ${DRM_CFLAGS} ${GBM_CFLAGS} ${EGL_CFLAGS}"
 }
 
 do_compile () {

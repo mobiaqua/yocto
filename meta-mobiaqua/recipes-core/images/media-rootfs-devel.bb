@@ -14,6 +14,9 @@ libdce-dbg libmmrpc-dbg sgx-pvr-gbm-dbg sgx-pvrsrvinit-dbg \
 omapdrmtest omapdrmtest-dbg \
 "
 
+INSTALL_PKGS:append:beagle64 = " \
+"
+
 DEPENDS += ""
 RDEPENDS += ""
 RRECOMMENDS += ""
