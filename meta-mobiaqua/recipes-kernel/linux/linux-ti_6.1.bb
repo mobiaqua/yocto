@@ -5,7 +5,7 @@ DEPENDS += "openssl-native ncurses-native elf-native kmod-native"
 COMPATIBLE_MACHINE = "(panda|beagle)"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.1.26"
+LINUX_VERSION = "6.1.28"
 PV = "${LINUX_VERSION}"
 KMETA = "kernel-meta"
 KCONF_BSP_AUDIT_LEVEL = "1"
@@ -72,7 +72,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
            file://defconfig \
            "
 
-SRC_URI[sha256sum] = "dfdcc143a879d64a5ee99213b2b4b05b5dccd566c144df93bca1e204df64c110"
+SRC_URI[sha256sum] = "7a094c1428b20fef0b5429e4effcc6ed962a674ac6f04e606d63be1ddcc3a6f0"
 
 S = "${WORKDIR}/linux-${PV}"
 
