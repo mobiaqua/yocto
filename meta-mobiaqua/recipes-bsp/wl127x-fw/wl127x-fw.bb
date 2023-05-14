@@ -5,7 +5,7 @@ ERROR_QA:remove = "license-checksum"
 PV = "1.0"
 PR = "r0"
 
-COMPATIBLE_MACHINE = "board-tv"
+COMPATIBLE_MACHINE = "panda"
 
 SRC_URI = "file://TIInit_7.2.31.bts \
            file://TIInit_7.6.15.bts \

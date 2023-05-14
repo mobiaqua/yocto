@@ -2,14 +2,15 @@ require recipes-kernel/linux/linux-yocto.inc
 
 INC_PR = "r0"
 DEPENDS += "openssl-native ncurses-native elf-native kmod-native"
-COMPATIBLE_MACHINE = "(board-tv|igep0030)"
+COMPATIBLE_MACHINE = "(panda|beagle)"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 LINUX_VERSION = "5.17.15"
 PV = "${LINUX_VERSION}"
 KMETA = "kernel-meta"
 KCONF_BSP_AUDIT_LEVEL = "1"
-KERNEL_DEVICETREE:board-tv = "omap4-panda.dtb omap4-panda-es.dtb am57xx-beagle-x15-revc.dtb am5729-beagleboneai.dtb"
+KERNEL_DEVICETREE:panda = "omap4-panda.dtb omap4-panda-es.dtb"
+KERNEL_DEVICETREE:beagle = "am57xx-beagle-x15-revc.dtb am5729-beagleboneai.dtb"
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-ti_5.17:"
 
 SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v5.x/linux-${LINUX_VERSION}.tar.xz \

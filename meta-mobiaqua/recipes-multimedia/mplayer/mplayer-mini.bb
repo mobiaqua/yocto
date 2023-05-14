@@ -3,10 +3,12 @@ SECTION = "multimedia"
 PRIORITY = "optional"
 HOMEPAGE = "http://www.mplayerhq.hu/"
 DEPENDS = "ffmpeg zlib freetype fontconfig alsa-lib libmpg123 ncurses"
-DEPENDS:append:board-tv = " libdce libdrm virtual/libgbm virtual/egl virtual/libgles2"
+DEPENDS:append:panda = " libdce libdrm virtual/libgbm virtual/egl virtual/libgles2"
+DEPENDS:append:beagle = " libdce libdrm virtual/libgbm virtual/egl virtual/libgles2"
 RDEPENDS:${PN} = "mplayer-common glibc-gconv-cp1250 ttf-dejavu-sans"
 
-DEPENDS:append:board-tv = " ${@['','gdb-cross-arm'][d.getVar('BUILD_DEBUG') == '1']}"
+DEPENDS:append:panda = " ${@['','gdb-cross-arm'][d.getVar('BUILD_DEBUG') == '1']}"
+DEPENDS:append:beagle = " ${@['','gdb-cross-arm'][d.getVar('BUILD_DEBUG') == '1']}"
 
 LICENSE = "GPL-2.0-or-later"
 ERROR_QA:remove = "license-checksum"
@@ -34,7 +36,18 @@ EXTRA_OECONF = " \
 
 FULL_OPTIMIZATION:append = " -fexpensive-optimizations -mvectorize-with-neon-quad -O4 -ffast-math"
 
-do_configure:prepend:board-tv() {
+do_configure:prepend:panda() {
+	export DCE_CFLAGS=`pkg-config --cflags libdce`
+	export DCE_LIBS=`pkg-config --libs libdce`
+	export DRM_CFLAGS=`pkg-config --cflags libdrm`
+	export DRM_LIBS=`pkg-config --libs libdrm`
+	export GBM_CFLAGS=`pkg-config --cflags gbm`
+	export GBM_LIBS=`pkg-config --libs gbm`
+	export EGL_CFLAGS=`pkg-config --cflags egl`
+	export EGL_LIBS=`pkg-config --libs egl`
+}
+
+do_configure:prepend:beagle() {
 	export DCE_CFLAGS=`pkg-config --cflags libdce`
 	export DCE_LIBS=`pkg-config --libs libdce`
 	export DRM_CFLAGS=`pkg-config --cflags libdrm`

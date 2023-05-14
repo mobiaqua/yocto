@@ -19,4 +19,3 @@ do_install() {
 }
 
 FILES:${PN} = "/usr${sysconfdir}/mplayer"
-PACKAGE_ARCH = "all"

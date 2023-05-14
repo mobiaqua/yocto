@@ -3,7 +3,7 @@ DESCRIPTION = "VPDMA firmware for Video Input Port and Video Processing Engine"
 LICENSE = "TI-TSPA"
 ERROR_QA:remove = "license-checksum"
 
-COMPATIBLE_MACHINE = "board-tv"
+COMPATIBLE_MACHINE = "beagle"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 

@@ -10,12 +10,12 @@ error() {
 
 print_help() {
 	echo
-	echo "* ERROR *  Missing or wrong target param!"
+	echo "* ERROR *  Wrong params!"
 	echo
-	echo ". setup.sh [<target>] [-debug]"
+	echo ". setup.sh [<target>] [<machine>] [--debug] [--force]"
 	echo
 	echo "Targets list:"
-	echo "- media"
+	echo "- media (default)"
 	echo "- dsp"
 	echo
 	[ "x$0" = "x./setup.sh" ] && exit 1
@@ -335,20 +335,62 @@ setup() {
 	export BUILDDIR=$OE_BASE
 
 	export DISTRO=mobiaqua
-	export TARGET=$1
+	TARGET=media
+	MACHINE=beagle
+	BUILD_DEBUG="0"
+	FORCE_CONFIG=
+
+	while [ $# -ne 0 ] ; do
+		if [ "$1" = "--debug" ]; then
+			BUILD_DEBUG="1"
+		elif [ "$1" = "--force" ]; then
+			FORCE_CONFIG="1"
+		elif [ "$1" = "--help" ]; then
+			print_help
+			return 1
+		elif [ "$1" = "media" ]; then
+			TARGET=$1
+		elif [ "$1" = "dsp" ]; then
+			TARGET=$1
+			MACHINE=igep0030
+		elif [ "$1" = "panda" ]; then
+			MACHINE=$1
+		elif [ "$1" = "beagle" ]; then
+			MACHINE=$1
+		elif [ "$1" = "beagle64" ]; then
+			MACHINE=$1
+		else
+			print_help
+			return 1
+		fi
+		shift
+	done
 
 	if [ "$TARGET" = "media" ]; then
-		export MACHINE=board-tv
+		if [ "$MACHINE" != "panda" ] && [ "$MACHINE" != "beagle" ] && [ "$MACHINE" != "beagle64" ]; then
+			print_help
+			return 1
+		fi
 		image=media-rootfs-devel
-		ARMDIR=armv7a-hf
+		if [ "$MACHINE" == "beagle64" ]; then
+			ARMDIR=armv8a-hf
+		else
+			ARMDIR=armv7a-hf
+		fi
 	elif [ "$TARGET" = "dsp" ]; then
-		export MACHINE=igep0030
+		if [ "$MACHINE" != "igep0030" ]; then
+			print_help
+			return 1
+		fi
 		image=dsp-rootfs-devel
 		ARMDIR=armv7a-hf
 	else
 		print_help
 		return 1
 	fi
+
+	export TARGET
+	export MACHINE
 
 	if [ -e ${HOME}/.mobiaqua/oe/${DISTRO}-${TARGET}_config ]; then
 		. ${HOME}/.mobiaqua/oe/${DISTRO}-${TARGET}_config
@@ -410,17 +452,12 @@ export BB_ENV_PASSTHROUGH_ADDITIONS
 	else
 		echo " -  rootfs postprocess commands are NOT defined"
 	fi
-	if [ "$2" = "-debug" ]; then
-		BUILD_DEBUG="1"
-	else
-		BUILD_DEBUG="0"
-	fi
 
 	mkdir -p ${OE_BASE}/build-${DISTRO}-${TARGET}/conf
 
 	DL_DIR=${MA_DL_DIR:="$HOME/sources"}
 
-	if [ ! -f ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/local.conf ] || [ ! -f ${OE_BASE}/build-${DISTRO}-${TARGET}/env.source ] || [ "$1" = "--force" ]; then
+	if [ ! -f ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/local.conf ] || [ ! -f ${OE_BASE}/build-${DISTRO}-${TARGET}/env.source ] || [ "${FORCE_CONFIG}" = "1" ]; then
 		PATH_TO_TOOLS="build-${DISTRO}-${TARGET}/tmp/sysroots/`uname -m`-`uname -s | awk '{print tolower($0)}'`/usr"
 		echo "DL_DIR = \"${DL_DIR}\"
 OE_BASE = \"${OE_BASE}\"
@@ -499,9 +536,7 @@ ERROR=0
 
 [ $ERROR != 1 ] && [ -z "$BASH_VERSION" ] && error "Script NOT running in 'bash' shell"
 
-[ $ERROR != 1 ] && [ "x$0" = "x./setup.sh" ] && error "Script must be executed via sourcing: '. setup.sh [<target>] [-debug]'"
-
-[ $ERROR != 1 ] && [ "$1" = "" ] && print_help
+[ $ERROR != 1 ] && [ "x$0" = "x./setup.sh" ] && error "Script must be executed via sourcing: '. setup.sh [<target>] [<machine>] [--debug] [--force]'"
 
 [ $ERROR != 1 ] && { python_v3_check; [ $? != 0 ] && error "Python v3.7 is required"; }
 

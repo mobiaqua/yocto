@@ -38,7 +38,7 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 UBOOT_MACHINE = "omap4_panda_defconfig"
 
-COMPATIBLE_MACHINE = "board-tv"
+COMPATIBLE_MACHINE = "panda"
 
 UBOOT_SUFFIX ??= "img"
 UBOOT_IMAGE = "u-boot-panda-${PV}-${PR}.${UBOOT_SUFFIX}"

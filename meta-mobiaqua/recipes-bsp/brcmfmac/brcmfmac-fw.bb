@@ -5,7 +5,7 @@ ERROR_QA:remove = "license-checksum"
 PV = "1.0"
 PR = "r0"
 
-COMPATIBLE_MACHINE = "board-tv"
+COMPATIBLE_MACHINE = "beagle"
 
 SRC_URI = "\
            file://cyfmac43455-sdio.beagle,am5729-beagleboneai.bin \

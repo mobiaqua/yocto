@@ -43,7 +43,7 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 UBOOT_MACHINE = "am57xx_evm_defconfig"
 
-COMPATIBLE_MACHINE = "board-tv"
+COMPATIBLE_MACHINE = "beagle"
 
 UBOOT_SUFFIX ??= "img"
 UBOOT_IMAGE = "u-boot-beagle-${PV}-${PR}.${UBOOT_SUFFIX}"

@@ -4,7 +4,7 @@ LICENSE = "TI-TSPA"
 LIC_FILES_CHKSUM = "file://TI-Linux-Graphics-DDK-UM-Manifest.doc;md5=b17390502bc89535c86cfbbae961a2a8"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
-COMPATIBLE_MACHINE = "board-tv|igep0030"
+COMPATIBLE_MACHINE = "panda|beagle|igep0030"
 
 PR = "r1"
 

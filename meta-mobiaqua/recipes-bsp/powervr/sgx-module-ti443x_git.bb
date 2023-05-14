@@ -4,7 +4,7 @@ LIC_FILES_CHKSUM = "file://GPL-COPYING;md5=60422928ba677faaa13d6ab5f5baaa1e"
 
 inherit module
 
-COMPATIBLE_MACHINE = "board-tv|igep0030"
+COMPATIBLE_MACHINE = "panda"
 
 PR = "r0"
 PV = "1.17"
