@@ -24,64 +24,6 @@ LIC_FILES_CHKSUM = "file://COPYING.GPLv2;md5=b234ee4d69f5fce4486a80fdaf4a4263 \
 # MobiAqua: custom ffpmeg
 DEFAULT_PREFERENCE = "99"
 
-inherit autotools pkgconfig
-
-LEAD_SONAME = "libavcodec.so"
-
-PACKAGES += "${PN}-vhook-dbg ${PN}-vhook"
-
-FILES:${PN} = "${bindir}"
-FILES:${PN}-dev = "${includedir}/${PN}"
-
-FILES:${PN}-vhook = "${libdir}/vhook"
-FILES:${PN}-vhook-dbg += "${libdir}/vhook/.debug"
-
-PACKAGES += "libav-x264-presets \
-             libavcodec  libavcodec-dev  libavcodec-dbg \
-             libavdevice libavdevice-dev libavdevice-dbg \
-             libavformat libavformat-dev libavformat-dbg \
-             libavutil   libavutil-dev   libavutil-dbg \
-             libpostproc libpostproc-dev libpostproc-dbg \
-             libswscale  libswscale-dev  libswscale-dbg \
-             libswresample  libswresample-dev  libswresample-dbg \
-             libavfilter libavfilter-dev libavfilter-dbg \
-            "
-
-FILES:libav-x264-presets = "${datadir}/*.ffpreset"
-
-FILES:${PN}-dev = "${includedir}"
-FILES:libavcodec = "${libdir}/libavcodec*.so.*"
-FILES:libavcodec-dev = "${libdir}/libavcodec*.so ${libdir}/pkgconfig/libavcodec.pc ${libdir}/libavcodec*.a"
-FILES:libavcodec-dbg += "${libdir}/.debug/libavcodec*"
-
-FILES:libavdevice = "${libdir}/libavdevice*.so.*"
-FILES:libavdevice-dev = "${libdir}/libavdevice*.so ${libdir}/pkgconfig/libavdevice.pc ${libdir}/libavdevice*.a"
-FILES:libavdevice-dbg += "${libdir}/.debug/libavdevice*"
-
-FILES:libavformat = "${libdir}/libavformat*.so.*"
-FILES:libavformat-dev = "${libdir}/libavformat*.so ${libdir}/pkgconfig/libavformat.pc ${libdir}/libavformat*.a"
-FILES:libavformat-dbg += "${libdir}/.debug/libavformat*"
-
-FILES:libavutil = "${libdir}/libavutil*.so.*"
-FILES:libavutil-dev = "${libdir}/libavutil*.so ${libdir}/pkgconfig/libavutil.pc ${libdir}/libavutil*.a"
-FILES:libavutil-dbg += "${libdir}/.debug/libavutil*"
-
-FILES:libpostproc = "${libdir}/libpostproc*.so.*"
-FILES:libpostproc-dev = "${libdir}/libpostproc*.so  ${libdir}/pkgconfig/libpostproc.pc ${libdir}/libpostproc*.a ${includedir}/postproc"
-FILES:libpostproc-dbg += "${libdir}/.debug/libpostproc*"
-
-FILES:libswscale = "${libdir}/libswscale*.so.*"
-FILES:libswscale-dev = "${libdir}/libswscale*.so ${libdir}/pkgconfig/libswscale.pc ${libdir}/libswscale*.a"
-FILES:libswscale-dbg += "${libdir}/.debug/libswscale*"
-
-FILES:libswresample = "${libdir}/libswresample*.so.*"
-FILES:libswresample-dev = "${libdir}/libswresample*.so ${libdir}/pkgconfig/libswresample.pc ${libdir}/libswresample*.a"
-FILES:libswresample-dbg += "${libdir}/.debug/libswresample*"
-
-FILES:libavfilter = "${libdir}/libavfilter*.so.*"
-FILES:libavfilter-dev = "${libdir}/libavfilter*.so ${libdir}/pkgconfig/libavfilter.pc ${libdir}/libavfilter*.a"
-FILES:libavfilter-dbg += "${libdir}/.debug/libavfilter*"
-
 SRCREV = "27205c0b476a1095bc38759ad9df001e799e4843"
 
 PV = "6.0+git${SRCPV}"
@@ -91,6 +33,12 @@ SRC_URI = "git://source.ffmpeg.org/ffmpeg.git;branch=release/6.0 \
           "
 
 S = "${WORKDIR}/git"
+
+# Should be API compatible with libav (which was a fork of ffmpeg)
+# libpostproc was previously packaged from a separate recipe
+PROVIDES = "libav libpostproc"
+
+inherit autotools pkgconfig
 
 def cpu(d):
     for arg in (d.getVar('TUNE_CCARGS') or '').split():
@@ -151,6 +99,29 @@ EXTRA_OEMAKE = "V=1"
 do_configure() {
     ${S}/configure ${EXTRA_OECONF}
 }
+
+# patch out build host paths for reproducibility
+do_compile:prepend:class-target() {
+        sed -i -e "s,${WORKDIR},,g" ${B}/config.h
+}
+
+PACKAGES =+ "libavcodec \
+             libavdevice \
+             libavfilter \
+             libavformat \
+             libavutil \
+             libpostproc \
+             libswresample \
+             libswscale"
+
+FILES:libavcodec = "${libdir}/libavcodec${SOLIBS}"
+FILES:libavdevice = "${libdir}/libavdevice${SOLIBS}"
+FILES:libavfilter = "${libdir}/libavfilter${SOLIBS}"
+FILES:libavformat = "${libdir}/libavformat${SOLIBS}"
+FILES:libavutil = "${libdir}/libavutil${SOLIBS}"
+FILES:libpostproc = "${libdir}/libpostproc${SOLIBS}"
+FILES:libswresample = "${libdir}/libswresample${SOLIBS}"
+FILES:libswscale = "${libdir}/libswscale${SOLIBS}"
 
 INSANE_SKIP:${PN} += "already-stripped installed-vs-shipped"
 
