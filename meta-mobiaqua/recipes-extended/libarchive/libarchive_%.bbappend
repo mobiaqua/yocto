@@ -4,6 +4,8 @@ SRC_URI += "file://ignore-owner.patch"
 
 DEPENDS:remove = "e2fsprogs-native zstd"
 
+PACKAGECONFIG:remove = "acl xattr"
+
 EXTRA_OECONF:append:class-native = " --enable-shared=no"
 EXTRA_OECONF:append:class-nativesdk = " --enable-shared=no"
 
