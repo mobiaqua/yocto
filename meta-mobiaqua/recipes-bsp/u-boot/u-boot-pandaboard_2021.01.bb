@@ -19,10 +19,10 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files/pandaboard:${THISDIR}/files:"
 SRCREV = "c4fddedc48f336eabc4ce3f74940e6aa372de18c"
 
 SRC_URI = "git://git.denx.de/u-boot.git;branch=master \
-           file://boot-panda-label.script \
-           file://boot-panda-sdcard.script \
-           file://boot-panda-nfs.script \
-           file://boot-panda-nfs2.script \
+           file://boot-label.script \
+           file://boot-sdcard.script \
+           file://boot-nfs.script \
+           file://boot-nfs2.script \
            file://avoid-python2.patch \
           "
 
@@ -41,24 +41,24 @@ UBOOT_MACHINE = "omap4_panda_defconfig"
 COMPATIBLE_MACHINE = "panda"
 
 UBOOT_SUFFIX ??= "img"
-UBOOT_IMAGE = "u-boot-panda-${PV}-${PR}.${UBOOT_SUFFIX}"
+UBOOT_IMAGE = "u-boot.${UBOOT_SUFFIX}"
 UBOOT_MAKE_TARGET ?= "all"
 
-MLO_IMAGE ?= "MLO-panda-${PV}-${PR}"
+MLO_IMAGE ?= "MLO"
 
 do_configure:prepend () {
-    sed -i -e s,NFS_IP,${MA_NFS_IP},g ${WORKDIR}/boot-panda-nfs.script
-    sed -i -e s,NFS_PATH,${MA_NFS_PATH},g ${WORKDIR}/boot-panda-nfs.script
+    sed -i -e s,NFS_IP,${MA_NFS_IP},g ${WORKDIR}/boot-nfs.script
+    sed -i -e s,NFS_PATH,${MA_NFS_PATH},g ${WORKDIR}/boot-nfs.script
 
-    sed -i -e s,NFS_IP,${MA_NFS_IP},g ${WORKDIR}/boot-panda-nfs2.script
-    sed -i -e s,NFS_PATH,${MA_NFS_PATH},g ${WORKDIR}/boot-panda-nfs2.script
-    sed -i -e s,TARGET_IP,${MA_TARGET_IP},g ${WORKDIR}/boot-panda-nfs2.script
-    sed -i -e s,GATEWAY_IP,${MA_GATEWAY_IP},g ${WORKDIR}/boot-panda-nfs2.script
-    sed -i -e s,TARGET_MAC,${MA_TARGET_MAC},g ${WORKDIR}/boot-panda-nfs2.script
+    sed -i -e s,NFS_IP,${MA_NFS_IP},g ${WORKDIR}/boot-nfs2.script
+    sed -i -e s,NFS_PATH,${MA_NFS_PATH},g ${WORKDIR}/boot-nfs2.script
+    sed -i -e s,TARGET_IP,${MA_TARGET_IP},g ${WORKDIR}/boot-nfs2.script
+    sed -i -e s,GATEWAY_IP,${MA_GATEWAY_IP},g ${WORKDIR}/boot-nfs2.script
+    sed -i -e s,TARGET_MAC,${MA_TARGET_MAC},g ${WORKDIR}/boot-nfs2.script
 
-    sed -i -e s,TARGET_MAC,${MA_TARGET_MAC},g ${WORKDIR}/boot-panda-nfs.script
-    sed -i -e s,TARGET_MAC,${MA_TARGET_MAC},g ${WORKDIR}/boot-panda-label.script
-    sed -i -e s,TARGET_MAC,${MA_TARGET_MAC},g ${WORKDIR}/boot-panda-sdcard.script
+    sed -i -e s,TARGET_MAC,${MA_TARGET_MAC},g ${WORKDIR}/boot-nfs.script
+    sed -i -e s,TARGET_MAC,${MA_TARGET_MAC},g ${WORKDIR}/boot-label.script
+    sed -i -e s,TARGET_MAC,${MA_TARGET_MAC},g ${WORKDIR}/boot-sdcard.script
 }
 
 do_configure () {
@@ -81,10 +81,10 @@ do_install () {
 
     install -m 0644 ${B}/MLO ${D}/boot/${MLO_IMAGE}
 
-    install -m 0644 ${WORKDIR}/boot-panda-sdcard.script ${D}/boot/uEnv-panda-sdcard.txt
-    install -m 0644 ${WORKDIR}/boot-panda-label.script ${D}/boot/uEnv-panda-label.txt
-    install -m 0644 ${WORKDIR}/boot-panda-nfs.script ${D}/boot/uEnv-panda-nfs.txt
-    install -m 0644 ${WORKDIR}/boot-panda-nfs2.script ${D}/boot/uEnv-panda-nfs2.txt
+    install -m 0644 ${WORKDIR}/boot-sdcard.script ${D}/boot/uEnv-sdcard.txt
+    install -m 0644 ${WORKDIR}/boot-label.script ${D}/boot/uEnv-label.txt
+    install -m 0644 ${WORKDIR}/boot-nfs.script ${D}/boot/uEnv-nfs.txt
+    install -m 0644 ${WORKDIR}/boot-nfs2.script ${D}/boot/uEnv-nfs2.txt
 }
 
 FILES:${PN} = "/boot"
@@ -98,10 +98,10 @@ do_deploy () {
 
     install -m 0644 ${B}/MLO ${DEPLOYDIR}/${MLO_IMAGE}
 
-    install -m 0644 ${WORKDIR}/boot-panda-sdcard.script ${DEPLOYDIR}/uEnv-panda-sdcard.txt
-    install -m 0644 ${WORKDIR}/boot-panda-label.script ${DEPLOYDIR}/uEnv-panda-label.txt
-    install -m 0644 ${WORKDIR}/boot-panda-nfs.script ${DEPLOYDIR}/uEnv-panda-nfs.txt
-    install -m 0644 ${WORKDIR}/boot-panda-nfs2.script ${DEPLOYDIR}/uEnv-panda-nfs2.txt
+    install -m 0644 ${WORKDIR}/boot-sdcard.script ${DEPLOYDIR}/uEnv-sdcard.txt
+    install -m 0644 ${WORKDIR}/boot-label.script ${DEPLOYDIR}/uEnv-label.txt
+    install -m 0644 ${WORKDIR}/boot-nfs.script ${DEPLOYDIR}/uEnv-nfs.txt
+    install -m 0644 ${WORKDIR}/boot-nfs2.script ${DEPLOYDIR}/uEnv-nfs2.txt
 }
 
 addtask deploy before do_build after do_compile

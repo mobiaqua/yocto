@@ -46,10 +46,10 @@ UBOOT_MACHINE = "am57xx_evm_defconfig"
 COMPATIBLE_MACHINE = "beagle"
 
 UBOOT_SUFFIX ??= "img"
-UBOOT_IMAGE = "u-boot-beagle-${PV}-${PR}.${UBOOT_SUFFIX}"
+UBOOT_IMAGE = "u-boot.${UBOOT_SUFFIX}"
 UBOOT_MAKE_TARGET ?= "all"
 
-MLO_IMAGE ?= "MLO-beagle-${PV}-${PR}"
+MLO_IMAGE ?= "MLO"
 
 do_configure:prepend () {
     sed -i -e s,NFS_IP,${MA_NFS_IP},g ${WORKDIR}/boot-beagle-nfs.script

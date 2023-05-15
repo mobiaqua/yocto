@@ -40,10 +40,10 @@ UBOOT_MACHINE = "igep00x0_defconfig"
 COMPATIBLE_MACHINE = "igep0030"
 
 UBOOT_SUFFIX ??= "img"
-UBOOT_IMAGE = "u-boot-igep-${PV}-${PR}.${UBOOT_SUFFIX}"
+UBOOT_IMAGE = "u-boot.${UBOOT_SUFFIX}"
 UBOOT_MAKE_TARGET ?= "all"
 
-MLO_IMAGE ?= "MLO-igep-${PV}-${PR}"
+MLO_IMAGE ?= "MLO"
 
 do_configure:prepend () {
 }
@@ -79,7 +79,6 @@ do_deploy () {
     install -m 0644 ${B}/${UBOOT_BINARY} ${DEPLOYDIR}/${UBOOT_IMAGE}
 
     cd ${DEPLOYDIR}
-    rm -f ${UBOOT_SYMLINK}
 
     install -m 0644 ${B}/MLO ${DEPLOYDIR}/${MLO_IMAGE}
 
