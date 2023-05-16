@@ -1,0 +1,16 @@
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index eaa817156f84..96a897faf218 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -1477,8 +1477,9 @@ mhdp: dp-bridge@a000000 {
+ 		 * the PHY driver.
+ 		 */
+ 		reg = <0x00 0x0a000000 0x00 0x030a00>, /* DSS_EDP0_V2A_CORE_VP_REGS_APB */
+-		      <0x00 0x04f40000 0x00 0x20>;    /* DSS_EDP0_INTG_CFG_VP */
+-		reg-names = "mhdptx", "j721e-intg";
++		      <0x00 0x04f40000 0x00 0x20>,     /* DSS_EDP0_INTG_CFG_VP */
++		      <0x00 0x04f48000 0x00 0x74>;
++		reg-names = "mhdptx", "j721e-intg", "mhdptx-sapb";
+ 
+ 		clocks = <&k3_clks 151 36>;
+ 
