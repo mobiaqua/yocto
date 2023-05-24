@@ -2,6 +2,10 @@
 # upstream yet. This allows us to build the shims we need without completely
 # clobbering mesa.
 
+require recipes-graphics/mesa/mesa.inc
+
+SUMMARY += " (with PowerVR support for TI platforms)"
+
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LIC_FILES_CHKSUM = "file://docs/license.rst;md5=9a383ee9f65a4e939d6630e9b067ff58"
