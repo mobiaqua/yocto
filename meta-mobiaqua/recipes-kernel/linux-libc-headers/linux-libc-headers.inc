@@ -62,7 +62,8 @@ UPSTREAM_CHECK_URI = "https://www.kernel.org/"
 
 S = "${WORKDIR}/linux-${PV}"
 
-EXTRA_OEMAKE = " HOSTCC="${BUILD_CC}" HOSTCPP="${BUILD_CPP}""
+# MobiAqua: added BUILD_CFLAGS
+EXTRA_OEMAKE = " HOSTCC="${BUILD_CC} ${BUILD_CFLAGS}" HOSTCPP="${BUILD_CPP}""
 
 do_configure[noexec] = "1"
 

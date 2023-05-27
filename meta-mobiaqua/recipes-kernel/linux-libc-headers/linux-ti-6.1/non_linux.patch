@@ -1,0 +1,15 @@
+diff -urp old/arch/x86/tools/relocs.h new/arch/x86/tools/relocs.h
+--- old/arch/x86/tools/relocs.h	2023-05-27 23:12:46
++++ new/arch/x86/tools/relocs.h	2023-05-27 23:15:37
+@@ -11,9 +11,9 @@
+ #include <errno.h>
+ #include <unistd.h>
+ #include <elf.h>
+-#include <byteswap.h>
++//#include <byteswap.h>
+ #define USE_BSD
+-#include <endian.h>
++//#include <endian.h>
+ #include <regex.h>
+ #include <tools/le_byteshift.h>
+ 
