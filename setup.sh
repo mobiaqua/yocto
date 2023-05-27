@@ -335,8 +335,9 @@ setup() {
 	export BUILDDIR=$OE_BASE
 
 	export DISTRO=mobiaqua
-	TARGET=media
-	MACHINE=beagle
+	export TARGET=media
+	export MACHINE=beagle
+	CROSS=arm-mobiaqua-linux-gnueabi-
 	BUILD_DEBUG="0"
 	FORCE_CONFIG=
 
@@ -373,9 +374,9 @@ setup() {
 		fi
 		image=media-rootfs-devel
 		if [ "$MACHINE" == "beagle64" ]; then
-			ARMDIR=armv8a-hf
+			CROSS=aarch64-mobiaqua-linux-
 		else
-			ARMDIR=armv7a-hf
+			CROSS=arm-mobiaqua-linux-gnueabi-
 		fi
 	elif [ "$TARGET" = "dsp" ]; then
 		if [ "$MACHINE" != "igep0030" ]; then
@@ -383,14 +384,11 @@ setup() {
 			return 1
 		fi
 		image=dsp-rootfs-devel
-		ARMDIR=armv7a-hf
+		CROSS=arm-mobiaqua-linux-gnueabi-
 	else
 		print_help
 		return 1
 	fi
-
-	export TARGET
-	export MACHINE
 
 	if [ -e ${HOME}/.mobiaqua/oe/${DISTRO}-${TARGET}_config ]; then
 		. ${HOME}/.mobiaqua/oe/${DISTRO}-${TARGET}_config
@@ -505,7 +503,7 @@ unset TERMINFO
 
 
 		echo "source ${OE_BASE}/build-${DISTRO}-${TARGET}/env.source
-export CROSS_COMPILE=arm-${DISTRO}-linux-gnueabi-
+export CROSS_COMPILE=${CROSS}
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/crosstools-setup
 
 
@@ -542,4 +540,4 @@ ERROR=0
 
 [ $ERROR != 1 ] && { prepare_tools; [ $? != 0 ] && error "Please install missing tools"; }
 
-[ $ERROR != 1 ] && setup $1 $2
+[ $ERROR != 1 ] && setup $*
