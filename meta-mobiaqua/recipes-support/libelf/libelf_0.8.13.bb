@@ -8,6 +8,7 @@ PR = "r1"
 SRC_URI = "https://fossies.org/linux/misc/old/libelf-${PV}.tar.gz;name=archive \
 	  file://elf_repl.patch \
 	  file://skip-po.patch \
+	  file://fixed_ifdef.patch \
 	  "
 inherit autotools
 

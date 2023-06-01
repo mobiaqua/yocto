@@ -1,0 +1,46 @@
+diff -urp old/lib/gelf.h new/lib/gelf.h
+--- old/lib/gelf.h	2008-05-23 10:15:34
++++ new/lib/gelf.h	2023-05-30 07:32:08
+@@ -22,15 +22,15 @@
+ #ifndef _GELF_H
+ #define _GELF_H
+ 
+-#if __LIBELF_INTERNAL__
++#ifdef __LIBELF_INTERNAL__
+ #include <libelf.h>
+ #else /* __LIBELF_INTERNAL__ */
+ #include <libelf/libelf.h>
+ #endif /* __LIBELF_INTERNAL__ */
+ 
+-#if __LIBELF_NEED_LINK_H
++#if defined(__LIBELF_NEED_LINK_H)
+ #include <link.h>
+-#elif __LIBELF_NEED_SYS_LINK_H
++#elif defined(__LIBELF_NEED_SYS_LINK_H)
+ #include <sys/link.h>
+ #endif /* __LIBELF_NEED_LINK_H */
+ 
+diff -urp old/lib/libelf.h new/lib/libelf.h
+--- old/lib/libelf.h	2009-07-07 19:57:43
++++ new/lib/libelf.h	2023-05-30 07:32:24
+@@ -25,7 +25,7 @@
+ #include <stddef.h>	/* for size_t */
+ #include <sys/types.h>
+ 
+-#if __LIBELF_INTERNAL__
++#ifdef __LIBELF_INTERNAL__
+ #include <sys_elf.h>
+ #else /* __LIBELF_INTERNAL__ */
+ #include <libelf/sys_elf.h>
+diff -urp old/lib/sys_elf.h.in new/lib/sys_elf.h.in
+--- old/lib/sys_elf.h.in	2008-05-23 10:57:07
++++ new/lib/sys_elf.h.in	2023-05-30 07:37:10
+@@ -68,7 +68,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Bos
+ #ifdef __LIBELF_HEADER_ELF_H
+ # include __LIBELF_HEADER_ELF_H
+ #else /* __LIBELF_HEADER_ELF_H */
+-# if __LIBELF_INTERNAL__
++# ifdef __LIBELF_INTERNAL__
+ #  include <elf_repl.h>
+ # else /* __LIBELF_INTERNAL__ */
+ #  include <libelf/elf_repl.h>
