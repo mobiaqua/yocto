@@ -1,0 +1,68 @@
+diff -urp old/argp-ba.c new/argp-ba.c
+--- old/argp-ba.c	2023-06-06 17:19:52
++++ new/argp-ba.c	2023-06-06 18:00:30
+@@ -22,4 +22,4 @@
+    the ARGP_HELP_BUG_ADDR flag is set (as it is by various standard help
+    messages), embedded in a sentence that says something like `Report bugs to
+    ADDR.'.  */
+-const char *argp_program_bug_address;
++const char *argp_program_bug_address = 0;
+diff -urp old/argp-namefrob.h new/argp-namefrob.h
+--- old/argp-namefrob.h	2023-06-06 18:02:25
++++ new/argp-namefrob.h	2023-06-06 17:52:47
+@@ -82,12 +82,18 @@
+ #undef __funlockfile
+ #define __funlockfile funlockfile
+ #undef __mempcpy
++#if !defined(HAVE_MEMPCPY)
++void *mempcpy (void *to, const void *from, size_t size);
++#endif
+ #define __mempcpy mempcpy
+ #undef __sleep
+ #define __sleep sleep
+ #undef __strcasecmp
+ #define __strcasecmp strcasecmp
+ #undef __strchrnul
++#if !defined(HAVE_STRCHRNUL)
++char *strchrnul(const char *s, int c);
++#endif
+ #define __strchrnul strchrnul
+ #undef __strerror_r
+ #define __strerror_r strerror_r
+@@ -133,6 +139,18 @@
+ #if defined(HAVE_DECL_PUTCHAR_UNLOCKED) && !HAVE_DECL_PUTCHAR_UNLOCKED
+ # define putchar_unlocked(x) putchar (x)
+ # endif
++
++#ifdef __APPLE__
++
++#if !defined(HAVE_DECL_FPUTS_UNLOCKED)
++# define fputs_unlocked(x,y) fputs (x,y)
++#endif
++
++#if !defined(HAVE_DECL_FWRITE_UNLOCKED)
++# define fwrite_unlocked(w,x,y,z) fwrite (w,x,y,z)
++#endif
++
++#endif
+ 
+ extern char *__argp_basename (char *name);
+ 
+diff -urp old/argp-pv.c new/argp-pv.c
+--- old/argp-pv.c	2023-06-06 18:03:30
++++ new/argp-pv.c	2023-06-06 18:05:04
+@@ -21,4 +21,4 @@
+    --version is added (unless the ARGP_NO_HELP flag is used), which will
+    print this this string followed by a newline and exit (unless the
+    ARGP_NO_EXIT flag is used).  Overridden by ARGP_PROGRAM_VERSION_HOOK.  */
+-const char *argp_program_version;
++const char *argp_program_version = 0;
+diff -urp old/argp-pvh.c new/argp-pvh.c
+--- old/argp-pvh.c	2023-06-06 17:19:52
++++ new/argp-pvh.c	2023-06-06 18:00:58
+@@ -28,4 +28,4 @@
+    this function with a stream to print the version to and a pointer to the
+    current parsing state, and then exits (unless the ARGP_NO_EXIT flag is
+    used).  This variable takes precedent over ARGP_PROGRAM_VERSION.  */
+-void (*argp_program_version_hook) (FILE *stream, struct argp_state *state);
++void (*argp_program_version_hook) (FILE *stream, struct argp_state *state) = 0;
