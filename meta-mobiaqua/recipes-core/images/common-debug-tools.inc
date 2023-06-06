@@ -7,6 +7,7 @@ INSTALL_PKGS += "\
 DEPENDS:panda += "gdb-cross-arm"
 DEPENDS:beagle += "gdb-cross-arm"
 DEPENDS:beagle64 += "gdb-cross-aarch64"
+DEPENDS:nuc += "gdb-cross-x86_64"
 RDEPENDS += ""
 RRECOMMENDS += ""
 

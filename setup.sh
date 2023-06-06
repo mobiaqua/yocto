@@ -360,6 +360,8 @@ setup() {
 			MACHINE=$1
 		elif [ "$1" = "beagle64" ]; then
 			MACHINE=$1
+		elif [ "$1" = "nuc" ]; then
+			MACHINE=$1
 		else
 			print_help
 			return 1
@@ -368,12 +370,14 @@ setup() {
 	done
 
 	if [ "$TARGET" = "media" ]; then
-		if [ "$MACHINE" != "panda" ] && [ "$MACHINE" != "beagle" ] && [ "$MACHINE" != "beagle64" ]; then
+		if [ "$MACHINE" != "panda" ] && [ "$MACHINE" != "beagle" ] && [ "$MACHINE" != "beagle64" ] && [ "$MACHINE" != "nuc" ]; then
 			print_help
 			return 1
 		fi
 		image=media-rootfs-devel
-		if [ "$MACHINE" == "beagle64" ]; then
+		if [ "$MACHINE" = "nuc" ]; then
+			CROSS=x86_64-mobiaqua-linux-
+		elif [ "$MACHINE" = "beagle64" ]; then
 			CROSS=aarch64-mobiaqua-linux-
 		else
 			CROSS=arm-mobiaqua-linux-gnueabi-

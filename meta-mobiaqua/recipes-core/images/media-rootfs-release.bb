@@ -26,6 +26,9 @@ INSTALL_PKGS:append:beagle64 = " \
 ti-img-rogue-umlibs ti-img-rogue-umlibs-firmware sgx-module-init vxd-dec-fw \
 "
 
+INSTALL_PKGS:append:nuc = " \
+"
+
 RDEPENDS += ""
 RRECOMMENDS += ""
 
@@ -35,3 +38,5 @@ IMAGE_INSTALL += "${INSTALL_PKGS} "
 inherit mobiaqua-clean-boot
 
 ROOTFS_POSTPROCESS_COMMAND += "mobiaqua_rootfs_clean_boot_dir ; "
+
+ROOTFS_POSTPROCESS_COMMAND:nuc += "mobiaqua_rootfs_clean_fw_dir ; "
