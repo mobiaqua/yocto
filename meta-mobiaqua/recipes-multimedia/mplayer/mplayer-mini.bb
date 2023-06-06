@@ -48,7 +48,7 @@ do_configure:prepend:panda() {
 	export GBM_CFLAGS=`pkg-config --cflags gbm`
 	export GBM_LIBS=`pkg-config --libs gbm`
 	export EGL_CFLAGS=`pkg-config --cflags egl`
-	export EGL_LIBS=`pkg-config --libs egl`
+	export EGL_LIBS="`pkg-config --libs egl` -lGLESv2"
 }
 
 do_configure:prepend:beagle() {
@@ -59,7 +59,7 @@ do_configure:prepend:beagle() {
 	export GBM_CFLAGS=`pkg-config --cflags gbm`
 	export GBM_LIBS=`pkg-config --libs gbm`
 	export EGL_CFLAGS=`pkg-config --cflags egl`
-	export EGL_LIBS=`pkg-config --libs egl`
+	export EGL_LIBS="`pkg-config --libs egl` -lGLESv2"
 }
 
 do_configure:prepend:beagle64() {
@@ -68,7 +68,7 @@ do_configure:prepend:beagle64() {
 	export GBM_CFLAGS=`pkg-config --cflags gbm`
 	export GBM_LIBS=`pkg-config --libs gbm`
 	export EGL_CFLAGS=`pkg-config --cflags egl`
-	export EGL_LIBS=`pkg-config --libs egl`
+	export EGL_LIBS="`pkg-config --libs egl` -lGLESv2"
 }
 
 EXTRA_CFLAGS:panda = " -DOMAP_DRM=1 -DOMAP_DCE=1"
@@ -83,7 +83,7 @@ do_configure() {
 	sed -i 's|/usr/\S*lib[\w/]*||g' ${S}/configure
 
 	./configure ${EXTRA_OECONF} \
-		--extra-libs="${DCE_LIBS} ${DRM_LIBS} ${GBM_LIBS} ${EGL_LIBS} -lGLESv2" \
+		--extra-libs="${DCE_LIBS} ${DRM_LIBS} ${GBM_LIBS} ${EGL_LIBS}" \
 		--extra-cflags="${EXTRA_CFLAGS} ${DCE_CFLAGS} ${DRM_CFLAGS} ${GBM_CFLAGS} ${EGL_CFLAGS}"
 }
 
