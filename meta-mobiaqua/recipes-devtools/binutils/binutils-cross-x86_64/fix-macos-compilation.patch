@@ -1,0 +1,16 @@
+diff -urp old/gold/gold-threads.cc new/gold/gold-threads.cc
+--- old/gold/gold-threads.cc	2020-10-25 23:04:38.000000000 +0100
++++ new/gold/gold-threads.cc	2020-10-25 23:24:04.000000000 +0100
+@@ -285,8 +285,12 @@ class Once_initialize
+ {
+  public:
+   Once_initialize()
++#ifdef __APPLE__
++  { once_.__sig = _PTHREAD_ONCE_SIG_init; once_.__opaque[0] = 0; }
++#else
+     : once_(PTHREAD_ONCE_INIT)
+   { }
++#endif
+ 
+   // Return a pointer to the pthread_once_t variable.
+   pthread_once_t*
