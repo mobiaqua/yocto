@@ -63,6 +63,7 @@ EXTRA_OECONF = " \
         --disable-all \
         --disable-bzlib \
         --enable-avcodec \
+        --enable-avdevice \
         --enable-avformat \
         --enable-avutil \
         --enable-swscale \
