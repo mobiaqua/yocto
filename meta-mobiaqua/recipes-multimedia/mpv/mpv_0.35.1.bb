@@ -8,39 +8,27 @@ DEPENDS = " \
     ffmpeg \
     jpeg \
     libass \
+    alsa-lib \
+    lua5.1 \
+    libdrm \
+    virtual/egl \
+    virtual/libgbm \
 "
+
+DEPENDS:append:nuc = " virtual/libgl libva"
 
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://LICENSE.GPL;md5=b234ee4d69f5fce4486a80fdaf4a4263"
 
 SRCREV_mpv = "140ec21c89d671d392877a7f3b91d67e7d7b9239"
 SRC_URI = "git://github.com/mpv-player/mpv;name=mpv;branch=release/0.35;protocol=https \
-           https://waf.io/waf-2.0.20;name=waf;subdir=git \
+           https://waf.io/waf-2.0.25;name=waf;subdir=git \
            "
-SRC_URI[waf.sha256sum] = "bf971e98edc2414968a262c6aa6b88541a26c3cd248689c89f4c57370955ee7f"
+SRC_URI[waf.sha256sum] = "21199cd220ccf60434133e1fd2ab8c8e5217c3799199c82722543970dc8e38d5"
 
 S = "${WORKDIR}/git"
 
 inherit waf pkgconfig
-
-# Note: lua is required to get on-screen-display (controls)
-PACKAGECONFIG ??= " \
-    lua \
-    drm \
-"
-
-PACKAGECONFIG[opengl] = "--enable-gl,--disable-gl,virtual/libgl"
-PACKAGECONFIG[egl] = "--enable-egl,--disable-egl,virtual/egl"
-PACKAGECONFIG[drm] = "--enable-drm,--disable-drm,libdrm"
-PACKAGECONFIG[gbm] = "--enable-gbm,--disable-gbm,virtual/libgbm"
-PACKAGECONFIG[lua] = "--enable-lua,--disable-lua,lua5.1"
-
-python __anonymous() {
-    packageconfig = (d.getVar("PACKAGECONFIG") or "").split()
-    extras = []
-    if extras:
-        d.appendVar("EXTRA_OECONF", "".join(extras))
-}
 
 FULL_OPTIMIZATION:append = " -fexpensive-optimizations -O4 -ffast-math"
 FULL_OPTIMIZATION:append:panda = " -mvectorize-with-neon-quad"
@@ -61,11 +49,21 @@ EXTRA_OECONF = " \
     --disable-rubberband \
     --disable-lcms2 \
     --disable-vapoursynth \
-    ${PACKAGECONFIG_CONFARGS} \
+    --enable-lua \
+    --enable-egl \
+    --enable-drm \
+    --enable-gbm \
+    --enable-egl-drm \
 "
 
+EXTRA_OECONF:append:nuc = " --enable-gl --enable-vaapi --enable-vaapi-drm"
+
+do_configure:append() {
+    sed -i -e 's#${WORKDIR}#<WORKDIR>#g' ${B}/config.h
+}
+
 link_waf() {
-    ln -s waf-2.0.20 ${S}/waf
+    ln -s waf-2.0.25 ${S}/waf
 }
 do_unpack[postfuncs] += "link_waf"
 
