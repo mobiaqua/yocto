@@ -26,6 +26,7 @@ LIC_FILES_CHKSUM = "file://LICENSE.GPL;md5=b234ee4d69f5fce4486a80fdaf4a4263"
 
 SRCREV_mpv = "1c82d6ae7a31f8ef3a3f5120bd50480c312039cf"
 SRC_URI = "git://github.com/mpv-player/mpv;name=mpv;branch=master;protocol=https \
+           file://disable-vt-switcher.patch \
            https://waf.io/waf-2.0.25;name=waf;subdir=git \
            "
 SRC_URI[waf.sha256sum] = "21199cd220ccf60434133e1fd2ab8c8e5217c3799199c82722543970dc8e38d5"
