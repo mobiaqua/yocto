@@ -8,7 +8,7 @@ PR = "r0"
 INSTALL_PKGS += "\
 libegl-mesa libgles1-mesa libgles2-mesa \
 wireless-regdb-static libavcodec libavformat \
-libavutil libswscale libswresample mplayer-mini kmscube mpv \
+libavutil libswscale libswresample mplayer-mini kmscube mpv mpv-config \
 "
 
 INSTALL_PKGS:append:panda = " \

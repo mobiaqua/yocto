@@ -4,6 +4,7 @@ SECTION = "multimedia"
 HOMEPAGE = "http://www.mpv.io/"
 
 DEPENDS = " \
+    mpv-config \
     zlib \
     ffmpeg \
     jpeg \
