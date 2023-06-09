@@ -27,6 +27,7 @@ ti-img-rogue-umlibs ti-img-rogue-umlibs-firmware sgx-module-init vxd-dec-fw \
 "
 
 INSTALL_PKGS:append:nuc = " \
+gmmlib intel-media-driver \
 "
 
 RDEPENDS += ""
