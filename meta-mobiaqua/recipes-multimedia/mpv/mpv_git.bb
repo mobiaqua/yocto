@@ -16,13 +16,16 @@ DEPENDS = " \
     virtual/libgbm \
 "
 
+PV = "0.35+git"
+PR = "r1"
+
 DEPENDS:append:nuc = " virtual/libgl libva"
 
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://LICENSE.GPL;md5=b234ee4d69f5fce4486a80fdaf4a4263"
 
-SRCREV_mpv = "140ec21c89d671d392877a7f3b91d67e7d7b9239"
-SRC_URI = "git://github.com/mpv-player/mpv;name=mpv;branch=release/0.35;protocol=https \
+SRCREV_mpv = "1c82d6ae7a31f8ef3a3f5120bd50480c312039cf"
+SRC_URI = "git://github.com/mpv-player/mpv;name=mpv;branch=master;protocol=https \
            https://waf.io/waf-2.0.25;name=waf;subdir=git \
            "
 SRC_URI[waf.sha256sum] = "21199cd220ccf60434133e1fd2ab8c8e5217c3799199c82722543970dc8e38d5"
