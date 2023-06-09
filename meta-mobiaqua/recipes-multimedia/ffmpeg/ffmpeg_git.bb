@@ -78,15 +78,19 @@ EXTRA_OECONF = " \
         --enable-swresample \
         --enable-avfilter \
         --enable-protocol=file \
-        --enable-bsf=mov2textsub,h264_mp4toannexb,hevc_mp4toannexb,mpeg4_unpack_bframes \
-        --enable-demuxer=matroska,mov,flac,mp3,wav,mpegps,mpegts,avi,m4v,mpegvideo,asf,flv,rm,rtmp,swf,srt,ass \
+        --enable-bsf=mov2textsub,h264_mp4toannexb,hevc_mp4toannexb,mpeg4_unpack_bframes,mjpeg2jpeg_bsf,pgs_frame_merge_bsf,text2movsub_bsf,\
+truehd_core_bsf \
+        --enable-filter=fps \
+        --enable-demuxer=matroska,mov,flac,mp3,wav,mpegps,mpegts,avi,m4v,mpegvideo,asf,flv,rm,rtmp,swf,srt,ass,vobsub,subviewer1,subviewer,mpsub,\
+microdvd,sami \
         --enable-parser=aac,ac3,dca,flac,h261,h263,h264,hevc,mjpeg,mpegaudio,mpegvideo,mpeg4video,rv30,rv40,vc1,vorbis,\
-vp3,vp8,vp9\
+vp3,vp8,vp9 \
         --enable-decoder=aac,ac3,aic,eac3,dca,alac,als,flac,flv,h261,h263,h263i,h263p,h264,hevc,mlp,mp1,mp1float,mp2,mp2float,\
 mp3,mp3adu,mp3adufloat,mp3float,mp3on4,mp3on4float,mpegvideo,mpeg1video,mpeg2video,mpeg4,msmpeg4v1,msmpeg4v2,msmpeg4v3,mjpeg,\
 ffv1,dvvideo,pcm_mulaw,adpcm_ima_qt,ralf,rv10,rv20,rv30,rv40,svq1,sqv3,truehd,vc1,vorbis,vp3,vp5,vp6,vp6a,vp6f,vp7,vp8,vp9,webp,wmapro,wmav1,wmav2,\
 wmalossless,wmv1,wmv2,wmv3,theora,ra_144,ra_288,pcm_u16le,pcm_u16be,pcm_s16le,pcm_s16be,pcm_u24le,pcm_u24be,pcm_s24le,\
-pcm_s24be,pcm_u32le,pcm_u32be,pcm_s32le,pcm_s32be,pcm_bluray,pcm_dvd \
+pcm_s24be,pcm_u32le,pcm_u32be,pcm_s32le,pcm_s32be,pcm_bluray,pcm_dvd,ass,ccaption,dvdsub,microdvd,movtext,mpl2,pgssub,realtext,srt,subrip,\
+subviewer,subviewer1,text,vplayer,xsub \
         --ld="${CCLD}" \
         --cc="${CC}" \
         --cxx="${CXX}" \
