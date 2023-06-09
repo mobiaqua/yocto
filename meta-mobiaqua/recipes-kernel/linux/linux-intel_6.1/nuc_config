@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/x86_64 6.1.28 Kernel Configuration
+# Linux/x86 6.1.33 Kernel Configuration
 #
 CONFIG_CC_VERSION_TEXT="x86_64-mobiaqua-linux-gcc (GCC) 11.3.0"
 CONFIG_CC_IS_GCC=y
@@ -3236,6 +3236,7 @@ CONFIG_SND_SOC_HDAC_HDA=y
 # CONFIG_SND_SOC_RK3328 is not set
 # CONFIG_SND_SOC_RT1308_SDW is not set
 # CONFIG_SND_SOC_RT1316_SDW is not set
+# CONFIG_SND_SOC_RT1318_SDW is not set
 # CONFIG_SND_SOC_RT5616 is not set
 # CONFIG_SND_SOC_RT5631 is not set
 # CONFIG_SND_SOC_RT5640 is not set
@@ -3953,8 +3954,8 @@ CONFIG_WMI_BMOF=y
 # CONFIG_FUJITSU_LAPTOP is not set
 # CONFIG_FUJITSU_TABLET is not set
 # CONFIG_GPD_POCKET_FAN is not set
+# CONFIG_X86_PLATFORM_DRIVERS_HP is not set
 # CONFIG_WIRELESS_HOTKEY is not set
-# CONFIG_HP_WMI is not set
 # CONFIG_IBM_RTL is not set
 # CONFIG_SENSORS_HDAPS is not set
 # CONFIG_THINKPAD_LMI is not set
