@@ -1,7 +1,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-SRC_URI:panda += "file://add-deps.patch"
-SRC_URI:beagle += "file://add-deps.patch"
+SRC_URI:append:panda = " file://add-deps.patch"
+SRC_URI:append:beagle = " file://add-deps.patch"
 
 PACKAGECONFIG:panda = "omap"
 PACKAGECONFIG:beagle = "omap"
