@@ -24,6 +24,9 @@ LIC_FILES_CHKSUM = "file://COPYING.GPLv2;md5=b234ee4d69f5fce4486a80fdaf4a4263 \
 # MobiAqua: custom ffpmeg
 DEFAULT_PREFERENCE = "99"
 
+# MobiAqua: added Intel HW acceleration and nasm
+DEPENDS:nuc = "nasm-native libva intel-media-driver"
+
 SRCREV = "27205c0b476a1095bc38759ad9df001e799e4843"
 
 PV = "6.0+git${SRCPV}"
@@ -51,6 +54,11 @@ FULL_OPTIMIZATION:append:panda = " -mvectorize-with-neon-quad"
 FULL_OPTIMIZATION:append:beagle = " -mvectorize-with-neon-quad"
 
 EXTRA_FFCONF ?= ""
+# MobiAqua: added Intel HW acceleration
+EXTRA_FFCONF:append:nuc = " \
+--enable-vaapi \
+--enable-hwaccel=av1_vaapi,h264_vaapi,hevc_vaapi,mpeg2_vaapi,mpeg4_vaapi,vp8_vaapi,vp9_vaapi,wmv3_vaapi,mjpeg_vaapi \
+"
 
 EXTRA_OECONF = " \
         --enable-shared \
