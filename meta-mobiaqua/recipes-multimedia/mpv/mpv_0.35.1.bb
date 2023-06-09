@@ -39,7 +39,7 @@ SIMPLE_TARGET_SYS = "${@'${TARGET_SYS}'.replace('${TARGET_VENDOR}', '')}"
 EXTRA_OECONF = " \
     --prefix=${prefix} \
     --target=${SIMPLE_TARGET_SYS} \
-    --confdir=${sysconfdir} \
+    --confdir=${sysconfdir}/mpv \
     --datadir=${datadir} \
     --disable-manpage-build \
     --disable-libbluray \
