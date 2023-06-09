@@ -4580,9 +4580,9 @@ index 8b149996f..f5a90250b 100644
 --- a/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
 +++ b/drivers/net/wireless/broadcom/brcm80211/brcmfmac/pcie.c
 @@ -12,6 +12,8 @@
- #include <linux/bcma/bcma.h>
  #include <linux/sched.h>
  #include <linux/io.h>
+ #include <linux/random.h>
 +#include <linux/sched/signal.h>
 +#include <linux/kthread.h>
  #include <asm/unaligned.h>
