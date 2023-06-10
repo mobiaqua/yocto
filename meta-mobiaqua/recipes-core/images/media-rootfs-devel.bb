@@ -18,6 +18,10 @@ INSTALL_PKGS:append:beagle64 = " \
 mesa-pvr-dbg \
 "
 
+INSTALL_PKGS:append:nuc = " \
+libva-intel-utils \
+"
+
 DEPENDS += ""
 RDEPENDS += ""
 RRECOMMENDS += ""
