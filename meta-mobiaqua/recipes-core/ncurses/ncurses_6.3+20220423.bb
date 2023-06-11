@@ -21,3 +21,6 @@ ALTERNATIVE:ncurses-terminfo:class-target = ""
 
 # MobiAqua: disabled native for separated native package
 BBCLASSEXTEND = ""
+
+# MobiAqua: added '--disable-mixed-case' to match native
+EXTRA_OECONF += "--disable-mixed-case"
