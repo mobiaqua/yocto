@@ -24,8 +24,10 @@ LIC_FILES_CHKSUM = "file://COPYING.GPLv2;md5=b234ee4d69f5fce4486a80fdaf4a4263 \
 # MobiAqua: custom ffpmeg
 DEFAULT_PREFERENCE = "99"
 
+DEPENDS = "openssl"
+
 # MobiAqua: added Intel HW acceleration and nasm
-DEPENDS:nuc = "nasm-native libva intel-media-driver"
+DEPENDS:append:nuc = " nasm-native libva intel-media-driver"
 
 SRCREV = "27205c0b476a1095bc38759ad9df001e799e4843"
 
@@ -64,12 +66,14 @@ EXTRA_OECONF = " \
         --enable-shared \
         --enable-pthreads \
         --enable-gpl \
+        --enable-nonfree \
         \
         --cross-prefix=${TARGET_PREFIX} \
         --prefix=${prefix} \
         \
         --disable-all \
         --disable-bzlib \
+        --enable-openssl \
         --enable-avcodec \
         --enable-avdevice \
         --enable-avformat \
@@ -77,7 +81,7 @@ EXTRA_OECONF = " \
         --enable-swscale \
         --enable-swresample \
         --enable-avfilter \
-        --enable-protocol=file \
+        --enable-protocol=file,http,https \
         --enable-bsf=mov2textsub,h264_mp4toannexb,hevc_mp4toannexb,mpeg4_unpack_bframes,mjpeg2jpeg_bsf,pgs_frame_merge_bsf,text2movsub_bsf,\
 truehd_core_bsf,eac3_core_bsf \
         --enable-filter=fps \
