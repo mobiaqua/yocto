@@ -8,7 +8,7 @@
 
   - "media"
 
-    Pandaboard(ES)/BeagleBoard-X15/BeagleBone-AI
+    Pandaboard(ES)/BeagleBoard-X15/BeagleBone-AI/BeagleBone-AI-64/Intel-NUC
 
   - "dsp"
 
