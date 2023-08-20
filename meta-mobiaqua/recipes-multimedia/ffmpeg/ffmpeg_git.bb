@@ -29,7 +29,7 @@ DEPENDS = "openssl"
 # MobiAqua: added Intel HW acceleration and nasm
 DEPENDS:append:nuc = " nasm-native libva intel-media-driver"
 
-SRCREV = "27205c0b476a1095bc38759ad9df001e799e4843"
+SRCREV = "3d5edb89e75fe3ab3a6757208ef121fa2b0f54c7"
 
 PV = "6.0+git${SRCPV}"
 PR = "r1"
