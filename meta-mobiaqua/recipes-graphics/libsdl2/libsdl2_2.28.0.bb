@@ -7,8 +7,13 @@ BUGTRACKER = "http://bugzilla.libsdl.org/"
 
 SECTION = "libs"
 
-LICENSE = "Zlib"
-LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=31f575634fd56b27fc6b6cbe8dc9bd38"
+LICENSE = "Zlib & BSD-2-Clause"
+LIC_FILES_CHKSUM = "\
+    file://LICENSE.txt;md5=31f575634fd56b27fc6b6cbe8dc9bd38 \
+    file://src/hidapi/LICENSE.txt;md5=7c3949a631240cb6c31c50f3eb696077 \
+    file://src/hidapi/LICENSE-bsd.txt;md5=b5fa085ce0926bb50d0621620a82361f \
+    file://src/video/yuv2rgb/LICENSE;md5=79f8f3418d91531e05f0fc94ca67e071 \
+"
 
 # arm-neon adds MIT license
 LICENSE:append = " ${@bb.utils.contains('PACKAGECONFIG', 'arm-neon', '& MIT', '', d)}"
@@ -21,14 +26,14 @@ FULL_OPTIMIZATION:append:beagle = " -mvectorize-with-neon-quad"
 
 PROVIDES = "virtual/libsdl2"
 
+# MobiAqua: keep use autoconf instead cmake
 DEFAULT_PREFERENCE = "10"
 
 DEPENDS = "virtual/libgles2 virtual/libgbm alsa-lib"
 
-SRC_URI = "http://www.libsdl.org/release/SDL2-${PV}.tar.gz \
-"
+SRC_URI = "http://www.libsdl.org/release/SDL2-${PV}.tar.gz"
 
-SRC_URI[sha256sum] = "ad8fea3da1be64c83c45b1d363a6b4ba8fd60f5bde3b23ec73855709ec5eabf7"
+SRC_URI[sha256sum] = "d215ae4541e69d628953711496cd7b0e8b8d5c8d811d5b0f98fdc7fd1422998a"
 
 S = "${WORKDIR}/SDL2-${PV}"
 
@@ -70,8 +75,11 @@ do_configure:prepend() {
 
 FILES:${PN}-dev += "${libdir}/cmake"
 
+FILES:${PN} += "${datadir}/licenses/SDL2/LICENSE.txt"
+
 BBCLASSEXTEND = "native nativesdk"
 
+# MobiAqua: Added debug flow
 DEBUG_BUILD = "${@['no','yes'][d.getVar('BUILD_DEBUG') == '1']}"
 CFLAGS:append = "${@['',' -O0 -g3'][d.getVar('BUILD_DEBUG') == '1']}"
 
