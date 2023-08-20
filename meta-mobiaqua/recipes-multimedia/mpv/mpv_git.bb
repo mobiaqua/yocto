@@ -16,7 +16,7 @@ DEPENDS = " \
     virtual/libgbm \
 "
 
-PV = "0.35+git"
+PV = "0.36+git"
 PR = "r1"
 
 DEPENDS:append:nuc = " virtual/libgl libva"
@@ -24,12 +24,12 @@ DEPENDS:append:nuc = " virtual/libgl libva"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://LICENSE.GPL;md5=b234ee4d69f5fce4486a80fdaf4a4263"
 
-SRCREV_mpv = "1c82d6ae7a31f8ef3a3f5120bd50480c312039cf"
+SRCREV_mpv = "f4210f84906c3b00a65fba198c8127b6757b9350"
 SRC_URI = "git://github.com/mpv-player/mpv;name=mpv;branch=master;protocol=https \
            file://disable-vt-switcher.patch \
-           https://waf.io/waf-2.0.25;name=waf;subdir=git \
+           https://waf.io/waf-2.0.26;name=waf;subdir=git \
            "
-SRC_URI[waf.sha256sum] = "21199cd220ccf60434133e1fd2ab8c8e5217c3799199c82722543970dc8e38d5"
+SRC_URI[waf.sha256sum] = "dcec3e179f9c33a66544f1b3d7d91f20f6373530510fa6a858cddb6bfdcde14b"
 
 S = "${WORKDIR}/git"
 
@@ -68,7 +68,7 @@ do_configure:append() {
 }
 
 link_waf() {
-    ln -s waf-2.0.25 ${S}/waf
+    ln -s waf-2.0.26 ${S}/waf
 }
 do_unpack[postfuncs] += "link_waf"
 
