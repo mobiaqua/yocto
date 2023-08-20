@@ -23,6 +23,9 @@ hob-image-*.bb
 !meta-yocto-bsp
 !meta-yocto-imported
 !meta-mobiaqua
+!meta-macos
+!meta-ti
+!meta-nuc
 /documentation/*/eclipse/
 /documentation/*/*.html
 /documentation/*/*.pdf

@@ -1,6 +1,3 @@
-PACKAGECONFIG:remove = "hwdb"
-PACKAGE_WRITE_DEPS:remove = "qemu-native"
-
 do_install:append() {
 	if ${@bb.utils.contains('VIRTUAL-RUNTIME_init_manager','busybox','true','false',d)}; then
 		install -d ${D}${sysconfdir}/rcS.d

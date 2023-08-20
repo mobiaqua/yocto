@@ -79,6 +79,10 @@ do_configure () {
 		target=darwin64-x86_64-cc
 		extra_flags=no-shared
 		;;
+	darwin-aarch64*)
+		target=darwin64-aarch64-cc
+		extra_flags=no-shared
+		;;
 	esac
 
 	useprefix=${prefix}

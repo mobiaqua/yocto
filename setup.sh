@@ -481,12 +481,19 @@ HOSTTOOLS:remove = \"chrpath flock ldd pzstd\"
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/local.conf
 
 
+if [ "$MACHINE" = "nuc" ]; then
+	META_MACHINE=nuc
+elif [ "$MACHINE" = "panda" ] || [ "$MACHINE" = "beagle" ] || [ "$MACHINE" = "beagle64" ]; then
+	META_MACHINE=ti
+else
+	META_MACHINE=none
+fi
 
 		echo "DL_DIR = \"${DL_DIR}\"
 POKY_BBLAYERS_CONF_VERSION = \"2\"
 BBPATH = \"\${TOPDIR}\"
 BBFILES ?= \"\"
-BBLAYERS ?= \"${OE_BASE}/meta ${OE_BASE}/meta-mobiaqua\"
+BBLAYERS ?= \"${OE_BASE}/meta ${OE_BASE}/meta-macos ${OE_BASE}/meta-mobiaqua ${OE_BASE}/meta-${META_MACHINE}\"
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/bblayers.conf
 
 
