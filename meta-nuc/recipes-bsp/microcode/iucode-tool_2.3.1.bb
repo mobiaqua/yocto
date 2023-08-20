@@ -16,9 +16,11 @@ LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://COPYING;md5=751419260aa954499f7abaabaa882bbe \
                     file://iucode_tool.c;beginline=1;endline=15;md5=71eeab3190360ff0267101b570874756"
 
-DEPENDS:append:libc-musl = " argp-standalone"
+# MobiAqua: removed 'libc-musl' to use argp-standalone for MacOS host
+DEPENDS:append = " argp-standalone"
 
 SRC_URI = "https://gitlab.com/iucode-tool/releases/raw/master/iucode-tool_${PV}.tar.xz"
+# MobiAqua: removed 'libc-musl' to use argp-standalone for MacOS host
 SRC_URI:append:libc-musl = " file://0001-Makefile.am-Add-arg-parse-library-for-MUSL-support.patch"
 
 SRC_URI[md5sum] = "63b33cc0ea1f8c73b443412abbf39d6f"

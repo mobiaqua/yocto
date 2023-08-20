@@ -21,7 +21,8 @@ SRCREV = "6788bb07eb5f9e9b83c31ea1364150fe898f450a"
 DEPENDS = "iucode-tool-native"
 S = "${WORKDIR}/git"
 
-COMPATIBLE_HOST = "(i.86|x86_64).*-linux"
+# MobiAqua: commneted out for MacOS host
+#COMPATIBLE_HOST = "(i.86|x86_64).*-linux"
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 inherit deploy

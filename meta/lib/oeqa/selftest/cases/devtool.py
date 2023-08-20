@@ -8,6 +8,7 @@ import shutil
 import tempfile
 import glob
 import fnmatch
+import unittest
 
 from oeqa.selftest.case import OESelftestTestCase
 from oeqa.utils.commands import runCmd, bitbake, get_bb_var, create_temp_layer
@@ -38,6 +39,13 @@ def setUpModule():
             canonical_layerpath = os.path.realpath(canonical_layerpath) + '/'
             edited_layers.append(layerpath)
             oldmetapath = os.path.realpath(layerpath)
+
+            # when downloading poky from tar.gz some tests will be skipped (BUG 12389)
+            try:
+                runCmd('git rev-parse --is-inside-work-tree', cwd=canonical_layerpath)
+            except:
+                raise unittest.SkipTest("devtool tests require folder to be a git repo")
+
             result = runCmd('git rev-parse --show-toplevel', cwd=canonical_layerpath)
             oldreporoot = result.output.rstrip()
             newmetapath = os.path.join(corecopydir, os.path.relpath(oldmetapath, oldreporoot))
@@ -339,6 +347,38 @@ class DevtoolAddTests(DevtoolBase):
         if bindir[0] == '/':
             bindir = bindir[1:]
         self.assertTrue(os.path.isfile(os.path.join(installdir, bindir, 'pv')), 'pv binary not found in D')
+
+    def test_devtool_add_binary(self):
+        # Create a binary package containing a known test file
+        tempdir = tempfile.mkdtemp(prefix='devtoolqa')
+        self.track_for_cleanup(tempdir)
+        pn = 'tst-bin'
+        pv = '1.0'
+        test_file_dir     = "var/lib/%s/" % pn
+        test_file_name    = "test_file"
+        test_file_content = "TEST CONTENT"
+        test_file_package_root = os.path.join(tempdir, pn)
+        test_file_dir_full = os.path.join(test_file_package_root, test_file_dir)
+        bb.utils.mkdirhier(test_file_dir_full)
+        with open(os.path.join(test_file_dir_full, test_file_name), "w") as f:
+           f.write(test_file_content)
+        bin_package_path = os.path.join(tempdir, "%s.tar.gz" % pn)
+        runCmd("tar czf %s -C %s ." % (bin_package_path, test_file_package_root))
+
+        # Test devtool add -b on the binary package
+        self.track_for_cleanup(self.workspacedir)
+        self.add_command_to_tearDown('bitbake -c cleansstate %s' % pn)
+        self.add_command_to_tearDown('bitbake-layers remove-layer */workspace')
+        result = runCmd('devtool add  -b %s %s' % (pn, bin_package_path))
+        self.assertExists(os.path.join(self.workspacedir, 'conf', 'layer.conf'), 'Workspace directory not created')
+
+        # Build the resulting recipe
+        result = runCmd('devtool build %s' % pn)
+        installdir = get_bb_var('D', pn)
+        self.assertTrue(installdir, 'Could not query installdir variable')
+
+        # Check that a known file from the binary package has indeed been installed
+        self.assertTrue(os.path.isfile(os.path.join(installdir, test_file_dir, test_file_name)), '%s not found in D' % test_file_name)
 
     def test_devtool_add_git_local(self):
         # We need dbus built so that DEPENDS recognition works
