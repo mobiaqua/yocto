@@ -493,7 +493,7 @@ fi
 POKY_BBLAYERS_CONF_VERSION = \"2\"
 BBPATH = \"\${TOPDIR}\"
 BBFILES ?= \"\"
-BBLAYERS ?= \"${OE_BASE}/meta ${OE_BASE}/meta-macos ${OE_BASE}/meta-mobiaqua ${OE_BASE}/meta-${META_MACHINE}\"
+BBLAYERS ?= \"${OE_BASE}/meta ${OE_BASE}/meta-macos ${OE_BASE}/meta-${DISTRO} ${OE_BASE}/meta-${META_MACHINE}\"
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/bblayers.conf
 
 
