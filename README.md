@@ -19,8 +19,8 @@
   Run ". setup.sh media" to setup Yocto environment.
 
   Setup generate/load configuration files:
-  - build-<target>/conf/local.conf
-  - build-<target>/env.source
-  - build-<target>/crosstools-setup
+  - build-<distro>-<target>/conf/local.conf
+  - build-<distro>-<target>/env.source
+  - build-<distro>-<target>/crosstools-setup
 
   Then use bitbake command.
