@@ -105,3 +105,15 @@ index 5258247d7..6e4412b2b 100644
  	{"wmi", SIZE_wmi_device_id, do_wmi_entry},
  	{"mhi", SIZE_mhi_device_id, do_mhi_entry},
  	{"auxiliary", SIZE_auxiliary_device_id, do_auxiliary_entry},
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index b2c0fce3f..48496bc57 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -240,7 +240,6 @@ config X86
+ 	select HAVE_NOINSTR_HACK		if HAVE_OBJTOOL
+ 	select HAVE_NMI
+ 	select HAVE_NOINSTR_VALIDATION		if HAVE_OBJTOOL
+-	select HAVE_OBJTOOL			if X86_64
+ 	select HAVE_OPTPROBES
+ 	select HAVE_PCSPKR_PLATFORM
+ 	select HAVE_PERF_EVENTS

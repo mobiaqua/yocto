@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm 6.1.46 Kernel Configuration
+# Linux/x86 6.1.52 Kernel Configuration
 #
 CONFIG_CC_VERSION_TEXT="x86_64-mobiaqua-linux-gcc (GCC) 11.4.0"
 CONFIG_CC_IS_GCC=y
@@ -4923,7 +4923,6 @@ CONFIG_HAVE_KCSAN_COMPILER=y
 # Memory Debugging
 #
 # CONFIG_PAGE_EXTENSION is not set
-# CONFIG_PAGE_TABLE_CHECK is not set
 # CONFIG_PAGE_POISONING is not set
 # CONFIG_DEBUG_RODATA_TEST is not set
 CONFIG_ARCH_HAS_DEBUG_WX=y
