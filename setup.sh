@@ -481,13 +481,13 @@ HOSTTOOLS:remove = \"chrpath flock ldd pzstd\"
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/local.conf
 
 
-if [ "$MACHINE" = "nuc" ]; then
-	META_MACHINE=nuc
-elif [ "$MACHINE" = "panda" ] || [ "$MACHINE" = "beagle" ] || [ "$MACHINE" = "beagle64" ]; then
-	META_MACHINE=ti
-else
-	META_MACHINE=none
-fi
+		if [ "$MACHINE" = "nuc" ]; then
+			META_MACHINE=nuc
+		elif [ "$MACHINE" = "panda" ] || [ "$MACHINE" = "beagle" ] || [ "$MACHINE" = "beagle64" ]; then
+			META_MACHINE=ti
+		else
+			META_MACHINE=none
+		fi
 
 		echo "DL_DIR = \"${DL_DIR}\"
 POKY_BBLAYERS_CONF_VERSION = \"2\"
