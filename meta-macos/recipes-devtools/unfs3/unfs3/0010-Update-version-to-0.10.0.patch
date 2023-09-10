@@ -1,0 +1,56 @@
+From 03ca60552be9d4fb8e7f6ef8981753b1caad7452 Mon Sep 17 00:00:00 2001
+From: Pierre Ossman <ossman@cendio.se>
+Date: Thu, 6 Oct 2022 16:33:16 +0200
+Subject: [PATCH 10/21] Update version to 0.10.0
+
+---
+ NEWS         | 7 ++++++-
+ configure.ac | 2 +-
+ unfs3.spec   | 2 +-
+ 3 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/NEWS b/NEWS
+index 5cd9a47..b6fad5f 100644
+--- a/NEWS
++++ b/NEWS
+@@ -1,4 +1,4 @@
+-What's new or changed in 0.9.23
++What's new or changed in 0.10.0
+ ===============================
+ 
+ Daniel Richard G. provided a large patch to allow better
+@@ -17,6 +17,11 @@ than 4GB from Windows.
+ ChangeLog
+ =========
+ 
++Version 0.10.0
++
++  - contrib scripts now require Python 3 instead of Python 2
++  - fix stale handle when moving files or directories
++
+ Version 0.9.23
+ 
+   - include AFS support for better serving of files from AFS filesystems
+diff --git a/configure.ac b/configure.ac
+index 211e5ab..75b58e9 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -1,4 +1,4 @@
+-AC_INIT([unfs3],[0.9.23])
++AC_INIT([unfs3],[0.10.0])
+ AC_CONFIG_MACRO_DIRS([m4])
+ AC_CONFIG_HEADER(config.h)
+ AC_PROG_INSTALL
+diff --git a/unfs3.spec b/unfs3.spec
+index 9229bb4..17172a5 100644
+--- a/unfs3.spec
++++ b/unfs3.spec
+@@ -1,4 +1,4 @@
+-%define version 0.9.23
++%define version 0.10.0
+ Summary: UNFS3 user-space NFSv3 server
+ Group: Applications/System
+ Name: unfs3
+-- 
+2.42.0
+

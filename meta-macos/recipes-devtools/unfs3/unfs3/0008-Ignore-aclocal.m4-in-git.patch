@@ -1,0 +1,22 @@
+From 3dbd5de29495f6176a3c477a57cd07c5bb31c5ff Mon Sep 17 00:00:00 2001
+From: Pierre Ossman <ossman@cendio.se>
+Date: Thu, 6 Oct 2022 16:30:18 +0200
+Subject: [PATCH 08/21] Ignore aclocal.m4 in git
+
+Now that it no longer is a version controlled file.
+---
+ .gitignore | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/.gitignore b/.gitignore
+index 1fa8bb4..2c4f039 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,3 +1,4 @@
++aclocal.m4
+ configure
+ config.*
+ autom4te.cache
+-- 
+2.42.0
+
