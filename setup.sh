@@ -17,6 +17,7 @@ print_help() {
 	echo "Targets list:"
 	echo "- media (default)"
 	echo "- dsp"
+	echo "- softvm"
 	echo
 	[ "x$0" = "x./setup.sh" ] && exit 1
 	ERROR=1
@@ -362,6 +363,10 @@ setup() {
 			MACHINE=$1
 		elif [ "$1" = "nuc" ]; then
 			MACHINE=$1
+		elif [ "$1" = "softvm" ]; then
+			TARGET=$1
+			MACHINE=emu-x86-64
+			break
 		else
 			print_help
 			return 1
@@ -389,6 +394,10 @@ setup() {
 		fi
 		image=dsp-rootfs-devel
 		CROSS=arm-mobiaqua-linux-gnueabi-
+	elif [ "$TARGET" = "softvm" ]; then
+		image=quartus-x86-rootfs
+		CROSS=x86_64-linux-gnueabi-
+		export DISTRO=softvm
 	else
 		print_help
 		return 1
@@ -480,6 +489,12 @@ HOSTTOOLS:remove = \"chrpath flock ldd pzstd\"
 #BB_NUMBER_THREADS = \"8\"
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/local.conf
 
+		if [ "$TARGET" = "softvm" ]; then
+			echo "require conf/multilib.conf
+MULTILIBS = \"multilib:lib32\"
+DEFAULTTUNE:virtclass-multilib-lib32 = \"x86\"
+" >> ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/local.conf
+		fi
 
 		if [ "$MACHINE" = "nuc" ]; then
 			META_MACHINE=nuc
@@ -493,10 +508,13 @@ HOSTTOOLS:remove = \"chrpath flock ldd pzstd\"
 POKY_BBLAYERS_CONF_VERSION = \"2\"
 BBPATH = \"\${TOPDIR}\"
 BBFILES ?= \"\"
-BBLAYERS ?= \"${OE_BASE}/meta ${OE_BASE}/meta-macos ${OE_BASE}/meta-${DISTRO} ${OE_BASE}/meta-${META_MACHINE}\"
+BBLAYERS = \"${OE_BASE}/meta ${OE_BASE}/meta-macos ${OE_BASE}/meta-${DISTRO}\"
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/bblayers.conf
 
-
+if [ "$META_MACHINE" != "none" ]; then
+	echo "BBLAYERS += \"${OE_BASE}/meta-${META_MACHINE}\"
+" >> ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/bblayers.conf
+fi
 
 		echo "OE_BASE=\"${OE_BASE}\"
 export BBPATH=\"\${OE_BASE}/bitbake/:\${OE_BASE}/build-${DISTRO}-${TARGET}/\"

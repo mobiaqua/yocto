@@ -14,6 +14,10 @@
 
     IGEPv3
 
+  - "softvm"
+
+    Virtual Machine target for software.
+
   Example usage:
 
   Run ". setup.sh media" to setup Yocto environment.

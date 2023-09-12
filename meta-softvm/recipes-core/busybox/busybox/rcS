@@ -1,0 +1,62 @@
+#!/bin/sh
+
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice (including the next
+# paragraph) shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
+#
+
+ARGS=$(cat /proc/cmdline)
+WORKDIR=`cmdline-parse "$ARGS" wdir`
+CMD=`cmdline-parse "$ARGS" cmd`
+NFSROOT=`cmdline-parse "$ARGS" nfsroot`
+
+NFS_OPTS=$(echo $NFSROOT | sed 's/,/ /g')
+for param in $NFS_OPTS; do
+    case "$param" in
+        port=*)
+        PORT=`echo "${param#port=}"`
+        ;;
+        mountport=*)
+        MPORT=`echo "${param#mountport=}"`
+        ;;
+    esac
+done
+
+if [ -z "$WORKDIR" ] || [ -z "$CMD" ]; then
+    echo "Wrong cmdline params!"
+    qemu-exit 1
+fi
+
+mkdir -p "$WORKDIR" 2> /dev/null
+IP_GW=`route -n | grep 'UG[ \t]' | awk '{print $2}'`
+mount -t nfs -o nolock,vers=3,tcp,port=${PORT},mountport=${MPORT} ${IP_GW}:${WORKDIR} ${WORKDIR}
+if [ $? -ne 0 ]; then
+    echo "Failed mount NFS share!"
+    qemu-exit 1
+fi
+
+cd $WORKDIR
+if [ $? -ne 0 ]; then
+    echo "Failed change to working dir!"
+    qemu-exit 1
+fi
+
+sh -c "$CMD"
+qemu-exit $?
