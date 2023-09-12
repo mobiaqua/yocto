@@ -6,7 +6,6 @@ SRC_URI:append:beagle = " file://add-deps.patch"
 PACKAGECONFIG:panda = "omap"
 PACKAGECONFIG:beagle = "omap"
 PACKAGECONFIG:beagle64 = ""
-PACKAGECONFIG:nuc = "intel"
 
 # MobiAqua: added debug flags
 RM_WORK_EXCLUDE += "${@['','${PN}'][d.getVar('BUILD_DEBUG') == '1']}"
