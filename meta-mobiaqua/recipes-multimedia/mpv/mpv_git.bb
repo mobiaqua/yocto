@@ -19,8 +19,6 @@ DEPENDS = " \
 PV = "0.36+git"
 PR = "r1"
 
-DEPENDS:append:nuc = " virtual/libgl libva"
-
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://LICENSE.GPL;md5=b234ee4d69f5fce4486a80fdaf4a4263"
 
@@ -36,8 +34,6 @@ S = "${WORKDIR}/git"
 inherit waf pkgconfig
 
 FULL_OPTIMIZATION:append = " -fexpensive-optimizations -O4 -ffast-math"
-FULL_OPTIMIZATION:append:panda = " -mvectorize-with-neon-quad"
-FULL_OPTIMIZATION:append:beagle = " -mvectorize-with-neon-quad"
 
 SIMPLE_TARGET_SYS = "${@'${TARGET_SYS}'.replace('${TARGET_VENDOR}', '')}"
 
@@ -60,8 +56,6 @@ EXTRA_OECONF = " \
     --enable-gbm \
     --enable-egl-drm \
 "
-
-EXTRA_OECONF:append:nuc = " --enable-gl --enable-vaapi --enable-vaapi-drm"
 
 do_configure:append() {
     sed -i -e 's#${WORKDIR}#<WORKDIR>#g' ${B}/config.h
