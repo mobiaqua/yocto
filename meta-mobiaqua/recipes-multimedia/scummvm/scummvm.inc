@@ -31,8 +31,6 @@ EXTRA_OEMAKE = "MANDIR=${mandir}"
 
 # MobiAqua: added optimisations
 FULL_OPTIMIZATION:append = " -fexpensive-optimizations -O4 -ffast-math"
-FULL_OPTIMIZATION:append:panda = " -mvectorize-with-neon-quad"
-FULL_OPTIMIZATION:append:beagle = " -mvectorize-with-neon-quad"
 
 do_configure() {
 	${S}/configure ${EXTRA_OECONF}
