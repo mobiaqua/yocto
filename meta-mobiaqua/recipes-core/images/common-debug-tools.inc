@@ -4,10 +4,6 @@ INSTALL_PKGS += "\
                  gdbserver gdb valgrind glibc-dbg openssh-sftp-server bluez-hcidump \
 "
 
-DEPENDS:panda += "gdb-cross-arm"
-DEPENDS:beagle += "gdb-cross-arm"
-DEPENDS:beagle64 += "gdb-cross-aarch64"
-DEPENDS:nuc += "gdb-cross-x86_64"
+DEPENDS += "${DEPENDS_DEBUG_TOOLS}"
 RDEPENDS += ""
 RRECOMMENDS += ""
-
