@@ -26,9 +26,6 @@ DEFAULT_PREFERENCE = "99"
 
 DEPENDS = "openssl"
 
-# MobiAqua: added Intel HW acceleration and nasm
-DEPENDS:append:nuc = " nasm-native libva intel-media-driver"
-
 SRCREV = "3d5edb89e75fe3ab3a6757208ef121fa2b0f54c7"
 
 PV = "6.0+git${SRCPV}"
@@ -52,15 +49,8 @@ def cpu(d):
     return 'generic'
 
 FULL_OPTIMIZATION:append = " -fexpensive-optimizations -O4 -ffast-math"
-FULL_OPTIMIZATION:append:panda = " -mvectorize-with-neon-quad"
-FULL_OPTIMIZATION:append:beagle = " -mvectorize-with-neon-quad"
 
 EXTRA_FFCONF ?= ""
-# MobiAqua: added Intel HW acceleration
-EXTRA_FFCONF:append:nuc = " \
---enable-vaapi \
---enable-hwaccel=av1_vaapi,h264_vaapi,hevc_vaapi,mpeg2_vaapi,mpeg4_vaapi,vp8_vaapi,vp9_vaapi,wmv3_vaapi,mjpeg_vaapi \
-"
 
 EXTRA_OECONF = " \
         --enable-shared \
