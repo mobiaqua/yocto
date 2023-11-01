@@ -117,6 +117,18 @@ prepare_tools() {
 			fi
 		done
 
+		/bin/rm -f ${OE_BASE}/bin/SetFile
+		/bin/ln -s /usr/bin/SetFile ${OE_BASE}/bin/SetFile
+
+		/bin/rm -f ${OE_BASE}/bin/codesign
+		/bin/ln -s /usr/bin/codesign ${OE_BASE}/bin/codesign
+
+		/bin/rm -f ${OE_BASE}/bin/Rez
+		/bin/ln -s /usr/bin/Rez ${OE_BASE}/bin/Rez
+
+		/bin/rm -f ${OE_BASE}/bin/lipo
+		/bin/ln -s /usr/bin/lipo ${OE_BASE}/bin/lipo
+
 		/bin/rm -f ${OE_BASE}/bin/ggrep
 		/bin/ln -s /opt/local/bin/ggrep ${OE_BASE}/bin/ggrep
 
@@ -250,6 +262,30 @@ echo -n \"12.0.0\"
 
 " > ${OE_BASE}/bin/otool
 		/bin/chmod +x ${OE_BASE}/bin/otool
+
+		/bin/rm -f ${OE_BASE}/bin/lipo
+		echo "#!/bin/bash
+
+" > ${OE_BASE}/bin/lipo
+		/bin/chmod +x ${OE_BASE}/bin/lipo
+
+		/bin/rm -f ${OE_BASE}/bin/SetFile
+		echo "#!/bin/bash
+
+" > ${OE_BASE}/bin/SetFile
+		/bin/chmod +x ${OE_BASE}/bin/SetFile
+
+		/bin/rm -f ${OE_BASE}/bin/codesign
+		echo "#!/bin/bash
+
+" > ${OE_BASE}/bin/codesign
+		/bin/chmod +x ${OE_BASE}/bin/codesign
+
+		/bin/rm -f ${OE_BASE}/bin/Rez
+		echo "#!/bin/bash
+
+" > ${OE_BASE}/bin/Rez
+		/bin/chmod +x ${OE_BASE}/bin/Rez
 
 		/bin/rm -f ${OE_BASE}/bin/install_name_tool
 		echo "#!/bin/bash
@@ -483,7 +519,7 @@ unzip-native texinfo-native texinfo-dummy-native patch-replacement-native makede
 chrpath-replacement-native meson-native ninja-native cmake-native rsync-native zstd-native\"
 SANITY_REQUIRED_UTILITIES:remove = \"chrpath\"
 PACKAGE_DEPENDS:remove = \"dwarfsrcfiles-native pseudo-native\"
-HOSTTOOLS += \"otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep tic bc dc dos2unix sw_vers xcrun glib-genmarshal glib-compile-schemas svn meson ninja cmake rsync\"
+HOSTTOOLS += \"codesign Rez SetFile lipo otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep tic bc dc dos2unix sw_vers xcrun glib-genmarshal glib-compile-schemas svn meson ninja cmake rsync\"
 HOSTTOOLS:remove = \"chrpath flock ldd pzstd\"
 #PARALLEL_MAKE = \"-j 8\"
 #BB_NUMBER_THREADS = \"8\"
