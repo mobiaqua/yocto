@@ -1,0 +1,12 @@
+diff -urp old/hw/usb/host-libusb.c new/hw/usb/host-libusb.c
+--- old/hw/usb/host-libusb.c	2023-09-21 22:19:33
++++ new/hw/usb/host-libusb.c	2023-11-05 10:12:16
+@@ -1304,7 +1304,7 @@ static void usb_host_detach_kernel(USBHostDevice *s)
+     }
+     for (i = 0; i < USB_MAX_INTERFACES; i++) {
+         rc = libusb_kernel_driver_active(s->dh, i);
+-        usb_host_libusb_error("libusb_kernel_driver_active", rc);
++        //usb_host_libusb_error("libusb_kernel_driver_active", rc);
+         if (rc != 1) {
+             if (rc == 0) {
+                 s->ifs[i].detached = true;
