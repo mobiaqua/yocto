@@ -15,22 +15,26 @@ SECTION = "libs"
 
 CVE_PRODUCT = "glib"
 
-# MobiAqua: no native
-#BBCLASSEXTEND = "native nativesdk"
+# MobiAqua: override name
+PN = "glib-2.0-native"
 
-DEPENDS = "glib-2.0-native \
-           virtual/libintl \
-           virtual/libiconv \
-           libffi \
-           libpcre \
-           zlib"
+# MobiAqua: removed 'glib-2.0-native', added '*-native'
+DEPENDS = "\
+           virtual/libintl-native \
+           virtual/libiconv-native \
+           libffi-native \
+           libpcre-native \
+           zlib-native"
 
 PACKAGES += "${PN}-codegen ${PN}-utils"
 
 LEAD_SONAME = "libglib-2.0.*"
 
-# MobiAqua: removed 'gio-module-cache'
-inherit meson gettext gtk-doc pkgconfig ptest-gnome upstream-version-is-even bash-completion manpages
+# MobiAqua: override path
+FILESEXTRAPATHS:prepend := "${THISDIR}/glib2.0:"
+
+# MobiAqua: removed 'gio-module-cache'. added 'native'
+inherit meson gettext gtk-doc pkgconfig ptest-gnome upstream-version-is-even bash-completion manpages native
 
 DEPENDS:append:class-target = "${@' gtk-doc' if d.getVar('GTKDOC_ENABLED') == 'True' else ''}"
 
@@ -38,7 +42,8 @@ GTKDOC_MESON_OPTION = "gtk_doc"
 
 S = "${WORKDIR}/glib-${PV}"
 
-PACKAGECONFIG ??= "libmount \
+# MobiAqua: removed 'libmount'
+PACKAGECONFIG ??= "\
                    ${@bb.utils.contains('PTEST_ENABLED', '1', 'tests', '', d)}"
 PACKAGECONFIG[libmount] = "-Dlibmount=enabled,-Dlibmount=disabled,util-linux"
 PACKAGECONFIG[manpages] = "-Dman=true, -Dman=false, libxslt-native xmlto-native"
@@ -48,6 +53,9 @@ PACKAGECONFIG[tests] = "-Dinstalled_tests=true,-Dinstalled_tests=false,"
 PACKAGECONFIG[selinux] = "-Dselinux=enabled,-Dselinux=disabled,libselinux"
 
 EXTRA_OEMESON = "-Ddtrace=false -Dfam=false -Dsystemtap=false"
+
+# MobiAqua: added macOS SDK libs
+EXTRA_OEMESON:append:darwin = " -Dc_link_args='${LDFLAGS} -framework Foundation -framework AppKit' -Ddefault_library=static"
 
 do_configure:prepend() {
 	sed -i -e '1s,#!.*,#!${USRBINPATH}/env python3,' ${S}/gio/gdbus-2.0/codegen/gdbus-codegen.in

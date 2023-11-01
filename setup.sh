@@ -513,7 +513,7 @@ DISTRO = \"${DISTRO}\"
 INHERIT = \"rm_work\"
 BUILD_DEBUG = \"${BUILD_DEBUG}\"
 ASSUME_PROVIDED += \" git-native perl-native python-native python3-native python3-mako-native \
-desktop-file-utils-native linux-libc-headers-native glib-2.0-native intltool-native gzip-native \
+desktop-file-utils-native linux-libc-headers-native intltool-native gzip-native \
 findutils-native bison-native flex-native help2man-native bc-native subversion-native m4-native \
 unzip-native texinfo-native texinfo-dummy-native patch-replacement-native makedepend-native \
 chrpath-replacement-native meson-native ninja-native cmake-native rsync-native zstd-native\"
