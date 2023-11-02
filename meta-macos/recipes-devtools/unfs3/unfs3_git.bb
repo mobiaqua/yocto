@@ -35,6 +35,7 @@ SRC_URI = "git://github.com/unfs3/unfs3.git;protocol=https;branch=master \
            file://0019-nfs.c-Allow-max-sa.sun_path-for-a-localdomain-socket.patch \
            file://0020-Add-ability-to-specify-rcp-port-numbers.patch \
            file://0021-daemon.c-Add-option-for-tcp-no-delay.patch \
+           file://entitlements.plist \
            "
 SRCREV = "3fa0568e6ef96e045286afe18444bc28fe93962b"
 UPSTREAM_CHECK_GITTAGREGEX = "unfs3\-(?P<pver>\d+(\.\d+)+)"
@@ -45,3 +46,7 @@ BBCLASSEXTEND = "native nativesdk"
 
 inherit autotools pkgconfig
 EXTRA_OECONF:append:class-native = " --sbindir=${bindir}"
+
+do_install:append:darwin () {
+    codesign --entitlements ${WORKDIR}/entitlements.plist -f -s - ${D}${bindir}/unfsd
+}
