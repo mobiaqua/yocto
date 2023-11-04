@@ -23,7 +23,9 @@
 #
 
 ARGS=$(cat /proc/cmdline)
+TOOLSDIR=`cmdline-parse "$ARGS" tdir`
 WORKDIR=`cmdline-parse "$ARGS" wdir`
+CURRENTDIR=`cmdline-parse "$ARGS" cdir`
 CMD=`cmdline-parse "$ARGS" cmd`
 NFSROOT=`cmdline-parse "$ARGS" nfsroot`
 
@@ -39,24 +41,70 @@ for param in $NFS_OPTS; do
     esac
 done
 
-if [ -z "$WORKDIR" ] || [ -z "$CMD" ]; then
-    echo "Wrong cmdline params!"
+if [ -z "$CURRENTDIR" ] || [ -z "$CMD" ]; then
+    echo "SEMIHOSTING: Wrong cmdline params!"
     qemu-exit 1
 fi
 
-mkdir -p "$WORKDIR" 2> /dev/null
 IP_GW=`route -n | grep 'UG[ \t]' | awk '{print $2}'`
-mount -t nfs -o nolock,vers=3,tcp,port=${PORT},mountport=${MPORT} ${IP_GW}:${WORKDIR} ${WORKDIR}
-if [ $? -ne 0 ]; then
-    echo "Failed mount NFS share!"
-    qemu-exit 1
+
+
+if [ ! -z "$TOOLSDIR" ]; then
+    mkdir -p /opt/tools
+    mount -t nfs -o nolock,vers=3,tcp,port=${PORT},mountport=${MPORT} ${IP_GW}:${TOOLSDIR} /opt/tools
+    if [ $? -ne 0 ]; then
+        echo "SEMIHOSTING: Failed mount tools dir NFS share!"
+        qemu-exit 1
+    fi
 fi
 
-cd $WORKDIR
+
+if [ "$WORKDIR" != "$CURRENTDIR" ]; then
+    mkdir -p "$WORKDIR" 2> /dev/null
+    mount -t nfs -o nolock,vers=3,tcp,port=${PORT},mountport=${MPORT} ${IP_GW}:${WORKDIR} ${WORKDIR}
+    if [ $? -ne 0 ]; then
+        echo "SEMIHOSTING: Failed mount work dir NFS share!"
+        qemu-exit 1
+    fi
+else
+    mkdir -p "$CURRENTDIR" 2> /dev/null
+    mount -t nfs -o nolock,vers=3,tcp,port=${PORT},mountport=${MPORT} ${IP_GW}:${CURRENTDIR} ${CURRENTDIR}
+    if [ $? -ne 0 ]; then
+        echo "SEMIHOSTING: Failed mount current dir NFS share!"
+        qemu-exit 1
+    fi
+fi
+
+
+mkdir -p "$CURRENTDIR" 2> /dev/null
+cd $CURRENTDIR
 if [ $? -ne 0 ]; then
-    echo "Failed change to working dir!"
+    echo "SEMIHOSTING: Failed change to working dir!"
     qemu-exit 1
 fi
 
 sh -c "$CMD"
-qemu-exit $?
+ERR=$?
+
+cd /
+
+umount -f ${CURRENTDIR} 2> /dev/null
+if [ $? -eq 0 ]; then
+    rmdir -p "$CURRENTDIR" 2> /dev/null
+fi
+
+if [ "$WORKDIR" != "$CURRENTDIR" ]; then
+    umount -f ${WORKDIR} 2> /dev/null
+    if [ $? -eq 0 ]; then
+        rmdir -p "$WORKDIR" 2> /dev/null
+    fi
+fi
+
+if [ ! -z "$TOOLSDIR" ]; then
+    umount -f /opt/tools 2> /dev/null
+    if [ $? -eq 0 ]; then
+        rmdir -p "$TOOLSDIR" 2> /dev/null
+    fi
+fi
+
+qemu-exit $ERR
