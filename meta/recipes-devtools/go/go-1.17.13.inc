@@ -1,6 +1,6 @@
 require go-common.inc
 
-FILESEXTRAPATHS:prepend := "${FILE_DIRNAME}/go-1.21:${FILE_DIRNAME}/go-1.19:${FILE_DIRNAME}/go-1.18:"
+FILESEXTRAPATHS:prepend := "${FILE_DIRNAME}/go-1.21:${FILE_DIRNAME}/go-1.20:${FILE_DIRNAME}/go-1.19:${FILE_DIRNAME}/go-1.18:"
 
 LIC_FILES_CHKSUM = "file://LICENSE;md5=5d4950ecb7b26d2c5e4e7b4e0dd74707"
 
@@ -29,7 +29,8 @@ SRC_URI += "\
     file://CVE-2022-41722.patch \
     file://CVE-2023-24537.patch \
     file://CVE-2023-24534.patch \
-    file://CVE-2023-24538.patch \
+    file://CVE-2023-24538_1.patch \
+    file://CVE-2023-24538_2.patch \
     file://CVE-2023-24540.patch \
     file://CVE-2023-24539.patch \
     file://CVE-2023-29404.patch \
@@ -42,6 +43,9 @@ SRC_URI += "\
     file://CVE-2023-24536_3.patch \
     file://CVE-2023-24531_1.patch \
     file://CVE-2023-24531_2.patch \
+    file://CVE-2023-29409.patch \
+    file://CVE-2023-39319.patch \
+    file://CVE-2023-39318.patch \
 "
 SRC_URI[main.sha256sum] = "a1a48b23afb206f95e7bbaa9b898d965f90826f6f1d1fc0c1d784ada0cd300fd"
 
