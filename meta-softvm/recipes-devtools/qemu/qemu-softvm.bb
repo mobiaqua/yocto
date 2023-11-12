@@ -15,6 +15,7 @@ PV = "8.0.5"
 
 SRC_URI = "https://download.qemu.org/qemu-${PV}.tar.xz \
            file://silence-libusb-error.patch \
+           file://semihost_cmd_qemu.sh \
            "
 UPSTREAM_CHECK_REGEX = "qemu-(?P<pver>\d+(\.\d+)+)\.tar"
 
@@ -29,6 +30,8 @@ DEBUG_BUILD = "0"
 do_install:append() {
     # Prevent QA warnings about installed ${localstatedir}/run
     if [ -d ${D}${localstatedir}/run ]; then rmdir ${D}${localstatedir}/run; fi
+
+    install -m 0755 ${WORKDIR}/semihost_cmd_qemu.sh ${D}/${bindir}
 }
 
 EXTRA_OECONF = " \
@@ -50,7 +53,7 @@ EXTRA_OECONF = " \
     --with-git=/bin/false \
     --with-git-submodules=ignore \
     --meson=meson \
-    --target-list=aarch64-softmmu,x86_64-softmmu \
+    --target-list=x86_64-softmmu \
     --disable-sdl \
     --disable-png \
     --disable-virtfs \
