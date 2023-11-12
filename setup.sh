@@ -521,8 +521,7 @@ SANITY_REQUIRED_UTILITIES:remove = \"chrpath\"
 PACKAGE_DEPENDS:remove = \"dwarfsrcfiles-native pseudo-native\"
 HOSTTOOLS += \"codesign Rez SetFile lipo otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep tic bc dc dos2unix sw_vers xcrun glib-genmarshal glib-compile-schemas svn meson ninja cmake rsync\"
 HOSTTOOLS:remove = \"chrpath flock ldd pzstd\"
-#PARALLEL_MAKE = \"-j 8\"
-#BB_NUMBER_THREADS = \"8\"
+BB_NUMBER_THREADS = \"8\"
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/local.conf
 
 		if [ "$TARGET" = "softvm" ]; then
