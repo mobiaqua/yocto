@@ -19,17 +19,6 @@ REQUIRED_DISTRO_FEATURES = "opengl"
 DEPENDS += "libva gmmlib"
 
 SRC_URI = "git://github.com/intel/media-driver.git;protocol=https;nobranch=1 \
-           file://0001-ARGB-force-to-tile4.patch \
-           file://0002-Add-mocs-index-in-patch-list.patch \
-           file://0003-fix-vdsfc-csc-issue.patch \
-           file://0004-XRGB-force-to-tile4.patch \
-           file://0001-Force-to-render-path-according-to-app-setting.patch \
-           file://0002-Add-DRM-format-mappings-for-JPEG-decoder-output.patch \
-           file://0003-Add-DRM-format-mappings-for-JPEG-output-to-softlet.patch \
-           file://0004-Disable-vp9-padding-on-mtl.patch \
-           file://0001-Fix-FC-Corruption-When-Blending-without-Colorfill.patch \
-           file://0001-Fix-FC-Corruption-When-Blending-without-Colorfill-in.patch \
-           file://0001-Set-sRGB-color-space-for-non-video-wall-and-no-backg.patch \
           "
 
 SRCREV = "cf942344b9e439d19873f1d47c0c890d7c63b6ad"
