@@ -8,13 +8,13 @@ KMACHINE:core2-32-intel-common = "intel-core2-32"
 KMACHINE:x86-64-v3-intel-common = "intel-corei7-64"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.1.62"
+LINUX_VERSION = "6.6.1"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
 KMETA = "kernel-meta"
 KCONF_BSP_AUDIT_LEVEL = "1"
-FILESEXTRAPATHS:prepend := "${THISDIR}/linux-intel_6.1:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/linux-intel_6.6:"
 KBUILD_DEFCONFIG = "nuc_defconfig"
 
 SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
@@ -23,12 +23,11 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
            file://byteswap.h \
            file://endian.h \
            file://0001_fix_nonlinux_compile.patch \
-           file://0003-Kbuild.include.patch \
            file://0004_wait-for-rootfs.patch \
            file://nuc_config \
            "
 
-SRC_URI[sha256sum] = "b9fd616facd6becfceef88b9be718d0f16625cab3fe81d11384802a7091e85ec"
+SRC_URI[sha256sum] = "da1ed7d47c97ed72c9354091628740aa3c40a3c9cd7382871f3cedbd60588234"
 
 S = "${WORKDIR}/linux-${PV}"
 
