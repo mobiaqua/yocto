@@ -445,7 +445,10 @@ kernel_do_install() {
 		rm -f "${D}${nonarch_base_libdir}/modules/${KERNEL_VERSION}/build"
 		rm -f "${D}${nonarch_base_libdir}/modules/${KERNEL_VERSION}/source"
 		# Remove empty module directories to prevent QA issues
-		find "${D}${nonarch_base_libdir}/modules/${KERNEL_VERSION}/kernel" -type d -empty -delete
+		# MobiAqua: check if directory exists first
+		if [ -d "${D}${nonarch_base_libdir}/modules/${KERNEL_VERSION}/kernel" ]; then
+			find "${D}${nonarch_base_libdir}/modules/${KERNEL_VERSION}/kernel" -type d -empty -delete
+		fi
 	else
 		bbnote "no modules to install"
 	fi
