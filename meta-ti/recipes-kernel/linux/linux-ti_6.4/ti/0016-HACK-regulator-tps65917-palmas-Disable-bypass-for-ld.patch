@@ -1,0 +1,71 @@
+From a10427462931b8109cc7be70499f24e8e4854a03 Mon Sep 17 00:00:00 2001
+From: Kishon Vijay Abraham I <kishon@ti.com>
+Date: Mon, 3 May 2021 18:18:06 -0500
+Subject: [PATCH] HACK: regulator: tps65917/palmas: Disable bypass for ldo1 and
+ ldo2
+
+ldo1 and ldo2 have bypass capability on TPS65917 PMIC. The regulator
+framework starts with assuming that bypass is disabled by default. In
+this particular case the bypass OTP is 1. So one cannot disable without
+first enabling due to the use count going negative. Hence doing a one
+time disable at boot.
+
+Any consumer which wants bypass to be enabled/disabled can use the
+bypass_enable/bypass_disable functions to turn on or turn off bypass
+subsequently.
+
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Signed-off-by: Keerthy <j-keerthy@ti.com>
+[s-anna@ti.com: revise traces and update patch title]
+Signed-off-by: Suman Anna <s-anna@ti.com>
+---
+ drivers/regulator/palmas-regulator.c | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+
+diff --git a/drivers/regulator/palmas-regulator.c b/drivers/regulator/palmas-regulator.c
+index 337dd614695e..eee35363cdea 100644
+--- a/drivers/regulator/palmas-regulator.c
++++ b/drivers/regulator/palmas-regulator.c
+@@ -1016,6 +1016,7 @@ static int tps65917_ldo_registration(struct palmas_pmic *pmic,
+ 	struct palmas_reg_init *reg_init;
+ 	struct palmas_regs_info *rinfo;
+ 	struct regulator_desc *desc;
++	unsigned int reg;
+ 
+ 	for (id = ddata->ldo_begin; id < ddata->max_reg; id++) {
+ 		if (pdata && pdata->reg_init[id])
+@@ -1064,6 +1065,31 @@ static int tps65917_ldo_registration(struct palmas_pmic *pmic,
+ 						TPS65917_LDO1_CTRL_BYPASS_EN;
+ 				desc->bypass_mask =
+ 						TPS65917_LDO1_CTRL_BYPASS_EN;
++
++				/*
++				 * OTP Values are set to bypass enable.
++				 * Switch to disable so that use count
++				 * does not go negative while directly
++				 * disabling bypass.
++				 */
++				ret = palmas_ldo_read(pmic->palmas,
++						      rinfo->ctrl_addr, &reg);
++				if (ret) {
++					dev_err(pmic->dev,
++						"Error reading %s ctrl_addr reg, ret = %d\n",
++						rinfo->name, ret);
++					return ret;
++				}
++				reg &= ~TPS65917_LDO1_CTRL_BYPASS_EN;
++				ret = palmas_ldo_write(pmic->palmas,
++						       rinfo->ctrl_addr, reg);
++				if (ret) {
++					dev_err(pmic->dev,
++						"Error disabling bypass mode for %s, ret = %d\n",
++						rinfo->name, ret);
++					return ret;
++				}
++
+ 			}
+ 		} else {
+ 			desc->n_voltages = 1;
+-- 
+2.32.0 (Apple Git-132)
+

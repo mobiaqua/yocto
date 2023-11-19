@@ -1,0 +1,190 @@
+From 5452d87704cfd0a8dbb561cc0bec52c458aa679c Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Date: Fri, 30 Jul 2021 13:02:02 +0200
+Subject: [PATCH] drm/omap: add crtc transparency key property
+
+Add support for transparency keying.
+
+User space must understand how the TCK works and needs to place the planes
+to correct zpos. The generic zpos normalization in DRM however is going
+to do normalization and might move the position of the planes which breaks
+the TCK as planes are no longer in the position where application
+deliberately placed them.
+
+If the TCK is enabled for the crtc then use the zpos configured by the
+application instead of the normalized positions and at the same time do a
+sanity check against overlapping zpos.
+
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Signed-off-by: Neil Armstrong <narmstrong@baylibre.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/gpu/drm/omapdrm/omap_crtc.c | 53 ++++++++++++++++++++++++++++-
+ drivers/gpu/drm/omapdrm/omap_drv.c  | 17 +++++++++
+ drivers/gpu/drm/omapdrm/omap_drv.h  |  2 ++
+ 3 files changed, 71 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/omapdrm/omap_crtc.c b/drivers/gpu/drm/omapdrm/omap_crtc.c
+index 9e7a349cc..66b04dfaf 100644
+--- a/drivers/gpu/drm/omapdrm/omap_crtc.c
++++ b/drivers/gpu/drm/omapdrm/omap_crtc.c
+@@ -26,6 +26,8 @@ struct omap_crtc_state {
+ 	bool manually_updated;
+ 
+ 	u32 default_color;
++	unsigned int trans_key_mode;
++	unsigned int trans_key;
+ };
+ 
+ #define to_omap_crtc(x) container_of(x, struct omap_crtc, base)
+@@ -406,9 +408,25 @@ static void omap_crtc_write_crtc_properties(struct drm_crtc *crtc)
+ 	memset(&info, 0, sizeof(info));
+ 
+ 	info.default_color = omap_state->default_color;
+-	info.trans_enabled = false;
+ 	info.partial_alpha_enabled = false;
+ 
++	info.trans_key = omap_state->trans_key;
++
++	switch (omap_state->trans_key_mode) {
++	case 0:
++	default:
++		info.trans_enabled = false;
++		break;
++	case 1:
++		info.trans_enabled = true;
++		info.trans_key_type = OMAP_DSS_COLOR_KEY_GFX_DST;
++		break;
++	case 2:
++		info.trans_enabled = true;
++		info.trans_key_type = OMAP_DSS_COLOR_KEY_VID_SRC;
++		break;
++	}
++
+ 	if (crtc->state->ctm) {
+ 		struct drm_color_ctm *ctm = crtc->state->ctm->data;
+ 
+@@ -583,6 +601,7 @@ static bool omap_crtc_is_manually_updated(struct drm_crtc *crtc)
+ static int omap_crtc_atomic_check(struct drm_crtc *crtc,
+ 				struct drm_atomic_state *state)
+ {
++	const struct omap_crtc_state *omap_state = to_omap_crtc_state(crtc->state);
+ 	struct drm_crtc_state *crtc_state = drm_atomic_get_new_crtc_state(state,
+ 									  crtc);
+ 	struct drm_plane_state *pri_state;
+@@ -595,6 +614,25 @@ static int omap_crtc_atomic_check(struct drm_crtc *crtc,
+ 			return -EINVAL;
+ 	}
+ 
++	if (omap_state->trans_key_mode) {
++		struct drm_plane *plane;
++		struct drm_plane_state *plane_state;
++		u32 zpos_mask = 0;
++
++		drm_for_each_plane_mask(plane, crtc->dev, crtc_state->plane_mask) {
++			plane_state = drm_atomic_get_plane_state(crtc_state->state,
++								 plane);
++			if (IS_ERR(plane_state))
++				return PTR_ERR(plane_state);
++
++			if (zpos_mask & BIT(plane_state->zpos))
++				return -EINVAL;
++
++			zpos_mask |= BIT(plane_state->zpos);
++			plane_state->normalized_zpos = plane_state->zpos;
++		}
++	}
++
+ 	pri_state = drm_atomic_get_new_plane_state(state,
+ 						   crtc->primary);
+ 	if (pri_state) {
+@@ -690,6 +728,10 @@ static int omap_crtc_atomic_set_property(struct drm_crtc *crtc,
+ 		plane_state->zpos = val;
+ 	else if (property == priv->background_color_prop)
+ 		omap_state->default_color = val;
++	else if (property == priv->trans_key_mode_prop)
++		omap_state->trans_key_mode = val;
++	else if (property == priv->trans_key_prop)
++		omap_state->trans_key = val;
+ 	else
+ 		return -EINVAL;
+ 
+@@ -710,6 +752,10 @@ static int omap_crtc_atomic_get_property(struct drm_crtc *crtc,
+ 		*val = omap_state->zpos;
+ 	else if (property == priv->background_color_prop)
+ 		*val = omap_state->default_color;
++	else if (property == priv->trans_key_mode_prop)
++		*val = omap_state->trans_key_mode;
++	else if (property == priv->trans_key_prop)
++		*val = omap_state->trans_key;
+ 	else
+ 		return -EINVAL;
+ 
+@@ -752,6 +798,9 @@ omap_crtc_duplicate_state(struct drm_crtc *crtc)
+ 
+ 	state->default_color = current_state->default_color;
+ 
++	state->trans_key_mode = current_state->trans_key_mode;
++	state->trans_key = current_state->trans_key;
++
+ 	return &state->base;
+ }
+ 
+@@ -796,6 +845,8 @@ static void omap_crtc_install_properties(struct drm_crtc *crtc)
+ 	struct omap_drm_private *priv = dev->dev_private;
+ 
+ 	drm_object_attach_property(obj, priv->background_color_prop, 0);
++	drm_object_attach_property(obj, priv->trans_key_mode_prop, 0);
++	drm_object_attach_property(obj, priv->trans_key_prop, 0);
+ }
+ 
+ /* initialize crtc */
+diff --git a/drivers/gpu/drm/omapdrm/omap_drv.c b/drivers/gpu/drm/omapdrm/omap_drv.c
+index 400d07509..977f113c9 100644
+--- a/drivers/gpu/drm/omapdrm/omap_drv.c
++++ b/drivers/gpu/drm/omapdrm/omap_drv.c
+@@ -195,6 +195,12 @@ static int omap_modeset_init_properties(struct drm_device *dev)
+ 	struct omap_drm_private *priv = dev->dev_private;
+ 	unsigned int num_planes = dispc_get_num_ovls(priv->dispc);
+ 
++	static const struct drm_prop_enum_list trans_key_mode_list[] = {
++		{ 0, "disable"},
++		{ 1, "gfx-dst"},
++		{ 2, "vid-src"},
++	};
++
+ 	priv->zorder_prop = drm_property_create_range(dev, 0, "zorder", 0,
+ 						      num_planes - 1);
+ 	if (!priv->zorder_prop)
+@@ -207,6 +213,17 @@ static int omap_modeset_init_properties(struct drm_device *dev)
+ 	if (!priv->background_color_prop)
+ 		return -ENOMEM;
+ 
++	priv->trans_key_mode_prop = drm_property_create_enum(dev, 0,
++		"trans-key-mode",
++		trans_key_mode_list, ARRAY_SIZE(trans_key_mode_list));
++	if (!priv->trans_key_mode_prop)
++		return -ENOMEM;
++
++	priv->trans_key_prop = drm_property_create_range(dev, 0, "trans-key",
++		0, 0xffffff);
++	if (!priv->trans_key_prop)
++		return -ENOMEM;
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/gpu/drm/omapdrm/omap_drv.h b/drivers/gpu/drm/omapdrm/omap_drv.h
+index ed69ae78a..6a882b213 100644
+--- a/drivers/gpu/drm/omapdrm/omap_drv.h
++++ b/drivers/gpu/drm/omapdrm/omap_drv.h
+@@ -75,6 +75,8 @@ struct omap_drm_private {
+ 
+ 	/* crtc properties */
+ 	struct drm_property *background_color_prop;
++	struct drm_property *trans_key_mode_prop;
++	struct drm_property *trans_key_prop;
+ 
+ 	/* irq handling: */
+ 	spinlock_t wait_lock;		/* protects the wait_list */
