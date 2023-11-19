@@ -1,0 +1,38 @@
+From 643cc41ae844e3aee94374621cf578cfc59eefc4 Mon Sep 17 00:00:00 2001
+From: Gowtham Tammana <g-tammana@ti.com>
+Date: Wed, 7 Apr 2021 12:05:08 -0500
+Subject: [PATCH] ARM: dts: dra7: Add device tree entry for SGX
+
+Add SGX GPU device node entry to base DRA7x dtsi.
+
+Signed-off-by: Gowtham Tammana <g-tammana@ti.com>
+---
+ arch/arm/boot/dts/dra7.dtsi | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/arch/arm/boot/dts/ti/omap/dra7.dtsi b/arch/arm/boot/dts/ti/omap/dra7.dtsi
+index 6ba6a1b50e00..f3d0434f2519 100644
+--- a/arch/arm/boot/dts/ti/omap/dra7.dtsi
++++ b/arch/arm/boot/dts/ti/omap/dra7.dtsi
+@@ -758,6 +758,18 @@ target-module@56000000 {
+ 			#address-cells = <1>;
+ 			#size-cells = <1>;
+ 			ranges = <0 0x56000000 0x2000000>;
++
++			gpu: gpu@0 {
++				compatible = "ti,dra7-sgx544", "img,sgx544";
++				reg = <0x0 0x10000>;
++				interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&l3_iclk_div>,
++					 <&gpu_core_gclk_mux>,
++					 <&gpu_hyd_gclk_mux>;
++				clock-names = "iclk",
++					      "fclk1",
++					      "fclk2";
++			};
+ 		};
+ 
+ 		crossbar_mpu: crossbar@4a002a48 {
+-- 
+2.32.0 (Apple Git-132)
+

@@ -1,0 +1,10 @@
+--- a/arch/arm/boot/dts/ti/omap/omap4-l4.dtsi
++++ b/arch/arm/boot/dts/ti/omap/omap4-l4.dtsi
+@@ -1470,6 +1470,7 @@ timer3: timer@0 {
+ 					 <&sys_clkin_ck>;
+ 				clock-names = "fck", "timer_sys_ck";
+ 				interrupts = <GIC_SPI 39 IRQ_TYPE_LEVEL_HIGH>;
++				ti,timer-alwon;
+ 			};
+ 		};
+ 
