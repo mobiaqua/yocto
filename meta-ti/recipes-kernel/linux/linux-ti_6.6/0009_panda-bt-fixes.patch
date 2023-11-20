@@ -1,0 +1,117 @@
+diff -urp old/arch/arm/boot/dts/ti/omap/omap4-panda-common.dtsi new/arch/arm/boot/dts/ti/omap/omap4-panda-common.dtsi
+--- old/arch/arm/boot/dts/ti/omap/omap4-panda-common.dtsi	2022-12-11 23:15:18
++++ new/arch/arm/boot/dts/ti/omap/omap4-panda-common.dtsi	2022-12-14 22:30:56
+@@ -356,23 +356,18 @@
+ 	};
+ 
+ 	/*
+-	 * wl12xx GPIO outputs for WLAN_EN, BT_EN, FM_EN, BT_WAKEUP
+-	 * REVISIT: Are the pull-ups needed for GPIO 48 and 49?
++	 * wl12xx GPIO output
+ 	 */
+ 	wl12xx_gpio: wl12xx-gpio-pins {
+ 		pinctrl-single,pins = <
+-			OMAP4_IOPAD(0x066, PIN_OUTPUT | MUX_MODE3)		/* gpmc_a19.gpio_43 */
+-			OMAP4_IOPAD(0x06c, PIN_OUTPUT | MUX_MODE3)		/* gpmc_a22.gpio_46 */
+-			OMAP4_IOPAD(0x070, PIN_OUTPUT_PULLUP | MUX_MODE3)	/* gpmc_a24.gpio_48 */
+-			OMAP4_IOPAD(0x072, PIN_OUTPUT_PULLUP | MUX_MODE3)	/* gpmc_a25.gpio_49 */
++			OMAP4_IOPAD(0x066, PIN_OUTPUT | MUX_MODE3)		/* gpmc_a19.gpio_43 - WLAN_EN */
+ 		>;
+ 	};
+ 
+ 	/* wl12xx GPIO inputs and SDIO pins */
+ 	wl12xx_pins: wl12xx-pins {
+ 		pinctrl-single,pins = <
+-			OMAP4_IOPAD(0x078, PIN_INPUT | MUX_MODE3)		/* gpmc_ncs2.gpio_52 */
+-			OMAP4_IOPAD(0x07a, PIN_INPUT | MUX_MODE3)		/* gpmc_ncs3.gpio_53 */
++			OMAP4_IOPAD(0x07a, PIN_INPUT | MUX_MODE3)		/* gpmc_ncs3.gpio_53 - WLAN_nIRQ */
+ 			OMAP4_IOPAD(0x148, PIN_INPUT_PULLUP | MUX_MODE0)	/* sdmmc5_clk.sdmmc5_clk */
+ 			OMAP4_IOPAD(0x14a, PIN_INPUT_PULLUP | MUX_MODE0)	/* sdmmc5_cmd.sdmmc5_cmd */
+ 			OMAP4_IOPAD(0x14c, PIN_INPUT_PULLUP | MUX_MODE0)	/* sdmmc5_dat0.sdmmc5_dat0 */
+@@ -382,6 +377,22 @@
+ 		>;
+ 	};
+ 
++	bt_pins: pinmux_bt_pins {
++		pinctrl-single,pins = <
++			OMAP4_IOPAD(0x06c, PIN_OUTPUT | MUX_MODE3)		/* gpmc_a22.gpio_46 - BT_EN */
++			OMAP4_IOPAD(0x072, PIN_OUTPUT_PULLUP | MUX_MODE3)	/* gpmc_a25.gpio_49 - BT_WAKEUP */
++		>;
++	};
++
++	uart2_pins: pinmux_uart2_pins {
++		pinctrl-single,pins = <
++			OMAP4_IOPAD(0x118, PIN_INPUT_PULLUP | MUX_MODE0)	/* uart2_cts.uart2_cts - HCI */
++			OMAP4_IOPAD(0x11a, PIN_OUTPUT | MUX_MODE0)		/* uart2_rts.uart2_rts - HCI */
++			OMAP4_IOPAD(0x11c, PIN_INPUT_PULLUP | MUX_MODE0)	/* uart2_rx.uart2_rx - HCI */
++			OMAP4_IOPAD(0x11e, PIN_OUTPUT | MUX_MODE0)		/* uart2_tx.uart2_tx - HCI */
++		>;
++	};
++
+ 	button_pins: button-pins {
+ 		pinctrl-single,pins = <
+ 			OMAP4_IOPAD(0x114, PIN_INPUT_PULLUP | MUX_MODE3)	/* gpio_121 */
+@@ -522,8 +533,16 @@
+ };
+ 
+ &uart2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&uart2_pins &bt_pins>;
++
+ 	interrupts-extended = <&wakeupgen GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH
+ 			       &omap4_pmx_core OMAP4_UART2_RX>;
++
++	bluetooth: tiwi {
++		compatible = "ti,wl1271-st";
++		enable-gpios = <&gpio2 14 GPIO_ACTIVE_HIGH>;	/* GPIO_46 - BT_EN */
++	};
+ };
+ 
+ &uart3 {
+diff -urp old/arch/arm/boot/dts/ti/omap/omap4-panda-es.dts new/arch/arm/boot/dts/ti/omap/omap4-panda-es.dts
+--- old/arch/arm/boot/dts/ti/omap/omap4-panda-es.dts	2022-12-11 23:15:18
++++ new/arch/arm/boot/dts/ti/omap/omap4-panda-es.dts	2022-12-14 22:26:15
+@@ -49,22 +49,6 @@
+ 			OMAP4_IOPAD(0x0fc, PIN_INPUT_PULLUP | MUX_MODE3) /* gpio_113 */
+ 		>;
+ 	};
+-
+-	bt_pins: bt-pins {
+-		pinctrl-single,pins = <
+-			OMAP4_IOPAD(0x06c, PIN_OUTPUT | MUX_MODE3)		/* gpmc_a22.gpio_46 - BTEN */
+-			OMAP4_IOPAD(0x072, PIN_OUTPUT_PULLUP | MUX_MODE3)	/* gpmc_a25.gpio_49 - BTWAKEUP */
+-		>;
+-	};
+-
+-	uart2_pins: uart2-pins {
+-		pinctrl-single,pins = <
+-			OMAP4_IOPAD(0x118, PIN_INPUT_PULLUP | MUX_MODE0)	/* uart2_cts.uart2_cts - HCI */
+-			OMAP4_IOPAD(0x11a, PIN_OUTPUT | MUX_MODE0)		/* uart2_rts.uart2_rts */
+-			OMAP4_IOPAD(0x11c, PIN_INPUT_PULLUP | MUX_MODE0)	/* uart2_rx.uart2_rx */
+-			OMAP4_IOPAD(0x11e, PIN_OUTPUT | MUX_MODE0)		/* uart2_tx.uart2_tx */
+-		>;
+-	};
+ };
+ 
+ &led_wkgpio_pins {
+@@ -95,20 +79,4 @@
+ 
+ &gpio1_target {
+ 	 ti,no-reset-on-init;
+-};
+-
+-&wl12xx_gpio {
+-	pinctrl-single,pins = <
+-		OMAP4_IOPAD(0x066, PIN_OUTPUT | MUX_MODE3)		/* gpmc_a19.gpio_43 */
+-		OMAP4_IOPAD(0x070, PIN_OUTPUT_PULLUP | MUX_MODE3)	/* gpmc_a24.gpio_48 */
+-	>;
+-};
+-
+-&uart2 {
+-	pinctrl-names = "default";
+-	pinctrl-0 = <&uart2_pins &bt_pins>;
+-	bluetooth: tiwi {
+-		compatible = "ti,wl1271-st";
+-		enable-gpios = <&gpio2 14 GPIO_ACTIVE_HIGH>;	/* GPIO_46 */
+-	};
+ };
