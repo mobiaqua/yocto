@@ -311,19 +311,3 @@ index 0a8b16505..eb234d5ad 100644
  
  / {
  	/* NOTE: This describes the "original" pre-production A2 revision */
-diff --git a/drivers/gpu/drm/drm_bridge.c b/drivers/gpu/drm/drm_bridge.c
-index 36ca4092c..70e7403ea 100644
---- a/drivers/gpu/drm/drm_bridge.c
-+++ b/drivers/gpu/drm/drm_bridge.c
-@@ -1204,8 +1204,10 @@ void drm_bridge_hpd_enable(struct drm_bridge *bridge,
- 
- 	mutex_lock(&bridge->hpd_mutex);
- 
--	if (WARN(bridge->hpd_cb, "Hot plug detection already enabled\n"))
-+	if (bridge->hpd_cb) {
-+		DRM_ERROR("Hot plug detection already enabled\n");
- 		goto unlock;
-+	}
- 
- 	bridge->hpd_cb = cb;
- 	bridge->hpd_data = data;
