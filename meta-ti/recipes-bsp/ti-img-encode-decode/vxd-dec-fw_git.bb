@@ -14,17 +14,25 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 SRCREV = "79c498ef6ab1558b699a2243a26c4a65a1c44d26"
 
-BRANCH ?= "ti-linux-firmware"
-
 SRC_URI = " \
-	git://git.ti.com/git/processor-firmware/ti-linux-firmware.git;protocol=https;branch=${BRANCH} \
+        git://git.ti.com/git/processor-firmware/ti-linux-firmware.git;protocol=https;branch=main \
 "
 
 S = "${WORKDIR}/git"
 
+TARGET = "pvdec_full_bin.fw"
+
 do_install() {
-        install -d ${D}${nonarch_base_libdir}/firmware
-        install -m 0644 ${S}/ti-img/pvdec_full_bin.fw ${D}${nonarch_base_libdir}/firmware/pvdec_full_bin.fw
+    install -d ${D}${nonarch_base_libdir}/firmware
+    install -m 0644 ${S}/ti-img/${TARGET} ${D}${nonarch_base_libdir}/firmware/${TARGET}
 }
 
 FILES:${PN} = "${nonarch_base_libdir}/firmware"
+
+# MobiAqua: added deploy step
+inherit deploy
+
+do_deploy () {
+}
+
+addtask deploy before do_build after do_compile
