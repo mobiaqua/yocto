@@ -1,8 +1,8 @@
 diff --git a/drivers/base/firmware_loader/main.c b/drivers/base/firmware_loader/main.c
-index ef904b8b1..c3ee9b76d 100644
+index b58c42f1b..60a0a78d4 100644
 --- a/drivers/base/firmware_loader/main.c
 +++ b/drivers/base/firmware_loader/main.c
-@@ -507,6 +507,7 @@ fw_get_filesystem_firmware(struct device *device, struct fw_priv *fw_priv,
+@@ -510,6 +510,7 @@ fw_get_filesystem_firmware(struct device *device, struct fw_priv *fw_priv,
  		return -ENOMEM;
  
  	wait_for_initramfs();
@@ -11,22 +11,22 @@ index ef904b8b1..c3ee9b76d 100644
  		size_t file_size = 0;
  		size_t *file_size_ptr = NULL;
 diff --git a/include/linux/init.h b/include/linux/init.h
-index d82b4b2e1..8c4f10d1c 100644
+index 266c3e164..5697f4b7f 100644
 --- a/include/linux/init.h
 +++ b/include/linux/init.h
-@@ -150,6 +150,7 @@ void setup_arch(char **);
- void prepare_namespace(void);
- void __init init_rootfs(void);
+@@ -170,6 +170,7 @@ extern initcall_entry_t __initcall7_start[];
+ extern initcall_entry_t __initcall_end[];
+ 
  extern struct file_system_type rootfs_fs_type;
 +void wait_for_rootfs(void);
  
  #if defined(CONFIG_STRICT_KERNEL_RWX) || defined(CONFIG_STRICT_MODULE_RWX)
  extern bool rodata_enabled;
 diff --git a/init/main.c b/init/main.c
-index bcd132d4e..1a6c680ae 100644
+index e24b0780f..1fbd532ea 100644
 --- a/init/main.c
 +++ b/init/main.c
-@@ -1584,6 +1584,25 @@ void __init console_on_rootfs(void)
+@@ -1519,6 +1519,25 @@ void __init console_on_rootfs(void)
  	fput(file);
  }
  
@@ -52,7 +52,7 @@ index bcd132d4e..1a6c680ae 100644
  static noinline void __init kernel_init_freeable(void)
  {
  	/* Now the scheduler is fully set up and can do blocking allocations */
-@@ -1639,5 +1658,7 @@ static noinline void __init kernel_init_freeable(void)
+@@ -1573,5 +1592,7 @@ static noinline void __init kernel_init_freeable(void)
  	 * and default modules
  	 */
  

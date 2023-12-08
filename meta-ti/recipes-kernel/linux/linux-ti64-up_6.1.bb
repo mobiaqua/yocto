@@ -12,14 +12,14 @@ KERNEL_ARTIFACT_LINK_NAME = ""
 KMETA = "kernel-meta"
 KCONF_BSP_AUDIT_LEVEL = "1"
 KERNEL_DEVICETREE:beagle64 = "ti/k3-j721e-beagleboneai64.dtb"
-FILESEXTRAPATHS:prepend := "${THISDIR}/linux-ti-up_6.1:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/linux-ti64-up_6.1:"
 KBUILD_DEFCONFIG = "ti_defconfig"
 
 KERNEL_EXTRA_ARGS += "LOADADDR=${UBOOT_LOADADDRESS}"
 
 BRANCH = "ti-linux-6.1.y"
 
-SRCREV = "5da2f861d7d06b97ea386294469e1644b18666fc"
+SRCREV = "2804e8ee9bf513f6a7fb54427469942a0e3d5a30"
 PV = "6.1+git${SRCPV}"
 
 KERNEL_GIT_URI = "git://git.ti.com/git/ti-linux-kernel/ti-linux-kernel.git"
