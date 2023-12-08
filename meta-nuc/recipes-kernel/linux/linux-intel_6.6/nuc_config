@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/x86_64 6.6.1 Kernel Configuration
+# Linux/x86 6.6.5 Kernel Configuration
 #
 CONFIG_CC_VERSION_TEXT="x86_64-mobiaqua-linux-gcc (GCC) 11.4.0"
 CONFIG_CC_IS_GCC=y
@@ -1133,8 +1133,8 @@ CONFIG_STANDALONE=y
 # Firmware loader
 #
 CONFIG_FW_LOADER=y
-CONFIG_EXTRA_FIRMWARE="i915/adlp_dmc_ver2_16.bin i915/adlp_guc_70.bin i915/tgl_huc.bin intel/ibt-0040-0041.sfi intel/ibt-0040-0041.ddc iwlwifi-so-a0-gf-a0-72.ucode iwlwifi-so-a0-gf-a0.pnvm regulatory.db regulatory.db.p7s"
 CONFIG_EXTRA_FIRMWARE_DIR="MOBIAQUA_FW_PATH"
+CONFIG_EXTRA_FIRMWARE="i915/adlp_dmc.bin i915/adlp_guc_70.bin i915/tgl_huc.bin regulatory.db regulatory.db.p7s"
 # CONFIG_FW_LOADER_USER_HELPER is not set
 # CONFIG_FW_LOADER_COMPRESS is not set
 CONFIG_FW_CACHE=y
