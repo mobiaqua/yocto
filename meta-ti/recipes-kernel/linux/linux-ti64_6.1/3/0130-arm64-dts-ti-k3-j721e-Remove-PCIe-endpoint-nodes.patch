@@ -1,0 +1,179 @@
+From cd7cb452d74130adfb2bef8002abd21a87caa38c Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Thu, 6 Jul 2023 15:04:18 -0500
+Subject: [PATCH 130/143] arm64: dts: ti: k3-j721e: Remove PCIe endpoint nodes
+
+commit a0cfd88d4a8a1106e9de5c3b03e68efe9e6249ec upstream.
+
+These nodes are example nodes for the PCIe controller in "endpoint" mode.
+By default the controller is in "root complex" mode and there is already a
+DT node for the same.
+
+Examples should go in the bindings or other documentation.
+
+Remove this node.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Link: https://lore.kernel.org/r/20230515172137.474626-2-afd@ti.com
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ .../boot/dts/ti/k3-j721e-beagleboneai64.dts   | 24 ------
+ .../dts/ti/k3-j721e-common-proc-board.dts     | 25 ------
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi     | 82 -------------------
+ arch/arm64/boot/dts/ti/k3-j721e-sk.dts        | 24 ------
+ 4 files changed, 155 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts b/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
+index 8a62ac263b89..d77eeff0d81d 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
++++ b/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
+@@ -892,35 +892,11 @@ &pcie2_rc {
+ 	status = "disabled";
+ };
+ 
+-&pcie0_ep {
+-	status = "disabled";
+-	phys = <&serdes0_pcie_link>;
+-	phy-names = "pcie-phy";
+-	num-lanes = <1>;
+-};
+-
+-&pcie1_ep {
+-	status = "disabled";
+-	phys = <&serdes1_pcie_link>;
+-	phy-names = "pcie-phy";
+-	num-lanes = <2>;
+-};
+-
+-&pcie2_ep {
+-	/* Unused */
+-	status = "disabled";
+-};
+-
+ &pcie3_rc {
+ 	/* Unused */
+ 	status = "disabled";
+ };
+ 
+-&pcie3_ep {
+-	/* Unused */
+-	status = "disabled";
+-};
+-
+ &icssg0_mdio {
+ 	/* Unused */
+ 	status = "disabled";
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index 8210aafdca61..349cde1b565d 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -763,26 +763,6 @@ pcie0_intc: interrupt-controller {
+ 		};
+ 	};
+ 
+-	pcie0_ep: pcie-ep@2900000 {
+-		compatible = "ti,j721e-pcie-ep";
+-		reg = <0x00 0x02900000 0x00 0x1000>,
+-		      <0x00 0x02907000 0x00 0x400>,
+-		      <0x00 0x0d000000 0x00 0x00800000>,
+-		      <0x00 0x10000000 0x00 0x08000000>;
+-		reg-names = "intd_cfg", "user_cfg", "reg", "mem";
+-		interrupt-names = "link_state";
+-		interrupts = <GIC_SPI 318 IRQ_TYPE_EDGE_RISING>;
+-		ti,syscon-pcie-ctrl = <&scm_conf 0x4070>;
+-		max-link-speed = <3>;
+-		num-lanes = <2>;
+-		power-domains = <&k3_pds 239 TI_SCI_PD_EXCLUSIVE>;
+-		clocks = <&k3_clks 239 1>;
+-		clock-names = "fck";
+-		max-functions = /bits/ 8 <6>;
+-		max-virtual-functions = /bits/ 8 <4 4 4 4 0 0>;
+-		dma-coherent;
+-	};
+-
+ 	pcie1_rc: pcie@2910000 {
+ 		compatible = "ti,j721e-pcie-host";
+ 		reg = <0x00 0x02910000 0x00 0x1000>,
+@@ -824,26 +804,6 @@ pcie1_intc: interrupt-controller {
+ 		};
+ 	};
+ 
+-	pcie1_ep: pcie-ep@2910000 {
+-		compatible = "ti,j721e-pcie-ep";
+-		reg = <0x00 0x02910000 0x00 0x1000>,
+-		      <0x00 0x02917000 0x00 0x400>,
+-		      <0x00 0x0d800000 0x00 0x00800000>,
+-		      <0x00 0x18000000 0x00 0x08000000>;
+-		reg-names = "intd_cfg", "user_cfg", "reg", "mem";
+-		interrupt-names = "link_state";
+-		interrupts = <GIC_SPI 330 IRQ_TYPE_EDGE_RISING>;
+-		ti,syscon-pcie-ctrl = <&scm_conf 0x4074>;
+-		max-link-speed = <3>;
+-		num-lanes = <2>;
+-		power-domains = <&k3_pds 240 TI_SCI_PD_EXCLUSIVE>;
+-		clocks = <&k3_clks 240 1>;
+-		clock-names = "fck";
+-		max-functions = /bits/ 8 <6>;
+-		max-virtual-functions = /bits/ 8 <4 4 4 4 0 0>;
+-		dma-coherent;
+-	};
+-
+ 	pcie2_rc: pcie@2920000 {
+ 		compatible = "ti,j721e-pcie-host";
+ 		reg = <0x00 0x02920000 0x00 0x1000>,
+@@ -885,26 +845,6 @@ pcie2_intc: interrupt-controller {
+ 		};
+ 	};
+ 
+-	pcie2_ep: pcie-ep@2920000 {
+-		compatible = "ti,j721e-pcie-ep";
+-		reg = <0x00 0x02920000 0x00 0x1000>,
+-		      <0x00 0x02927000 0x00 0x400>,
+-		      <0x00 0x0e000000 0x00 0x00800000>,
+-		      <0x44 0x00000000 0x00 0x08000000>;
+-		reg-names = "intd_cfg", "user_cfg", "reg", "mem";
+-		interrupt-names = "link_state";
+-		interrupts = <GIC_SPI 342 IRQ_TYPE_EDGE_RISING>;
+-		ti,syscon-pcie-ctrl = <&scm_conf 0x4078>;
+-		max-link-speed = <3>;
+-		num-lanes = <2>;
+-		power-domains = <&k3_pds 241 TI_SCI_PD_EXCLUSIVE>;
+-		clocks = <&k3_clks 241 1>;
+-		clock-names = "fck";
+-		max-functions = /bits/ 8 <6>;
+-		max-virtual-functions = /bits/ 8 <4 4 4 4 0 0>;
+-		dma-coherent;
+-	};
+-
+ 	pcie3_rc: pcie@2930000 {
+ 		compatible = "ti,j721e-pcie-host";
+ 		reg = <0x00 0x02930000 0x00 0x1000>,
+@@ -946,28 +886,6 @@ pcie3_intc: interrupt-controller {
+ 		};
+ 	};
+ 
+-	pcie3_ep: pcie-ep@2930000 {
+-		compatible = "ti,j721e-pcie-ep";
+-		reg = <0x00 0x02930000 0x00 0x1000>,
+-		      <0x00 0x02937000 0x00 0x400>,
+-		      <0x00 0x0e800000 0x00 0x00800000>,
+-		      <0x44 0x10000000 0x00 0x08000000>;
+-		reg-names = "intd_cfg", "user_cfg", "reg", "mem";
+-		interrupt-names = "link_state";
+-		interrupts = <GIC_SPI 354 IRQ_TYPE_EDGE_RISING>;
+-		ti,syscon-pcie-ctrl = <&scm_conf 0x407c>;
+-		max-link-speed = <3>;
+-		num-lanes = <2>;
+-		power-domains = <&k3_pds 242 TI_SCI_PD_EXCLUSIVE>;
+-		clocks = <&k3_clks 242 1>;
+-		clock-names = "fck";
+-		max-functions = /bits/ 8 <6>;
+-		max-virtual-functions = /bits/ 8 <4 4 4 4 0 0>;
+-		dma-coherent;
+-		#address-cells = <2>;
+-		#size-cells = <2>;
+-	};
+-
+ 	serdes_wiz4: wiz@5050000 {
+ 		compatible = "ti,am64-wiz-10g";
+ 		#address-cells = <1>;

@@ -1,0 +1,103 @@
+From cdd56b9da25894603f837c3db025a56abb8a91ab Mon Sep 17 00:00:00 2001
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+Date: Wed, 14 Jun 2023 11:01:49 +0530
+Subject: [PATCH 366/434] iopoll: Do not use timekeeping in
+ read_poll_timeout_atomic()
+
+commit 7349a69cf312 ("iopoll: Do not use timekeeping in
+read_poll_timeout_atomic()") upstream
+
+read_poll_timeout_atomic() uses ktime_get() to implement the timeout
+feature, just like its non-atomic counterpart.  However, there are
+several issues with this, due to its use in atomic contexts:
+
+  1. When called in the s2ram path (as typically done by clock or PM
+     domain drivers), timekeeping may be suspended, triggering the
+     WARN_ON(timekeeping_suspended) in ktime_get():
+
+	WARNING: CPU: 0 PID: 654 at kernel/time/timekeeping.c:843 ktime_get+0x28/0x78
+
+     Calling ktime_get_mono_fast_ns() instead of ktime_get() would get
+     rid of that warning.  However, that would break timeout handling,
+     as (at least on systems with an ARM architectured timer), the time
+     returned by ktime_get_mono_fast_ns() does not advance while
+     timekeeping is suspended.
+     Interestingly, (on the same ARM systems) the time returned by
+     ktime_get() does advance while timekeeping is suspended, despite
+     the warning.
+
+  2. Depending on the actual clock source, and especially before a
+     high-resolution clocksource (e.g. the ARM architectured timer)
+     becomes available, time may not advance in atomic contexts, thus
+     breaking timeout handling.
+
+Fix this by abandoning the idea that one can rely on timekeeping to
+implement timeout handling in all atomic contexts, and switch from a
+global time-based to a locally-estimated timeout handling.  In most
+(all?) cases the timeout condition is exceptional and an error
+condition, hence any additional delays due to underestimating wall clock
+time are irrelevant.
+
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Reviewed-by: Tony Lindgren <tony@atomide.com>
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+Link: https://lore.kernel.org/r/3d2a2f4e553489392d871108797c3be08f88300b.1685692810.git.geert+renesas@glider.be
+---
+ include/linux/iopoll.h | 22 +++++++++++++++++-----
+ 1 file changed, 17 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/iopoll.h b/include/linux/iopoll.h
+index 0417360a6db9..19a7b00baff4 100644
+--- a/include/linux/iopoll.h
++++ b/include/linux/iopoll.h
+@@ -74,6 +74,10 @@
+  * Returns 0 on success and -ETIMEDOUT upon a timeout. In either
+  * case, the last read value at @args is stored in @val.
+  *
++ * This macro does not rely on timekeeping.  Hence it is safe to call even when
++ * timekeeping is suspended, at the expense of an underestimation of wall clock
++ * time, which is rather minimal with a non-zero delay_us.
++ *
+  * When available, you'll probably want to use one of the specialized
+  * macros defined below rather than this macro directly.
+  */
+@@ -81,22 +85,30 @@
+ 					delay_before_read, args...) \
+ ({ \
+ 	u64 __timeout_us = (timeout_us); \
++	s64 __left_ns = __timeout_us * NSEC_PER_USEC; \
+ 	unsigned long __delay_us = (delay_us); \
+-	ktime_t __timeout = ktime_add_us(ktime_get(), __timeout_us); \
+-	if (delay_before_read && __delay_us) \
++	u64 __delay_ns = __delay_us * NSEC_PER_USEC; \
++	if (delay_before_read && __delay_us) { \
+ 		udelay(__delay_us); \
++		if (__timeout_us) \
++			__left_ns -= __delay_ns; \
++	} \
+ 	for (;;) { \
+ 		(val) = op(args); \
+ 		if (cond) \
+ 			break; \
+-		if (__timeout_us && \
+-		    ktime_compare(ktime_get(), __timeout) > 0) { \
++		if (__timeout_us && __left_ns < 0) { \
+ 			(val) = op(args); \
+ 			break; \
+ 		} \
+-		if (__delay_us) \
++		if (__delay_us) { \
+ 			udelay(__delay_us); \
++			if (__timeout_us) \
++				__left_ns -= __delay_ns; \
++		} \
+ 		cpu_relax(); \
++		if (__timeout_us) \
++			__left_ns--; \
+ 	} \
+ 	(cond) ? 0 : -ETIMEDOUT; \
+ })
+-- 
+2.41.0
+

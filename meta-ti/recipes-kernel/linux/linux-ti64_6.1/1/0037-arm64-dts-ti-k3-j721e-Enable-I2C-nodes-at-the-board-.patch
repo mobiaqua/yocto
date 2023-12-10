@@ -1,0 +1,114 @@
+From 6baf699794777aefe3f48c46950e4f1ba3d35457 Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Tue, 14 Mar 2023 13:31:43 -0500
+Subject: [PATCH 037/508] arm64: dts: ti: k3-j721e: Enable I2C nodes at the
+ board level
+
+I2C nodes defined in the top-level J721e SoC dtsi files are incomplete
+and will not be functional unless they are extended with pinmux
+information.
+
+As the pinmux is only known at the board integration level, these
+nodes should only be enabled when provided with this information.
+
+Disable the I2C nodes in the dtsi files and only enable the ones that
+are actually pinned out on a given board.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Reviewed-by: Bryan Brattlof <bb@ti.com>
+Link: https://lore.kernel.org/r/20221020160305.18711-3-afd@ti.com
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi     |  7 ++++++
+ .../boot/dts/ti/k3-j721e-mcu-wakeup.dtsi      |  3 +++
+ 4 files changed, 17 insertions(+), 20 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index f98b98c5743d..ce24bada373f 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -1228,6 +1228,7 @@ main_i2c0: i2c@2000000 {
+ 		clock-names = "fck";
+ 		clocks = <&k3_clks 187 0>;
+ 		power-domains = <&k3_pds 187 TI_SCI_PD_SHARED>;
++		status = "disabled";
+ 	};
+ 
+ 	main_i2c1: i2c@2010000 {
+@@ -1239,6 +1240,7 @@ main_i2c1: i2c@2010000 {
+ 		clock-names = "fck";
+ 		clocks = <&k3_clks 188 0>;
+ 		power-domains = <&k3_pds 188 TI_SCI_PD_EXCLUSIVE>;
++		status = "disabled";
+ 	};
+ 
+ 	main_i2c2: i2c@2020000 {
+@@ -1250,6 +1252,7 @@ main_i2c2: i2c@2020000 {
+ 		clock-names = "fck";
+ 		clocks = <&k3_clks 189 0>;
+ 		power-domains = <&k3_pds 189 TI_SCI_PD_EXCLUSIVE>;
++		status = "disabled";
+ 	};
+ 
+ 	main_i2c3: i2c@2030000 {
+@@ -1261,6 +1264,7 @@ main_i2c3: i2c@2030000 {
+ 		clock-names = "fck";
+ 		clocks = <&k3_clks 190 0>;
+ 		power-domains = <&k3_pds 190 TI_SCI_PD_EXCLUSIVE>;
++		status = "disabled";
+ 	};
+ 
+ 	main_i2c4: i2c@2040000 {
+@@ -1272,6 +1276,7 @@ main_i2c4: i2c@2040000 {
+ 		clock-names = "fck";
+ 		clocks = <&k3_clks 191 0>;
+ 		power-domains = <&k3_pds 191 TI_SCI_PD_EXCLUSIVE>;
++		status = "disabled";
+ 	};
+ 
+ 	main_i2c5: i2c@2050000 {
+@@ -1283,6 +1288,7 @@ main_i2c5: i2c@2050000 {
+ 		clock-names = "fck";
+ 		clocks = <&k3_clks 192 0>;
+ 		power-domains = <&k3_pds 192 TI_SCI_PD_EXCLUSIVE>;
++		status = "disabled";
+ 	};
+ 
+ 	main_i2c6: i2c@2060000 {
+@@ -1294,6 +1300,7 @@ main_i2c6: i2c@2060000 {
+ 		clock-names = "fck";
+ 		clocks = <&k3_clks 193 0>;
+ 		power-domains = <&k3_pds 193 TI_SCI_PD_EXCLUSIVE>;
++		status = "disabled";
+ 	};
+ 
+ 	ufs_wrapper: ufs-wrapper@4e80000 {
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+index fce88ed23596..7bb6613796ea 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+@@ -147,6 +147,7 @@ mcu_i2c0: i2c@40b00000 {
+ 		clock-names = "fck";
+ 		clocks = <&k3_clks 194 0>;
+ 		power-domains = <&k3_pds 194 TI_SCI_PD_EXCLUSIVE>;
++		status = "disabled";
+ 	};
+ 
+ 	mcu_i2c1: i2c@40b10000 {
+@@ -158,6 +159,7 @@ mcu_i2c1: i2c@40b10000 {
+ 		clock-names = "fck";
+ 		clocks = <&k3_clks 195 0>;
+ 		power-domains = <&k3_pds 195 TI_SCI_PD_EXCLUSIVE>;
++		status = "disabled";
+ 	};
+ 
+ 	wkup_i2c0: i2c@42120000 {
+@@ -169,6 +171,7 @@ wkup_i2c0: i2c@42120000 {
+ 		clock-names = "fck";
+ 		clocks = <&k3_clks 197 0>;
+ 		power-domains = <&k3_pds 197 TI_SCI_PD_SHARED>;
++		status = "disabled";
+ 	};
+ 
+ 	fss: fss@47000000 {

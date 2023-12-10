@@ -1,0 +1,33 @@
+From bb7a4b76f10ebbb18f5471bb2f5d8c9ddeb1891e Mon Sep 17 00:00:00 2001
+From: Siddharth Vadapalli <s-vadapalli@ti.com>
+Date: Mon, 24 Apr 2023 15:26:00 +0530
+Subject: [PATCH 448/508] phy: ti: gmii-sel: Enable SGMII mode for J721E
+
+TI's J721E SoC supports SGMII mode with the CPSW9G instance of the CPSW
+Ethernet Switch. Thus, enable it by adding SGMII mode to the list of the
+corresponding extra_modes member.
+
+Link: https://lore.kernel.org/r/20230309063514.398705-4-s-vadapalli@ti.com/
+Signed-off-by: Siddharth Vadapalli <s-vadapalli@ti.com>
+Reviewed-by: Roger Quadros <rogerq@kernel.org>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/phy/ti/phy-gmii-sel.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/phy/ti/phy-gmii-sel.c b/drivers/phy/ti/phy-gmii-sel.c
+index f3da6b020247..c87118cb2af9 100644
+--- a/drivers/phy/ti/phy-gmii-sel.c
++++ b/drivers/phy/ti/phy-gmii-sel.c
+@@ -230,7 +230,7 @@ static const
+ struct phy_gmii_sel_soc_data phy_gmii_sel_cpsw9g_soc_j721e = {
+ 	.use_of_data = true,
+ 	.regfields = phy_gmii_sel_fields_am654,
+-	.extra_modes = BIT(PHY_INTERFACE_MODE_QSGMII),
++	.extra_modes = BIT(PHY_INTERFACE_MODE_QSGMII) | BIT(PHY_INTERFACE_MODE_SGMII),
+ 	.num_ports = 8,
+ 	.num_qsgmii_main_ports = 2,
+ };
+-- 
+2.41.0
+

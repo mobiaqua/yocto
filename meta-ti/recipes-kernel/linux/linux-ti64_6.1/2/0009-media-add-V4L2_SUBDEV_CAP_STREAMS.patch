@@ -1,0 +1,59 @@
+From 8626f364dabee6547982ed61aaf7be71140c329a Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Date: Tue, 9 May 2023 14:15:06 +0530
+Subject: [PATCH 009/434] media: add V4L2_SUBDEV_CAP_STREAMS
+
+commit 9a6b5bf4c1bba341eeb010f3ea8b5b48651f65f8 upstream.
+
+Add a subdev capability flag to expose to userspace if a subdev supports
+multiplexed streams.
+
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@kernel.org>
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/media/v4l2-core/v4l2-subdev.c | 5 ++++-
+ include/uapi/linux/v4l2-subdev.h      | 3 +++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/v4l2-core/v4l2-subdev.c b/drivers/media/v4l2-core/v4l2-subdev.c
+index ca5b764d796d..8983d33fdb4b 100644
+--- a/drivers/media/v4l2-core/v4l2-subdev.c
++++ b/drivers/media/v4l2-core/v4l2-subdev.c
+@@ -431,6 +431,7 @@ static long subdev_do_ioctl(struct file *file, unsigned int cmd, void *arg,
+ 	struct v4l2_subdev *sd = vdev_to_v4l2_subdev(vdev);
+ 	struct v4l2_fh *vfh = file->private_data;
+ 	bool ro_subdev = test_bit(V4L2_FL_SUBDEV_RO_DEVNODE, &vdev->flags);
++	bool streams_subdev = sd->flags & V4L2_SUBDEV_FL_STREAMS;
+ 	int rval;
+ 
+ 	switch (cmd) {
+@@ -439,7 +440,9 @@ static long subdev_do_ioctl(struct file *file, unsigned int cmd, void *arg,
+ 
+ 		memset(cap->reserved, 0, sizeof(cap->reserved));
+ 		cap->version = LINUX_VERSION_CODE;
+-		cap->capabilities = ro_subdev ? V4L2_SUBDEV_CAP_RO_SUBDEV : 0;
++		cap->capabilities =
++			(ro_subdev ? V4L2_SUBDEV_CAP_RO_SUBDEV : 0) |
++			(streams_subdev ? V4L2_SUBDEV_CAP_STREAMS : 0);
+ 
+ 		return 0;
+ 	}
+diff --git a/include/uapi/linux/v4l2-subdev.h b/include/uapi/linux/v4l2-subdev.h
+index 658106f5b5dc..89af27f50a41 100644
+--- a/include/uapi/linux/v4l2-subdev.h
++++ b/include/uapi/linux/v4l2-subdev.h
+@@ -188,6 +188,9 @@ struct v4l2_subdev_capability {
+ /* The v4l2 sub-device video device node is registered in read-only mode. */
+ #define V4L2_SUBDEV_CAP_RO_SUBDEV		0x00000001
+ 
++/* The v4l2 sub-device supports routing and multiplexed streams. */
++#define V4L2_SUBDEV_CAP_STREAMS			0x00000002
++
+ /* Backwards compatibility define --- to be removed */
+ #define v4l2_subdev_edid v4l2_edid
+ 
+-- 
+2.41.0
+

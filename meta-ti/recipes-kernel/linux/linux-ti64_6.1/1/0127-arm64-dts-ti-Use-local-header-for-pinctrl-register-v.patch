@@ -1,0 +1,110 @@
+From f8c684a17cc5bf41450b2c6ee5c90b36c56fb1e3 Mon Sep 17 00:00:00 2001
+From: Nishanth Menon <nm@ti.com>
+Date: Wed, 5 Apr 2023 15:44:02 +0530
+Subject: [PATCH 127/508] arm64: dts: ti: Use local header for pinctrl register
+ values
+
+commit fe49f2d776f7994dc60dd04712a437fd0bdc67a0 upstream.
+
+The DTS uses hardware register values directly in pin controller pin
+configuration and not an abstraction of any form.
+
+These definitions were previously put in the bindings header to avoid
+code duplication and to provide some context meaning (name), but they
+do not fit the purpose of bindings.
+
+Store the constants in a header next to DTS and use them instead of
+bindings.
+
+Suggested-by: Krzysztof Kozlowski <krzysztof.kozlowski@linaro.org>
+Suggested-by: Linus Walleij <linus.walleij@linaro.org>
+Acked-by: Krzysztof Kozlowski <krzysztof.kozlowski@linaro.org>
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
+Link: https://lore.kernel.org/all/c4d53e9c-dac0-8ccc-dc86-faada324beba@linaro.org/
+Link: https://lore.kernel.org/r/20230315155228.1566883-3-nm@ti.com
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e.dtsi  |  3 +-
+ arch/arm64/boot/dts/ti/k3-pinctrl.h   | 53 +++++++++++++++++++++++++++
+ 9 files changed, 69 insertions(+), 8 deletions(-)
+ create mode 100644 arch/arm64/boot/dts/ti/k3-pinctrl.h
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e.dtsi b/arch/arm64/boot/dts/ti/k3-j721e.dtsi
+index 6975cae644d9..4c7d5f9d61a8 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e.dtsi
+@@ -7,9 +7,10 @@
+ 
+ #include <dt-bindings/interrupt-controller/irq.h>
+ #include <dt-bindings/interrupt-controller/arm-gic.h>
+-#include <dt-bindings/pinctrl/k3.h>
+ #include <dt-bindings/soc/ti,sci_pm_domain.h>
+ 
++#include "k3-pinctrl.h"
++
+ / {
+ 	model = "Texas Instruments K3 J721E SoC";
+ 	compatible = "ti,j721e";
+diff --git a/arch/arm64/boot/dts/ti/k3-pinctrl.h b/arch/arm64/boot/dts/ti/k3-pinctrl.h
+new file mode 100644
+index 000000000000..c97548a3f42d
+--- /dev/null
++++ b/arch/arm64/boot/dts/ti/k3-pinctrl.h
+@@ -0,0 +1,53 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * This header provides constants for pinctrl bindings for TI's K3 SoC
++ * family.
++ *
++ * Copyright (C) 2018-2023 Texas Instruments Incorporated - https://www.ti.com/
++ */
++#ifndef DTS_ARM64_TI_K3_PINCTRL_H
++#define DTS_ARM64_TI_K3_PINCTRL_H
++
++#define PULLUDEN_SHIFT		(16)
++#define PULLTYPESEL_SHIFT	(17)
++#define RXACTIVE_SHIFT		(18)
++
++#define PULL_DISABLE		(1 << PULLUDEN_SHIFT)
++#define PULL_ENABLE		(0 << PULLUDEN_SHIFT)
++
++#define PULL_UP			(1 << PULLTYPESEL_SHIFT | PULL_ENABLE)
++#define PULL_DOWN		(0 << PULLTYPESEL_SHIFT | PULL_ENABLE)
++
++#define INPUT_EN		(1 << RXACTIVE_SHIFT)
++#define INPUT_DISABLE		(0 << RXACTIVE_SHIFT)
++
++/* Only these macros are expected be used directly in device tree files */
++#define PIN_OUTPUT		(INPUT_DISABLE | PULL_DISABLE)
++#define PIN_OUTPUT_PULLUP	(INPUT_DISABLE | PULL_UP)
++#define PIN_OUTPUT_PULLDOWN	(INPUT_DISABLE | PULL_DOWN)
++#define PIN_INPUT		(INPUT_EN | PULL_DISABLE)
++#define PIN_INPUT_PULLUP	(INPUT_EN | PULL_UP)
++#define PIN_INPUT_PULLDOWN	(INPUT_EN | PULL_DOWN)
++
++#define AM62AX_IOPAD(pa, val, muxmode)		(((pa) & 0x1fff)) ((val) | (muxmode))
++#define AM62AX_MCU_IOPAD(pa, val, muxmode)	(((pa) & 0x1fff)) ((val) | (muxmode))
++
++#define AM62X_IOPAD(pa, val, muxmode)		(((pa) & 0x1fff)) ((val) | (muxmode))
++#define AM62X_MCU_IOPAD(pa, val, muxmode)	(((pa) & 0x1fff)) ((val) | (muxmode))
++
++#define AM64X_IOPAD(pa, val, muxmode)		(((pa) & 0x1fff)) ((val) | (muxmode))
++#define AM64X_MCU_IOPAD(pa, val, muxmode)	(((pa) & 0x1fff)) ((val) | (muxmode))
++
++#define AM65X_IOPAD(pa, val, muxmode)		(((pa) & 0x1fff)) ((val) | (muxmode))
++#define AM65X_WKUP_IOPAD(pa, val, muxmode)	(((pa) & 0x1fff)) ((val) | (muxmode))
++
++#define J721E_IOPAD(pa, val, muxmode)		(((pa) & 0x1fff)) ((val) | (muxmode))
++#define J721E_WKUP_IOPAD(pa, val, muxmode)	(((pa) & 0x1fff)) ((val) | (muxmode))
++
++#define J721S2_IOPAD(pa, val, muxmode)		(((pa) & 0x1fff)) ((val) | (muxmode))
++#define J721S2_WKUP_IOPAD(pa, val, muxmode)	(((pa) & 0x1fff)) ((val) | (muxmode))
++
++#define J784S4_IOPAD(pa, val, muxmode)		(((pa) & 0x1fff)) ((val) | (muxmode))
++#define J784S4_WKUP_IOPAD(pa, val, muxmode)	(((pa) & 0x1fff)) ((val) | (muxmode))
++
++#endif
+-- 
+2.41.0
+

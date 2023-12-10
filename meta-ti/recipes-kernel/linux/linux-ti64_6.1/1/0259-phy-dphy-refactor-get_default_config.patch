@@ -1,0 +1,52 @@
+From 06f3dc0e9a1893399dc7f19daa655f61b64eb5b0 Mon Sep 17 00:00:00 2001
+From: Marco Felsch <m.felsch@pengutronix.de>
+Date: Thu, 20 Apr 2023 11:54:01 +0530
+Subject: [PATCH 259/508] phy: dphy: refactor get_default_config
+
+commit 7afa5db0eaae8f6c110690311167d5e5cd728efb upstream.
+
+Factor out the calculation into phy_mipi_dphy_calc_config(). This is
+needed for the follow up patch which adds the support to calculate the
+timings based on a given hs clock. No functional changes are done.
+
+Signed-off-by: Marco Felsch <m.felsch@pengutronix.de>
+Acked-by: Vinod Koul <vkoul@kernel.org>
+Signed-off-by: Sakari Ailus <sakari.ailus@linux.intel.com>
+Signed-off-by: Vaishnav Achath <vaishnav.a@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/phy/phy-core-mipi-dphy.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/phy/phy-core-mipi-dphy.c b/drivers/phy/phy-core-mipi-dphy.c
+index 929e86d6558e..ba365bc77407 100644
+--- a/drivers/phy/phy-core-mipi-dphy.c
++++ b/drivers/phy/phy-core-mipi-dphy.c
+@@ -17,7 +17,7 @@
+  * from the valid ranges specified in Section 6.9, Table 14, Page 41
+  * of the D-PHY specification (v1.2).
+  */
+-int phy_mipi_dphy_get_default_config(unsigned long pixel_clock,
++static int phy_mipi_dphy_calc_config(unsigned long pixel_clock,
+ 				     unsigned int bpp,
+ 				     unsigned int lanes,
+ 				     struct phy_configure_opts_mipi_dphy *cfg)
+@@ -75,6 +75,15 @@ int phy_mipi_dphy_get_default_config(unsigned long pixel_clock,
+ 
+ 	return 0;
+ }
++
++int phy_mipi_dphy_get_default_config(unsigned long pixel_clock,
++				     unsigned int bpp,
++				     unsigned int lanes,
++				     struct phy_configure_opts_mipi_dphy *cfg)
++{
++	return phy_mipi_dphy_calc_config(pixel_clock, bpp, lanes, cfg);
++
++}
+ EXPORT_SYMBOL(phy_mipi_dphy_get_default_config);
+ 
+ /*
+-- 
+2.41.0
+

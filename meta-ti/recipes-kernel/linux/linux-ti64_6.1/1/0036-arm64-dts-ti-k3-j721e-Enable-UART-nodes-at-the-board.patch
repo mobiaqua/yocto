@@ -1,0 +1,130 @@
+From b394515c7a9efa879da2c689adf154406a485a21 Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Tue, 14 Mar 2023 13:31:42 -0500
+Subject: [PATCH 036/508] arm64: dts: ti: k3-j721e: Enable UART nodes at the
+ board level
+
+UART nodes defined in the top-level J721e SoC dtsi files are incomplete
+and may not be functional unless they are extended with pinmux
+information.
+
+As the pinmux is only known at the board integration level, these
+nodes should only be enabled when provided with this information.
+
+Disable the UART nodes in the dtsi files and only enable the ones that
+are actually pinned out on a given board.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Reviewed-by: Bryan Brattlof <bb@ti.com>
+Link: https://lore.kernel.org/r/20221020160305.18711-2-afd@ti.com
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi     | 10 +++++
+ .../boot/dts/ti/k3-j721e-mcu-wakeup.dtsi      |  2 +
+ 4 files changed, 37 insertions(+), 57 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index 603ddda5127f..f98b98c5743d 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -839,6 +839,7 @@ main_uart0: serial@2800000 {
+ 		power-domains = <&k3_pds 146 TI_SCI_PD_EXCLUSIVE>;
+ 		clocks = <&k3_clks 146 0>;
+ 		clock-names = "fclk";
++		status = "disabled";
+ 	};
+ 
+ 	main_uart1: serial@2810000 {
+@@ -850,6 +851,7 @@ main_uart1: serial@2810000 {
+ 		power-domains = <&k3_pds 278 TI_SCI_PD_EXCLUSIVE>;
+ 		clocks = <&k3_clks 278 0>;
+ 		clock-names = "fclk";
++		status = "disabled";
+ 	};
+ 
+ 	main_uart2: serial@2820000 {
+@@ -861,6 +863,7 @@ main_uart2: serial@2820000 {
+ 		power-domains = <&k3_pds 279 TI_SCI_PD_EXCLUSIVE>;
+ 		clocks = <&k3_clks 279 0>;
+ 		clock-names = "fclk";
++		status = "disabled";
+ 	};
+ 
+ 	main_uart3: serial@2830000 {
+@@ -872,6 +875,7 @@ main_uart3: serial@2830000 {
+ 		power-domains = <&k3_pds 280 TI_SCI_PD_EXCLUSIVE>;
+ 		clocks = <&k3_clks 280 0>;
+ 		clock-names = "fclk";
++		status = "disabled";
+ 	};
+ 
+ 	main_uart4: serial@2840000 {
+@@ -883,6 +887,7 @@ main_uart4: serial@2840000 {
+ 		power-domains = <&k3_pds 281 TI_SCI_PD_EXCLUSIVE>;
+ 		clocks = <&k3_clks 281 0>;
+ 		clock-names = "fclk";
++		status = "disabled";
+ 	};
+ 
+ 	main_uart5: serial@2850000 {
+@@ -894,6 +899,7 @@ main_uart5: serial@2850000 {
+ 		power-domains = <&k3_pds 282 TI_SCI_PD_EXCLUSIVE>;
+ 		clocks = <&k3_clks 282 0>;
+ 		clock-names = "fclk";
++		status = "disabled";
+ 	};
+ 
+ 	main_uart6: serial@2860000 {
+@@ -905,6 +911,7 @@ main_uart6: serial@2860000 {
+ 		power-domains = <&k3_pds 283 TI_SCI_PD_EXCLUSIVE>;
+ 		clocks = <&k3_clks 283 0>;
+ 		clock-names = "fclk";
++		status = "disabled";
+ 	};
+ 
+ 	main_uart7: serial@2870000 {
+@@ -916,6 +923,7 @@ main_uart7: serial@2870000 {
+ 		power-domains = <&k3_pds 284 TI_SCI_PD_EXCLUSIVE>;
+ 		clocks = <&k3_clks 284 0>;
+ 		clock-names = "fclk";
++		status = "disabled";
+ 	};
+ 
+ 	main_uart8: serial@2880000 {
+@@ -927,6 +935,7 @@ main_uart8: serial@2880000 {
+ 		power-domains = <&k3_pds 285 TI_SCI_PD_EXCLUSIVE>;
+ 		clocks = <&k3_clks 285 0>;
+ 		clock-names = "fclk";
++		status = "disabled";
+ 	};
+ 
+ 	main_uart9: serial@2890000 {
+@@ -938,6 +947,7 @@ main_uart9: serial@2890000 {
+ 		power-domains = <&k3_pds 286 TI_SCI_PD_EXCLUSIVE>;
+ 		clocks = <&k3_clks 286 0>;
+ 		clock-names = "fclk";
++		status = "disabled";
+ 	};
+ 
+ 	main_gpio0: gpio@600000 {
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+index df08724bbf1c..fce88ed23596 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+@@ -79,6 +79,7 @@ wkup_uart0: serial@42300000 {
+ 		power-domains = <&k3_pds 287 TI_SCI_PD_EXCLUSIVE>;
+ 		clocks = <&k3_clks 287 0>;
+ 		clock-names = "fclk";
++		status = "disabled";
+ 	};
+ 
+ 	mcu_uart0: serial@40a00000 {
+@@ -90,6 +91,7 @@ mcu_uart0: serial@40a00000 {
+ 		power-domains = <&k3_pds 149 TI_SCI_PD_EXCLUSIVE>;
+ 		clocks = <&k3_clks 149 0>;
+ 		clock-names = "fclk";
++		status = "disabled";
+ 	};
+ 
+ 	wkup_gpio_intr: interrupt-controller@42200000 {

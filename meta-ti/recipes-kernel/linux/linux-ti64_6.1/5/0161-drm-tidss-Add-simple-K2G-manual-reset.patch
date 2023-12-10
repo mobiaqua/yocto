@@ -1,0 +1,51 @@
+From 391f6f3d4bfb06f417e0c6ff0ec9d18693630b59 Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Date: Wed, 8 Nov 2023 21:25:19 +0530
+Subject: [PATCH 161/322] drm/tidss: Add simple K2G manual reset
+
+K2G display controller does not support soft reset, but we can do the
+most important steps manually: mask the IRQs and disable the VPs.
+
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+---
+ drivers/gpu/drm/tidss/tidss_dispc.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/tidss/tidss_dispc.c b/drivers/gpu/drm/tidss/tidss_dispc.c
+index 328f48f39383..685d2ef5a541 100644
+--- a/drivers/gpu/drm/tidss/tidss_dispc.c
++++ b/drivers/gpu/drm/tidss/tidss_dispc.c
+@@ -2950,14 +2950,28 @@ static void dispc_init_errata(struct dispc_device *dispc)
+ 	}
+ }
+ 
++/*
++ * K2G display controller does not support soft reset, so we do a basic manual
++ * reset here: make sure the IRQs are masked and VPs are disabled.
++ */
++static void dispc_softreset_k2g(struct dispc_device *dispc)
++{
++	dispc_set_irqenable(dispc, 0);
++	dispc_read_and_clear_irqstatus(dispc);
++
++	for (unsigned int vp_idx = 0; vp_idx < dispc->feat->num_vps; ++vp_idx)
++		VP_REG_FLD_MOD(dispc, vp_idx, DISPC_VP_CONTROL, 0, 0, 0);
++}
++
+ static int dispc_softreset(struct dispc_device *dispc)
+ {
+ 	u32 val;
+ 	int ret;
+ 
+-	/* K2G display controller does not support soft reset */
+-	if (dispc->feat->subrev == DISPC_K2G)
++	if (dispc->feat->subrev == DISPC_K2G) {
++		dispc_softreset_k2g(dispc);
+ 		return 0;
++	}
+ 
+ 	/*
+ 	 * When we reset the DSS, we also reset the OLDI enable. This disables
+-- 
+2.43.0
+

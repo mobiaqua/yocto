@@ -1,0 +1,105 @@
+From 772e8f4ac9d62e2246b6192be6f28596c0a7fcc7 Mon Sep 17 00:00:00 2001
+From: Vijay Pothukuchi <vijayp@ti.com>
+Date: Thu, 13 Jul 2023 14:21:44 +0530
+Subject: [PATCH 139/143] arm64: dts: ti: k3-j721e-main: Add dts nodes for
+ EHRPWMs
+
+commit 20f67d1dfc6ad67fd70cd000b9d017447a50dbbd upstream.
+
+Add dts nodes for 6 EHRPWM instances on SoC. Disable EHRPWM nodes in the
+dtsi files and only enable the ones that are actually pinned out on a
+given board.
+
+Includes a minor formatting fixup for the serdes node to line up the
+nodes appropriately.
+
+Signed-off-by: Vijay Pothukuchi <vijayp@ti.com>
+Signed-off-by: Rahul T R <r-ravikumar@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Link: https://lore.kernel.org/r/20221107070009.11500-2-r-ravikumar@ti.com
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi | 68 ++++++++++++++++++++++-
+ 1 file changed, 67 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index 86168d64e603..d3be5fa71642 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -73,7 +73,73 @@ usb_serdes_mux: mux-controller@4000 {
+ 			#mux-control-cells = <1>;
+ 			mux-reg-masks = <0x4000 0x8000000>, /* USB0 to SERDES0/3 mux */
+ 					<0x4010 0x8000000>; /* USB1 to SERDES1/2 mux */
+-	    };
++		};
++
++		ehrpwm_tbclk: clock-controller@4140 {
++			compatible = "ti,am654-ehrpwm-tbclk", "syscon";
++			reg = <0x4140 0x18>;
++			#clock-cells = <1>;
++		};
++	};
++
++	main_ehrpwm0: pwm@3000000 {
++		compatible = "ti,am654-ehrpwm", "ti,am3352-ehrpwm";
++		#pwm-cells = <3>;
++		reg = <0x00 0x3000000 0x00 0x100>;
++		power-domains = <&k3_pds 83 TI_SCI_PD_EXCLUSIVE>;
++		clocks = <&ehrpwm_tbclk 0>, <&k3_clks 83 0>;
++		clock-names = "tbclk", "fck";
++		status = "disabled";
++	};
++
++	main_ehrpwm1: pwm@3010000 {
++		compatible = "ti,am654-ehrpwm", "ti,am3352-ehrpwm";
++		#pwm-cells = <3>;
++		reg = <0x00 0x3010000 0x00 0x100>;
++		power-domains = <&k3_pds 84 TI_SCI_PD_EXCLUSIVE>;
++		clocks = <&ehrpwm_tbclk 1>, <&k3_clks 84 0>;
++		clock-names = "tbclk", "fck";
++		status = "disabled";
++	};
++
++	main_ehrpwm2: pwm@3020000 {
++		compatible = "ti,am654-ehrpwm", "ti,am3352-ehrpwm";
++		#pwm-cells = <3>;
++		reg = <0x00 0x3020000 0x00 0x100>;
++		power-domains = <&k3_pds 85 TI_SCI_PD_EXCLUSIVE>;
++		clocks = <&ehrpwm_tbclk 2>, <&k3_clks 85 0>;
++		clock-names = "tbclk", "fck";
++		status = "disabled";
++	};
++
++	main_ehrpwm3: pwm@3030000 {
++		compatible = "ti,am654-ehrpwm", "ti,am3352-ehrpwm";
++		#pwm-cells = <3>;
++		reg = <0x00 0x3030000 0x00 0x100>;
++		power-domains = <&k3_pds 86 TI_SCI_PD_EXCLUSIVE>;
++		clocks = <&ehrpwm_tbclk 3>, <&k3_clks 86 0>;
++		clock-names = "tbclk", "fck";
++		status = "disabled";
++	};
++
++	main_ehrpwm4: pwm@3040000 {
++		compatible = "ti,am654-ehrpwm", "ti,am3352-ehrpwm";
++		#pwm-cells = <3>;
++		reg = <0x00 0x3040000 0x00 0x100>;
++		power-domains = <&k3_pds 87 TI_SCI_PD_EXCLUSIVE>;
++		clocks = <&ehrpwm_tbclk 4>, <&k3_clks 87 0>;
++		clock-names = "tbclk", "fck";
++		status = "disabled";
++	};
++
++	main_ehrpwm5: pwm@3050000 {
++		compatible = "ti,am654-ehrpwm", "ti,am3352-ehrpwm";
++		#pwm-cells = <3>;
++		reg = <0x00 0x3050000 0x00 0x100>;
++		power-domains = <&k3_pds 88 TI_SCI_PD_EXCLUSIVE>;
++		clocks = <&ehrpwm_tbclk 5>, <&k3_clks 88 0>;
++		clock-names = "tbclk", "fck";
++		status = "disabled";
+ 	};
+ 
+ 	gic500: interrupt-controller@1800000 {
+-- 
+2.41.0
+

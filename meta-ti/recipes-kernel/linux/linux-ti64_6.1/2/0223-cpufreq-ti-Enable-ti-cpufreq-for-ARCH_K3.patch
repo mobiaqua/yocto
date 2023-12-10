@@ -1,0 +1,34 @@
+From f7405d4fc8f91aafe9f53fba1282347eb89c7907 Mon Sep 17 00:00:00 2001
+From: Dave Gerlach <d-gerlach@ti.com>
+Date: Fri, 26 May 2023 10:26:31 -0500
+Subject: [PATCH 223/434] cpufreq: ti: Enable ti-cpufreq for ARCH_K3
+
+Make ti-cpufreq driver depend on ARCH_K3 and set it to `default y` so it
+is always enabled for platforms that it depends on.
+
+Signed-off-by: Dave Gerlach <d-gerlach@ti.com>
+Signed-off-by: Vibhore Vardhan <vibhore@ti.com>
+Reviewed-by: Dhruva Gole <d-gole@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/cpufreq/Kconfig.arm | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+index 82e5de1f6f8c..be590f498e6a 100644
+--- a/drivers/cpufreq/Kconfig.arm
++++ b/drivers/cpufreq/Kconfig.arm
+@@ -340,8 +340,8 @@ config ARM_TEGRA194_CPUFREQ
+ 
+ config ARM_TI_CPUFREQ
+ 	bool "Texas Instruments CPUFreq support"
+-	depends on ARCH_OMAP2PLUS
+-	default ARCH_OMAP2PLUS
++	depends on ARCH_OMAP2PLUS || ARCH_K3
++	default y
+ 	help
+ 	  This driver enables valid OPPs on the running platform based on
+ 	  values contained within the SoC in use. Enable this in order to
+-- 
+2.41.0
+

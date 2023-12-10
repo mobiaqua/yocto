@@ -1,0 +1,69 @@
+From 64b57ece526a63141fe8e3dd52ab93e6f0dcd9a0 Mon Sep 17 00:00:00 2001
+From: Bhavya Kapoor <b-kapoor@ti.com>
+Date: Mon, 24 Apr 2023 15:15:30 +0530
+Subject: [PATCH 443/508] arm64: dts: ti: k3-j721e-main: Update delay select
+ values for MMC subsystems
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Update the delay values for various speed modes supported, based on
+the revised august 2021 J721E Datasheet.
+
+[1] - Table 7-77. MMC0 DLL Delay Mapping for All Timing Modes and
+Table 7-86. MMC1/2 DLL Delay Mapping for All Timing Modes, in
+https://www.ti.com/lit/ds/symlink/tda4vm.pdf,
+(SPRSP36J – FEBRUARY 2019 – REVISED AUGUST 2021)
+
+Signed-off-by: Bhavya Kapoor <b-kapoor@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index 0719d9d87257..7d03783e7473 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -1221,8 +1221,8 @@ main_sdhci0: mmc@4f80000 {
+ 		bus-width = <8>;
+ 		mmc-hs200-1_8v;
+ 		mmc-ddr-1_8v;
+-		ti,otap-del-sel-legacy = <0xf>;
+-		ti,otap-del-sel-mmc-hs = <0xf>;
++		ti,otap-del-sel-legacy = <0x0>;
++		ti,otap-del-sel-mmc-hs = <0x0>;
+ 		ti,otap-del-sel-ddr52 = <0x5>;
+ 		ti,otap-del-sel-hs200 = <0x6>;
+ 		ti,otap-del-sel-hs400 = <0x0>;
+@@ -1243,11 +1243,12 @@ main_sdhci1: mmc@4fb0000 {
+ 		assigned-clocks = <&k3_clks 92 0>;
+ 		assigned-clock-parents = <&k3_clks 92 1>;
+ 		ti,otap-del-sel-legacy = <0x0>;
+-		ti,otap-del-sel-sd-hs = <0xf>;
++		ti,otap-del-sel-sd-hs = <0x0>;
+ 		ti,otap-del-sel-sdr12 = <0xf>;
+ 		ti,otap-del-sel-sdr25 = <0xf>;
+ 		ti,otap-del-sel-sdr50 = <0xc>;
+ 		ti,otap-del-sel-ddr50 = <0xc>;
++		ti,otap-del-sel-sdr104 = <0x5>;
+ 		ti,itap-del-sel-legacy = <0x0>;
+ 		ti,itap-del-sel-sd-hs = <0x0>;
+ 		ti,itap-del-sel-sdr12 = <0x0>;
+@@ -1269,11 +1270,12 @@ main_sdhci2: mmc@4f98000 {
+ 		assigned-clocks = <&k3_clks 93 0>;
+ 		assigned-clock-parents = <&k3_clks 93 1>;
+ 		ti,otap-del-sel-legacy = <0x0>;
+-		ti,otap-del-sel-sd-hs = <0xf>;
++		ti,otap-del-sel-sd-hs = <0x0>;
+ 		ti,otap-del-sel-sdr12 = <0xf>;
+ 		ti,otap-del-sel-sdr25 = <0xf>;
+ 		ti,otap-del-sel-sdr50 = <0xc>;
+ 		ti,otap-del-sel-ddr50 = <0xc>;
++		ti,otap-del-sel-sdr104 = <0x5>;
+ 		ti,itap-del-sel-legacy = <0x0>;
+ 		ti,itap-del-sel-sd-hs = <0x0>;
+ 		ti,itap-del-sel-sdr12 = <0x0>;
+-- 
+2.41.0
+

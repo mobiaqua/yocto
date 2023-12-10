@@ -1,0 +1,38 @@
+From ed53d4c9725f817d6ae0a2eba92a92a2a39d7f28 Mon Sep 17 00:00:00 2001
+From: Tony Lindgren <tony@atomide.com>
+Date: Tue, 14 Nov 2023 16:39:53 +0100
+Subject: [PATCH 205/322] bus: ti-sysc: Build driver for TI K3 SoCs
+
+Allow building ti-sysc also for K3 SoCs. This allows configuring the wkup
+domain devices for SYSCONFIG register wake-up events in a generic way.
+
+As this is an interconnect level driver, default to built-in on K3 SoCs
+to probe the devices connected to the wkup domain like gpio, uart and
+timers.
+
+Reviewed-by: Dhruva Gole <d-gole@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Reviewed-by: Nishanth Menon <nm@ti.com>
+Link: https://lore.kernel.org/r/20230809092722.11000-2-tony@atomide.com
+Signed-off-by: Markus Schneider-Pargmann <msp@baylibre.com>
+---
+ drivers/bus/Kconfig | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/bus/Kconfig b/drivers/bus/Kconfig
+index 7bfe998f3514..3e492609d2b6 100644
+--- a/drivers/bus/Kconfig
++++ b/drivers/bus/Kconfig
+@@ -210,7 +210,8 @@ config  TI_PWMSS
+ 
+ config TI_SYSC
+ 	bool "TI sysc interconnect target module driver"
+-	depends on ARCH_OMAP2PLUS
++	depends on ARCH_OMAP2PLUS || ARCH_K3
++	default y
+ 	help
+ 	  Generic driver for Texas Instruments interconnect target module
+ 	  found on many TI SoCs.
+-- 
+2.43.0
+

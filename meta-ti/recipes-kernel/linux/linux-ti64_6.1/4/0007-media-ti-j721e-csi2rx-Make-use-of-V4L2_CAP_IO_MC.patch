@@ -1,0 +1,57 @@
+From c634ccb2086f43c26b2a0348ec507897d89ea412 Mon Sep 17 00:00:00 2001
+From: Jai Luthra <j-luthra@ti.com>
+Date: Thu, 13 Jul 2023 13:24:59 +0530
+Subject: [PATCH 07/34] media: ti: j721e-csi2rx: Make use of V4L2_CAP_IO_MC
+
+When V4L2_CAP_IO_MC flag is set (like it is by this driver) the
+framework expects the video device to only enumerate the pixel formats
+that it can convert to from the media-bus format supplied in the ioctl.
+
+In the case of our CSI2RX driver, we cannot really convert to a
+different pixelformat, so we should restrict enumeration with a 1-to-1
+mapping between media bus and pixel formats.
+
+Link: https://www.kernel.org/doc/html/latest/userspace-api/media/v4l/vidioc-enum-fmt.html#description
+Fixes: 70f7e7ba6c66 ("media: ti: Add CSI2RX support for J721E")
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ .../platform/ti/j721e-csi2rx/j721e-csi2rx.c    | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+index 9851385e30ec..bfd35d75f80d 100644
+--- a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
++++ b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+@@ -348,12 +348,26 @@ static int ti_csi2rx_querycap(struct file *file, void *priv,
+ static int ti_csi2rx_enum_fmt_vid_cap(struct file *file, void *priv,
+ 				      struct v4l2_fmtdesc *f)
+ {
+-	if (f->index >= num_formats)
++	const struct ti_csi2rx_fmt *fmt = NULL;
++
++	if (f->mbus_code) {
++		if (f->index > 0)
++			return -EINVAL;
++
++		fmt = find_format_by_code(f->mbus_code);
++	} else {
++		if (f->index >= num_formats)
++			return -EINVAL;
++
++		fmt = &formats[f->index];
++	}
++
++	if (!fmt)
+ 		return -EINVAL;
+ 
++	f->pixelformat = fmt->fourcc;
+ 	memset(f->reserved, 0, sizeof(f->reserved));
+ 	f->type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+-	f->pixelformat = formats[f->index].fourcc;
+ 
+ 	return 0;
+ }
+-- 
+2.41.0
+

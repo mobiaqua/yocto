@@ -1,0 +1,43 @@
+From 1837b89663f84cdaca73eb7618047a53e8a795b4 Mon Sep 17 00:00:00 2001
+From: Bryan Brattlof <bb@ti.com>
+Date: Wed, 2 Aug 2023 22:00:15 +0530
+Subject: [PATCH 19/34] thermal/drivers/k3_j72xx_bandgap: Simplify
+ k3_thermal_get_temp() function
+
+commit 46cab93ab49f303a7abbcf920cf9ef95d02a113c upstream
+
+The k3_thermal_get_temp() function can be simplified to return only
+the result of k3_bgp_read_temp() without needing the 'ret' variable
+
+Signed-off-by: Bryan Brattlof <bb@ti.com>
+Link: https://lore.kernel.org/r/20221031232702.10339-2-bb@ti.com
+Signed-off-by: Daniel Lezcano <daniel.lezcano@kernel.org>
+Signed-off-by: Keerthy <j-keerthy@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/thermal/k3_j72xx_bandgap.c | 9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
+
+diff --git a/drivers/thermal/k3_j72xx_bandgap.c b/drivers/thermal/k3_j72xx_bandgap.c
+index bf78c0195b43..f5bd3484cabf 100644
+--- a/drivers/thermal/k3_j72xx_bandgap.c
++++ b/drivers/thermal/k3_j72xx_bandgap.c
+@@ -270,14 +270,7 @@ static inline int k3_bgp_read_temp(struct k3_thermal_data *devdata,
+ /* Get temperature callback function for thermal zone */
+ static int k3_thermal_get_temp(struct thermal_zone_device *tz, int *temp)
+ {
+-	struct k3_thermal_data *data = tz->devdata;
+-	int ret = 0;
+-
+-	ret = k3_bgp_read_temp(data, temp);
+-	if (ret)
+-		return ret;
+-
+-	return ret;
++	return k3_bgp_read_temp(tz->devdata, temp);
+ }
+ 
+ static int k3_thermal_get_trend(struct thermal_zone_device *tz, int trip, enum thermal_trend *trend)
+-- 
+2.41.0
+

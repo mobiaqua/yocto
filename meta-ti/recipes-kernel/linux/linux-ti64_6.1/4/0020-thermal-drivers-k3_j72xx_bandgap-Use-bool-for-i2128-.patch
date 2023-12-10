@@ -1,0 +1,63 @@
+From 83b6b872cda56104a2050124b95b91500810d782 Mon Sep 17 00:00:00 2001
+From: Bryan Brattlof <bb@ti.com>
+Date: Wed, 2 Aug 2023 22:00:16 +0530
+Subject: [PATCH 20/34] thermal/drivers/k3_j72xx_bandgap: Use bool for i2128
+ erratum flag
+
+commit 311f328ffc7572219bee65db77645e5fedd4e8e6 upstream
+
+Some of TI's J721E SoCs require a software trimming method to report
+temperatures accurately. Currently we are using a few different data
+types to indicate when we should apply the erratum.
+
+Change the 'workaround_needed' variable's data type to a bool to align
+with how we are using this variable currently.
+
+Signed-off-by: Bryan Brattlof <bb@ti.com>
+Link: https://lore.kernel.org/r/20221031232702.10339-3-bb@ti.com
+Signed-off-by: Daniel Lezcano <daniel.lezcano@kernel.org>
+Signed-off-by: Keerthy <j-keerthy@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/thermal/k3_j72xx_bandgap.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/thermal/k3_j72xx_bandgap.c b/drivers/thermal/k3_j72xx_bandgap.c
+index f5bd3484cabf..851bb8fc69ad 100644
+--- a/drivers/thermal/k3_j72xx_bandgap.c
++++ b/drivers/thermal/k3_j72xx_bandgap.c
+@@ -394,7 +394,7 @@ static void print_look_up_table(struct device *dev, int *ref_table)
+ }
+ 
+ struct k3_j72xx_bandgap_data {
+-	unsigned int has_errata_i2128;
++	const bool has_errata_i2128;
+ };
+ 
+ int k3_thermal_register_cpu_cooling(struct k3_j72xx_bandgap *bgp, int id)
+@@ -462,7 +462,7 @@ static int k3_j72xx_bandgap_probe(struct platform_device *pdev)
+ 	struct device *dev = &pdev->dev;
+ 	struct k3_j72xx_bandgap *bgp;
+ 	struct k3_thermal_data *data;
+-	int workaround_needed = 0;
++	bool workaround_needed = false;
+ 	const struct k3_j72xx_bandgap_data *driver_data;
+ 	struct thermal_zone_device *ti_thermal;
+ 	int *ref_table;
+@@ -640,11 +640,11 @@ static int k3_j72xx_bandgap_remove(struct platform_device *pdev)
+ }
+ 
+ static const struct k3_j72xx_bandgap_data k3_j72xx_bandgap_j721e_data = {
+-	.has_errata_i2128 = 1,
++	.has_errata_i2128 = true,
+ };
+ 
+ static const struct k3_j72xx_bandgap_data k3_j72xx_bandgap_j7200_data = {
+-	.has_errata_i2128 = 0,
++	.has_errata_i2128 = false,
+ };
+ 
+ static const struct of_device_id of_k3_j72xx_bandgap_match[] = {
+-- 
+2.41.0
+

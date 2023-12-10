@@ -1,0 +1,119 @@
+From ce47845884e1c4756a7d9fb8f1e1c747c05e3ff7 Mon Sep 17 00:00:00 2001
+From: Darren Etheridge <detheridge@ti.com>
+Date: Wed, 21 Jun 2023 15:47:24 -0500
+Subject: [PATCH 051/143] media: platform: img: vxd add a sequencing mutex
+
+if device_run gets interrupted before it completes, we can end up
+in a condition where everything stalls and no further processing can
+happen.  Use this new mutex to sequence the device_run and the callbacks
+properly.
+
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+Acked-by: Brandon Brnich <b-brnich@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ .../platform/img/vxe-vxd/decoder/vxd_core.c   |  3 +++
+ .../platform/img/vxe-vxd/decoder/vxd_dec.h    |  1 +
+ .../platform/img/vxe-vxd/decoder/vxd_v4l2.c   | 24 +++++++++++++++++--
+ 3 files changed, 26 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/platform/img/vxe-vxd/decoder/vxd_core.c b/drivers/media/platform/img/vxe-vxd/decoder/vxd_core.c
+index 3875ed478f11..9c536955cbbb 100644
+--- a/drivers/media/platform/img/vxe-vxd/decoder/vxd_core.c
++++ b/drivers/media/platform/img/vxe-vxd/decoder/vxd_core.c
+@@ -559,6 +559,8 @@ static void stream_worker(void *work)
+ #endif
+ 
+ 	mutex_lock_nested(ctx->mutex, SUBCLASS_VXD_CORE);
++	/* don't let this run while device_run is still executing */
++	mutex_lock(ctx->mutex2);
+ 
+ 	while (!list_empty(&ctx->items_done)) {
+ 		item = list_first_entry(&ctx->items_done, struct vxd_item, list);
+@@ -579,6 +581,7 @@ static void stream_worker(void *work)
+ 		kfree(item);
+ 	}
+ 	mutex_unlock(ctx->mutex);
++	mutex_unlock(ctx->mutex2);
+ }
+ 
+ int vxd_create_ctx(struct vxd_dev *vxd, struct vxd_dec_ctx *ctx)
+diff --git a/drivers/media/platform/img/vxe-vxd/decoder/vxd_dec.h b/drivers/media/platform/img/vxe-vxd/decoder/vxd_dec.h
+index 320e19d1deb9..5cef940b64c0 100644
+--- a/drivers/media/platform/img/vxe-vxd/decoder/vxd_dec.h
++++ b/drivers/media/platform/img/vxe-vxd/decoder/vxd_dec.h
+@@ -443,6 +443,7 @@ struct vxd_dec_ctx {
+ 	struct bspp_ddbuf_array_info fw_pps[MAX_PPSS];
+ 	decode_cb cb;
+ 	struct mutex *mutex; /* Per stream mutex */
++	struct mutex *mutex2; /* used as a sequencing mutex, so device_run runs to completion */
+ 
+ 	/* The below variable used only in Rtos */
+ 	void *mm_return_resource; /* Place holder for CB to application */
+diff --git a/drivers/media/platform/img/vxe-vxd/decoder/vxd_v4l2.c b/drivers/media/platform/img/vxe-vxd/decoder/vxd_v4l2.c
+index 76bfaf85bcff..57f252593bec 100644
+--- a/drivers/media/platform/img/vxe-vxd/decoder/vxd_v4l2.c
++++ b/drivers/media/platform/img/vxe-vxd/decoder/vxd_v4l2.c
+@@ -459,6 +459,8 @@ static void vxd_return_resource(void *ctx_handle, enum vxd_cb_type type,
+ 		if (!res->work)
+ 			return;
+ 
++		/* this is done because the v4l2 spec says can't call m2m_done from */
++		/* device_run,  this callback could come from device_run */
+ 		schedule_work(res->work);
+ 
+ 		break;
+@@ -1104,6 +1106,13 @@ static int vxd_dec_open(struct file *file)
+ 	}
+ 	mutex_init(ctx->mutex);
+ 
++	ctx->mutex2 = kzalloc(sizeof(*ctx->mutex), GFP_KERNEL);
++	if (!ctx->mutex2) {
++		ret = -ENOMEM;
++		goto out_idr_remove;
++	}
++	mutex_init(ctx->mutex2);
++
+ 	INIT_LIST_HEAD(&ctx->items_done);
+ 	INIT_LIST_HEAD(&ctx->reuse_queue);
+ 	INIT_LIST_HEAD(&ctx->return_queue);
+@@ -1779,16 +1788,25 @@ static void device_run(void *priv)
+ 	static int cnt;
+ 	int i;
+ 
++	mutex_lock(ctx->mutex2);
+ 	mutex_lock_nested(ctx->mutex, SUBCLASS_VXD_V4L2);
+ 	ctx->num_decoding++;
+ 
+ 	src_vb = v4l2_m2m_src_buf_remove(ctx->fh.m2m_ctx);
+-	if (!src_vb)
++	if (!src_vb) {
+ 		dev_err(dev, "Next src buffer is null\n");
++		mutex_unlock(ctx->mutex);
++		mutex_unlock(ctx->mutex2);
++		return;
++	}
+ 
+ 	dst_vb = v4l2_m2m_dst_buf_remove(ctx->fh.m2m_ctx);
+-	if (!dst_vb)
++	if (!dst_vb) {
+ 		dev_err(dev, "Next dst buffer is null\n");
++		mutex_unlock(ctx->mutex);
++		mutex_unlock(ctx->mutex2);
++		return;
++	}
+ 
+ 
+ 	dst_vb->vb2_buf.timestamp = src_vb->vb2_buf.timestamp;
+@@ -1905,6 +1923,8 @@ static void device_run(void *priv)
+ 	src_vxdb->end_unit.decode = FALSE;
+ 	src_vxdb->end_unit.features = 0;
+ 	core_stream_submit_unit(ctx->res_str_id, &src_vxdb->end_unit);
++	mutex_unlock(ctx->mutex2);
++
+ }
+ 
+ static int job_ready(void *priv)
+-- 
+2.41.0
+

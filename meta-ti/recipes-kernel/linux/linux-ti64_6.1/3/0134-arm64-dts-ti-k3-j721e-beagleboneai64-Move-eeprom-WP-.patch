@@ -1,0 +1,43 @@
+From a6741f1de15a35832fca051258a772fe60d4d8f2 Mon Sep 17 00:00:00 2001
+From: Nishanth Menon <nm@ti.com>
+Date: Thu, 6 Jul 2023 15:04:22 -0500
+Subject: [PATCH 134/143] arm64: dts: ti: k3-j721e-beagleboneai64: Move eeprom
+ WP gpio pinctrl to eeprom node
+
+commit 88875d4c70cabcb509e9836086fdf2064ef89468 upstream.
+
+Move the eeprom WP GPIO mux configuration to be part of the eeprom node
+instead of the I2C node.
+
+Cc: Robert Nelson <robertcnelson@gmail.com>
+Suggested-by: Udit Kumar <u-kumar1@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Link: https://lore.kernel.org/r/20230606182220.3661956-5-nm@ti.com
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts b/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
+index e9fadacb4d5a..ecf7811ca8ff 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
++++ b/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
+@@ -639,12 +639,14 @@ &main_i2c6 {
+ &wkup_i2c0 {
+ 	status = "okay";
+ 	pinctrl-names = "default";
+-	pinctrl-0 = <&wkup_i2c0_pins_default &eeprom_wp_pins_default>;
++	pinctrl-0 = <&wkup_i2c0_pins_default>;
+ 	clock-frequency = <400000>;
+ 
+ 	eeprom@50 {
+ 		compatible = "atmel,24c04";
+ 		reg = <0x50>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&eeprom_wp_pins_default>;
+ 	};
+ };
+ 
+-- 
+2.41.0
+

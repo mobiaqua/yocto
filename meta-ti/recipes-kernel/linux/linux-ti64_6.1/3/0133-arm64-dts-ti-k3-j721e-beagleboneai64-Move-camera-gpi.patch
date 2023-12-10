@@ -1,0 +1,62 @@
+From 520bbd84c5092967cf9cc405abdf866d90c011d1 Mon Sep 17 00:00:00 2001
+From: Nishanth Menon <nm@ti.com>
+Date: Thu, 6 Jul 2023 15:04:21 -0500
+Subject: [PATCH 133/143] arm64: dts: ti: k3-j721e-beagleboneai64: Move camera
+ gpio pinctrl to gpio node
+
+commit d528c29fa7526adf7074fb166b99df7d5fd90670 upstream.
+
+Move the GPIO mux configuration needed for camera module to work to the
+GPIO node instead of the I2C node.
+
+Camera nodes are maintained as overlay files, but the common mux is
+always needed to ensure that camera probes fine and ensuring the mux
+is configured as part of the GPIO module allows for the multiple
+overlay files to be simpler.
+
+Cc: Robert Nelson <robertcnelson@gmail.com>
+Suggested-by: Udit Kumar <u-kumar1@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Link: https://lore.kernel.org/r/20230606182220.3661956-4-nm@ti.com
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts b/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
+index a7b686cab3e6..e9fadacb4d5a 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
++++ b/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
+@@ -593,7 +593,7 @@ &main_i2c0 {
+ &main_i2c1 {
+ 	status = "okay";
+ 	pinctrl-names = "default";
+-	pinctrl-0 = <&main_i2c1_pins_default &csi1_gpio_pins_default>;
++	pinctrl-0 = <&main_i2c1_pins_default>;
+ 	clock-frequency = <400000>;
+ };
+ 
+@@ -623,7 +623,7 @@ &main_i2c4 {
+ &main_i2c5 {
+ 	status = "okay";
+ 	pinctrl-names = "default";
+-	pinctrl-0 = <&main_i2c5_pins_default &csi0_gpio_pins_default>;
++	pinctrl-0 = <&main_i2c5_pins_default>;
+ 	clock-frequency = <400000>;
+ };
+ 
+@@ -688,6 +688,11 @@ &wkup_gpio1 {
+ 	status = "disabled";
+ };
+ 
++&main_gpio0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&csi1_gpio_pins_default>, <&csi0_gpio_pins_default>;
++};
++
+ &usb_serdes_mux {
+ 	idle-states = <1>, <1>; /* USB0 to SERDES3, USB1 to SERDES2 */
+ };
+-- 
+2.41.0
+

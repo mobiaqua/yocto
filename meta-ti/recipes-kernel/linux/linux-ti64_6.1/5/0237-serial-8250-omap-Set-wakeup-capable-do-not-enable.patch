@@ -1,0 +1,30 @@
+From 6803b58ad74ba59670cda2b75385856e6d609f2b Mon Sep 17 00:00:00 2001
+From: Markus Schneider-Pargmann <msp@baylibre.com>
+Date: Thu, 16 Nov 2023 13:55:26 +0100
+Subject: [PATCH 237/322] serial: 8250: omap: Set wakeup capable, do not enable
+
+The driver sets wakeup enable by default. But not all uarts are meant to
+be wakeup enabled. Change the default to be wakeup capable but not
+enabled. The user can enable wakeup when needed.
+
+Signed-off-by: Markus Schneider-Pargmann <msp@baylibre.com>
+---
+ drivers/tty/serial/8250/8250_omap.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/tty/serial/8250/8250_omap.c b/drivers/tty/serial/8250/8250_omap.c
+index ef68d095e8b0..90e9907df2a9 100644
+--- a/drivers/tty/serial/8250/8250_omap.c
++++ b/drivers/tty/serial/8250/8250_omap.c
+@@ -1387,7 +1387,7 @@ static int omap8250_probe(struct platform_device *pdev)
+ 
+ 	spin_lock_init(&priv->rx_dma_lock);
+ 
+-	device_init_wakeup(&pdev->dev, true);
++	device_set_wakeup_capable(&pdev->dev, true);
+ 	pm_runtime_enable(&pdev->dev);
+ 	pm_runtime_use_autosuspend(&pdev->dev);
+ 
+-- 
+2.43.0
+

@@ -1,0 +1,36 @@
+From 6e97373529423a45f2bfec1158d69d3fb82e3d2c Mon Sep 17 00:00:00 2001
+From: Tony Lindgren <tony@atomide.com>
+Date: Tue, 14 Nov 2023 16:39:54 +0100
+Subject: [PATCH 206/322] bus: ti-sysc: Configure uart quirks for k3 SoC
+
+Enable the uart quirks similar to the earlier SoCs. Let's assume we are
+likely going to need a k3 specific quirk mask separate from the earlier
+SoCs, so let's not start changing the revision register mask at this point.
+
+Note that SYSC_QUIRK_LEGACY_IDLE will be needed until we can remove the
+need for pm_runtime_irq_safe() from 8250_omap driver.
+
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Reviewed-by: Nishanth Menon <nm@ti.com>
+Link: https://lore.kernel.org/r/20230809092722.11000-3-tony@atomide.com
+Signed-off-by: Markus Schneider-Pargmann <msp@baylibre.com>
+---
+ drivers/bus/ti-sysc.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/bus/ti-sysc.c b/drivers/bus/ti-sysc.c
+index 49dd66e2711c..f88204f2d634 100644
+--- a/drivers/bus/ti-sysc.c
++++ b/drivers/bus/ti-sysc.c
+@@ -1548,6 +1548,8 @@ static const struct sysc_revision_quirk sysc_revision_quirks[] = {
+ 		   SYSC_QUIRK_SWSUP_SIDLE | SYSC_QUIRK_LEGACY_IDLE),
+ 	SYSC_QUIRK("uart", 0, 0x50, 0x54, 0x58, 0x47422e03, 0xffffffff,
+ 		   SYSC_QUIRK_SWSUP_SIDLE | SYSC_QUIRK_LEGACY_IDLE),
++	SYSC_QUIRK("uart", 0, 0x50, 0x54, 0x58, 0x47424e03, 0xffffffff,
++		   SYSC_QUIRK_SWSUP_SIDLE | SYSC_QUIRK_LEGACY_IDLE),
+ 
+ 	/* Quirks that need to be set based on the module address */
+ 	SYSC_QUIRK("mcpdm", 0x40132000, 0, 0x10, -ENODEV, 0x50000800, 0xffffffff,
+-- 
+2.43.0
+

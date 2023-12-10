@@ -1,0 +1,167 @@
+From 377c49f949836f2b686caa293d24e6bd46f96130 Mon Sep 17 00:00:00 2001
+From: Vaishnav Achath <vaishnav.a@ti.com>
+Date: Thu, 6 Apr 2023 13:08:48 +0530
+Subject: [PATCH 162/508] arm64: dts: ti: k3-j721e: Add MCSPI nodes
+
+commit 76aa309f9fa7e8c9b25234e1d1641d0b05e43e52 upstream.
+
+J721E has 8 MCSPI instances in the main domain and 3 instances
+in the MCU domain. Add the DT nodes for all the 11 instances and
+keep them disabled. MAIN_MCSPI4 is connected as a slave to MCU_MCSPI2
+by default at power-up, MAIN_MCSPI4 and MCU_MCSPI2 are not pinned out
+externally.
+
+Co-developed-by: Keerthy <j-keerthy@ti.com>
+Signed-off-by: Keerthy <j-keerthy@ti.com>
+Signed-off-by: Vaishnav Achath <vaishnav.a@ti.com>
+Reviewed-by: Jai Luthra <j-luthra@ti.com>
+Link: https://lore.kernel.org/r/20230321082827.14274-2-vaishnav.a@ti.com
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi     | 88 +++++++++++++++++++
+ .../boot/dts/ti/k3-j721e-mcu-wakeup.dtsi      | 33 +++++++
+ 2 files changed, 121 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index 65d321c6e56c..65caa7d5172f 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -2262,4 +2262,92 @@ main_mcan13: can@27d1000 {
+ 		bosch,mram-cfg = <0x0 128 64 64 64 64 32 32>;
+ 		status = "disabled";
+ 	};
++
++	main_spi0: spi@2100000 {
++		compatible = "ti,am654-mcspi","ti,omap4-mcspi";
++		reg = <0x00 0x02100000 0x00 0x400>;
++		interrupts = <GIC_SPI 184 IRQ_TYPE_LEVEL_HIGH>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		power-domains = <&k3_pds 266 TI_SCI_PD_EXCLUSIVE>;
++		clocks = <&k3_clks 266 1>;
++		status = "disabled";
++	};
++
++	main_spi1: spi@2110000 {
++		compatible = "ti,am654-mcspi","ti,omap4-mcspi";
++		reg = <0x00 0x02110000 0x00 0x400>;
++		interrupts = <GIC_SPI 185 IRQ_TYPE_LEVEL_HIGH>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		power-domains = <&k3_pds 267 TI_SCI_PD_EXCLUSIVE>;
++		clocks = <&k3_clks 267 1>;
++		status = "disabled";
++	};
++
++	main_spi2: spi@2120000 {
++		compatible = "ti,am654-mcspi","ti,omap4-mcspi";
++		reg = <0x00 0x02120000 0x00 0x400>;
++		interrupts = <GIC_SPI 186 IRQ_TYPE_LEVEL_HIGH>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		power-domains = <&k3_pds 268 TI_SCI_PD_EXCLUSIVE>;
++		clocks = <&k3_clks 268 1>;
++		status = "disabled";
++	};
++
++	main_spi3: spi@2130000 {
++		compatible = "ti,am654-mcspi","ti,omap4-mcspi";
++		reg = <0x00 0x02130000 0x00 0x400>;
++		interrupts = <GIC_SPI 187 IRQ_TYPE_LEVEL_HIGH>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		power-domains = <&k3_pds 269 TI_SCI_PD_EXCLUSIVE>;
++		clocks = <&k3_clks 269 1>;
++		status = "disabled";
++	};
++
++	main_spi4: spi@2140000 {
++		compatible = "ti,am654-mcspi","ti,omap4-mcspi";
++		reg = <0x00 0x02140000 0x00 0x400>;
++		interrupts = <GIC_SPI 188 IRQ_TYPE_LEVEL_HIGH>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		power-domains = <&k3_pds 270 TI_SCI_PD_EXCLUSIVE>;
++		clocks = <&k3_clks 270 1>;
++		status = "disabled";
++	};
++
++	main_spi5: spi@2150000 {
++		compatible = "ti,am654-mcspi","ti,omap4-mcspi";
++		reg = <0x00 0x02150000 0x00 0x400>;
++		interrupts = <GIC_SPI 189 IRQ_TYPE_LEVEL_HIGH>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		power-domains = <&k3_pds 271 TI_SCI_PD_EXCLUSIVE>;
++		clocks = <&k3_clks 271 1>;
++		status = "disabled";
++	};
++
++	main_spi6: spi@2160000 {
++		compatible = "ti,am654-mcspi","ti,omap4-mcspi";
++		reg = <0x00 0x02160000 0x00 0x400>;
++		interrupts = <GIC_SPI 190 IRQ_TYPE_LEVEL_HIGH>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		power-domains = <&k3_pds 272 TI_SCI_PD_EXCLUSIVE>;
++		clocks = <&k3_clks 272 1>;
++		status = "disabled";
++	};
++
++	main_spi7: spi@2170000 {
++		compatible = "ti,am654-mcspi","ti,omap4-mcspi";
++		reg = <0x00 0x02170000 0x00 0x400>;
++		interrupts = <GIC_SPI 191 IRQ_TYPE_LEVEL_HIGH>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		power-domains = <&k3_pds 273 TI_SCI_PD_EXCLUSIVE>;
++		clocks = <&k3_clks 273 1>;
++		status = "disabled";
++	};
+ };
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+index f79e8100a7ac..5f41510dfa5f 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+@@ -425,4 +425,37 @@ mcu_mcan1: can@40568000 {
+ 		bosch,mram-cfg = <0x0 128 64 64 64 64 32 32>;
+ 		status = "disabled";
+ 	};
++
++	mcu_spi0: spi@40300000 {
++		compatible = "ti,am654-mcspi", "ti,omap4-mcspi";
++		reg = <0x00 0x040300000 0x00 0x400>;
++		interrupts = <GIC_SPI 848 IRQ_TYPE_LEVEL_HIGH>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		power-domains = <&k3_pds 274 TI_SCI_PD_EXCLUSIVE>;
++		clocks = <&k3_clks 274 0>;
++		status = "disabled";
++	};
++
++	mcu_spi1: spi@40310000 {
++		compatible = "ti,am654-mcspi", "ti,omap4-mcspi";
++		reg = <0x00 0x040310000 0x00 0x400>;
++		interrupts = <GIC_SPI 849 IRQ_TYPE_LEVEL_HIGH>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		power-domains = <&k3_pds 275 TI_SCI_PD_EXCLUSIVE>;
++		clocks = <&k3_clks 275 0>;
++		status = "disabled";
++	};
++
++	mcu_spi2: spi@40320000 {
++		compatible = "ti,am654-mcspi", "ti,omap4-mcspi";
++		reg = <0x00 0x040320000 0x00 0x400>;
++		interrupts = <GIC_SPI 850 IRQ_TYPE_LEVEL_HIGH>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		power-domains = <&k3_pds 276 TI_SCI_PD_EXCLUSIVE>;
++		clocks = <&k3_clks 276 0>;
++		status = "disabled";
++	};
+ };
+-- 
+2.41.0
+

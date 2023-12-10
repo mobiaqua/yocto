@@ -1,0 +1,35 @@
+From 188e1d3cf1b84968f38867c8dc737b10abd96b53 Mon Sep 17 00:00:00 2001
+From: Pierre Gondois <pierre.gondois@arm.com>
+Date: Wed, 15 Mar 2023 11:42:48 +0530
+Subject: [PATCH 078/508] arm64: dts: Update cache properties for ti
+
+commit 880932e657ffc677c1b053a947afa87ffed1b29d upstream.
+
+The DeviceTree Specification v0.3 specifies that the cache node
+'compatible' and 'cache-level' properties are 'required'. Cf.
+s3.8 Multi-level and Shared Cache Nodes
+The 'cache-unified' property should be present if one of the
+properties for unified cache is present ('cache-size', ...).
+
+Update the Device Trees accordingly.
+
+Signed-off-by: Pierre Gondois <pierre.gondois@arm.com>
+Link: https://lore.kernel.org/r/20221107155825.1644604-24-pierre.gondois@arm.com
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e.dtsi  | 1 +
+ 7 files changed, 8 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e.dtsi b/arch/arm64/boot/dts/ti/k3-j721e.dtsi
+index 0e23886c9fd1..6975cae644d9 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e.dtsi
+@@ -86,6 +86,7 @@ cpu1: cpu@1 {
+ 	L2_0: l2-cache0 {
+ 		compatible = "cache";
+ 		cache-level = <2>;
++		cache-unified;
+ 		cache-size = <0x100000>;
+ 		cache-line-size = <64>;
+ 		cache-sets = <1024>;

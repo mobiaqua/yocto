@@ -1,0 +1,39 @@
+From d4725fb07ca0785d650c559d13989a0460299b1e Mon Sep 17 00:00:00 2001
+From: Guillaume La Roque <glaroque@baylibre.com>
+Date: Thu, 15 Jun 2023 11:47:13 +0200
+Subject: [PATCH 405/434] drm: tidss: add missing break
+
+When we use clang to build with -Wall and -Werror flags we see this issue:
+
+drivers/gpu/drm/tidss/tidss_dispc.c:1068:2: error: unannotated
+fall-through between switch labels [-Werror,-Wimplicit-fallthrough]
+        default:
+        ^
+
+Add missing break in switch case.
+
+Fixes: a04da84be07c ("drm/tidss: Rename AM65x DSS OLDI CTRL MMR registers")
+Signed-off-by: Guillaume La Roque <glaroque@baylibre.com>
+Reviewed-by: Aradhya Bhatia <a-bhatia1@ti.com>
+Reviewed-by: Mattijs Korpershoek <mkorpershoek@baylibre.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/gpu/drm/tidss/tidss_dispc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/tidss/tidss_dispc.c b/drivers/gpu/drm/tidss/tidss_dispc.c
+index 5fd3b7bc5774..c95fbeea8291 100644
+--- a/drivers/gpu/drm/tidss/tidss_dispc.c
++++ b/drivers/gpu/drm/tidss/tidss_dispc.c
+@@ -1065,7 +1065,7 @@ static void dispc_oldi_tx_power(struct dispc_device *dispc, bool power)
+ 				   AM65X_OLDI_PWRDN_TX, val);
+ 		regmap_update_bits(dispc->oldi_io_ctrl, AM65X_OLDI_CLK_IO_CTRL,
+ 				   AM65X_OLDI_PWRDN_TX, val);
+-
++		break;
+ 	default:
+ 		break;
+ 	}
+-- 
+2.41.0
+

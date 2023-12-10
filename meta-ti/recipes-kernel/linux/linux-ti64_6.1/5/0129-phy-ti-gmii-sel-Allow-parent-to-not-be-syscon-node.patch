@@ -1,0 +1,40 @@
+From cd602d5975c892c74f98653d75ab168fd722bbbe Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Tue, 31 Oct 2023 16:04:37 +0530
+Subject: [PATCH 129/322] phy: ti: gmii-sel: Allow parent to not be syscon node
+
+commit 1fdfa7cccd35519d97a1f301b8143ea4196b2d16 upstream.
+
+If the parent node is not a syscon type, then fallback and check
+if we can get a regmap from our own node. This no longer forces
+us to make the parent of this node a syscon node when that might
+not be appropriate.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+---
+ drivers/phy/ti/phy-gmii-sel.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/phy/ti/phy-gmii-sel.c b/drivers/phy/ti/phy-gmii-sel.c
+index 6286cf25a426..555b323f45da 100644
+--- a/drivers/phy/ti/phy-gmii-sel.c
++++ b/drivers/phy/ti/phy-gmii-sel.c
+@@ -465,9 +465,12 @@ static int phy_gmii_sel_probe(struct platform_device *pdev)
+ 
+ 	priv->regmap = syscon_node_to_regmap(node->parent);
+ 	if (IS_ERR(priv->regmap)) {
+-		ret = PTR_ERR(priv->regmap);
+-		dev_err(dev, "Failed to get syscon %d\n", ret);
+-		return ret;
++		priv->regmap = device_node_to_regmap(node);
++		if (IS_ERR(priv->regmap)) {
++			ret = PTR_ERR(priv->regmap);
++			dev_err(dev, "Failed to get syscon %d\n", ret);
++			return ret;
++		}
+ 	}
+ 
+ 	ret = phy_gmii_sel_init_ports(priv);
+-- 
+2.43.0
+

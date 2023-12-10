@@ -1,0 +1,126 @@
+From 504f86d5eb3a08bcb4cd558b635e462bbc912341 Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Tue, 14 Mar 2023 13:31:49 -0500
+Subject: [PATCH 043/508] arm64: dts: ti: k3-j721e: Enable Mailbox nodes at the
+ board level
+
+Mailbox nodes defined in the top-level J721e SoC dtsi files are incomplete
+and may not be functional unless they are extended with a chosen interrupt
+and connection to a remote processor.
+
+As the remote processors depend on memory nodes which are only known at
+the board integration level, these nodes should only be enabled when
+provided with the above information.
+
+Disable the Mailbox nodes in the dtsi files and only enable the ones that
+are actually used on a given board.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Reviewed-by: Bryan Brattlof <bb@ti.com>
+Link: https://lore.kernel.org/r/20221020160305.18711-9-afd@ti.com
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi   | 12 ++++++++
+ 3 files changed, 22 insertions(+), 56 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index 10b54ae28e1d..9ec38190da8d 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -176,6 +176,7 @@ mailbox0_cluster0: mailbox@31f80000 {
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <16>;
+ 			interrupt-parent = <&main_navss_intr>;
++			status = "disabled";
+ 		};
+ 
+ 		mailbox0_cluster1: mailbox@31f81000 {
+@@ -185,6 +186,7 @@ mailbox0_cluster1: mailbox@31f81000 {
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <16>;
+ 			interrupt-parent = <&main_navss_intr>;
++			status = "disabled";
+ 		};
+ 
+ 		mailbox0_cluster2: mailbox@31f82000 {
+@@ -194,6 +196,7 @@ mailbox0_cluster2: mailbox@31f82000 {
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <16>;
+ 			interrupt-parent = <&main_navss_intr>;
++			status = "disabled";
+ 		};
+ 
+ 		mailbox0_cluster3: mailbox@31f83000 {
+@@ -203,6 +206,7 @@ mailbox0_cluster3: mailbox@31f83000 {
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <16>;
+ 			interrupt-parent = <&main_navss_intr>;
++			status = "disabled";
+ 		};
+ 
+ 		mailbox0_cluster4: mailbox@31f84000 {
+@@ -212,6 +216,7 @@ mailbox0_cluster4: mailbox@31f84000 {
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <16>;
+ 			interrupt-parent = <&main_navss_intr>;
++			status = "disabled";
+ 		};
+ 
+ 		mailbox0_cluster5: mailbox@31f85000 {
+@@ -221,6 +226,7 @@ mailbox0_cluster5: mailbox@31f85000 {
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <16>;
+ 			interrupt-parent = <&main_navss_intr>;
++			status = "disabled";
+ 		};
+ 
+ 		mailbox0_cluster6: mailbox@31f86000 {
+@@ -230,6 +236,7 @@ mailbox0_cluster6: mailbox@31f86000 {
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <16>;
+ 			interrupt-parent = <&main_navss_intr>;
++			status = "disabled";
+ 		};
+ 
+ 		mailbox0_cluster7: mailbox@31f87000 {
+@@ -239,6 +246,7 @@ mailbox0_cluster7: mailbox@31f87000 {
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <16>;
+ 			interrupt-parent = <&main_navss_intr>;
++			status = "disabled";
+ 		};
+ 
+ 		mailbox0_cluster8: mailbox@31f88000 {
+@@ -248,6 +256,7 @@ mailbox0_cluster8: mailbox@31f88000 {
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <16>;
+ 			interrupt-parent = <&main_navss_intr>;
++			status = "disabled";
+ 		};
+ 
+ 		mailbox0_cluster9: mailbox@31f89000 {
+@@ -257,6 +266,7 @@ mailbox0_cluster9: mailbox@31f89000 {
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <16>;
+ 			interrupt-parent = <&main_navss_intr>;
++			status = "disabled";
+ 		};
+ 
+ 		mailbox0_cluster10: mailbox@31f8a000 {
+@@ -266,6 +276,7 @@ mailbox0_cluster10: mailbox@31f8a000 {
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <16>;
+ 			interrupt-parent = <&main_navss_intr>;
++			status = "disabled";
+ 		};
+ 
+ 		mailbox0_cluster11: mailbox@31f8b000 {
+@@ -275,6 +286,7 @@ mailbox0_cluster11: mailbox@31f8b000 {
+ 			ti,mbox-num-users = <4>;
+ 			ti,mbox-num-fifos = <16>;
+ 			interrupt-parent = <&main_navss_intr>;
++			status = "disabled";
+ 		};
+ 
+ 		main_ringacc: ringacc@3c000000 {

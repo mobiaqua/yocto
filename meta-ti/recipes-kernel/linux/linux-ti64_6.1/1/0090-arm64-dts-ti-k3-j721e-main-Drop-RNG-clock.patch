@@ -1,0 +1,37 @@
+From 7fede79ff4a268f5e14b73328eea41818904ab6c Mon Sep 17 00:00:00 2001
+From: Jayesh Choudhary <j-choudhary@ti.com>
+Date: Tue, 21 Mar 2023 17:11:27 +0530
+Subject: [PATCH 090/508] arm64: dts: ti: k3-j721e-main: Drop RNG clock
+
+commit a315097a23eb1976e8eac397c02ada82618858bb upstream.
+
+The x1-clk used by trng submodule comes directly from the system clock
+after a fixed divider. It is always running and has a fixed frequency
+that cannot be changed, making it uncontrollable. Hence this property
+should be dropped from the rng node.
+
+Signed-off-by: Jayesh Choudhary <j-choudhary@ti.com>
+Reviewed-by: Manorit Chawdhry <m-chawdhry@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Link: https://lore.kernel.org/r/20221107110607.59216-3-j-choudhary@ti.com
+Reviewed-by: Andrew Davis <afd@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index 0bbd2dc4b5d0..65d321c6e56c 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -354,7 +354,6 @@ rng: rng@4e10000 {
+ 			compatible = "inside-secure,safexcel-eip76";
+ 			reg = <0x0 0x4e10000 0x0 0x7d>;
+ 			interrupts = <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>;
+-			clocks = <&k3_clks 264 2>;
+ 		};
+ 	};
+ 
+-- 
+2.41.0
+

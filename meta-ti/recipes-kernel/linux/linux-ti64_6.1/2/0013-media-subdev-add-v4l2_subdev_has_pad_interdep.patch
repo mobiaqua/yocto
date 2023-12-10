@@ -1,0 +1,96 @@
+From b727e5d265a4349b880ededaa71bfaae41e8908f Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Date: Tue, 9 May 2023 14:15:10 +0530
+Subject: [PATCH 013/434] media: subdev: add v4l2_subdev_has_pad_interdep()
+
+commit 33c0ddbe56905c98b43d7141f2fe67ae69afba3c upstream.
+
+Add a v4l2_subdev_has_pad_interdep() helper function which can be used
+for media_entity_operations.has_pad_interdep op.
+
+It considers two pads interdependent if there is an active route between
+pad0 and pad1.
+
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@kernel.org>
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/media/v4l2-core/v4l2-subdev.c | 31 +++++++++++++++++++++++++++
+ include/media/v4l2-subdev.h           | 18 ++++++++++++++++
+ 2 files changed, 49 insertions(+)
+
+diff --git a/drivers/media/v4l2-core/v4l2-subdev.c b/drivers/media/v4l2-core/v4l2-subdev.c
+index b7d0305712fc..e682fc9c98e0 100644
+--- a/drivers/media/v4l2-core/v4l2-subdev.c
++++ b/drivers/media/v4l2-core/v4l2-subdev.c
+@@ -1058,6 +1058,37 @@ int v4l2_subdev_link_validate(struct media_link *link)
+ }
+ EXPORT_SYMBOL_GPL(v4l2_subdev_link_validate);
+ 
++bool v4l2_subdev_has_pad_interdep(struct media_entity *entity,
++				  unsigned int pad0, unsigned int pad1)
++{
++	struct v4l2_subdev *sd = media_entity_to_v4l2_subdev(entity);
++	struct v4l2_subdev_krouting *routing;
++	struct v4l2_subdev_state *state;
++	unsigned int i;
++
++	state = v4l2_subdev_lock_and_get_active_state(sd);
++
++	routing = &state->routing;
++
++	for (i = 0; i < routing->num_routes; ++i) {
++		struct v4l2_subdev_route *route = &routing->routes[i];
++
++		if (!(route->flags & V4L2_SUBDEV_ROUTE_FL_ACTIVE))
++			continue;
++
++		if ((route->sink_pad == pad0 && route->source_pad == pad1) ||
++		    (route->source_pad == pad0 && route->sink_pad == pad1)) {
++			v4l2_subdev_unlock_state(state);
++			return true;
++		}
++	}
++
++	v4l2_subdev_unlock_state(state);
++
++	return false;
++}
++EXPORT_SYMBOL_GPL(v4l2_subdev_has_pad_interdep);
++
+ struct v4l2_subdev_state *
+ __v4l2_subdev_state_alloc(struct v4l2_subdev *sd, const char *lock_name,
+ 			  struct lock_class_key *lock_key)
+diff --git a/include/media/v4l2-subdev.h b/include/media/v4l2-subdev.h
+index 4934dc9468a8..45c41f4d6a2b 100644
+--- a/include/media/v4l2-subdev.h
++++ b/include/media/v4l2-subdev.h
+@@ -1241,6 +1241,24 @@ int v4l2_subdev_link_validate_default(struct v4l2_subdev *sd,
+  */
+ int v4l2_subdev_link_validate(struct media_link *link);
+ 
++/**
++ * v4l2_subdev_has_pad_interdep - MC has_pad_interdep implementation for subdevs
++ *
++ * @entity: pointer to &struct media_entity
++ * @pad0: pad number for the first pad
++ * @pad1: pad number for the second pad
++ *
++ * This function is an implementation of the
++ * media_entity_operations.has_pad_interdep operation for subdevs that
++ * implement the multiplexed streams API (as indicated by the
++ * V4L2_SUBDEV_FL_STREAMS subdev flag).
++ *
++ * It considers two pads interdependent if there is an active route between pad0
++ * and pad1.
++ */
++bool v4l2_subdev_has_pad_interdep(struct media_entity *entity,
++				  unsigned int pad0, unsigned int pad1);
++
+ /**
+  * __v4l2_subdev_state_alloc - allocate v4l2_subdev_state
+  *
+-- 
+2.41.0
+

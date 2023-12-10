@@ -1,0 +1,92 @@
+From 62afe9510bcc0806c0f0637c8e7a7b39caa7b514 Mon Sep 17 00:00:00 2001
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+Date: Thu, 6 Apr 2023 15:30:31 +0530
+Subject: [PATCH 168/508] phy: Add devm_of_phy_optional_get() helper
+
+commit d02aa181ee595c81738b6bd7ebad6025fbee035a upstream.
+
+Add an optional variant of devm_of_phy_get() that also takes care of
+printing real errors, so drivers no longer have to open-code this
+operation.
+
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Link: https://lore.kernel.org/r/4cd0069bcff424ffc5c3a102397c02370b91985b.1674584626.git.geert+renesas@glider.be
+Signed-off-by: Vinod Koul <vkoul@kernel.org>
+Signed-off-by: Siddharth Vadapalli <s-vadapalli@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/phy/phy-core.c               | 30 ++++++++++++++++++++++++++++
+ include/linux/phy/phy.h              |  9 +++++++++
+ 3 files changed, 44 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
+index 672f5c865886..9951efc03eaa 100644
+--- a/drivers/phy/phy-core.c
++++ b/drivers/phy/phy-core.c
+@@ -858,6 +858,36 @@ struct phy *devm_of_phy_get(struct device *dev, struct device_node *np,
+ }
+ EXPORT_SYMBOL_GPL(devm_of_phy_get);
+ 
++/**
++ * devm_of_phy_optional_get() - lookup and obtain a reference to an optional
++ * phy.
++ * @dev: device that requests this phy
++ * @np: node containing the phy
++ * @con_id: name of the phy from device's point of view
++ *
++ * Gets the phy using of_phy_get(), and associates a device with it using
++ * devres. On driver detach, release function is invoked on the devres data,
++ * then, devres data is freed.  This differs to devm_of_phy_get() in
++ * that if the phy does not exist, it is not considered an error and
++ * -ENODEV will not be returned. Instead the NULL phy is returned,
++ * which can be passed to all other phy consumer calls.
++ */
++struct phy *devm_of_phy_optional_get(struct device *dev, struct device_node *np,
++				     const char *con_id)
++{
++	struct phy *phy = devm_of_phy_get(dev, np, con_id);
++
++	if (PTR_ERR(phy) == -ENODEV)
++		phy = NULL;
++
++	if (IS_ERR(phy))
++		dev_err_probe(dev, PTR_ERR(phy), "failed to get PHY %pOF:%s",
++			      np, con_id);
++
++	return phy;
++}
++EXPORT_SYMBOL_GPL(devm_of_phy_optional_get);
++
+ /**
+  * devm_of_phy_get_by_index() - lookup and obtain a reference to a phy by index.
+  * @dev: device that requests this phy
+diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
+index 1b4f9be21e01..3a570bc59fc7 100644
+--- a/include/linux/phy/phy.h
++++ b/include/linux/phy/phy.h
+@@ -254,6 +254,8 @@ struct phy *devm_phy_get(struct device *dev, const char *string);
+ struct phy *devm_phy_optional_get(struct device *dev, const char *string);
+ struct phy *devm_of_phy_get(struct device *dev, struct device_node *np,
+ 			    const char *con_id);
++struct phy *devm_of_phy_optional_get(struct device *dev, struct device_node *np,
++				     const char *con_id);
+ struct phy *devm_of_phy_get_by_index(struct device *dev, struct device_node *np,
+ 				     int index);
+ void of_phy_put(struct phy *phy);
+@@ -443,6 +445,13 @@ static inline struct phy *devm_of_phy_get(struct device *dev,
+ 	return ERR_PTR(-ENOSYS);
+ }
+ 
++static inline struct phy *devm_of_phy_optional_get(struct device *dev,
++						   struct device_node *np,
++						   const char *con_id)
++{
++	return NULL;
++}
++
+ static inline struct phy *devm_of_phy_get_by_index(struct device *dev,
+ 						   struct device_node *np,
+ 						   int index)
+-- 
+2.41.0
+

@@ -1,0 +1,101 @@
+From dc870435827856798561a329b85736847c24ab30 Mon Sep 17 00:00:00 2001
+From: Sinthu Raja <sinthu.raja@ti.com>
+Date: Thu, 20 Apr 2023 11:54:03 +0530
+Subject: [PATCH 261/508] phy: cadence: cdns-dphy-rx: Add common module reset
+ support
+
+commit a0106132372120dd0abf5ad7636614e5aeb5da08 upstream.
+
+DPHY RX module has a common module reset (RSTB_CMN) which is expected
+to be released during configuration. In J721E SR1.0 the RSTB_CMN is
+internally tied to CSI_RX_RST and is hardware controlled, for all
+other newer platforms the common module reset is software controlled.
+Add support to control common module reset during configuration and
+also skip common module reset based on soc_device_match() for J721E SR1.0.
+
+Signed-off-by: Sinthu Raja <sinthu.raja@ti.com>
+Co-developed-by: Vaishnav Achath <vaishnav.a@ti.com>
+Signed-off-by: Vaishnav Achath <vaishnav.a@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/phy/cadence/cdns-dphy-rx.c | 32 ++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+
+diff --git a/drivers/phy/cadence/cdns-dphy-rx.c b/drivers/phy/cadence/cdns-dphy-rx.c
+index 572c70089a94..c05b043893a9 100644
+--- a/drivers/phy/cadence/cdns-dphy-rx.c
++++ b/drivers/phy/cadence/cdns-dphy-rx.c
+@@ -11,10 +11,12 @@
+ #include <linux/phy/phy.h>
+ #include <linux/phy/phy-mipi-dphy.h>
+ #include <linux/platform_device.h>
++#include <linux/sys_soc.h>
+ 
+ #define DPHY_PMA_CMN(reg)		(reg)
+ #define DPHY_PCS(reg)			(0xb00 + (reg))
+ #define DPHY_ISO(reg)			(0xc00 + (reg))
++#define DPHY_WRAP(reg)			(0x1000 + (reg))
+ 
+ #define DPHY_CMN_SSM			DPHY_PMA_CMN(0x20)
+ #define DPHY_CMN_RX_MODE_EN		BIT(10)
+@@ -33,6 +35,9 @@
+ #define DPHY_POWER_ISLAND_EN_CLK	DPHY_PCS(0xc)
+ #define DPHY_POWER_ISLAND_EN_CLK_VAL	0xaa
+ 
++#define DPHY_LANE			DPHY_WRAP(0x0)
++#define DPHY_LANE_RESET_CMN_EN		BIT(23)
++
+ #define DPHY_ISO_CL_CTRL_L		DPHY_ISO(0x10)
+ #define DPHY_ISO_DL_CTRL_L0		DPHY_ISO(0x14)
+ #define DPHY_ISO_DL_CTRL_L1		DPHY_ISO(0x20)
+@@ -57,6 +62,10 @@ struct cdns_dphy_rx_band {
+ 	unsigned int max_rate;
+ };
+ 
++struct cdns_dphy_soc_data {
++	bool has_hw_cmn_rstb;
++};
++
+ /* Order of bands is important since the index is the band number. */
+ static const struct cdns_dphy_rx_band bands[] = {
+ 	{ 80, 100 }, { 100, 120 }, { 120, 160 }, { 160, 200 }, { 200, 240 },
+@@ -142,13 +151,36 @@ static int cdns_dphy_rx_wait_lane_ready(struct cdns_dphy_rx *dphy,
+ 	return 0;
+ }
+ 
++static struct cdns_dphy_soc_data j721e_soc_data = {
++	.has_hw_cmn_rstb = true,
++};
++
++static const struct soc_device_attribute cdns_dphy_socinfo[] = {
++	{
++		.family = "J721E",
++		.revision = "SR1.0",
++		.data = &j721e_soc_data,
++	},
++	{/* sentinel */}
++};
++
+ static int cdns_dphy_rx_configure(struct phy *phy,
+ 				  union phy_configure_opts *opts)
+ {
+ 	struct cdns_dphy_rx *dphy = phy_get_drvdata(phy);
+ 	unsigned int reg, lanes = opts->mipi_dphy.lanes;
++	const struct cdns_dphy_soc_data *soc_data = NULL;
++	const struct soc_device_attribute *soc;
+ 	int band_ctrl, ret;
+ 
++	soc = soc_device_match(cdns_dphy_socinfo);
++	if (soc && soc->data)
++		soc_data = soc->data;
++	if (!soc || (soc_data && !soc_data->has_hw_cmn_rstb)) {
++		reg = DPHY_LANE_RESET_CMN_EN;
++		writel(reg, dphy->regs + DPHY_LANE);
++	}
++
+ 	/* Data lanes. Minimum one lane is mandatory. */
+ 	if (lanes < DPHY_LANES_MIN || lanes > DPHY_LANES_MAX)
+ 		return -EINVAL;
+-- 
+2.41.0
+

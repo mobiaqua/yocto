@@ -1,0 +1,86 @@
+From b1198851c1390df7d8429b170403f0f96f351f42 Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Date: Tue, 9 May 2023 14:15:18 +0530
+Subject: [PATCH 021/434] media: subdev: add v4l2_subdev_set_routing_with_fmt()
+ helper
+
+commit 5b0d85b379747b09d8b4630fdb5c8a8d74122f0f upstream.
+
+v4l2_subdev_set_routing_with_fmt() is the same as
+v4l2_subdev_set_routing(), but additionally initializes all the streams
+with the given format.
+
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Reviewed-by: Hans Verkuil <hverkuil-cisco@xs4all.nl>
+Reviewed-by: Jacopo Mondi <jacopo@jmondi.org>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@kernel.org>
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/media/v4l2-core/v4l2-subdev.c | 22 ++++++++++++++++++++++
+ include/media/v4l2-subdev.h           | 16 ++++++++++++++++
+ 2 files changed, 38 insertions(+)
+
+diff --git a/drivers/media/v4l2-core/v4l2-subdev.c b/drivers/media/v4l2-core/v4l2-subdev.c
+index 73b502be8ebc..699b663069c2 100644
+--- a/drivers/media/v4l2-core/v4l2-subdev.c
++++ b/drivers/media/v4l2-core/v4l2-subdev.c
+@@ -1466,6 +1466,28 @@ __v4l2_subdev_next_active_route(const struct v4l2_subdev_krouting *routing,
+ }
+ EXPORT_SYMBOL_GPL(__v4l2_subdev_next_active_route);
+ 
++int v4l2_subdev_set_routing_with_fmt(struct v4l2_subdev *sd,
++				     struct v4l2_subdev_state *state,
++				     struct v4l2_subdev_krouting *routing,
++				     const struct v4l2_mbus_framefmt *fmt)
++{
++	struct v4l2_subdev_stream_configs *stream_configs;
++	unsigned int i;
++	int ret;
++
++	ret = v4l2_subdev_set_routing(sd, state, routing);
++	if (ret)
++		return ret;
++
++	stream_configs = &state->stream_configs;
++
++	for (i = 0; i < stream_configs->num_configs; ++i)
++		stream_configs->configs[i].fmt = *fmt;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(v4l2_subdev_set_routing_with_fmt);
++
+ struct v4l2_mbus_framefmt *
+ v4l2_subdev_state_get_stream_format(struct v4l2_subdev_state *state,
+ 				    unsigned int pad, u32 stream)
+diff --git a/include/media/v4l2-subdev.h b/include/media/v4l2-subdev.h
+index 6f4719e28ad1..020ad79182cc 100644
+--- a/include/media/v4l2-subdev.h
++++ b/include/media/v4l2-subdev.h
+@@ -1481,6 +1481,22 @@ __v4l2_subdev_next_active_route(const struct v4l2_subdev_krouting *routing,
+ 	for ((route) = NULL;                  \
+ 	     ((route) = __v4l2_subdev_next_active_route((routing), (route)));)
+ 
++/**
++ * v4l2_subdev_set_routing_with_fmt() - Set given routing and format to subdev
++ *					state
++ * @sd: The subdevice
++ * @state: The subdevice state
++ * @routing: Routing that will be copied to subdev state
++ * @fmt: Format used to initialize all the streams
++ *
++ * This is the same as v4l2_subdev_set_routing, but additionally initializes
++ * all the streams using the given format.
++ */
++int v4l2_subdev_set_routing_with_fmt(struct v4l2_subdev *sd,
++				     struct v4l2_subdev_state *state,
++				     struct v4l2_subdev_krouting *routing,
++				     const struct v4l2_mbus_framefmt *fmt);
++
+ /**
+  * v4l2_subdev_state_get_stream_format() - Get pointer to a stream format
+  * @state: subdevice state
+-- 
+2.41.0
+

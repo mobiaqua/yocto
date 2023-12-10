@@ -1,0 +1,52 @@
+From 652c6fa3ae566c07e2ef584160dce3f0c1a8129b Mon Sep 17 00:00:00 2001
+From: Hari Nagalla <hnagalla@ti.com>
+Date: Wed, 7 Jun 2023 13:34:19 -0500
+Subject: [PATCH 357/434] remoteproc/ti-k3: Add support for graceful shutdown
+
+This patch adds support for graceful shutdown of the TI remoteproc
+driver on a stop command. On some TI SoCs, the remote processor
+(ex: M4F on AM64/AM62 SoCs) needs to be in quiescent state, before a
+reset is asserted. This patch introduces a mailbox handshake mechanism
+between the MPU and the remote processor to allow the remote processor
+to gracefully shutdown its peripherals and enter a quiescent state.
+
+In addition, add elements for IPC handshake completion and PM notifiers
+to k3-rproc structure.
+
+Signed-off-by: Hari Nagalla <hnagalla@ti.com>
+---
+ drivers/remoteproc/omap_remoteproc.h | 4 +++-
+ drivers/remoteproc/ti_k3_common.h    | 2 ++
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/remoteproc/omap_remoteproc.h b/drivers/remoteproc/omap_remoteproc.h
+index 828e13256c02..131483fe08e7 100644
+--- a/drivers/remoteproc/omap_remoteproc.h
++++ b/drivers/remoteproc/omap_remoteproc.h
+@@ -59,7 +59,9 @@ enum omap_rp_mbox_messages {
+ 	RP_MBOX_SUSPEND_SYSTEM	= 0xFFFFFF11,
+ 	RP_MBOX_SUSPEND_ACK	= 0xFFFFFF12,
+ 	RP_MBOX_SUSPEND_CANCEL	= 0xFFFFFF13,
+-	RP_MBOX_END_MSG		= 0xFFFFFF14,
++	RP_MBOX_SHUTDOWN	= 0xFFFFFF14,
++	RP_MBOX_SHUTDOWN_ACK	= 0xFFFFFF15,
++	RP_MBOX_END_MSG		= 0xFFFFFF16,
+ };
+ 
+ #endif /* _OMAP_RPMSG_H */
+diff --git a/drivers/remoteproc/ti_k3_common.h b/drivers/remoteproc/ti_k3_common.h
+index ed8ca5858492..c3e0f3411a21 100644
+--- a/drivers/remoteproc/ti_k3_common.h
++++ b/drivers/remoteproc/ti_k3_common.h
+@@ -88,6 +88,8 @@ struct k3_rproc {
+ 	struct mbox_chan *mbox;
+ 	struct mbox_client client;
+ 	bool ipc_only;
++	struct completion shut_comp;
++	struct notifier_block pm_notifier;
+ };
+ 
+ void k3_rproc_kick(struct rproc *rproc, int vqid);
+-- 
+2.41.0
+

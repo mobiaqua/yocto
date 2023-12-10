@@ -1,0 +1,49 @@
+From 49ef9b9ee4a9537e62b47acfb3c5245c81f524f6 Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Date: Wed, 8 Nov 2023 21:25:14 +0530
+Subject: [PATCH 156/322] drm/tidss: Remove early fb
+
+Add a call to drm_aperture_remove_framebuffers() to drop the possible
+early fb (simplefb).
+
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+---
+ drivers/gpu/drm/tidss/tidss_drv.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/gpu/drm/tidss/tidss_drv.c b/drivers/gpu/drm/tidss/tidss_drv.c
+index 0ab01f243e60..447a32079371 100644
+--- a/drivers/gpu/drm/tidss/tidss_drv.c
++++ b/drivers/gpu/drm/tidss/tidss_drv.c
+@@ -10,6 +10,7 @@
+ #include <linux/pm_runtime.h>
+ #include <linux/pm_domain.h>
+ 
++#include <drm/drm_aperture.h>
+ #include <drm/drm_atomic.h>
+ #include <drm/drm_atomic_helper.h>
+ #include <drm/drm_crtc.h>
+@@ -259,12 +260,20 @@ static int tidss_probe(struct platform_device *pdev)
+ 		goto err_irq_uninstall;
+ 	}
+ 
++	/* Remove possible early fb before setting up the fbdev */
++	ret = drm_aperture_remove_framebuffers(false, &tidss_driver);
++	if (ret)
++		goto err_drm_dev_unreg;
++
+ 	drm_fbdev_generic_setup(ddev, 32);
+ 
+ 	dev_dbg(dev, "%s done\n", __func__);
+ 
+ 	return 0;
+ 
++err_drm_dev_unreg:
++	drm_dev_unregister(ddev);
++
+ err_irq_uninstall:
+ 	tidss_irq_uninstall(ddev);
+ 
+-- 
+2.43.0
+

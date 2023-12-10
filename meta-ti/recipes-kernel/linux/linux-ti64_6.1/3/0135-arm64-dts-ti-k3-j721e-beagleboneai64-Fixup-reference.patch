@@ -1,0 +1,112 @@
+From de1228f628054ad2987e6cf83378d2894029e631 Mon Sep 17 00:00:00 2001
+From: Nishanth Menon <nm@ti.com>
+Date: Thu, 6 Jul 2023 15:04:23 -0500
+Subject: [PATCH 135/143] arm64: dts: ti: k3-j721e-beagleboneai64: Fixup
+ reference to phandles array
+
+commit 4a701c01e7ff96966fcf2cf9df0d3dd851197317 upstream.
+
+When referring to array of phandles, using <> to separate the array
+entries is better notation as it makes potential errors with phandle and
+cell arguments easier to catch. Fix the outliers to be consistent with
+the rest of the usage.
+
+Cc: Robert Nelson <robertcnelson@gmail.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Link: https://lore.kernel.org/r/20230606182220.3661956-6-nm@ti.com
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ .../boot/dts/ti/k3-j721e-beagleboneai64.dts   | 23 ++++++++++---------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts b/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
+index ecf7811ca8ff..961ca4fb3a43 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
++++ b/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
+@@ -682,7 +682,8 @@ &main_gpio7 {
+ 
+ &wkup_gpio0 {
+ 	pinctrl-names = "default";
+-	pinctrl-0 = <&mcu_adc0_pins_default &mcu_adc1_pins_default &mikro_bus_pins_default>;
++	pinctrl-0 = <&mcu_adc0_pins_default>, <&mcu_adc1_pins_default>,
++		    <&mikro_bus_pins_default>;
+ };
+ 
+ &wkup_gpio1 {
+@@ -766,7 +767,7 @@ serdes2_usb_link: phy@1 {
+ 
+ &usbss1 {
+ 	pinctrl-names = "default";
+-	pinctrl-0 = <&main_usbss1_pins_default &mcu_usbss1_pins_default>;
++	pinctrl-0 = <&main_usbss1_pins_default>, <&mcu_usbss1_pins_default>;
+ 	ti,vbus-divider;
+ };
+ 
+@@ -965,55 +966,55 @@ mbox_c71_0: mbox-c71-0 {
+ };
+ 
+ &mcu_r5fss0_core0 {
+-	mboxes = <&mailbox0_cluster0 &mbox_mcu_r5fss0_core0>;
++	mboxes = <&mailbox0_cluster0>, <&mbox_mcu_r5fss0_core0>;
+ 	memory-region = <&mcu_r5fss0_core0_dma_memory_region>,
+ 			<&mcu_r5fss0_core0_memory_region>;
+ };
+ 
+ &mcu_r5fss0_core1 {
+-	mboxes = <&mailbox0_cluster0 &mbox_mcu_r5fss0_core1>;
++	mboxes = <&mailbox0_cluster0>, <&mbox_mcu_r5fss0_core1>;
+ 	memory-region = <&mcu_r5fss0_core1_dma_memory_region>,
+ 			<&mcu_r5fss0_core1_memory_region>;
+ };
+ 
+ &main_r5fss0_core0 {
+-	mboxes = <&mailbox0_cluster1 &mbox_main_r5fss0_core0>;
++	mboxes = <&mailbox0_cluster1>, <&mbox_main_r5fss0_core0>;
+ 	memory-region = <&main_r5fss0_core0_dma_memory_region>,
+ 			<&main_r5fss0_core0_memory_region>;
+ };
+ 
+ &main_r5fss0_core1 {
+-	mboxes = <&mailbox0_cluster1 &mbox_main_r5fss0_core1>;
++	mboxes = <&mailbox0_cluster1>, <&mbox_main_r5fss0_core1>;
+ 	memory-region = <&main_r5fss0_core1_dma_memory_region>,
+ 			<&main_r5fss0_core1_memory_region>;
+ };
+ 
+ &main_r5fss1_core0 {
+-	mboxes = <&mailbox0_cluster2 &mbox_main_r5fss1_core0>;
++	mboxes = <&mailbox0_cluster2>, <&mbox_main_r5fss1_core0>;
+ 	memory-region = <&main_r5fss1_core0_dma_memory_region>,
+ 			<&main_r5fss1_core0_memory_region>;
+ };
+ 
+ &main_r5fss1_core1 {
+-	mboxes = <&mailbox0_cluster2 &mbox_main_r5fss1_core1>;
++	mboxes = <&mailbox0_cluster2>, <&mbox_main_r5fss1_core1>;
+ 	memory-region = <&main_r5fss1_core1_dma_memory_region>,
+ 			<&main_r5fss1_core1_memory_region>;
+ };
+ 
+ &c66_0 {
+-	mboxes = <&mailbox0_cluster3 &mbox_c66_0>;
++	mboxes = <&mailbox0_cluster3>, <&mbox_c66_0>;
+ 	memory-region = <&c66_0_dma_memory_region>,
+ 			<&c66_0_memory_region>;
+ };
+ 
+ &c66_1 {
+-	mboxes = <&mailbox0_cluster3 &mbox_c66_1>;
++	mboxes = <&mailbox0_cluster3>, <&mbox_c66_1>;
+ 	memory-region = <&c66_1_dma_memory_region>,
+ 			<&c66_1_memory_region>;
+ };
+ 
+ &c71_0 {
+-	mboxes = <&mailbox0_cluster4 &mbox_c71_0>;
++	mboxes = <&mailbox0_cluster4>, <&mbox_c71_0>;
+ 	memory-region = <&c71_0_dma_memory_region>,
+ 			<&c71_0_memory_region>;
+ };
+-- 
+2.41.0
+

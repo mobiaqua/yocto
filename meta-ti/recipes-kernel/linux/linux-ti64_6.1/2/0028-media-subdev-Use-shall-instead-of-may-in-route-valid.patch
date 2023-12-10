@@ -1,0 +1,59 @@
+From 1d5e640230775c114a97851a7c0cfcd5aab68330 Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Date: Tue, 9 May 2023 14:15:25 +0530
+Subject: [PATCH 028/434] media: subdev: Use 'shall' instead of 'may' in route
+ validation
+
+commit a50ee4afc77e4df14bc146e03b3fa28daeec14a9 upstream.
+
+Route validation docs use the word 'may'. Change that to 'shall' for
+emphasis.
+
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Reviewed-by: Jacopo Mondi <jacopo.mondi@ideasonboard.com>
+Signed-off-by: Sakari Ailus <sakari.ailus@linux.intel.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@kernel.org>
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/media/v4l2-core/v4l2-subdev.c | 2 +-
+ include/media/v4l2-subdev.h           | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/media/v4l2-core/v4l2-subdev.c b/drivers/media/v4l2-core/v4l2-subdev.c
+index 70bb77ae21f1..71cb4fa14831 100644
+--- a/drivers/media/v4l2-core/v4l2-subdev.c
++++ b/drivers/media/v4l2-core/v4l2-subdev.c
+@@ -1664,7 +1664,7 @@ int v4l2_subdev_routing_validate(struct v4l2_subdev *sd,
+ 
+ 		/*
+ 		 * V4L2_SUBDEV_ROUTING_NO_STREAM_MIX: Streams on the same pad
+-		 * may not be routed to streams on different pads.
++		 * shall not be routed to streams on different pads.
+ 		 */
+ 		if (disallow & V4L2_SUBDEV_ROUTING_NO_STREAM_MIX) {
+ 			if (remote_pads[route->sink_pad] != U32_MAX &&
+diff --git a/include/media/v4l2-subdev.h b/include/media/v4l2-subdev.h
+index 6a77aa9bb1da..65e9c46b1e81 100644
+--- a/include/media/v4l2-subdev.h
++++ b/include/media/v4l2-subdev.h
+@@ -1633,13 +1633,13 @@ u64 v4l2_subdev_state_xlate_streams(const struct v4l2_subdev_state *state,
+  * enum v4l2_subdev_routing_restriction - Subdevice internal routing restrictions
+  *
+  * @V4L2_SUBDEV_ROUTING_NO_1_TO_N:
+- *	an input stream may not be routed to multiple output streams (stream
++ *	an input stream shall not be routed to multiple output streams (stream
+  *	duplication)
+  * @V4L2_SUBDEV_ROUTING_NO_N_TO_1:
+- *	multiple input streams may not be routed to the same output stream
++ *	multiple input streams shall not be routed to the same output stream
+  *	(stream merging)
+  * @V4L2_SUBDEV_ROUTING_NO_STREAM_MIX:
+- *	streams on the same pad may not be routed to streams on different pads
++ *	streams on the same pad shall not be routed to streams on different pads
+  * @V4L2_SUBDEV_ROUTING_ONLY_1_TO_1:
+  *	only non-overlapping 1-to-1 stream routing is allowed (a combination of
+  *	@V4L2_SUBDEV_ROUTING_NO_1_TO_N and @V4L2_SUBDEV_ROUTING_NO_N_TO_1)
+-- 
+2.41.0
+

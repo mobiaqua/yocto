@@ -1,0 +1,128 @@
+From a24d5429be8a0f164a1352af1926f5c29362e197 Mon Sep 17 00:00:00 2001
+From: Aradhya Bhatia <a-bhatia1@ti.com>
+Date: Fri, 21 Apr 2023 12:07:56 +0530
+Subject: [PATCH 336/508] drm/tidss: Add IO CTRL and Power support for OLDI TX
+ in am625
+
+The ctrl mmr module of the AM625 is different from the AM65X SoC. Thus
+the ctrl mmr registers that supported the OLDI TX power have become
+different in AM625 SoC.
+
+The common mode voltage of the LVDS buffers becomes random when the
+bandgap reference is turned off. This causes uncertainity in the LVDS
+Data and Clock signal outputs, making it behave differently under
+different conditions and panel setups. The bandgap reference must be
+powered on before using the OLDI IOs, to keep the common voltage trimmed
+down to desired levels.
+
+Add support to enable/disable OLDI IO signals as well as the bandgap
+reference circuit for the LVDS signals.
+
+Signed-off-by: Aradhya Bhatia <a-bhatia1@ti.com>
+---
+ drivers/gpu/drm/tidss/tidss_dispc.c      | 43 +++++++++++++++++++++++-
+ drivers/gpu/drm/tidss/tidss_dispc_regs.h | 24 ++++++++++---
+ 2 files changed, 62 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/gpu/drm/tidss/tidss_dispc.c b/drivers/gpu/drm/tidss/tidss_dispc.c
+index f57cb99d3506..304dc01efad0 100644
+--- a/drivers/gpu/drm/tidss/tidss_dispc.c
++++ b/drivers/gpu/drm/tidss/tidss_dispc.c
+@@ -950,12 +950,53 @@ int dispc_vp_bus_check(struct dispc_device *dispc, u32 vp_idx,
+ 
+ static void dispc_oldi_tx_power(struct dispc_device *dispc, bool power)
+ {
+-	u32 val;
++	u32 val = 0;
+ 
+ 	if (WARN_ON(!dispc->oldi_io_ctrl))
+ 		return;
+ 
++	/*
++	 * The power control bits are Active Low, and remain powered off by
++	 * default. That is, the bits are set to 1. To power on the OLDI TXes,
++	 * the bits must be cleared to 0. Since there are cases where not all
++	 * OLDI TXes are being used, the power logic selectively powers them
++	 * on.
++	 * Setting the variable 'val' to particular bit masks, makes sure that
++	 * the unrequired OLDI TXes remain powered off.
++	 */
+ 	switch (dispc->feat->subrev) {
++	case DISPC_AM625:
++		if (power) {
++			switch (dispc->oldi_mode) {
++			case OLDI_MODE_SINGLE_LINK:
++				/* Power down OLDI TX 1 */
++				val = AM625_OLDI1_PWRDN_TX;
++				break;
++
++			case OLDI_MODE_CLONE_SINGLE_LINK:
++			case OLDI_MODE_DUAL_LINK:
++				/* No Power down */
++				val = 0;
++				break;
++
++			default:
++				/* Power down both OLDI TXes and LVDS Bandgap */
++				val = AM625_OLDI0_PWRDN_TX | AM625_OLDI1_PWRDN_TX |
++				      AM625_OLDI_PWRDN_BG;
++				break;
++			}
++
++		} else {
++			/* Power down both OLDI TXes and LVDS Bandgap */
++			val = AM625_OLDI0_PWRDN_TX | AM625_OLDI1_PWRDN_TX |
++			      AM625_OLDI_PWRDN_BG;
++		}
++
++		regmap_update_bits(dispc->oldi_io_ctrl, AM625_OLDI_PD_CTRL,
++				   AM625_OLDI0_PWRDN_TX | AM625_OLDI1_PWRDN_TX |
++				   AM625_OLDI_PWRDN_BG, val);
++		break;
++
+ 	case DISPC_AM65X:
+ 		val = power ? 0 : AM65X_OLDI_PWRDN_TX;
+ 
+diff --git a/drivers/gpu/drm/tidss/tidss_dispc_regs.h b/drivers/gpu/drm/tidss/tidss_dispc_regs.h
+index 1caf79abe42a..b2a148e96022 100644
+--- a/drivers/gpu/drm/tidss/tidss_dispc_regs.h
++++ b/drivers/gpu/drm/tidss/tidss_dispc_regs.h
+@@ -227,10 +227,14 @@ enum dispc_common_regs {
+ #define DISPC_VP_DSS_DMA_THREADSIZE_STATUS	0x174 /* J721E */
+ 
+ /*
+- * OLDI IO_CTRL register offsets. On AM654 the registers are found
+- * from CTRL_MMR0, there the syscon regmap should map 0x14 bytes from
+- * CTRLMMR0P1_OLDI_DAT0_IO_CTRL to CTRLMMR0P1_OLDI_CLK_IO_CTRL
+- * register range.
++ * OLDI IO and PD CTRL register offsets.
++ * These registers are found in the CTRL_MMR0, where the syscon regmap should map
++ *
++ * 1. 0x14 bytes from CTRLMMR0P1_OLDI_DAT0_IO_CTRL to CTRLMMR0P1_OLDI_CLK_IO_CTRL
++ * register range for the AM65X DSS, and
++ *
++ * 2. 0x200 bytes from OLDI0_DAT0_IO_CTRL to OLDI_LB_CTRL register range for the
++ * AM625 DSS.
+  */
+ 
+ /* -- For AM65X OLDI TX -- */
+@@ -244,4 +248,16 @@ enum dispc_common_regs {
+ /* Power control bits */
+ #define AM65X_OLDI_PWRDN_TX			BIT(8)
+ 
++/* -- For AM625 OLDI TX -- */
++/* Register offsets */
++#define AM625_OLDI_PD_CTRL			0x100
++#define AM625_OLDI_LB_CTRL			0x104
++
++/* Power control bits */
++#define AM625_OLDI0_PWRDN_TX			BIT(0)
++#define AM625_OLDI1_PWRDN_TX			BIT(1)
++
++/* LVDS Bandgap reference Enable/Disable */
++#define AM625_OLDI_PWRDN_BG			BIT(8)
++
+ #endif /* __TIDSS_DISPC_REGS_H */
+-- 
+2.41.0
+

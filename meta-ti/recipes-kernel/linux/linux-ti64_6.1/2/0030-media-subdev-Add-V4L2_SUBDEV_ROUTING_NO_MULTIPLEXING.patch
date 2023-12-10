@@ -1,0 +1,136 @@
+From bd2d55aa9160467017f45f07a61b2e446a88f8bd Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Date: Tue, 9 May 2023 14:15:27 +0530
+Subject: [PATCH 030/434] media: subdev: Add
+ V4L2_SUBDEV_ROUTING_NO_MULTIPLEXING
+
+commit a1299df6718b718256fd9bf6d7f9bed44c826e61 upstream.
+
+A common case with subdev routing is that on the subdevice just before
+the DMA engines (video nodes), no multiplexing is allowed on the source
+pads, as the DMA engine can only handle a single stream.
+
+In some other situations one might also want to do the same check on the
+sink side.
+
+Add new routing validation flags to check these:
+V4L2_SUBDEV_ROUTING_NO_SINK_MULTIPLEXING and
+V4L2_SUBDEV_ROUTING_NO_SOURCE_MULTIPLEXING.
+
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Reviewed-by: Jacopo Mondi <jacopo.mondi@ideasonboard.com>
+Signed-off-by: Sakari Ailus <sakari.ailus@linux.intel.com>
+Signed-off-by: Mauro Carvalho Chehab <mchehab@kernel.org>
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/media/v4l2-core/v4l2-subdev.c | 36 ++++++++++++++++++++++++---
+ include/media/v4l2-subdev.h           | 11 ++++++++
+ 2 files changed, 44 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/v4l2-core/v4l2-subdev.c b/drivers/media/v4l2-core/v4l2-subdev.c
+index 9cad4f75db62..b91aae128e7c 100644
+--- a/drivers/media/v4l2-core/v4l2-subdev.c
++++ b/drivers/media/v4l2-core/v4l2-subdev.c
+@@ -1634,7 +1634,8 @@ int v4l2_subdev_routing_validate(struct v4l2_subdev *sd,
+ 	unsigned int i, j;
+ 	int ret = -EINVAL;
+ 
+-	if (disallow & V4L2_SUBDEV_ROUTING_NO_STREAM_MIX) {
++	if (disallow & (V4L2_SUBDEV_ROUTING_NO_STREAM_MIX |
++			V4L2_SUBDEV_ROUTING_NO_MULTIPLEXING)) {
+ 		remote_pads = kcalloc(sd->entity.num_pads, sizeof(*remote_pads),
+ 				      GFP_KERNEL);
+ 		if (!remote_pads)
+@@ -1674,8 +1675,6 @@ int v4l2_subdev_routing_validate(struct v4l2_subdev *sd,
+ 					i, "sink");
+ 				goto out;
+ 			}
+-
+-			remote_pads[route->sink_pad] = route->source_pad;
+ 		}
+ 
+ 		/*
+@@ -1690,7 +1689,38 @@ int v4l2_subdev_routing_validate(struct v4l2_subdev *sd,
+ 					i, "source");
+ 				goto out;
+ 			}
++		}
++
++		/*
++		 * V4L2_SUBDEV_ROUTING_NO_SINK_MULTIPLEXING: Pads on the sink
++		 * side can not do stream multiplexing, i.e. there can be only
++		 * a single stream in a sink pad.
++		 */
++		if (disallow & V4L2_SUBDEV_ROUTING_NO_SINK_MULTIPLEXING) {
++			if (remote_pads[route->sink_pad] != U32_MAX) {
++				dev_dbg(sd->dev,
++					"route %u attempts to multiplex on %s pad %u\n",
++					i, "sink", route->sink_pad);
++				goto out;
++			}
++		}
+ 
++		/*
++		 * V4L2_SUBDEV_ROUTING_NO_SOURCE_MULTIPLEXING: Pads on the
++		 * source side can not do stream multiplexing, i.e. there can
++		 * be only a single stream in a source pad.
++		 */
++		if (disallow & V4L2_SUBDEV_ROUTING_NO_SOURCE_MULTIPLEXING) {
++			if (remote_pads[route->source_pad] != U32_MAX) {
++				dev_dbg(sd->dev,
++					"route %u attempts to multiplex on %s pad %u\n",
++					i, "source", route->source_pad);
++				goto out;
++			}
++		}
++
++		if (remote_pads) {
++			remote_pads[route->sink_pad] = route->source_pad;
+ 			remote_pads[route->source_pad] = route->sink_pad;
+ 		}
+ 
+diff --git a/include/media/v4l2-subdev.h b/include/media/v4l2-subdev.h
+index 7deb28ef6aa7..c88efe82c0a8 100644
+--- a/include/media/v4l2-subdev.h
++++ b/include/media/v4l2-subdev.h
+@@ -1642,6 +1642,10 @@ u64 v4l2_subdev_state_xlate_streams(const struct v4l2_subdev_state *state,
+  *	all streams from a sink pad must be routed to a single source pad
+  * @V4L2_SUBDEV_ROUTING_NO_SOURCE_STREAM_MIX:
+  *	all streams on a source pad must originate from a single sink pad
++ * @V4L2_SUBDEV_ROUTING_NO_SOURCE_MULTIPLEXING:
++ *	source pads shall not contain multiplexed streams
++ * @V4L2_SUBDEV_ROUTING_NO_SINK_MULTIPLEXING:
++ *	sink pads shall not contain multiplexed streams
+  * @V4L2_SUBDEV_ROUTING_ONLY_1_TO_1:
+  *	only non-overlapping 1-to-1 stream routing is allowed (a combination of
+  *	@V4L2_SUBDEV_ROUTING_NO_1_TO_N and @V4L2_SUBDEV_ROUTING_NO_N_TO_1)
+@@ -1650,18 +1654,25 @@ u64 v4l2_subdev_state_xlate_streams(const struct v4l2_subdev_state *state,
+  *	that source pad shall not get routes from any other sink pad
+  *	(a combination of @V4L2_SUBDEV_ROUTING_NO_SINK_STREAM_MIX and
+  *	@V4L2_SUBDEV_ROUTING_NO_SOURCE_STREAM_MIX)
++ * @V4L2_SUBDEV_ROUTING_NO_MULTIPLEXING:
++ *	no multiplexed streams allowed on either source or sink sides.
+  */
+ enum v4l2_subdev_routing_restriction {
+ 	V4L2_SUBDEV_ROUTING_NO_1_TO_N = BIT(0),
+ 	V4L2_SUBDEV_ROUTING_NO_N_TO_1 = BIT(1),
+ 	V4L2_SUBDEV_ROUTING_NO_SINK_STREAM_MIX = BIT(2),
+ 	V4L2_SUBDEV_ROUTING_NO_SOURCE_STREAM_MIX = BIT(3),
++	V4L2_SUBDEV_ROUTING_NO_SINK_MULTIPLEXING = BIT(4),
++	V4L2_SUBDEV_ROUTING_NO_SOURCE_MULTIPLEXING = BIT(5),
+ 	V4L2_SUBDEV_ROUTING_ONLY_1_TO_1 =
+ 		V4L2_SUBDEV_ROUTING_NO_1_TO_N |
+ 		V4L2_SUBDEV_ROUTING_NO_N_TO_1,
+ 	V4L2_SUBDEV_ROUTING_NO_STREAM_MIX =
+ 		V4L2_SUBDEV_ROUTING_NO_SINK_STREAM_MIX |
+ 		V4L2_SUBDEV_ROUTING_NO_SOURCE_STREAM_MIX,
++	V4L2_SUBDEV_ROUTING_NO_MULTIPLEXING =
++		V4L2_SUBDEV_ROUTING_NO_SINK_MULTIPLEXING |
++		V4L2_SUBDEV_ROUTING_NO_SOURCE_MULTIPLEXING,
+ };
+ 
+ /**
+-- 
+2.41.0
+

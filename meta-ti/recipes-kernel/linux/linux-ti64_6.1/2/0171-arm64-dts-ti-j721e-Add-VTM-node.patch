@@ -1,0 +1,134 @@
+From ae28003ca58967146a4708dde799502011e7b573 Mon Sep 17 00:00:00 2001
+From: Keerthy <j-keerthy@ti.com>
+Date: Wed, 24 May 2023 23:20:02 -0500
+Subject: [PATCH 171/434] arm64: dts: ti: j721e: Add VTM node
+
+VTM stands for Voltage Thermal Management. Add the thermal zones.
+Five sensors mapping ton 5 thermal zones. WKUP, MPU, C7x, GPU & R5F
+respectively.
+
+Signed-off-by: Keerthy <j-keerthy@ti.com>
+[bb@ti.com: rebased on v6.3-rc1]
+Signed-off-by: Bryan Brattlof <bb@ti.com>
+---
+ .../boot/dts/ti/k3-j721e-mcu-wakeup.dtsi      |  9 +++
+ arch/arm64/boot/dts/ti/k3-j721e-thermal.dtsi  | 75 +++++++++++++++++++
+ arch/arm64/boot/dts/ti/k3-j721e.dtsi          |  2 +
+ 3 files changed, 86 insertions(+)
+ create mode 100644 arch/arm64/boot/dts/ti/k3-j721e-thermal.dtsi
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+index 5f41510dfa5f..b3fa17ed3e1e 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+@@ -458,4 +458,13 @@ mcu_spi2: spi@40320000 {
+ 		clocks = <&k3_clks 276 0>;
+ 		status = "disabled";
+ 	};
++
++	wkup_vtm0: temperature-sensor@42040000 {
++		compatible = "ti,j721e-vtm";
++		reg = <0x00 0x42040000 0x00 0x350>,
++			<0x00 0x42050000 0x00 0x350>,
++			<0x00 0x43000300 0x00 0x10>;
++		power-domains = <&k3_pds 154 TI_SCI_PD_EXCLUSIVE>;
++		#thermal-sensor-cells = <1>;
++	};
+ };
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-thermal.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-thermal.dtsi
+new file mode 100644
+index 000000000000..c2523279001b
+--- /dev/null
++++ b/arch/arm64/boot/dts/ti/k3-j721e-thermal.dtsi
+@@ -0,0 +1,75 @@
++// SPDX-License-Identifier: GPL-2.0
++
++#include <dt-bindings/thermal/thermal.h>
++
++thermal_zones: thermal-zones {
++	wkup_thermal: wkup-thermal {
++		polling-delay-passive = <250>; /* milliseconds */
++		polling-delay = <500>; /* milliseconds */
++		thermal-sensors = <&wkup_vtm0 0>;
++
++		trips {
++			wkup_crit: wkup-crit {
++				temperature = <125000>; /* milliCelsius */
++				hysteresis = <2000>; /* milliCelsius */
++				type = "critical";
++			};
++		};
++	};
++
++	mpu_thermal: mpu-thermal {
++		polling-delay-passive = <250>; /* milliseconds */
++		polling-delay = <500>; /* milliseconds */
++		thermal-sensors = <&wkup_vtm0 1>;
++
++		trips {
++			mpu_crit: mpu-crit {
++				temperature = <125000>; /* milliCelsius */
++				hysteresis = <2000>; /* milliCelsius */
++				type = "critical";
++			};
++		};
++	};
++
++	c7x_thermal: c7x-thermal {
++		polling-delay-passive = <250>; /* milliseconds */
++		polling-delay = <500>; /* milliseconds */
++		thermal-sensors = <&wkup_vtm0 2>;
++
++		trips {
++			c7x_crit: c7x-crit {
++				temperature = <125000>; /* milliCelsius */
++				hysteresis = <2000>; /* milliCelsius */
++				type = "critical";
++			};
++		};
++	};
++
++	gpu_thermal: gpu-thermal {
++		polling-delay-passive = <250>; /* milliseconds */
++		polling-delay = <500>; /* milliseconds */
++		thermal-sensors = <&wkup_vtm0 3>;
++
++		trips {
++			gpu_crit: gpu-crit {
++				temperature = <125000>; /* milliCelsius */
++				hysteresis = <2000>; /* milliCelsius */
++				type = "critical";
++			};
++		};
++	};
++
++	r5f_thermal: r5f-thermal {
++		polling-delay-passive = <250>; /* milliseconds */
++		polling-delay = <500>; /* milliseconds */
++		thermal-sensors = <&wkup_vtm0 4>;
++
++		trips {
++			r5f_crit: r5f-crit {
++				temperature = <125000>; /* milliCelsius */
++				hysteresis = <2000>; /* milliCelsius */
++				type = "critical";
++			};
++		};
++	};
++};
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e.dtsi b/arch/arm64/boot/dts/ti/k3-j721e.dtsi
+index b912143b6a11..154eff06e7b7 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e.dtsi
+@@ -184,6 +184,8 @@ cbass_mcu_wakeup: bus@28380000 {
+ 				 <0x07 0x00000000 0x07 0x00000000 0x01 0x00000000>; /* FSS OSPI1 data region 3*/
+ 		};
+ 	};
++
++	#include "k3-j721e-thermal.dtsi"
+ };
+ 
+ /* Now include the peripherals for each bus segments */
+-- 
+2.41.0
+

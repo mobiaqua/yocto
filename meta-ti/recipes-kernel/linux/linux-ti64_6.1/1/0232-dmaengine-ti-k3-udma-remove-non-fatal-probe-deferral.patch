@@ -1,0 +1,36 @@
+From f20d934a048fafe8998ebcd618f08d42cc351431 Mon Sep 17 00:00:00 2001
+From: Jayesh Choudhary <j-choudhary@ti.com>
+Date: Fri, 14 Apr 2023 22:23:49 +0530
+Subject: [PATCH 232/508] dmaengine: ti: k3-udma: remove non-fatal probe
+ deferral log
+
+commit ad4ce0789033529673aa69ef1568ac37f38f9f27 upstream.
+
+Drop the non-fatal probe deferral log for getting MSI domain.
+This makes the kernel log clean and we do not get recurring logs
+stating: "Failed to get MSI domain".
+
+Signed-off-by: Jayesh Choudhary <j-choudhary@ti.com>
+Acked-by: Peter Ujfalusi <peter.ujfalusi@gmail.com>
+Link: https://lore.kernel.org/r/20230117051855.29644-1-j-choudhary@ti.com
+Signed-off-by: Vinod Koul <vkoul@kernel.org>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/dma/ti/k3-udma.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/dma/ti/k3-udma.c b/drivers/dma/ti/k3-udma.c
+index 1a12a1f1c446..fc3a2a05ab7b 100644
+--- a/drivers/dma/ti/k3-udma.c
++++ b/drivers/dma/ti/k3-udma.c
+@@ -5381,7 +5381,6 @@ static int udma_probe(struct platform_device *pdev)
+ 	dev->msi.domain = of_msi_get_domain(dev, dev->of_node,
+ 					    DOMAIN_BUS_TI_SCI_INTA_MSI);
+ 	if (!dev->msi.domain) {
+-		dev_err(dev, "Failed to get MSI domain\n");
+ 		return -EPROBE_DEFER;
+ 	}
+ 
+-- 
+2.41.0
+

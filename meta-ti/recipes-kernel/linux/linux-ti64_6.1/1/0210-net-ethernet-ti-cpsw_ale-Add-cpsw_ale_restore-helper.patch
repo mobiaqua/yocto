@@ -1,0 +1,61 @@
+From a93142a5c9df8fd52ce6ea468f975c0603c0b182 Mon Sep 17 00:00:00 2001
+From: Roger Quadros <rogerq@kernel.org>
+Date: Tue, 11 Apr 2023 12:40:02 +0530
+Subject: [PATCH 210/508] net: ethernet: ti: cpsw_ale: Add cpsw_ale_restore()
+ helper
+
+commit eadb434374075d3a09bcd983d340dad8d6a5138a upstream.
+
+This can be used by device driver to restore ALE context.
+The data produced by cpsw_ale_dump() can be passed to
+cpsw_ale_restore().
+
+This is required as on certain platforms the ALE context
+is lost on low power suspend/resume.
+
+Signed-off-by: Roger Quadros <rogerq@kernel.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Siddharth Vadapalli <s-vadapalli@ti.com>
+Tested-by: Dhruva Gole <d-gole@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/net/ethernet/ti/cpsw_ale.c | 10 ++++++++++
+ drivers/net/ethernet/ti/cpsw_ale.h |  1 +
+ 2 files changed, 11 insertions(+)
+
+diff --git a/drivers/net/ethernet/ti/cpsw_ale.c b/drivers/net/ethernet/ti/cpsw_ale.c
+index 231370e9a801..0c5e783e574c 100644
+--- a/drivers/net/ethernet/ti/cpsw_ale.c
++++ b/drivers/net/ethernet/ti/cpsw_ale.c
+@@ -1452,6 +1452,16 @@ void cpsw_ale_dump(struct cpsw_ale *ale, u32 *data)
+ 	}
+ }
+ 
++void cpsw_ale_restore(struct cpsw_ale *ale, u32 *data)
++{
++	int i;
++
++	for (i = 0; i < ale->params.ale_entries; i++) {
++		cpsw_ale_write(ale, i, data);
++		data += ALE_ENTRY_WORDS;
++	}
++}
++
+ u32 cpsw_ale_get_num_entries(struct cpsw_ale *ale)
+ {
+ 	return ale ? ale->params.ale_entries : 0;
+diff --git a/drivers/net/ethernet/ti/cpsw_ale.h b/drivers/net/ethernet/ti/cpsw_ale.h
+index aba4572cfa3b..6779ee111d57 100644
+--- a/drivers/net/ethernet/ti/cpsw_ale.h
++++ b/drivers/net/ethernet/ti/cpsw_ale.h
+@@ -127,6 +127,7 @@ int cpsw_ale_control_get(struct cpsw_ale *ale, int port, int control);
+ int cpsw_ale_control_set(struct cpsw_ale *ale, int port,
+ 			 int control, int value);
+ void cpsw_ale_dump(struct cpsw_ale *ale, u32 *data);
++void cpsw_ale_restore(struct cpsw_ale *ale, u32 *data);
+ u32 cpsw_ale_get_num_entries(struct cpsw_ale *ale);
+ 
+ static inline int cpsw_ale_get_vlan_p0_untag(struct cpsw_ale *ale, u16 vid)
+-- 
+2.41.0
+

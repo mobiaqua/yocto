@@ -1,0 +1,100 @@
+From 5fd05c19462bdd18fdf93fd58f6cdf495d86bf7b Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Thu, 6 Jul 2023 15:04:19 -0500
+Subject: [PATCH 131/143] arm64: dts: ti: k3-j721e: Enable PCIe nodes at the
+ board level
+
+commit 731c6deda85ffcac3629bea757a806306e335618 upstream.
+
+PCIe nodes defined in the top-level J721e SoC dtsi files are incomplete
+and will not be functional unless they are extended with a SerDes PHY.
+And usually only one of the two modes can be used at a time as they
+share a SerDes link.
+
+As the PHY and mode is only known at the board integration level, these
+nodes should only be enabled when provided with this information.
+
+Disable the PCIe nodes in the dtsi files and only enable the ones that
+are actually pinned out on a given board.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Link: https://lore.kernel.org/r/20230515172137.474626-3-afd@ti.com
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ .../boot/dts/ti/k3-j721e-beagleboneai64.dts      | 16 +---------------
+ .../boot/dts/ti/k3-j721e-common-proc-board.dts   |  7 +++----
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi        |  4 ++++
+ arch/arm64/boot/dts/ti/k3-j721e-sk.dts           | 12 ++----------
+ 4 files changed, 10 insertions(+), 29 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts b/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
+index d77eeff0d81d..be0c5431119e 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
++++ b/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
+@@ -872,12 +872,8 @@ serdes1_pcie_link: phy@0 {
+ 	};
+ };
+ 
+-&pcie0_rc {
+-	/* Unused */
+-	status = "disabled";
+-};
+-
+ &pcie1_rc {
++	status = "okay";
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pcie1_rst_pins_default>;
+ 	phys = <&serdes1_pcie_link>;
+@@ -887,16 +883,6 @@ &pcie1_rc {
+ 	reset-gpios = <&main_gpio0 22 GPIO_ACTIVE_HIGH>;
+ };
+ 
+-&pcie2_rc {
+-	/* Unused */
+-	status = "disabled";
+-};
+-
+-&pcie3_rc {
+-	/* Unused */
+-	status = "disabled";
+-};
+-
+ &icssg0_mdio {
+ 	/* Unused */
+ 	status = "disabled";
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index 349cde1b565d..73a0af9c6653 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -754,6 +754,7 @@ pcie0_rc: pcie@2900000 {
+ 				<0 0 0 2 &pcie0_intc 0>, /* INT B */
+ 				<0 0 0 3 &pcie0_intc 0>, /* INT C */
+ 				<0 0 0 4 &pcie0_intc 0>; /* INT D */
++		status = "disabled";
+ 
+ 		pcie0_intc: interrupt-controller {
+ 			interrupt-controller;
+@@ -795,6 +796,7 @@ pcie1_rc: pcie@2910000 {
+ 				<0 0 0 2 &pcie1_intc 0>, /* INT B */
+ 				<0 0 0 3 &pcie1_intc 0>, /* INT C */
+ 				<0 0 0 4 &pcie1_intc 0>; /* INT D */
++		status = "disabled";
+ 
+ 		pcie1_intc: interrupt-controller {
+ 			interrupt-controller;
+@@ -836,6 +838,7 @@ pcie2_rc: pcie@2920000 {
+ 				<0 0 0 2 &pcie2_intc 0>, /* INT B */
+ 				<0 0 0 3 &pcie2_intc 0>, /* INT C */
+ 				<0 0 0 4 &pcie2_intc 0>; /* INT D */
++		status = "disabled";
+ 
+ 		pcie2_intc: interrupt-controller {
+ 			interrupt-controller;
+@@ -877,6 +880,7 @@ pcie3_rc: pcie@2930000 {
+ 				<0 0 0 2 &pcie3_intc 0>, /* INT B */
+ 				<0 0 0 3 &pcie3_intc 0>, /* INT C */
+ 				<0 0 0 4 &pcie3_intc 0>; /* INT D */
++		status = "disabled";
+ 
+ 		pcie3_intc: interrupt-controller {
+ 			interrupt-controller;

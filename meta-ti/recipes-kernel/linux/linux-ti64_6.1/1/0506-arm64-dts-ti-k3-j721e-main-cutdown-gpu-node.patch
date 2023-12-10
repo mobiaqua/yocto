@@ -1,0 +1,31 @@
+From 2d32c5a729347c6b43b21bf4987b82010f869de1 Mon Sep 17 00:00:00 2001
+From: Randolph Sapp <rs@ti.com>
+Date: Thu, 4 May 2023 16:33:38 -0500
+Subject: [PATCH 506/508] arm64: dts: ti: k3-j721e-main: cutdown gpu node
+
+Cutdown the GPU node to match the rogue bindings. Drop the power island
+power domain definition.
+
+Signed-off-by: Randolph Sapp <rs@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index 7d03783e7473..eaa817156f84 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -2192,9 +2192,7 @@ gpu: gpu@4e20000000 {
+ 		compatible = "ti,j721e-pvr", "img,pvr-ge8430";
+ 		reg = <0x4e 0x20000000 0x00 0x80000>;
+ 		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
+-		power-domains = <&k3_pds 125 TI_SCI_PD_EXCLUSIVE>,
+-				<&k3_pds 126 TI_SCI_PD_EXCLUSIVE>;
+-		power-domain-names = "gpu_0", "gpucore_0";
++		power-domains = <&k3_pds 126 TI_SCI_PD_EXCLUSIVE>;
+ 		clocks = <&k3_clks 125 0>;
+ 	};
+ 
+-- 
+2.41.0
+

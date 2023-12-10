@@ -1,0 +1,282 @@
+From 5c481072c2f953a430bbe66c5ba536bf1d150b72 Mon Sep 17 00:00:00 2001
+From: Swapnil Jakhade <sjakhade@cadence.com>
+Date: Sun, 23 Apr 2023 23:49:04 +0530
+Subject: [PATCH 438/508] phy: cadence-torrent: Add USB + DP multilink
+ configuration
+
+Add USB + DP no SSC multilink configuration sequences.
+
+Signed-off-by: Swapnil Jakhade <sjakhade@cadence.com>
+Link: https://lore.kernel.org/all/20230418173157.25607-5-sjakhade@cadence.com
+Signed-off-by: Achal Verma <a-verma1@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/phy/cadence/phy-cadence-torrent.c | 98 +++++++++++++++++++++++
+ 1 file changed, 98 insertions(+)
+
+diff --git a/drivers/phy/cadence/phy-cadence-torrent.c b/drivers/phy/cadence/phy-cadence-torrent.c
+index c8a204616cdd..8bab6f9b75d0 100644
+--- a/drivers/phy/cadence/phy-cadence-torrent.c
++++ b/drivers/phy/cadence/phy-cadence-torrent.c
+@@ -2898,6 +2898,38 @@ static int cdns_torrent_phy_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++/* USB and DP link configuration */
++static struct cdns_reg_pairs usb_dp_link_cmn_regs[] = {
++	{0x0002, PHY_PLL_CFG},
++	{0x8600, CMN_PDIAG_PLL0_CLK_SEL_M0}
++};
++
++static struct cdns_reg_pairs usb_dp_xcvr_diag_ln_regs[] = {
++	{0x0000, XCVR_DIAG_HSCLK_SEL},
++	{0x0001, XCVR_DIAG_HSCLK_DIV},
++	{0x0041, XCVR_DIAG_PLLDRC_CTRL}
++};
++
++static struct cdns_reg_pairs dp_usb_xcvr_diag_ln_regs[] = {
++	{0x0001, XCVR_DIAG_HSCLK_SEL},
++	{0x0009, XCVR_DIAG_PLLDRC_CTRL}
++};
++
++static struct cdns_torrent_vals usb_dp_link_cmn_vals = {
++	.reg_pairs = usb_dp_link_cmn_regs,
++	.num_regs = ARRAY_SIZE(usb_dp_link_cmn_regs),
++};
++
++static struct cdns_torrent_vals usb_dp_xcvr_diag_ln_vals = {
++	.reg_pairs = usb_dp_xcvr_diag_ln_regs,
++	.num_regs = ARRAY_SIZE(usb_dp_xcvr_diag_ln_regs),
++};
++
++static struct cdns_torrent_vals dp_usb_xcvr_diag_ln_vals = {
++	.reg_pairs = dp_usb_xcvr_diag_ln_regs,
++	.num_regs = ARRAY_SIZE(dp_usb_xcvr_diag_ln_regs),
++};
++
+ /* PCIe and DP link configuration */
+ static struct cdns_reg_pairs pcie_dp_link_cmn_regs[] = {
+ 	{0x0003, PHY_PLL_CFG},
+@@ -3914,6 +3946,9 @@ static const struct cdns_torrent_data cdns_map_torrent = {
+ 			[TYPE_PCIE] = {
+ 				[NO_SSC] = &pcie_dp_link_cmn_vals,
+ 			},
++			[TYPE_USB] = {
++				[NO_SSC] = &usb_dp_link_cmn_vals,
++			},
+ 		},
+ 		[TYPE_PCIE] = {
+ 			[TYPE_NONE] = {
+@@ -3991,6 +4026,9 @@ static const struct cdns_torrent_data cdns_map_torrent = {
+ 				[EXTERNAL_SSC] = &usb_sgmii_link_cmn_vals,
+ 				[INTERNAL_SSC] = &usb_sgmii_link_cmn_vals,
+ 			},
++			[TYPE_DP] = {
++				[NO_SSC] = &usb_dp_link_cmn_vals,
++			},
+ 		},
+ 	},
+ 	.xcvr_diag_vals = {
+@@ -4001,6 +4039,9 @@ static const struct cdns_torrent_data cdns_map_torrent = {
+ 			[TYPE_PCIE] = {
+ 				[NO_SSC] = &dp_pcie_xcvr_diag_ln_vals,
+ 			},
++			[TYPE_USB] = {
++				[NO_SSC] = &dp_usb_xcvr_diag_ln_vals,
++			},
+ 		},
+ 		[TYPE_PCIE] = {
+ 			[TYPE_NONE] = {
+@@ -4078,6 +4119,9 @@ static const struct cdns_torrent_data cdns_map_torrent = {
+ 				[EXTERNAL_SSC] = &usb_sgmii_xcvr_diag_ln_vals,
+ 				[INTERNAL_SSC] = &usb_sgmii_xcvr_diag_ln_vals,
+ 			},
++			[TYPE_DP] = {
++				[NO_SSC] = &usb_dp_xcvr_diag_ln_vals,
++			},
+ 		},
+ 	},
+ 	.pcs_cmn_vals = {
+@@ -4102,6 +4146,9 @@ static const struct cdns_torrent_data cdns_map_torrent = {
+ 				[EXTERNAL_SSC] = &usb_phy_pcs_cmn_vals,
+ 				[INTERNAL_SSC] = &usb_phy_pcs_cmn_vals,
+ 			},
++			[TYPE_DP] = {
++				[NO_SSC] = &usb_phy_pcs_cmn_vals,
++			},
+ 		},
+ 	},
+ 	.cmn_vals = {
+@@ -4127,6 +4174,9 @@ static const struct cdns_torrent_data cdns_map_torrent = {
+ 				[TYPE_PCIE] = {
+ 					[NO_SSC] = &dp_100_no_ssc_cmn_vals,
+ 				},
++				[TYPE_USB] = {
++					[NO_SSC] = &sl_dp_100_no_ssc_cmn_vals,
++				},
+ 			},
+ 			[TYPE_PCIE] = {
+ 				[TYPE_NONE] = {
+@@ -4204,6 +4254,9 @@ static const struct cdns_torrent_data cdns_map_torrent = {
+ 					[EXTERNAL_SSC] = &sl_usb_100_no_ssc_cmn_vals,
+ 					[INTERNAL_SSC] = &sl_usb_100_int_ssc_cmn_vals,
+ 				},
++				[TYPE_DP] = {
++					[NO_SSC] = &usb_100_no_ssc_cmn_vals,
++				},
+ 			},
+ 		},
+ 	},
+@@ -4230,6 +4283,9 @@ static const struct cdns_torrent_data cdns_map_torrent = {
+ 				[TYPE_PCIE] = {
+ 					[NO_SSC] = &dp_100_no_ssc_tx_ln_vals,
+ 				},
++				[TYPE_USB] = {
++					[NO_SSC] = &dp_100_no_ssc_tx_ln_vals,
++				},
+ 			},
+ 			[TYPE_PCIE] = {
+ 				[TYPE_NONE] = {
+@@ -4307,6 +4363,9 @@ static const struct cdns_torrent_data cdns_map_torrent = {
+ 					[EXTERNAL_SSC] = &usb_100_no_ssc_tx_ln_vals,
+ 					[INTERNAL_SSC] = &usb_100_no_ssc_tx_ln_vals,
+ 				},
++				[TYPE_DP] = {
++					[NO_SSC] = &usb_100_no_ssc_tx_ln_vals,
++				},
+ 			},
+ 		},
+ 	},
+@@ -4333,6 +4392,9 @@ static const struct cdns_torrent_data cdns_map_torrent = {
+ 				[TYPE_PCIE] = {
+ 					[NO_SSC] = &dp_100_no_ssc_rx_ln_vals,
+ 				},
++				[TYPE_USB] = {
++					[NO_SSC] = &dp_100_no_ssc_rx_ln_vals,
++				},
+ 			},
+ 			[TYPE_PCIE] = {
+ 				[TYPE_NONE] = {
+@@ -4410,6 +4472,9 @@ static const struct cdns_torrent_data cdns_map_torrent = {
+ 					[EXTERNAL_SSC] = &usb_100_no_ssc_rx_ln_vals,
+ 					[INTERNAL_SSC] = &usb_100_no_ssc_rx_ln_vals,
+ 				},
++				[TYPE_DP] = {
++					[NO_SSC] = &usb_100_no_ssc_rx_ln_vals,
++				},
+ 			},
+ 		},
+ 	},
+@@ -4426,6 +4491,9 @@ static const struct cdns_torrent_data ti_j721e_map_torrent = {
+ 			[TYPE_PCIE] = {
+ 				[NO_SSC] = &pcie_dp_link_cmn_vals,
+ 			},
++			[TYPE_USB] = {
++				[NO_SSC] = &usb_dp_link_cmn_vals,
++			},
+ 		},
+ 		[TYPE_PCIE] = {
+ 			[TYPE_NONE] = {
+@@ -4503,6 +4571,9 @@ static const struct cdns_torrent_data ti_j721e_map_torrent = {
+ 				[EXTERNAL_SSC] = &usb_sgmii_link_cmn_vals,
+ 				[INTERNAL_SSC] = &usb_sgmii_link_cmn_vals,
+ 			},
++			[TYPE_DP] = {
++				[NO_SSC] = &usb_dp_link_cmn_vals,
++			},
+ 		},
+ 	},
+ 	.xcvr_diag_vals = {
+@@ -4513,6 +4584,9 @@ static const struct cdns_torrent_data ti_j721e_map_torrent = {
+ 			[TYPE_PCIE] = {
+ 				[NO_SSC] = &dp_pcie_xcvr_diag_ln_vals,
+ 			},
++			[TYPE_USB] = {
++				[NO_SSC] = &dp_usb_xcvr_diag_ln_vals,
++			},
+ 		},
+ 		[TYPE_PCIE] = {
+ 			[TYPE_NONE] = {
+@@ -4590,6 +4664,9 @@ static const struct cdns_torrent_data ti_j721e_map_torrent = {
+ 				[EXTERNAL_SSC] = &usb_sgmii_xcvr_diag_ln_vals,
+ 				[INTERNAL_SSC] = &usb_sgmii_xcvr_diag_ln_vals,
+ 			},
++			[TYPE_DP] = {
++				[NO_SSC] = &usb_dp_xcvr_diag_ln_vals,
++			},
+ 		},
+ 	},
+ 	.pcs_cmn_vals = {
+@@ -4614,6 +4691,9 @@ static const struct cdns_torrent_data ti_j721e_map_torrent = {
+ 				[EXTERNAL_SSC] = &usb_phy_pcs_cmn_vals,
+ 				[INTERNAL_SSC] = &usb_phy_pcs_cmn_vals,
+ 			},
++			[TYPE_DP] = {
++				[NO_SSC] = &usb_phy_pcs_cmn_vals,
++			},
+ 		},
+ 	},
+ 	.cmn_vals = {
+@@ -4639,6 +4719,9 @@ static const struct cdns_torrent_data ti_j721e_map_torrent = {
+ 				[TYPE_PCIE] = {
+ 					[NO_SSC] = &dp_100_no_ssc_cmn_vals,
+ 				},
++				[TYPE_USB] = {
++					[NO_SSC] = &sl_dp_100_no_ssc_cmn_vals,
++				},
+ 			},
+ 			[TYPE_PCIE] = {
+ 				[TYPE_NONE] = {
+@@ -4716,6 +4799,9 @@ static const struct cdns_torrent_data ti_j721e_map_torrent = {
+ 					[EXTERNAL_SSC] = &sl_usb_100_no_ssc_cmn_vals,
+ 					[INTERNAL_SSC] = &sl_usb_100_int_ssc_cmn_vals,
+ 				},
++				[TYPE_DP] = {
++					[NO_SSC] = &usb_100_no_ssc_cmn_vals,
++				},
+ 			},
+ 		},
+ 	},
+@@ -4742,6 +4828,9 @@ static const struct cdns_torrent_data ti_j721e_map_torrent = {
+ 				[TYPE_PCIE] = {
+ 					[NO_SSC] = &dp_100_no_ssc_tx_ln_vals,
+ 				},
++				[TYPE_USB] = {
++					[NO_SSC] = &dp_100_no_ssc_tx_ln_vals,
++				},
+ 			},
+ 			[TYPE_PCIE] = {
+ 				[TYPE_NONE] = {
+@@ -4819,6 +4908,9 @@ static const struct cdns_torrent_data ti_j721e_map_torrent = {
+ 					[EXTERNAL_SSC] = &usb_100_no_ssc_tx_ln_vals,
+ 					[INTERNAL_SSC] = &usb_100_no_ssc_tx_ln_vals,
+ 				},
++				[TYPE_DP] = {
++					[NO_SSC] = &usb_100_no_ssc_tx_ln_vals,
++				},
+ 			},
+ 		},
+ 	},
+@@ -4845,6 +4937,9 @@ static const struct cdns_torrent_data ti_j721e_map_torrent = {
+ 				[TYPE_PCIE] = {
+ 					[NO_SSC] = &dp_100_no_ssc_rx_ln_vals,
+ 				},
++				[TYPE_USB] = {
++					[NO_SSC] = &dp_100_no_ssc_rx_ln_vals,
++				},
+ 			},
+ 			[TYPE_PCIE] = {
+ 				[TYPE_NONE] = {
+@@ -4922,6 +5017,9 @@ static const struct cdns_torrent_data ti_j721e_map_torrent = {
+ 					[EXTERNAL_SSC] = &usb_100_no_ssc_rx_ln_vals,
+ 					[INTERNAL_SSC] = &usb_100_no_ssc_rx_ln_vals,
+ 				},
++				[TYPE_DP] = {
++					[NO_SSC] = &usb_100_no_ssc_rx_ln_vals,
++				},
+ 			},
+ 		},
+ 	},
+-- 
+2.41.0
+

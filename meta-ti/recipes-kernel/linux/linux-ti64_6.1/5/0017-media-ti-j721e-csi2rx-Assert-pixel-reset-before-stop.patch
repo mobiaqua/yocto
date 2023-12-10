@@ -1,0 +1,31 @@
+From 4bb75bcba992b11481645a3fa7c2892a1713d875 Mon Sep 17 00:00:00 2001
+From: Jai Luthra <j-luthra@ti.com>
+Date: Wed, 30 Aug 2023 20:40:21 +0530
+Subject: [PATCH 017/322] media: ti: j721e-csi2rx: Assert pixel reset before
+ stopping last stream
+
+Remove unused reg variable from probe().
+
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Reported-by: kernel test robot <lkp@intel.com>
+Closes: https://lore.kernel.org/oe-kbuild-all/202308301826.53F4CKHJ-lkp@intel.com/
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+index 66828f513841..2fb18fe5d6be 100644
+--- a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
++++ b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+@@ -1619,7 +1619,6 @@ static int ti_csi2rx_probe(struct platform_device *pdev)
+ 	struct ti_csi2rx_dev *csi;
+ 	struct resource *res;
+ 	int ret, i, count;
+-	unsigned int reg;
+ 
+ 	csi = devm_kzalloc(&pdev->dev, sizeof(*csi), GFP_KERNEL);
+ 	if (!csi)
+-- 
+2.43.0
+

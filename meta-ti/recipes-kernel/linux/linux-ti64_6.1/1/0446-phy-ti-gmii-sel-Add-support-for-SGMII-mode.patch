@@ -1,0 +1,47 @@
+From d2d762638a0f5dc8969cbf1faf7185e3dcab2241 Mon Sep 17 00:00:00 2001
+From: Siddharth Vadapalli <s-vadapalli@ti.com>
+Date: Mon, 24 Apr 2023 15:25:58 +0530
+Subject: [PATCH 446/508] phy: ti: gmii-sel: Add support for SGMII mode
+
+Add support to configure the CPSW MAC's PHY in SGMII mode if the SoC
+supports it. The extra_modes member of the phy_gmii_sel_soc_data struct
+corresponding to the SoC is used to determine whether or not the SoC
+supports SGMII mode.
+
+Link: https://lore.kernel.org/r/20230309063514.398705-2-s-vadapalli@ti.com/
+Signed-off-by: Siddharth Vadapalli <s-vadapalli@ti.com>
+Reviewed-by: Roger Quadros <rogerq@kernel.org>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/phy/ti/phy-gmii-sel.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/phy/ti/phy-gmii-sel.c b/drivers/phy/ti/phy-gmii-sel.c
+index 8c667819c39a..5e16d8dd5bee 100644
+--- a/drivers/phy/ti/phy-gmii-sel.c
++++ b/drivers/phy/ti/phy-gmii-sel.c
+@@ -23,6 +23,7 @@
+ #define AM33XX_GMII_SEL_MODE_RGMII	2
+ 
+ /* J72xx SoC specific definitions for the CONTROL port */
++#define J72XX_GMII_SEL_MODE_SGMII	3
+ #define J72XX_GMII_SEL_MODE_QSGMII	4
+ #define J72XX_GMII_SEL_MODE_QSGMII_SUB	6
+ 
+@@ -106,6 +107,13 @@ static int phy_gmii_sel_mode(struct phy *phy, enum phy_mode mode, int submode)
+ 			gmii_sel_mode = J72XX_GMII_SEL_MODE_QSGMII_SUB;
+ 		break;
+ 
++	case PHY_INTERFACE_MODE_SGMII:
++		if (!(soc_data->extra_modes & BIT(PHY_INTERFACE_MODE_SGMII)))
++			goto unsupported;
++		else
++			gmii_sel_mode = J72XX_GMII_SEL_MODE_SGMII;
++		break;
++
+ 	default:
+ 		goto unsupported;
+ 	}
+-- 
+2.41.0
+
