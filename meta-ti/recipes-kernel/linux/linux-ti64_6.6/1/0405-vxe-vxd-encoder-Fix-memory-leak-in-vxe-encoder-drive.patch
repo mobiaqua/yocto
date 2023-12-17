@@ -1,0 +1,40 @@
+From 83aab53b226a997f8f9a2f0325d772d3fb1cf987 Mon Sep 17 00:00:00 2001
+From: Sidraya <sidraya.bj@pathpartnertech.com>
+Date: Tue, 25 Apr 2023 17:15:02 -0500
+Subject: [PATCH 405/508] vxe-vxd: encoder: Fix memory leak in vxe encoder
+ driver
+
+Fix memory leak in topaz_video_destroy_context
+in vxe encoder driver.
+
+Signed-off-by: Joe <joe.shen@ti.com>
+Signed-off-by: Sidraya <sidraya.bj@pathpartnertech.com>
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+---
+ drivers/media/platform/img/vxe-vxd/encoder/topaz_api.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/media/platform/img/vxe-vxd/encoder/topaz_api.c b/drivers/media/platform/img/vxe-vxd/encoder/topaz_api.c
+index 91d70524b887..7534ad5f836a 100644
+--- a/drivers/media/platform/img/vxe-vxd/encoder/topaz_api.c
++++ b/drivers/media/platform/img/vxe-vxd/encoder/topaz_api.c
+@@ -3103,10 +3103,16 @@ static int topaz_video_destroy_context(struct topaz_stream_context *str_ctx)
+ 			 &video->coded_package[i]->mtx_info.code_package_fw_buffer->mem_info))
+ 			IMG_DBG_ASSERT("Free failed" == NULL);
+ 
++		kfree(video->coded_package[i]->mtx_info.code_package_fw_buffer);
++		video->coded_package[i]->mtx_info.code_package_fw_buffer = NULL;
++
+ 		if (topaz_mmu_stream_free(str_ctx->mmu_ctx,
+ 					  &video->coded_package[i]->header_buffer->mem_info))
+ 			IMG_DBG_ASSERT("Free failed" == NULL);
+ 
++			kfree(video->coded_package[i]->header_buffer);
++			video->coded_package[i]->header_buffer = NULL;
++
+ 		kfree(video->coded_package[i]);
+ 		video->coded_package[i] = NULL;
+ 	}
+-- 
+2.41.0
+

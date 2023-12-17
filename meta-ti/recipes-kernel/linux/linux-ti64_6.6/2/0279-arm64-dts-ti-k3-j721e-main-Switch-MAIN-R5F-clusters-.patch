@@ -1,0 +1,48 @@
+From 764a7bb8cd089b6e0d6ca1b66d6473f88ff59b7d Mon Sep 17 00:00:00 2001
+From: Suman Anna <s-anna@ti.com>
+Date: Thu, 1 Jun 2023 01:24:24 +0530
+Subject: [PATCH 279/434] arm64: dts: ti: k3-j721e-main: Switch MAIN R5F
+ clusters to Split-mode
+
+J721E SoCs have two R5F clusters in the MAIN domain, and both of these
+are configured for LockStep mode at the moment. Switch both of these R5F
+clusters to Split mode by default to maximize the number of R5F cores.
+The MCU R5F cluster continues to be in the preferred LockStep mode.
+
+Note that this configuration is the default for remoteproc mode (kernel
+driver boots the R5F processors). These will be overridden for early-booted
+remoteprocs through the corresponding IPC-only support in the K3 R5F
+remoteproc driver.
+
+Signed-off-by: Suman Anna <s-anna@ti.com>
+Signed-off-by: Apurva Nandan <a-nandan@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index 3c4a907c168a..c23bc128d247 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -1790,7 +1790,7 @@ watchdog1: watchdog@2210000 {
+ 
+ 	main_r5fss0: r5fss@5c00000 {
+ 		compatible = "ti,j721e-r5fss";
+-		ti,cluster-mode = <1>;
++		ti,cluster-mode = <0>;
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
+ 		ranges = <0x5c00000 0x00 0x5c00000 0x20000>,
+@@ -1830,7 +1830,7 @@ main_r5fss0_core1: r5f@5d00000 {
+ 
+ 	main_r5fss1: r5fss@5e00000 {
+ 		compatible = "ti,j721e-r5fss";
+-		ti,cluster-mode = <1>;
++		ti,cluster-mode = <0>;
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
+ 		ranges = <0x5e00000 0x00 0x5e00000 0x20000>,
+-- 
+2.41.0
+

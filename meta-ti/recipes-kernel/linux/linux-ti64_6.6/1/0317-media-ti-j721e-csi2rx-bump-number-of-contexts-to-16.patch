@@ -1,0 +1,46 @@
+From 5dc358032f3146996be8f98378a1d9359f309f79 Mon Sep 17 00:00:00 2001
+From: Pratyush Yadav <p.yadav@ti.com>
+Date: Fri, 21 Apr 2023 11:33:44 +0530
+Subject: [PATCH 317/508] media: ti: j721e-csi2rx: bump number of contexts to
+ 16
+
+Each context can capture one data format or virtual channel number.
+Populate 16 contexts to allow capturing up to 16 video streams in
+parallel. For example, one can capture 1 RGB + 1 IR + 1 metadata stream
+for all 4 virtual channels, resulting in 12 streams total.
+
+The hardware actually has 32 DMA contexts. But that would result in 32
+/dev/videoX nodes which seems excessive. Keep the number at 16 for now
+which is more reasonable.
+
+Signed-off-by: Pratyush Yadav <p.yadav@ti.com>
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+---
+ drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+index e151abe99820..7ae98a401cb8 100644
+--- a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
++++ b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+@@ -38,7 +38,7 @@
+ #define SHIM_PSI_CFG0_DST_TAG		GENMASK(31, 16)
+ 
+ #define PSIL_WORD_SIZE_BYTES		16
+-#define TI_CSI2RX_NUM_CTX		1
++#define TI_CSI2RX_NUM_CTX		16
+ 
+ /*
+  * There are no hard limits on the width or height. The DMA engine can handle
+@@ -51,7 +51,7 @@
+ 
+ #define TI_CSI2RX_PAD_SINK		0
+ #define TI_CSI2RX_PAD_FIRST_SOURCE	1
+-#define TI_CSI2RX_NUM_SOURCE_PADS	1
++#define TI_CSI2RX_NUM_SOURCE_PADS	TI_CSI2RX_NUM_CTX
+ #define TI_CSI2RX_NUM_PADS		(1 + TI_CSI2RX_NUM_SOURCE_PADS)
+ 
+ struct ti_csi2rx_fmt {
+-- 
+2.41.0
+

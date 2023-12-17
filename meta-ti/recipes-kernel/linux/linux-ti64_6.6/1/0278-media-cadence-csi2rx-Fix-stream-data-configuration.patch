@@ -1,0 +1,53 @@
+From f62e1dcc57bf180c8d607b08c6927a19e50cef08 Mon Sep 17 00:00:00 2001
+From: Pratyush Yadav <p.yadav@ti.com>
+Date: Thu, 20 Apr 2023 11:54:20 +0530
+Subject: [PATCH 278/508] media: cadence: csi2rx: Fix stream data configuration
+
+Firstly, there is no VC_EN bit present in the STREAM_DATA_CFG register.
+Bit 31 is part of the VL_SELECT field. Remove it completely.
+
+Secondly, it makes little sense to enable ith virtual channel for ith
+stream. Sure, there might be a use-case that demands it. But there might
+also be a use case that demands all streams to use the 0th virtual
+channel. Prefer this case over the former because it is less arbitrary
+and also makes it very clear what the limitations of the current driver
+is instead of giving a false impression that multiple virtual channels
+are supported.
+
+Signed-off-by: Pratyush Yadav <p.yadav@ti.com>
+Signed-off-by: Vaishnav Achath <vaishnav.a@ti.com>
+Reviewed-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/media/platform/cadence/cdns-csi2rx.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/platform/cadence/cdns-csi2rx.c b/drivers/media/platform/cadence/cdns-csi2rx.c
+index 2e300e38954c..3e6dc5220df6 100644
+--- a/drivers/media/platform/cadence/cdns-csi2rx.c
++++ b/drivers/media/platform/cadence/cdns-csi2rx.c
+@@ -48,7 +48,6 @@
+ #define CSI2RX_STREAM_STATUS_RDY			BIT(31)
+ 
+ #define CSI2RX_STREAM_DATA_CFG_REG(n)		(CSI2RX_STREAM_BASE(n) + 0x008)
+-#define CSI2RX_STREAM_DATA_CFG_EN_VC_SELECT		BIT(31)
+ #define CSI2RX_STREAM_DATA_CFG_VC_SELECT(n)		BIT((n) + 16)
+ 
+ #define CSI2RX_STREAM_CFG_REG(n)		(CSI2RX_STREAM_BASE(n) + 0x00c)
+@@ -257,8 +256,11 @@ static int csi2rx_start(struct csi2rx_priv *csi2rx)
+ 		writel(CSI2RX_STREAM_CFG_FIFO_MODE_LARGE_BUF,
+ 		       csi2rx->base + CSI2RX_STREAM_CFG_REG(i));
+ 
+-		writel(CSI2RX_STREAM_DATA_CFG_EN_VC_SELECT |
+-		       CSI2RX_STREAM_DATA_CFG_VC_SELECT(i),
++		/*
++		 * Enable one virtual channel. When multiple virtual channels
++		 * are supported this will have to be changed.
++		 */
++		writel(CSI2RX_STREAM_DATA_CFG_VC_SELECT(0),
+ 		       csi2rx->base + CSI2RX_STREAM_DATA_CFG_REG(i));
+ 
+ 		writel(CSI2RX_STREAM_CTRL_START,
+-- 
+2.41.0
+

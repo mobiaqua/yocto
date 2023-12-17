@@ -1,0 +1,130 @@
+From 7e6b43c5983b8c0913a37dfb7f8ef14cefdbaa22 Mon Sep 17 00:00:00 2001
+From: Siddharth Vadapalli <s-vadapalli@ti.com>
+Date: Thu, 16 Nov 2023 15:45:10 +0530
+Subject: [PATCH 213/322] dmaengine: ti: k3-udma-glue: Add function to parse
+ channel by ID
+
+The existing helper function of_k3_udma_glue_parse() fetches the DMA
+Channel thread ID from the device-tree node. This makes it necessary to
+have a device-tree node with the Channel thread IDs populated. However,
+in the case where the thread ID is known by alternate methods (an
+example being that of Firmware running on remote core sharing details of
+the thread IDs), there is no equivalent function to implement the
+functionality of the existing of_k3_udma_glue_parse() function.
+
+Add the of_k3_udma_glue_parse_chn_by_id() helper function which accepts
+the thread ID as an argument, thereby making it unnecessary to have a
+device-tree node for obtaining the thread ID.
+
+Since of_k3_udma_glue_parse() and of_k3_udma_glue_parse_chn_by_id()
+share a lot of code in common, create a new function to handle the
+common code which is named as of_k3_udma_glue_parse_chn_common().
+
+Signed-off-by: Siddharth Vadapalli <s-vadapalli@ti.com>
+Reviewed-by: Jai Luthra <j-luthra@ti.com>
+Tested-by: MD Danish Anwar <danishanwar@ti.com>
+---
+ drivers/dma/ti/k3-udma-glue.c | 73 +++++++++++++++++++++++------------
+ 1 file changed, 48 insertions(+), 25 deletions(-)
+
+diff --git a/drivers/dma/ti/k3-udma-glue.c b/drivers/dma/ti/k3-udma-glue.c
+index b0c9572b0d02..0f07c90c5e2a 100644
+--- a/drivers/dma/ti/k3-udma-glue.c
++++ b/drivers/dma/ti/k3-udma-glue.c
+@@ -111,6 +111,35 @@ static int of_k3_udma_glue_parse(struct device_node *udmax_np,
+ 	return 0;
+ }
+ 
++static int of_k3_udma_glue_parse_chn_common(struct k3_udma_glue_common *common, u32 thread_id,
++					    bool tx_chn)
++{
++	if (tx_chn && !(thread_id & K3_PSIL_DST_THREAD_ID_OFFSET))
++		return -EINVAL;
++
++	if (!tx_chn && (thread_id & K3_PSIL_DST_THREAD_ID_OFFSET))
++		return -EINVAL;
++
++	/* get psil endpoint config */
++	common->ep_config = psil_get_ep_config(thread_id);
++	if (IS_ERR(common->ep_config)) {
++		dev_err(common->dev,
++			"No configuration for psi-l thread 0x%04x\n",
++			thread_id);
++		return PTR_ERR(common->ep_config);
++	}
++
++	common->epib = common->ep_config->needs_epib;
++	common->psdata_size = common->ep_config->psd_size;
++
++	if (tx_chn)
++		common->dst_thread = thread_id;
++	else
++		common->src_thread = thread_id;
++
++	return 0;
++}
++
+ static int of_k3_udma_glue_parse_chn(struct device_node *chn_np,
+ 		const char *name, struct k3_udma_glue_common *common,
+ 		bool tx_chn)
+@@ -153,38 +182,32 @@ static int of_k3_udma_glue_parse_chn(struct device_node *chn_np,
+ 		common->atype_asel = dma_spec.args[1];
+ 	}
+ 
+-	if (tx_chn && !(thread_id & K3_PSIL_DST_THREAD_ID_OFFSET)) {
+-		ret = -EINVAL;
+-		goto out_put_spec;
+-	}
++	ret = of_k3_udma_glue_parse_chn_common(common, thread_id, tx_chn);
+ 
+-	if (!tx_chn && (thread_id & K3_PSIL_DST_THREAD_ID_OFFSET)) {
+-		ret = -EINVAL;
+-		goto out_put_spec;
+-	}
++out_put_spec:
++	of_node_put(dma_spec.np);
++	return ret;
++}
+ 
+-	/* get psil endpoint config */
+-	common->ep_config = psil_get_ep_config(thread_id);
+-	if (IS_ERR(common->ep_config)) {
+-		dev_err(common->dev,
+-			"No configuration for psi-l thread 0x%04x\n",
+-			thread_id);
+-		ret = PTR_ERR(common->ep_config);
+-		goto out_put_spec;
+-	}
++static int
++of_k3_udma_glue_parse_chn_by_id(struct device_node *udmax_np, struct k3_udma_glue_common *common,
++				bool tx_chn, u32 thread_id)
++{
++	int ret = 0;
+ 
+-	common->epib = common->ep_config->needs_epib;
+-	common->psdata_size = common->ep_config->psd_size;
++	if (unlikely(!udmax_np))
++		return -EINVAL;
+ 
+-	if (tx_chn)
+-		common->dst_thread = thread_id;
+-	else
+-		common->src_thread = thread_id;
++	ret = of_k3_udma_glue_parse(udmax_np, common);
++	if (ret)
++		goto out_put_spec;
++
++	ret = of_k3_udma_glue_parse_chn_common(common, thread_id, tx_chn);
+ 
+ out_put_spec:
+-	of_node_put(dma_spec.np);
++	of_node_put(udmax_np);
+ 	return ret;
+-};
++}
+ 
+ static void k3_udma_glue_dump_tx_chn(struct k3_udma_glue_tx_channel *tx_chn)
+ {
+-- 
+2.43.0
+

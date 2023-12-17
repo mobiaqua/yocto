@@ -1,0 +1,77 @@
+From e8c42b2518663e076370c4531baf176f7495601a Mon Sep 17 00:00:00 2001
+From: Jai Luthra <j-luthra@ti.com>
+Date: Tue, 9 May 2023 14:15:43 +0530
+Subject: [PATCH 046/434] media: cadence: csi2rx: Use new enable stream APIs
+
+The enable_streams() API in v4l2 supports passing a bitmask to enable
+each pad/stream combination individually on any media subdev instead of
+doing s_stream(1) to start all streams on the subdev at once.
+
+This API is implemented by ds90ub960 driver (FPDLink deser) and thus the
+caller (cdns-csi2x) is required to use it. For now we only enable
+stream0.
+
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/media/platform/cadence/cdns-csi2rx.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/platform/cadence/cdns-csi2rx.c b/drivers/media/platform/cadence/cdns-csi2rx.c
+index 2b45a3c80038..e9e89197e81b 100644
+--- a/drivers/media/platform/cadence/cdns-csi2rx.c
++++ b/drivers/media/platform/cadence/cdns-csi2rx.c
+@@ -240,10 +240,18 @@ static int csi2rx_configure_ext_dphy(struct csi2rx_priv *csi2rx)
+ static int csi2rx_start(struct csi2rx_priv *csi2rx)
+ {
+ 	unsigned int i;
++	struct media_pad *remote_pad;
+ 	unsigned long lanes_used = 0;
+ 	u32 reg;
+ 	int ret;
+ 
++	remote_pad = media_pad_remote_pad_first(&csi2rx->pads[CSI2RX_PAD_SINK]);
++	if (!remote_pad) {
++		dev_err(csi2rx->dev,
++			"Failed to find connected source\n");
++		return -ENODEV;
++	}
++
+ 	ret = clk_prepare_enable(csi2rx->p_clk);
+ 	if (ret)
+ 		return ret;
+@@ -271,7 +279,8 @@ static int csi2rx_start(struct csi2rx_priv *csi2rx)
+ 
+ 	writel(reg, csi2rx->base + CSI2RX_STATIC_CFG_REG);
+ 
+-	ret = v4l2_subdev_call(csi2rx->source_subdev, video, s_stream, true);
++	ret = v4l2_subdev_enable_streams(csi2rx->source_subdev,
++					 remote_pad->index, BIT(0));
+ 	if (ret)
+ 		goto err_disable_pclk;
+ 
+@@ -346,6 +355,7 @@ static int csi2rx_start(struct csi2rx_priv *csi2rx)
+ 
+ static void csi2rx_stop(struct csi2rx_priv *csi2rx)
+ {
++	struct media_pad *remote_pad;
+ 	unsigned int i;
+ 	u32 val;
+ 	int ret;
+@@ -370,8 +380,12 @@ static void csi2rx_stop(struct csi2rx_priv *csi2rx)
+ 
+ 	clk_disable_unprepare(csi2rx->p_clk);
+ 
+-	if (v4l2_subdev_call(csi2rx->source_subdev, video, s_stream, false))
++	remote_pad = media_pad_remote_pad_first(&csi2rx->pads[CSI2RX_PAD_SINK]);
++	if (!remote_pad ||
++	    v4l2_subdev_disable_streams(csi2rx->source_subdev,
++					remote_pad->index, BIT(0))) {
+ 		dev_warn(csi2rx->dev, "Couldn't disable our subdev\n");
++	}
+ 
+ 	if (csi2rx->dphy) {
+ 		writel(0, csi2rx->base + CSI2RX_DPHY_LANE_CTRL_REG);
+-- 
+2.41.0
+

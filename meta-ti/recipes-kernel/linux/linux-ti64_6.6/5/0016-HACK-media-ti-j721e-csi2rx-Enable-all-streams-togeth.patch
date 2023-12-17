@@ -1,0 +1,159 @@
+From 328f23cd8810f3b742ec476157dabea93f998586 Mon Sep 17 00:00:00 2001
+From: Jai Luthra <j-luthra@ti.com>
+Date: Thu, 31 Aug 2023 15:19:31 +0530
+Subject: [PATCH 016/322] HACK: media: ti: j721e-csi2rx: Enable all streams
+ together
+
+Start capture on all incoming streams (on the sink pad) together when
+the first stream start is requested. Similarly, stop all streams when
+the last stream is stopped.
+
+This batching together is a HACK done to match how things were done
+before the introduction of v4l2_subdev_enable_streams() APIs.
+
+Without this HACK, some applications like gstreamer are unable to stream
+two separate sensors in a single command. This is due to delays
+introduced in programming each sensor over I2C, one sensor starts
+streaming much before the other one, and fills up the internal HW FIFOs.
+To make matters worse, the application won't queue empty buffers until
+it receives one (1) filled buffer from every video node, causing the
+whole pipeline to be stuck.
+
+This temporary stop-gap solution will be reverted when we have a
+reliable fix to handle this hardware limitation.
+
+With the current approach a different HW limitation is exposed, where
+CSI packets from sensors that were not started by the userspace are not
+filtered by any SHIM output channel, so those packets end up on
+RX0 chan corrupting the stream. The recommended workaround is to not
+route any stream to the first video node corresponding to RX0 for
+multi-stream scenarios, which can be handled by userspace.
+
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Reviewed-by: Devarsh Thakkar <devarsht@ti.com>
+Tested-by: Rahul T R <r-ravikumar@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ .../platform/ti/j721e-csi2rx/j721e-csi2rx.c   | 65 +++++++++++++------
+ 1 file changed, 46 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+index c1213d381718..66828f513841 100644
+--- a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
++++ b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+@@ -128,6 +128,7 @@ struct ti_csi2rx_dev {
+ 	struct v4l2_subdev		*source;
+ 	struct v4l2_subdev		subdev;
+ 	struct ti_csi2rx_ctx		ctx[TI_CSI2RX_MAX_CTX];
++	u64				enabled_streams_mask;
+ };
+ 
+ static const struct ti_csi2rx_fmt formats[] = {
+@@ -1150,32 +1151,52 @@ static int ti_csi2rx_sd_init_cfg(struct v4l2_subdev *sd,
+ 	return _ti_csi2rx_sd_set_routing(sd, state, &routing);
+ }
+ 
++static int ti_csi2rx_sd_all_sink_streams(struct v4l2_subdev_state *state)
++{
++	struct v4l2_subdev_krouting *routing = &state->routing;
++	u64 sink_streams = 0;
++	int i;
++
++	for (i = 0; i < routing->num_routes; i++) {
++		struct v4l2_subdev_route *r = &routing->routes[i];
++
++		if (r->sink_pad == TI_CSI2RX_PAD_SINK)
++			sink_streams |= BIT(r->sink_stream);
++	}
++
++	return sink_streams;
++}
++
+ static int ti_csi2rx_sd_enable_streams(struct v4l2_subdev *sd,
+ 				       struct v4l2_subdev_state *state,
+ 				       u32 pad, u64 streams_mask)
+ {
+ 	struct ti_csi2rx_dev *csi = to_csi2rx_dev(sd);
+ 	struct media_pad *remote_pad;
+-	u64 sink_streams;
+ 	int ret = 0;
+ 
+ 	remote_pad = media_entity_remote_source_pad_unique(&csi->subdev.entity);
+ 	if (!remote_pad)
+ 		return -ENODEV;
+-	sink_streams = v4l2_subdev_state_xlate_streams(state, pad,
+-						       TI_CSI2RX_PAD_SINK,
+-						       &streams_mask);
+-
+-	ret = v4l2_subdev_enable_streams(csi->source, remote_pad->index,
+-					 sink_streams);
+-	if (ret)
+-		return ret;
+ 
+ 	mutex_lock(&csi->mutex);
++	if (!csi->enable_count) {
++		u64 sink_streams;
++
++		sink_streams = ti_csi2rx_sd_all_sink_streams(state);
++		dev_dbg(csi->dev, "Enabling all streams (%llx) on sink.\n",
++			sink_streams);
++		ret = v4l2_subdev_enable_streams(csi->source, remote_pad->index,
++						 sink_streams);
++		if (ret)
++			goto out;
++		csi->enabled_streams_mask = sink_streams;
++	}
++
+ 	csi->enable_count++;
++out:
+ 	mutex_unlock(&csi->mutex);
+-
+-	return 0;
++	return ret;
+ }
+ 
+ static int ti_csi2rx_sd_disable_streams(struct v4l2_subdev *sd,
+@@ -1184,15 +1205,11 @@ static int ti_csi2rx_sd_disable_streams(struct v4l2_subdev *sd,
+ {
+ 	struct ti_csi2rx_dev *csi = to_csi2rx_dev(sd);
+ 	struct media_pad *remote_pad;
+-	u64 sink_streams;
+ 	int ret = 0;
+ 
+ 	remote_pad = media_entity_remote_source_pad_unique(&csi->subdev.entity);
+ 	if (!remote_pad)
+ 		return -ENODEV;
+-	sink_streams = v4l2_subdev_state_xlate_streams(state, pad,
+-						       TI_CSI2RX_PAD_SINK,
+-						       &streams_mask);
+ 
+ 	mutex_lock(&csi->mutex);
+ 	if (csi->enable_count == 0) {
+@@ -1200,10 +1217,20 @@ static int ti_csi2rx_sd_disable_streams(struct v4l2_subdev *sd,
+ 		goto out;
+ 	}
+ 
+-	ret = v4l2_subdev_disable_streams(csi->source, remote_pad->index,
+-					  sink_streams);
+-	if (!ret)
+-		--csi->enable_count;
++	if (csi->enable_count == 1) {
++		u64 sink_streams;
++
++		sink_streams = ti_csi2rx_sd_all_sink_streams(state);
++		dev_dbg(csi->dev, "Disabling all streams (%llx) on sink.\n",
++			sink_streams);
++		ret = v4l2_subdev_disable_streams(csi->source, remote_pad->index,
++						  sink_streams);
++		if (ret)
++			goto out;
++		csi->enabled_streams_mask = 0;
++	}
++
++	--csi->enable_count;
+ out:
+ 	mutex_unlock(&csi->mutex);
+ 	return ret;
+-- 
+2.43.0
+

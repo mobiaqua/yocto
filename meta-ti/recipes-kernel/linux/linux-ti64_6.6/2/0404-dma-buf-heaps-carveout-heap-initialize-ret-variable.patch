@@ -1,0 +1,39 @@
+From 0a8e49eea816e2a307169b600f5f76d19bcb15a6 Mon Sep 17 00:00:00 2001
+From: Guillaume La Roque <glaroque@baylibre.com>
+Date: Thu, 15 Jun 2023 11:47:12 +0200
+Subject: [PATCH 404/434] dma-buf: heaps: carveout-heap: initialize ret
+ variable
+
+When we use clang to build with -Wall and -Werror flags we can see this issue :
+
+drivers/dma-buf/heaps/carveout-heap.c:272:18: error: variable 'ret' is
+uninitialized when used here [-Werror,-Wuninitialized]
+                return ERR_PTR(ret);
+                               ^~~
+Initialize ret variable to fix it.
+
+Fixes: 0623041e9247 ("dma-buf: heaps: Add Carveout heap to DMA-BUF Heaps")
+Signed-off-by: Guillaume La Roque <glaroque@baylibre.com>
+Acked-by: Andrew Davis <afd@ti.com>
+Reviewed-by: Mattijs Korpershoek <mkorpershoek@baylibre.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/dma-buf/heaps/carveout-heap.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/dma-buf/heaps/carveout-heap.c b/drivers/dma-buf/heaps/carveout-heap.c
+index 18d61a1da65c..10169f6c3474 100644
+--- a/drivers/dma-buf/heaps/carveout-heap.c
++++ b/drivers/dma-buf/heaps/carveout-heap.c
+@@ -265,7 +265,7 @@ static struct dma_buf *carveout_dma_heap_allocate(struct dma_heap *heap,
+ 
+ 	DEFINE_DMA_BUF_EXPORT_INFO(exp_info);
+ 	struct dma_buf *dmabuf;
+-	int ret;
++	int ret = 0;
+ 
+ 	buffer = kzalloc(sizeof(*buffer), GFP_KERNEL);
+ 	if (!buffer)
+-- 
+2.41.0
+

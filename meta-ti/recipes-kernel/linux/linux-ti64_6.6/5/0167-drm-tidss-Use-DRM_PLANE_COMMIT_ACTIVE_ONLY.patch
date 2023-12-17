@@ -1,0 +1,58 @@
+From 3b5a1d7acb42cff02658d43e12babb62fb6ce7e3 Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Date: Wed, 8 Nov 2023 21:25:25 +0530
+Subject: [PATCH 167/322] drm/tidss: Use DRM_PLANE_COMMIT_ACTIVE_ONLY
+
+At the moment the driver does not use DRM_PLANE_COMMIT_ACTIVE_ONLY, but
+still checks for crtc->state->active in tidss_crtc_atomic_flush(), and
+skips the flush if the crtc is not active.
+
+The exact reason why DRM_PLANE_COMMIT_ACTIVE_ONLY is not used has been
+lost in history. DRM_PLANE_COMMIT_ACTIVE_ONLY does also affect the plane
+updates, and I think the issue was related to multi-display systems and
+moving planes between the displays. However, it is possible the issue
+was only present on the older DSS hardware, handled by the omapdrm
+driver (on which the tidss driver is loosely based).
+
+Reviewing the code related to DRM_PLANE_COMMIT_ACTIVE_ONLY does not show
+any issues, and testing on J7 EVM with two displays works fine.
+
+Change the driver to use DRM_PLANE_COMMIT_ACTIVE_ONLY.
+
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+---
+ drivers/gpu/drm/tidss/tidss_crtc.c | 4 ----
+ drivers/gpu/drm/tidss/tidss_kms.c  | 2 +-
+ 2 files changed, 1 insertion(+), 5 deletions(-)
+
+diff --git a/drivers/gpu/drm/tidss/tidss_crtc.c b/drivers/gpu/drm/tidss/tidss_crtc.c
+index 3f1fd3235b58..d6428195c0fb 100644
+--- a/drivers/gpu/drm/tidss/tidss_crtc.c
++++ b/drivers/gpu/drm/tidss/tidss_crtc.c
+@@ -175,10 +175,6 @@ static void tidss_crtc_atomic_flush(struct drm_crtc *crtc,
+ 		drm_atomic_crtc_needs_modeset(crtc->state) ? "needs" : "doesn't need",
+ 		crtc->state->event);
+ 
+-	/* There is nothing to do if CRTC is not going to be enabled. */
+-	if (!crtc->state->active)
+-		return;
+-
+ 	/*
+ 	 * Flush CRTC changes with go bit only if new modeset is not
+ 	 * coming, so CRTC is enabled trough out the commit.
+diff --git a/drivers/gpu/drm/tidss/tidss_kms.c b/drivers/gpu/drm/tidss/tidss_kms.c
+index 140e85bd4bd8..dcb9ca591311 100644
+--- a/drivers/gpu/drm/tidss/tidss_kms.c
++++ b/drivers/gpu/drm/tidss/tidss_kms.c
+@@ -32,7 +32,7 @@ static void tidss_atomic_commit_tail(struct drm_atomic_state *old_state)
+ 	tidss_runtime_get(tidss);
+ 
+ 	drm_atomic_helper_commit_modeset_disables(ddev, old_state);
+-	drm_atomic_helper_commit_planes(ddev, old_state, 0);
++	drm_atomic_helper_commit_planes(ddev, old_state, DRM_PLANE_COMMIT_ACTIVE_ONLY);
+ 	drm_atomic_helper_commit_modeset_enables(ddev, old_state);
+ 
+ 	drm_atomic_helper_commit_hw_done(old_state);
+-- 
+2.43.0
+

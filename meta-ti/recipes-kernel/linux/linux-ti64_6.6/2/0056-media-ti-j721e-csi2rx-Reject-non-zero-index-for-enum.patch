@@ -1,0 +1,33 @@
+From 7b793821e221ab280478d5c84146caf37ae8181e Mon Sep 17 00:00:00 2001
+From: Jai Luthra <j-luthra@ti.com>
+Date: Tue, 9 May 2023 14:15:53 +0530
+Subject: [PATCH 056/434] media: ti: j721e-csi2rx: Reject non-zero index for
+ enum_framesizes
+
+For the VIDIOC_ENUM_FRAMESIZES ioctl, the driver enumerates only a
+single struct with the whole range of valid framesizes for step-wise or
+continuous mode. Thus the index should never be greater than 0, and the
+driver should return EINVAL for index > 0.
+
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+index 5a2f8e4c36ae..c404ef21f499 100644
+--- a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
++++ b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+@@ -372,7 +372,7 @@ static int ti_csi2rx_enum_framesizes(struct file *file, void *fh,
+ 	u8 bpp;
+ 
+ 	fmt = find_format_by_pix(fsize->pixel_format);
+-	if (!fmt)
++	if (!fmt || fsize->index != 0)
+ 		return -EINVAL;
+ 
+ 	bpp = ALIGN(fmt->bpp, 8);
+-- 
+2.41.0
+

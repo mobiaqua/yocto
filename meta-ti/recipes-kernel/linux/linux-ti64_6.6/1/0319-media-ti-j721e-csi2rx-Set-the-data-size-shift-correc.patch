@@ -1,0 +1,88 @@
+From 6f0944cd581dd6e34e95d69e88427b7aabfb1eb2 Mon Sep 17 00:00:00 2001
+From: Pratyush Yadav <p.yadav@ti.com>
+Date: Fri, 21 Apr 2023 11:33:46 +0530
+Subject: [PATCH 319/508] media: ti: j721e-csi2rx: Set the data size shift
+ correctly
+
+The SIZE_CFG field in SHIM_DMACNTX field needs to be set correctly for
+the image to be unpacked correctly. Currently, the field is set to the
+default value of 0 which works fine for YUV422-8 and RAW6-8. But for other
+formats like RAW10-16 or YUV422-10 it results in the second byte of the
+pixel being dropped.
+
+Introduce a new member to ti_csi2rx_fmt that stores the size and set it
+when configuring the DMA context to make sure data is unpacked
+correctly.
+
+Signed-off-by: Pratyush Yadav <p.yadav@ti.com>
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+---
+ drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+index cfc1e460d514..f367e8e9422d 100644
+--- a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
++++ b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+@@ -27,11 +27,15 @@
+ #define SHIM_DMACNTX(i)			(0x20 + ((i) * 0x20))
+ #define SHIM_DMACNTX_EN			BIT(31)
+ #define SHIM_DMACNTX_YUV422		GENMASK(27, 26)
++#define SHIM_DMACNTX_SIZE		GENMASK(21, 20)
+ #define SHIM_DMACNTX_FMT		GENMASK(5, 0)
+ #define SHIM_DMACNTX_UYVY		0
+ #define SHIM_DMACNTX_VYUY		1
+ #define SHIM_DMACNTX_YUYV		2
+ #define SHIM_DMACNTX_YVYU		3
++#define SHIM_DMACNTX_SIZE_8		0
++#define SHIM_DMACNTX_SIZE_16		1
++#define SHIM_DMACNTX_SIZE_32		2
+ 
+ #define SHIM_PSI_CFG0(i)		(0x24 + ((i) * 0x20))
+ #define SHIM_PSI_CFG0_SRC_TAG		GENMASK(15, 0)
+@@ -59,6 +63,7 @@ struct ti_csi2rx_fmt {
+ 	u32				code;	/* Mbus code. */
+ 	u32				csi_dt;	/* CSI Data type. */
+ 	u8				bpp;	/* Bits per pixel. */
++	u8				size;	/* Data size shift when unpacking. */
+ };
+ 
+ struct ti_csi2rx_buffer {
+@@ -125,21 +130,25 @@ static const struct ti_csi2rx_fmt formats[] = {
+ 		.code			= MEDIA_BUS_FMT_YUYV8_1X16,
+ 		.csi_dt			= MIPI_CSI2_DT_YUV422_8B,
+ 		.bpp			= 16,
++		.size			= SHIM_DMACNTX_SIZE_8,
+ 	}, {
+ 		.fourcc			= V4L2_PIX_FMT_UYVY,
+ 		.code			= MEDIA_BUS_FMT_UYVY8_1X16,
+ 		.csi_dt			= MIPI_CSI2_DT_YUV422_8B,
+ 		.bpp			= 16,
++		.size			= SHIM_DMACNTX_SIZE_8,
+ 	}, {
+ 		.fourcc			= V4L2_PIX_FMT_YVYU,
+ 		.code			= MEDIA_BUS_FMT_YVYU8_1X16,
+ 		.csi_dt			= MIPI_CSI2_DT_YUV422_8B,
+ 		.bpp			= 16,
++		.size			= SHIM_DMACNTX_SIZE_8,
+ 	}, {
+ 		.fourcc			= V4L2_PIX_FMT_VYUY,
+ 		.code			= MEDIA_BUS_FMT_VYUY8_1X16,
+ 		.csi_dt			= MIPI_CSI2_DT_YUV422_8B,
+ 		.bpp			= 16,
++		.size			= SHIM_DMACNTX_SIZE_8,
+ 	},
+ 
+ 	/* More formats can be supported but they are not listed for now. */
+@@ -471,6 +480,8 @@ static void ti_csi2rx_setup_shim(struct ti_csi2rx_ctx *ctx)
+ 		break;
+ 	}
+ 
++	reg |= FIELD_PREP(SHIM_DMACNTX_SIZE, fmt->size);
++
+ 	writel(reg, csi->shim + SHIM_DMACNTX(ctx->idx));
+ 
+ 	reg = FIELD_PREP(SHIM_PSI_CFG0_SRC_TAG, 0) |
+-- 
+2.41.0
+

@@ -1,0 +1,96 @@
+From e4acd0ce64476101304d666395afab09b1efadf7 Mon Sep 17 00:00:00 2001
+From: Darren Etheridge <detheridge@ti.com>
+Date: Tue, 25 Apr 2023 17:15:23 -0500
+Subject: [PATCH 426/508] media: platform: img: vxe-vxd: fix-up a variety of
+ compile warnings
+
+New warnings found when building with gcc11, squash them.
+
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+---
+ drivers/media/platform/img/vxe-vxd/decoder/hw_control.c | 2 ++
+ drivers/media/platform/img/vxe-vxd/decoder/vxd_v4l2.c   | 4 +++-
+ drivers/media/platform/img/vxe-vxd/encoder/topaz_api.c  | 4 ++--
+ drivers/media/platform/img/vxe-vxd/encoder/vxe_v4l2.c   | 2 +-
+ 4 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/media/platform/img/vxe-vxd/decoder/hw_control.c b/drivers/media/platform/img/vxe-vxd/decoder/hw_control.c
+index 7a57b763ec54..ad457144d519 100644
+--- a/drivers/media/platform/img/vxe-vxd/decoder/hw_control.c
++++ b/drivers/media/platform/img/vxe-vxd/decoder/hw_control.c
+@@ -779,6 +779,7 @@ static int vdeckm_get_message(const void *hndl_vxd, const enum hwctrl_msgid msgi
+ 	return result;
+ }
+ 
++#ifdef DEBUG_DECODER_DRIVER
+ static void hwctrl_dump_state(struct vxd_states *prev_state,
+ 			      struct vxd_states *cur_state,
+ 			      unsigned char pipe_minus1)
+@@ -825,6 +826,7 @@ static void hwctrl_dump_state(struct vxd_states *prev_state,
+ 		cur_state->fw_state.pipe_state[pipe_minus1].acheck_point
+ 		[VDECFW_CHECKPOINT_PICTURE_STARTED]);
+ }
++#endif
+ 
+ static unsigned int hwctrl_calculate_load(struct bspp_pict_hdr_info *pict_hdr_info)
+ {
+diff --git a/drivers/media/platform/img/vxe-vxd/decoder/vxd_v4l2.c b/drivers/media/platform/img/vxe-vxd/decoder/vxd_v4l2.c
+index 0bbb67052205..41a97a8cde1f 100644
+--- a/drivers/media/platform/img/vxe-vxd/decoder/vxd_v4l2.c
++++ b/drivers/media/platform/img/vxe-vxd/decoder/vxd_v4l2.c
+@@ -376,6 +376,7 @@ static void return_worker(void *work)
+ 	kfree(res);
+ }
+ 
++#ifdef ERROR_RECOVERY_SIMULATION
+ static void vxd_error_recovery(struct vxd_dec_ctx *ctx)
+ {
+ 	int ret = -1;
+@@ -390,6 +391,7 @@ static void vxd_error_recovery(struct vxd_dec_ctx *ctx)
+ 	if (ret)
+ 		pr_err("Reloading the firmware failed!!");
+ }
++#endif /* ERROR_RECOVERY_SIMULATION */
+ 
+ static struct vxd_dec_q_data *get_q_data(struct vxd_dec_ctx *ctx,
+ 					 enum v4l2_buf_type type)
+@@ -2233,7 +2235,7 @@ static int __maybe_unused vxd_dec_resume(struct device *dev)
+ static UNIVERSAL_DEV_PM_OPS(vxd_dec_pm_ops,
+ 	vxd_dec_suspend, vxd_dec_resume, NULL);
+ 
+-static const struct platform_driver vxd_dec_driver = {
++static struct platform_driver vxd_dec_driver = {
+ 	.probe = vxd_dec_probe,
+ 	.remove = vxd_dec_remove,
+ 	.driver = {
+diff --git a/drivers/media/platform/img/vxe-vxd/encoder/topaz_api.c b/drivers/media/platform/img/vxe-vxd/encoder/topaz_api.c
+index 66e073478cb0..7c70457b2483 100644
+--- a/drivers/media/platform/img/vxe-vxd/encoder/topaz_api.c
++++ b/drivers/media/platform/img/vxe-vxd/encoder/topaz_api.c
+@@ -3116,8 +3116,8 @@ static int topaz_video_destroy_context(struct topaz_stream_context *str_ctx)
+ 					  &video->coded_package[i]->header_buffer->mem_info))
+ 			IMG_DBG_ASSERT("Free failed" == NULL);
+ 
+-			kfree(video->coded_package[i]->header_buffer);
+-			video->coded_package[i]->header_buffer = NULL;
++		kfree(video->coded_package[i]->header_buffer);
++		video->coded_package[i]->header_buffer = NULL;
+ 
+ 		kfree(video->coded_package[i]);
+ 		video->coded_package[i] = NULL;
+diff --git a/drivers/media/platform/img/vxe-vxd/encoder/vxe_v4l2.c b/drivers/media/platform/img/vxe-vxd/encoder/vxe_v4l2.c
+index cb625c871cab..52ac4ec86d12 100644
+--- a/drivers/media/platform/img/vxe-vxd/encoder/vxe_v4l2.c
++++ b/drivers/media/platform/img/vxe-vxd/encoder/vxe_v4l2.c
+@@ -1935,7 +1935,7 @@ static int vxe_enc_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static const struct platform_driver vxe_enc_driver = {
++static struct platform_driver vxe_enc_driver = {
+ 	.probe = vxe_enc_probe,
+ 	.remove = vxe_enc_remove,
+ 	.driver = {
+-- 
+2.41.0
+

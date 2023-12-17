@@ -1,0 +1,56 @@
+From 8f84962abb073207d36c023ec290bdd4d8a0f4c0 Mon Sep 17 00:00:00 2001
+From: Vignesh Raghavendra <vigneshr@ti.com>
+Date: Fri, 10 Nov 2023 19:11:36 +0530
+Subject: [PATCH 208/322] watchdog: rti_wdt: Drop RPM watchdog when unused
+
+Do a RPM put if watchdog is not already started during probe and re
+enable it in watchdog start.
+
+On K3 SoCs, watchdogs and their corresponding CPUs are under same PD, so
+if the reference count of unused watchdogs aren't dropped, it will lead
+to CPU hotplug failures as Device Management firmware won't allow to
+turn off the PD due to dangling reference count.
+
+Fixes: 2d63908bdbfb ("watchdog: Add K3 RTI watchdog support")
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/watchdog/rti_wdt.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/watchdog/rti_wdt.c b/drivers/watchdog/rti_wdt.c
+index 27f067109da4..f91a260beaa7 100644
+--- a/drivers/watchdog/rti_wdt.c
++++ b/drivers/watchdog/rti_wdt.c
+@@ -71,6 +71,9 @@ static int rti_wdt_start(struct watchdog_device *wdd)
+ 	u32 timer_margin;
+ 	struct rti_wdt_device *wdt = watchdog_get_drvdata(wdd);
+ 
++	if (pm_runtime_suspended(wdd->parent))
++		pm_runtime_get_sync(wdd->parent);
++
+ 	/* set timeout period */
+ 	timer_margin = (u64)wdd->timeout * wdt->freq;
+ 	timer_margin >>= WDT_PRELOAD_SHIFT;
+@@ -291,6 +294,9 @@ static int rti_wdt_probe(struct platform_device *pdev)
+ 	if (last_ping)
+ 		watchdog_set_last_hw_keepalive(wdd, last_ping);
+ 
++	if (!watchdog_hw_running(wdd))
++		pm_runtime_put_sync(&pdev->dev);
++
+ 	return 0;
+ }
+ 
+@@ -300,6 +306,9 @@ static int rti_wdt_remove(struct platform_device *pdev)
+ 	struct rti_wdt_device *wdt = platform_get_drvdata(pdev);
+ 
+ 	watchdog_unregister_device(&wdt->wdd);
++
++	if (!pm_runtime_suspended(&pdev->dev))
++		pm_runtime_put_sync(&pdev->dev);
+ }
+ 
+ static const struct of_device_id rti_wdt_of_match[] = {
+-- 
+2.43.0
+

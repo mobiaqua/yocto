@@ -1,0 +1,28 @@
+From 1657c53166ff5ec2f731150343341fc5b65b5193 Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Thu, 24 Aug 2023 08:29:39 -0500
+Subject: [PATCH 008/322] misc: dma-buf-phys: Add dependency on DMA-BUF
+
+Reported-by: kernel test robot <lkp@intel.com>
+Closes: https://lore.kernel.org/oe-kbuild-all/202308241210.5l1uYkKJ-lkp@intel.com/
+Signed-off-by: Andrew Davis <afd@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/misc/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index 555dd203f568..1291865227db 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -505,6 +505,7 @@ config VCPU_STALL_DETECTOR
+ 
+ config DMA_BUF_PHYS
+ 	tristate "DMA-BUF physical address user-space exporter"
++	depends on DMA_SHARED_BUFFER
+ 	default y
+ 	help
+ 	  Exports CPU physical address of DMA-BUF to user-space.
+-- 
+2.43.0
+

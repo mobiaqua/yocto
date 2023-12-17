@@ -1,0 +1,46 @@
+From 0aab38e37ba8a092e92772e5fabab0d2963dd4db Mon Sep 17 00:00:00 2001
+From: Sidraya <sidraya.bj@pathpartnertech.com>
+Date: Tue, 25 Apr 2023 17:15:13 -0500
+Subject: [PATCH 416/508] v4l: videodev2: Add 10bit definitions for NV12 and
+ NV16 color formats
+
+The default color formats support only 8bit color depth. This patch
+adds 10bit definitions for NV12 and NV16.
+
+Signed-off-by: Sunita Nadampalli <sunitan@ti.com>
+Signed-off-by: Sidraya <sidraya.bj@pathpartnertech.com>
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+---
+ drivers/media/v4l2-core/v4l2-ioctl.c | 2 ++
+ include/uapi/linux/videodev2.h       | 2 ++
+ 2 files changed, 4 insertions(+)
+
+diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c b/drivers/media/v4l2-core/v4l2-ioctl.c
+index 6876ec25bc51..d0467b358a2b 100644
+--- a/drivers/media/v4l2-core/v4l2-ioctl.c
++++ b/drivers/media/v4l2-core/v4l2-ioctl.c
+@@ -1446,6 +1446,8 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+ 	case V4L2_PIX_FMT_Y210:		descr = "10-bit YUYV Packed"; break;
+ 	case V4L2_PIX_FMT_Y212:		descr = "12-bit YUYV Packed"; break;
+ 	case V4L2_PIX_FMT_Y216:		descr = "16-bit YUYV Packed"; break;
++	case V4L2_PIX_FMT_TI1210:	descr = "10-bit YUV 4:2:0 (NV12)"; break;
++	case V4L2_PIX_FMT_TI1610:	descr = "10-bit YUV 4:2:2 (NV16)"; break;
+ 
+ 	default:
+ 		/* Compressed formats */
+diff --git a/include/uapi/linux/videodev2.h b/include/uapi/linux/videodev2.h
+index 29da1f4b4578..6fb0ce0ea24d 100644
+--- a/include/uapi/linux/videodev2.h
++++ b/include/uapi/linux/videodev2.h
+@@ -775,6 +775,8 @@ struct v4l2_pix_format {
+ #define V4L2_PIX_FMT_QC08C    v4l2_fourcc('Q', '0', '8', 'C') /* Qualcomm 8-bit compressed */
+ #define V4L2_PIX_FMT_QC10C    v4l2_fourcc('Q', '1', '0', 'C') /* Qualcomm 10-bit compressed */
+ #define V4L2_PIX_FMT_AJPG     v4l2_fourcc('A', 'J', 'P', 'G') /* Aspeed JPEG */
++#define V4L2_PIX_FMT_TI1210   v4l2_fourcc('T', 'I', '1', '2') /* TI NV12 10-bit, two bytes per channel */
++#define V4L2_PIX_FMT_TI1610   v4l2_fourcc('T', 'I', '1', '6') /* TI NV16 10-bit, two bytes per channel */
+ 
+ /* 10bit raw packed, 32 bytes for every 25 pixels, last LSB 6 bits unused */
+ #define V4L2_PIX_FMT_IPU3_SBGGR10	v4l2_fourcc('i', 'p', '3', 'b') /* IPU3 packed 10-bit BGGR bayer */
+-- 
+2.41.0
+

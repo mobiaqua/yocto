@@ -1,0 +1,112 @@
+From cb664c6ba3755f38ea6338566b546d4363f406af Mon Sep 17 00:00:00 2001
+From: Sidraya <sidraya.bj@pathpartnertech.com>
+Date: Tue, 25 Apr 2023 17:14:58 -0500
+Subject: [PATCH 401/508] vxe-vxd: common: Fix pointer size while typecasting
+ to integer offset
+
+Fix pointer size while typecasting to integer offset.
+
+Signed-off-by: Sidraya <sidraya.bj@pathpartnertech.com>
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+---
+ drivers/media/platform/img/vxe-vxd/encoder/target.h             | 2 +-
+ drivers/media/platform/img/vxe-vxd/encoder/topaz_api.c          | 2 +-
+ drivers/media/platform/img/vxe-vxd/encoder/topaz_api_utils.c    | 4 ++--
+ drivers/media/platform/img/vxe-vxd/encoder/vxe_public_regdefs.h | 6 +++---
+ drivers/media/platform/img/vxe-vxd/encoder/vxe_v4l2.c           | 4 ++--
+ 5 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/media/platform/img/vxe-vxd/encoder/target.h b/drivers/media/platform/img/vxe-vxd/encoder/target.h
+index 77f52963dffc..8a6244fd465c 100644
+--- a/drivers/media/platform/img/vxe-vxd/encoder/target.h
++++ b/drivers/media/platform/img/vxe-vxd/encoder/target.h
+@@ -57,7 +57,7 @@ struct mem_space {
+ 		struct mem_space_mem mem;  /* Device memory region info */
+ 	};
+ 
+-	unsigned long long cpu_addr;      /* Cpu KM address for the mem space */
++	unsigned long cpu_addr;      /* Cpu KM address for the mem space */
+ };
+ 
+ struct target_config {
+diff --git a/drivers/media/platform/img/vxe-vxd/encoder/topaz_api.c b/drivers/media/platform/img/vxe-vxd/encoder/topaz_api.c
+index dbaaf047c21d..91d70524b887 100644
+--- a/drivers/media/platform/img/vxe-vxd/encoder/topaz_api.c
++++ b/drivers/media/platform/img/vxe-vxd/encoder/topaz_api.c
+@@ -761,7 +761,7 @@ void handle_encoder_firmware_response(struct img_writeback_msg *wb_msg, void *pr
+ static inline void populate_firmware_message(struct vidio_ddbufinfo *dest, unsigned int dest_offset,
+ 					     struct vidio_ddbufinfo *src, unsigned int src_offset)
+ {
+-	*(unsigned int *)((unsigned long long)dest->cpu_virt + dest_offset) =
++	*(unsigned int *)((unsigned long)dest->cpu_virt + dest_offset) =
+ 		src->dev_virt + src_offset;
+ }
+ 
+diff --git a/drivers/media/platform/img/vxe-vxd/encoder/topaz_api_utils.c b/drivers/media/platform/img/vxe-vxd/encoder/topaz_api_utils.c
+index 578b95a8d193..d88ddf5ca508 100644
+--- a/drivers/media/platform/img/vxe-vxd/encoder/topaz_api_utils.c
++++ b/drivers/media/platform/img/vxe-vxd/encoder/topaz_api_utils.c
+@@ -1319,8 +1319,8 @@ void setup_rc_data(struct img_video_context *video, struct pic_params *pic_param
+ void topaz_setup_input_format(struct img_video_context *video,
+ 			      struct img_vxe_scaler_setup *scaler_setup)
+ {
+-	const unsigned int scaler_coeff_regs_no_crop[] = {4261951490, 4178589440,
+-						    4078580480, 4045614080};
++	const unsigned int scaler_coeff_regs_no_crop[] = {4261951490U, 4178589440U,
++						    4078580480U, 4045614080U};
+ 
+ 	if (video->enable_scaler) {
+ 		unsigned int pitch_x, pitch_y;
+diff --git a/drivers/media/platform/img/vxe-vxd/encoder/vxe_public_regdefs.h b/drivers/media/platform/img/vxe-vxd/encoder/vxe_public_regdefs.h
+index bcd70446fd55..41fa841a8f55 100644
+--- a/drivers/media/platform/img/vxe-vxd/encoder/vxe_public_regdefs.h
++++ b/drivers/media/platform/img/vxe-vxd/encoder/vxe_public_regdefs.h
+@@ -22,20 +22,20 @@
+ 
+ /* Write to the register */
+ #define VXE_WR_REG32(base, offs, val) \
+-	(iowrite32((val), (void *)((offs) + (unsigned long long)(base))))
++	(iowrite32((val), (void *)((offs) + (unsigned long)(base))))
+ 
+ /* Read the register */
+ #define VXE_RD_REG32(base, offs) \
+ 	(ioread32((void *)((base) + (offs))))
+ 
+ #define VXE_POLL_REG32_ISEQ(base, offs, val, mask, cnt) \
+-	(ioreg32_poll_iseq((unsigned long long)(base) + (offs), val, mask, cnt))
++	(ioreg32_poll_iseq((unsigned long)(base) + (offs), val, mask, cnt))
+ 
+ #define REG_BASE_HOST                   0x00000000
+ #define REG_OFFSET_TOPAZ_MTX            0x00000800
+ #define REG_START_TOPAZ_MTX_HOST        (REG_BASE_HOST + REG_OFFSET_TOPAZ_MTX)
+ 
+-static inline int ioreg32_poll_iseq(unsigned long long addr,
++static inline int ioreg32_poll_iseq(unsigned long addr,
+ 				    unsigned int req_val, unsigned int mask, unsigned int cnt)
+ {
+ 	unsigned int count, val;
+diff --git a/drivers/media/platform/img/vxe-vxd/encoder/vxe_v4l2.c b/drivers/media/platform/img/vxe-vxd/encoder/vxe_v4l2.c
+index 9511cde9f54d..c248bb798386 100644
+--- a/drivers/media/platform/img/vxe-vxd/encoder/vxe_v4l2.c
++++ b/drivers/media/platform/img/vxe-vxd/encoder/vxe_v4l2.c
+@@ -314,7 +314,7 @@ static void device_run(void *priv)
+ 			dev_err(dev, "Failed to reserve source slot %d\n",
+ 				ret);
+ 		ret = topaz_send_source_frame(ctx->topaz_str_context, &buf->src_frame,
+-					      ctx->frame_num, (unsigned long long)ctx);
++					      ctx->frame_num, (unsigned long)ctx);
+ 		if (ret)
+ 			dev_err(dev, "Failed to send source frame %d\n",
+ 				ret);
+@@ -1808,7 +1808,7 @@ static int vxe_enc_probe(struct platform_device *pdev)
+ 
+ 	vxe->ctx = ctx;
+ 
+-	ret = topazdd_init((unsigned long long)vxe->reg_base, res->end - res->start + 1,
++	ret = topazdd_init((unsigned long)vxe->reg_base, res->end - res->start + 1,
+ 			   (MMU_USE_MMU_FLAG | MMU_EXTENDED_ADDR_FLAG),
+ 			   ctx, vxe->drv_ctx.ptd, &vxe->topaz_dev_ctx);
+ 	if (ret)
+-- 
+2.41.0
+

@@ -1,0 +1,502 @@
+From 9bfd5988373b8e13e8009bd3e453feb478b9c68f Mon Sep 17 00:00:00 2001
+From: Darren Etheridge <detheridge@ti.com>
+Date: Wed, 4 Oct 2023 14:50:14 -0500
+Subject: [PATCH 039/322] media: platform: img: vxd: Address stream compliance
+ and add new user controls for buf allocations
+
+Fix the compliance problem with the driver, and incorrect constraint was
+being passed down into the IMG firmware.  Artificially setting
+max_dec_frame_buffering to 1.  This renders some streams unplayable if
+they have need more display picture buffers for reordering or if they
+have higher reference frame dependencies.  Setting this value to 0 will
+let the firmware decide the number of DPB's it will use.
+
+This change then forces an increase in default DPB memory allocations
+which may not be entirely practical in an embedded system, so this patch
+also provides some extra custom V4L2 controls so that the memory
+requirements can be tailored for a particular use case.
+
+The DPB algorithm is now:
+  num_ref_frames + ((num_cores * slots_per_core) - 1) + display_pipeline_length
+
+num_cores is 2, and slots_per_core is 2 on J721e and
+display_pipeline_length is 3.
+
+num_core and slots_per core can be reduced, but IMG says this will
+impact performance because the pipelines on the video hardware may not
+be used as efficiently.   display_pipeline_length will depend on a
+number of factors and this value can be tinkered with depending on the
+usecase.
+
+Add these controls into the driver
+
+        max_dec_frame_buffering 0x00981901 (int)    : min=0 max=16 step=1 default=0 value=0
+          display_pipeline_size 0x00981902 (int)    : min=0 max=6 step=1 default=3 value=3
+       img_extra_decode_buffers 0x00981903 (int)    : min=-1 max=3 step=1 default=-1 value=-1
+      override_spec_dpb_buffers 0x00981904 (int)    : min=-1 max=16 step=1 default=-1 value=-1
+
+This allows complete control over the amount of memory allocated by the
+driver.  Leaving the default values makes the driver allocate memory as
+per the IMG hardware spec and the H.264 spec.
+
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ .../media/platform/img/vxe-vxd/decoder/bspp.c |   5 +
+ .../platform/img/vxe-vxd/decoder/bspp_int.h   |   6 +
+ .../media/platform/img/vxe-vxd/decoder/core.c |   3 +
+ .../platform/img/vxe-vxd/decoder/decoder.c    |   2 -
+ .../platform/img/vxe-vxd/decoder/decoder.h    |   1 +
+ .../img/vxe-vxd/decoder/h264_secure_parser.c  |  12 +-
+ .../platform/img/vxe-vxd/decoder/vdec_defs.h  |   6 +
+ .../platform/img/vxe-vxd/decoder/vxd_dec.h    |  18 ++
+ .../platform/img/vxe-vxd/decoder/vxd_v4l2.c   | 189 ++++++++++++++++--
+ 9 files changed, 216 insertions(+), 26 deletions(-)
+
+diff --git a/drivers/media/platform/img/vxe-vxd/decoder/bspp.c b/drivers/media/platform/img/vxe-vxd/decoder/bspp.c
+index 82b5f0d93bd8..b7457ccb7ef4 100644
+--- a/drivers/media/platform/img/vxe-vxd/decoder/bspp.c
++++ b/drivers/media/platform/img/vxe-vxd/decoder/bspp.c
+@@ -168,6 +168,7 @@ struct bspp_str_context {
+ 	int intra_frame_closed_gop;
+ 	struct bspp_pict_ctx pict_ctx;
+ 	struct bspp_parse_state parse_state;
++	unsigned int max_dec_frame_buffering;
+ };
+ 
+ /*
+@@ -1187,6 +1188,8 @@ static int bspp_process_unit(struct bspp_str_context *str_ctx,
+ 	unit_data.unit_data_size = str_ctx->grp_bstr_ctx.total_data_size;
+ 	unit_data.intra_frm_as_closed_gop = str_ctx->intra_frame_closed_gop;
+ 
++	unit_data.max_dec_frame_buffering = str_ctx->max_dec_frame_buffering;
++
+ 	/* ponit to picture headers, check boundaries */
+ 	curr_pict_hdr_info = vidx < VDEC_H264_MVC_MAX_VIEWS ?
+ 		&pict_ctx->pict_hdr_info[vidx] : NULL;
+@@ -2233,6 +2236,8 @@ int bspp_stream_create(const struct vdec_str_configdata *str_config_data,
+ 	str_ctx->immediate_decode = str_config_data->immediate_decode;
+ 	str_ctx->intra_frame_closed_gop = str_config_data->intra_frame_closed_gop;
+ 
++	str_ctx->max_dec_frame_buffering = str_config_data->max_dec_frame_buffering;
++
+ 	parse_state = &str_ctx->parse_state;
+ 
+ 	/* Setup group buffer processing state. */
+diff --git a/drivers/media/platform/img/vxe-vxd/decoder/bspp_int.h b/drivers/media/platform/img/vxe-vxd/decoder/bspp_int.h
+index e37c8c9c415b..69789f6d6e94 100644
+--- a/drivers/media/platform/img/vxe-vxd/decoder/bspp_int.h
++++ b/drivers/media/platform/img/vxe-vxd/decoder/bspp_int.h
+@@ -282,6 +282,12 @@ struct bspp_unit_data {
+ 	enum bspp_error_type parse_error;
+ 	/* To turn on/off considering I-Frames as ClosedGop boundaries. */
+ 	int intra_frm_as_closed_gop;
++
++	/*
++	 * constrain the amount of DPB's allowed
++	 * a value of 0 means let the firmware decide
++	 */
++	unsigned int max_dec_frame_buffering;
+ };
+ 
+ /*
+diff --git a/drivers/media/platform/img/vxe-vxd/decoder/core.c b/drivers/media/platform/img/vxe-vxd/decoder/core.c
+index 7d812ccbb668..cc0818dac347 100644
+--- a/drivers/media/platform/img/vxe-vxd/decoder/core.c
++++ b/drivers/media/platform/img/vxe-vxd/decoder/core.c
+@@ -1371,6 +1371,9 @@ int core_stream_create(void *vxd_dec_ctx_arg,
+ 
+ 	core_str_ctx->core_ctx = global_core_ctx;
+ 	core_str_ctx->vxd_dec_context = (struct vxd_dec_ctx *)vxd_dec_ctx_arg;
++
++	((struct vxd_dec_ctx *)vxd_dec_ctx_arg)->dev_ctx = global_core_ctx->dev_ctx;
++
+ 	/* register callback for firmware response */
+ 	core_str_ctx->vxd_dec_context->cb = (decode_cb)core_fw_response_cb;
+ 
+diff --git a/drivers/media/platform/img/vxe-vxd/decoder/decoder.c b/drivers/media/platform/img/vxe-vxd/decoder/decoder.c
+index 3f0bed1fd148..8f9ec07abc89 100644
+--- a/drivers/media/platform/img/vxe-vxd/decoder/decoder.c
++++ b/drivers/media/platform/img/vxe-vxd/decoder/decoder.c
+@@ -31,8 +31,6 @@
+ #include "vdec_mmu_wrapper.h"
+ #include "vxd_dec.h"
+ 
+-#define CORE_NUM_DECODE_SLOTS 2
+-
+ #define MAX_PLATFORM_SUPPORTED_HEIGHT 65536
+ #define MAX_PLATFORM_SUPPORTED_WIDTH 65536
+ 
+diff --git a/drivers/media/platform/img/vxe-vxd/decoder/decoder.h b/drivers/media/platform/img/vxe-vxd/decoder/decoder.h
+index a6595fa785e4..ad729196110c 100644
+--- a/drivers/media/platform/img/vxe-vxd/decoder/decoder.h
++++ b/drivers/media/platform/img/vxe-vxd/decoder/decoder.h
+@@ -30,6 +30,7 @@
+ #include "hevcfw_data.h"
+ 
+ #define MAX_CONCURRENT_STREAMS 16
++#define CORE_NUM_DECODE_SLOTS 2
+ 
+ enum dec_pict_states {
+ 	DECODER_PICTURE_STATE_TO_DECODE = 0,
+diff --git a/drivers/media/platform/img/vxe-vxd/decoder/h264_secure_parser.c b/drivers/media/platform/img/vxe-vxd/decoder/h264_secure_parser.c
+index 3973749eac58..6c098a6fddf4 100644
+--- a/drivers/media/platform/img/vxe-vxd/decoder/h264_secure_parser.c
++++ b/drivers/media/platform/img/vxe-vxd/decoder/h264_secure_parser.c
+@@ -1805,8 +1805,10 @@ static void bspp_h264_fwpps_populate(struct bspp_h264_pps_info *h264_pps_info,
+ 						h264_pps_info->second_chroma_qp_index_offset;
+ }
+ 
+-static void bspp_h264_fwseq_hdr_populate(struct bspp_h264_seq_hdr_info *h264_seq_hdr_info,
+-					 struct h264fw_sequence_ps *h264_fwseq_hdr_info)
++static void
++bspp_h264_fwseq_hdr_populate(struct bspp_h264_seq_hdr_info *h264_seq_hdr_info,
++			     struct h264fw_sequence_ps *h264_fwseq_hdr_info,
++			     unsigned int max_dec_frame_buffering)
+ {
+ 	/* Basic SPS */
+ 	h264_fwseq_hdr_info->profile_idc = h264_seq_hdr_info->sps_info.profile_idc;
+@@ -1875,7 +1877,7 @@ static void bspp_h264_fwseq_hdr_populate(struct bspp_h264_seq_hdr_info *h264_seq
+ 		h264_fwseq_hdr_info->num_reorder_frames =
+ 			h264_seq_hdr_info->vui_info.num_reorder_frames;
+ 	} else {
+-		h264_fwseq_hdr_info->max_dec_frame_buffering = 1;
++		h264_fwseq_hdr_info->max_dec_frame_buffering = max_dec_frame_buffering;
+ 		h264_fwseq_hdr_info->num_reorder_frames = 16;
+ 	}
+ #endif
+@@ -2404,7 +2406,9 @@ static int bspp_h264_unit_parser(void *swsr_context, struct bspp_unit_data *unit
+ 				bspp_h264_sps_parser(swsr_context, unit_data->str_res_handle,
+ 						     h264_seq_hdr_info);
+ 			/* From "Parse SPS Structure" populate the "FW SPS Data Structure" */
+-			bspp_h264_fwseq_hdr_populate(h264_seq_hdr_info, h264_fwseq_hdr_info);
++			bspp_h264_fwseq_hdr_populate(
++				h264_seq_hdr_info, h264_fwseq_hdr_info,
++				unit_data->max_dec_frame_buffering);
+ 			/*
+ 			 * From "Parse SPS Structure" populate the
+ 			 * "Common Sequence Header Info"
+diff --git a/drivers/media/platform/img/vxe-vxd/decoder/vdec_defs.h b/drivers/media/platform/img/vxe-vxd/decoder/vdec_defs.h
+index 34ba605b478e..7ca5b998a7d2 100644
+--- a/drivers/media/platform/img/vxe-vxd/decoder/vdec_defs.h
++++ b/drivers/media/platform/img/vxe-vxd/decoder/vdec_defs.h
+@@ -109,6 +109,12 @@ struct vdec_str_configdata {
+ 	unsigned char full_scan;
+ 	unsigned char immediate_decode;
+ 	unsigned char intra_frame_closed_gop;
++
++	/*
++	 * constrain the amount of DPB's allowed
++	 * a value of 0 means let the firmware determine
++	 */
++	unsigned int max_dec_frame_buffering;
+ };
+ 
+ /*
+diff --git a/drivers/media/platform/img/vxe-vxd/decoder/vxd_dec.h b/drivers/media/platform/img/vxe-vxd/decoder/vxd_dec.h
+index 5cef940b64c0..ed3da238ff7b 100644
+--- a/drivers/media/platform/img/vxe-vxd/decoder/vxd_dec.h
++++ b/drivers/media/platform/img/vxe-vxd/decoder/vxd_dec.h
+@@ -436,6 +436,24 @@ struct vxd_dec_ctx {
+ 	unsigned int out_seq; /* sequence number for output port */
+ 	struct vdec_str_opconfig str_opcfg;
+ 	struct vdec_pict_bufconfig pict_bufcfg;
++
++	struct vdec_comsequ_hdrinfo comseq_hdr_info;
++	struct vdec_str_configdata strcfgdata;
++	struct vdecdd_dddev_context     *dev_ctx;
++
++	struct v4l2_ctrl_handler v4l2_ctrl_hdl;
++
++	/* The following are parameters from V4L2 extra-controls */
++
++	/*
++	 * used by the IMG firmware to constrain DPB's utilized
++	 * a value of 0 indicates to let the firmware decide
++	 */
++	unsigned int max_dec_frame_buffering;
++	int override_spec_dpb_buffers;
++	int img_extra_decode_buffers;
++	unsigned int display_pipeline_size;
++
+ 	void *bspp_context;
+ 	struct bspp_bitstr_seg bstr_segments[MAX_SEGMENTS];
+ 	struct lst_t seg_list;
+diff --git a/drivers/media/platform/img/vxe-vxd/decoder/vxd_v4l2.c b/drivers/media/platform/img/vxe-vxd/decoder/vxd_v4l2.c
+index 57f252593bec..49ac6087fec5 100644
+--- a/drivers/media/platform/img/vxe-vxd/decoder/vxd_v4l2.c
++++ b/drivers/media/platform/img/vxe-vxd/decoder/vxd_v4l2.c
+@@ -57,10 +57,16 @@
+ #include "vxd_pvdec_priv.h"
+ #include "vxd_dec.h"
+ #include "img_errors.h"
++#include "vdecdd_utils.h"
+ 
+ #define VXD_DEC_SPIN_LOCK_NAME  "vxd-dec"
+ #define IMG_VXD_DEC_MODULE_NAME "vxd-dec"
+ 
++#define V4L2_CID_VXD_SET_DEC_BUFS (V4L2_CID_USER_BASE + 0x1001)
++#define V4L2_CID_VXD_SET_DISP_BUFS (V4L2_CID_USER_BASE + 0x1002)
++#define V4L2_CID_VXD_SET_IMG_BUFS (V4L2_CID_USER_BASE + 0x1003)
++#define V4L2_CID_VXD_SET_SPEC_BUFS (V4L2_CID_USER_BASE + 0x1004)
++
+ #ifdef ERROR_RECOVERY_SIMULATION
+ /* This code should be execute only in debug flag */
+ /*
+@@ -124,6 +130,90 @@ static struct heap_config vxd_dec_heap_configs[] = {
+ 	},
+ };
+ 
++static inline struct vxd_dec_ctx *vxd_ctrl_to_ctx(struct v4l2_ctrl *vctrl)
++{
++	return container_of(vctrl->handler, struct vxd_dec_ctx, v4l2_ctrl_hdl);
++}
++
++static int vxd_dec_s_ctrl(struct v4l2_ctrl *ctrl)
++{
++	struct vxd_dec_ctx *ctx = vxd_ctrl_to_ctx(ctrl);
++
++	pr_debug("%s: name: %s | value: %d\n",
++		__func__, ctrl->name, ctrl->val);
++
++	switch (ctrl->id) {
++	case V4L2_CID_VXD_SET_DEC_BUFS:
++		ctx->max_dec_frame_buffering = ctrl->val;
++		break;
++	case V4L2_CID_VXD_SET_SPEC_BUFS:
++		ctx->override_spec_dpb_buffers = ctrl->val;
++		break;
++	case V4L2_CID_VXD_SET_IMG_BUFS:
++		ctx->img_extra_decode_buffers = ctrl->val;
++		break;
++	case V4L2_CID_VXD_SET_DISP_BUFS:
++		ctx->display_pipeline_size = ctrl->val;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static const struct v4l2_ctrl_ops vxd_dec_ctrl_ops = {
++	.s_ctrl = vxd_dec_s_ctrl,
++};
++
++static const struct v4l2_ctrl_config vxd_max_dec_frame_buffering = {
++	.ops = &vxd_dec_ctrl_ops,
++	.id = V4L2_CID_VXD_SET_DEC_BUFS,
++	.name = "max_dec_frame_buffering",
++	.type = V4L2_CTRL_TYPE_INTEGER,
++	.def = 0,
++	.min = 0,
++	.max = 16,
++	.step = 1,
++	.flags = 0,
++};
++
++static const struct v4l2_ctrl_config vxd_img_extra_decode_buffers = {
++	.ops = &vxd_dec_ctrl_ops,
++	.id = V4L2_CID_VXD_SET_IMG_BUFS,
++	.name = "img_extra_decode_buffers",
++	.type = V4L2_CTRL_TYPE_INTEGER,
++	.def = -1,
++	.min = -1,
++	.max = 3,
++	.step = 1,
++	.flags = 0,
++};
++
++static const struct v4l2_ctrl_config vxd_display_pipeline_size = {
++	.ops = &vxd_dec_ctrl_ops,
++	.id = V4L2_CID_VXD_SET_DISP_BUFS,
++	.name = "display_pipeline_size",
++	.type = V4L2_CTRL_TYPE_INTEGER,
++	.def = DISPLAY_LAG,
++	.min = 0,
++	.max = 6,
++	.step = 1,
++	.flags = 0,
++};
++
++static const struct v4l2_ctrl_config vxd_override_spec_dpb_buffers = {
++	.ops = &vxd_dec_ctrl_ops,
++	.id = V4L2_CID_VXD_SET_SPEC_BUFS,
++	.name = "override_spec_dpb_buffers",
++	.type = V4L2_CTRL_TYPE_INTEGER,
++	.def = -1,
++	.min = -1,
++	.max = 16,
++	.step = 1,
++	.flags = 0,
++};
++
+ static struct vxd_dec_fmt vxd_dec_formats[] = {
+ 	{
+ 		.fourcc = V4L2_PIX_FMT_NV12,
+@@ -622,15 +712,50 @@ static int vxd_dec_queue_setup(struct vb2_queue *vq,
+ 
+ 	if (!V4L2_TYPE_IS_OUTPUT(vq->type)) {
+ 		src_q_data = &ctx->q_data[Q_DATA_SRC];
+-		if (src_q_data)
+-			hw_nbuffers = get_nbuffers(src_q_data->fmt->std,
+-						   q_data->width,
+-						   q_data->height,
+-						   ctx->max_num_ref_frames);
++		if (src_q_data) {
++			if (src_q_data->fmt->std == VDEC_STD_H264) {
++				if (ctx->override_spec_dpb_buffers == -1)
++					vdecddutils_get_minrequired_numpicts(
++						&ctx->strcfgdata,
++						&ctx->comseq_hdr_info,
++						&ctx->str_opcfg, &hw_nbuffers);
++				else
++					hw_nbuffers =
++						ctx->override_spec_dpb_buffers;
++
++				/*
++				 * IMG Spec says need:
++				 * vdecddutils_get_minrequired_numpicts()
++				 *			+ ((num_cores * slots_per_core) - 1)
++				 *			+ display_pipeline_length
++				 */
++				if (ctx->img_extra_decode_buffers == -1)
++					hw_nbuffers +=
++					 (CORE_NUM_DECODE_SLOTS *
++					 ((struct dec_ctx *)ctx->dev_ctx->dec_context)->num_pipes) -
++					 1;
++				else
++					hw_nbuffers +=
++						ctx->img_extra_decode_buffers;
++
++				hw_nbuffers += ctx->display_pipeline_size;
++
++				pr_debug(
++					"DPB allocation algorithm has requested %d buffers\n",
++					hw_nbuffers);
++			} else {
++				hw_nbuffers = get_nbuffers(src_q_data->fmt->std,
++									q_data->width,
++									q_data->height,
++									ctx->max_num_ref_frames);
++			}
++		}
+ 	}
+ 
+ 	*nbuffers = max(*nbuffers, hw_nbuffers);
+ 
++	pr_debug("telling the framework to allocate %d buffers\n", *nbuffers);
++
+ 	for (i = 0; i < *nplanes; i++)
+ 		sizes[i] = q_data->size_image[i];
+ 
+@@ -1028,6 +1153,8 @@ static int vxd_dec_open(struct file *file)
+ 	struct vxd_dev *vxd = video_drvdata(file);
+ 	struct vxd_dec_ctx *ctx;
+ 	struct vxd_dec_q_data *s_q_data;
++	struct v4l2_ctrl_handler *v4l2_ctrl_hdl;
++
+ 	int i, ret = 0;
+ 
+ 	dev_dbg(vxd->dev, "%s:%d vxd %p\n", __func__, __LINE__, vxd);
+@@ -1046,6 +1173,8 @@ static int vxd_dec_open(struct file *file)
+ 	}
+ 	ctx->dev = vxd;
+ 
++	v4l2_ctrl_hdl = &ctx->v4l2_ctrl_hdl;
++
+ 	v4l2_fh_init(&ctx->fh, video_devdata(file));
+ 	file->private_data = &ctx->fh;
+ 
+@@ -1068,6 +1197,20 @@ static int vxd_dec_open(struct file *file)
+ 
+ 	v4l2_fh_add(&ctx->fh);
+ 
++	v4l2_ctrl_handler_init(v4l2_ctrl_hdl, 6);
++	v4l2_ctrl_new_custom(v4l2_ctrl_hdl, &vxd_max_dec_frame_buffering, NULL);
++	v4l2_ctrl_new_custom(v4l2_ctrl_hdl, &vxd_override_spec_dpb_buffers, NULL);
++	v4l2_ctrl_new_custom(v4l2_ctrl_hdl, &vxd_img_extra_decode_buffers, NULL);
++	v4l2_ctrl_new_custom(v4l2_ctrl_hdl, &vxd_display_pipeline_size, NULL);
++	if (ctx->v4l2_ctrl_hdl.error) {
++		dev_err(vxd->dev, "failed to create custom controls\n");
++		ret = -ENODEV;
++		goto exit;
++	}
++
++	ctx->fh.ctrl_handler = &ctx->v4l2_ctrl_hdl;
++	v4l2_ctrl_handler_setup(&ctx->v4l2_ctrl_hdl);
++
+ 	ret = idr_alloc_cyclic(vxd->streams, &ctx->stream, VXD_MIN_STREAM_ID, VXD_MAX_STREAM_ID,
+ 			       GFP_KERNEL);
+ 	if (ret < VXD_MIN_STREAM_ID || ret > VXD_MAX_STREAM_ID) {
+@@ -1355,6 +1498,10 @@ static int vxd_get_header_info(void *priv)
+ 		ctx->height = preparsed_data->sequ_hdr_info.com_sequ_hdr_info.max_frame_size.height;
+ 		ctx->max_num_ref_frames =
+ 			preparsed_data->sequ_hdr_info.com_sequ_hdr_info.max_ref_frame_num;
++
++		/* save off the sequence header to the context structure */
++		memcpy(&ctx->comseq_hdr_info, &(preparsed_data->sequ_hdr_info.com_sequ_hdr_info),
++					sizeof(struct vdec_comsequ_hdrinfo));
+ 	} else {
+ 		dev_err(dev, "get_header_info preparsed data is null %d\n", ret);
+ 		return ret;
+@@ -1457,7 +1604,7 @@ static int vxd_dec_s_fmt(struct file *file, void *priv, struct v4l2_format *f)
+ 	struct device *dev = vxd_dev->v4l2_dev.dev;
+ 	struct vxd_dec_q_data *q_data;
+ 	struct vb2_queue *vq;
+-	struct vdec_str_configdata strcfgdata;
++
+ 	int ret = 0;
+ 	unsigned char i = 0, j = 0;
+ 
+@@ -1506,22 +1653,24 @@ static int vxd_dec_s_fmt(struct file *file, void *priv, struct v4l2_format *f)
+ 		q_data->size_image[0] = pix_mp->plane_fmt[0].sizeimage;
+ 
+ 		if (!ctx->stream_created) {
+-			strcfgdata.vid_std = q_data->fmt->std;
++			ctx->strcfgdata.vid_std = q_data->fmt->std;
+ 
+-			if (strcfgdata.vid_std == VDEC_STD_UNDEFINED) {
++			if (ctx->strcfgdata.vid_std == VDEC_STD_UNDEFINED) {
+ 				dev_err(dev, "Invalid input format\n");
+ 				return -EINVAL;
+ 			}
+-			strcfgdata.bstr_format = VDEC_BSTRFORMAT_ELEMENTARY;
+-			strcfgdata.user_str_id = ctx->stream.id;
+-			strcfgdata.update_yuv = FALSE;
+-			strcfgdata.bandwidth_efficient = FALSE;
+-			strcfgdata.disable_mvc = FALSE;
+-			strcfgdata.full_scan = FALSE;
+-			strcfgdata.immediate_decode = TRUE;
+-			strcfgdata.intra_frame_closed_gop = TRUE;
+-
+-			ret = core_stream_create(ctx, &strcfgdata, &ctx->res_str_id);
++			ctx->strcfgdata.bstr_format = VDEC_BSTRFORMAT_ELEMENTARY;
++			ctx->strcfgdata.user_str_id = ctx->stream.id;
++			ctx->strcfgdata.update_yuv = FALSE;
++			ctx->strcfgdata.bandwidth_efficient = FALSE;
++			ctx->strcfgdata.disable_mvc = FALSE;
++			ctx->strcfgdata.full_scan = FALSE;
++			ctx->strcfgdata.immediate_decode = TRUE;
++			ctx->strcfgdata.intra_frame_closed_gop = TRUE;
++
++			ctx->strcfgdata.max_dec_frame_buffering = ctx->max_dec_frame_buffering;
++
++			ret = core_stream_create(ctx, &ctx->strcfgdata, &ctx->res_str_id);
+ 			if (ret) {
+ 				dev_err(dev, "Core stream create failed\n");
+ 				return -EINVAL;
+@@ -1535,8 +1684,8 @@ static int vxd_dec_s_fmt(struct file *file, void *priv, struct v4l2_format *f)
+ 				}
+ 			}
+ 
+-			vxd_dec_alloc_bspp_resource(ctx, strcfgdata.vid_std);
+-			ret = bspp_stream_create(&strcfgdata,
++			vxd_dec_alloc_bspp_resource(ctx, ctx->strcfgdata.vid_std);
++			ret = bspp_stream_create(&ctx->strcfgdata,
+ 						 &ctx->bspp_context,
+ 						 ctx->fw_sequ,
+ 						 ctx->fw_pps);
+-- 
+2.43.0
+
