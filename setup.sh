@@ -230,6 +230,14 @@ prepare_tools() {
 			return 1
 		fi
 
+		/bin/rm -f ${OE_BASE}/bin/dtc
+		if [ -e /opt/local/bin/dtc ]; then
+			/bin/ln -s /opt/local/bin/dtc ${OE_BASE}/bin/dtc
+		else
+			echo "* ERROR *  Missing dtc package"
+			return 1
+		fi
+
 		echo "#!/bin/bash
 
 " > ${OE_BASE}/bin/makedepend
@@ -358,6 +366,11 @@ echo -n \"12.0.0\"
 
 		if [ ! -e /usr/bin/tic ]; then
 			echo "* ERROR *  Missing ncurses package"
+			return 1
+		fi
+
+		if [ ! -e /usr/bin/dtc ]; then
+			echo "* ERROR *  Missing dtc package"
 			return 1
 		fi
 
@@ -513,13 +526,13 @@ DISTRO = \"${DISTRO}\"
 INHERIT = \"rm_work\"
 BUILD_DEBUG = \"${BUILD_DEBUG}\"
 ASSUME_PROVIDED += \" git-native perl-native python-native python3-native python3-mako-native \
-desktop-file-utils-native linux-libc-headers-native intltool-native gzip-native \
+desktop-file-utils-native linux-libc-headers-native intltool-native gzip-native dtc-native \
 findutils-native bison-native flex-native help2man-native bc-native subversion-native m4-native \
 unzip-native texinfo-native texinfo-dummy-native patch-replacement-native makedepend-native \
 chrpath-replacement-native meson-native ninja-native cmake-native rsync-native zstd-native\"
 SANITY_REQUIRED_UTILITIES:remove = \"chrpath\"
 PACKAGE_DEPENDS:remove = \"dwarfsrcfiles-native pseudo-native\"
-HOSTTOOLS += \"codesign Rez SetFile lipo otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep tic bc dc dos2unix sw_vers xcrun glib-genmarshal glib-compile-schemas svn meson ninja cmake rsync\"
+HOSTTOOLS += \"codesign Rez SetFile lipo otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep tic bc dc dos2unix sw_vers xcrun glib-genmarshal glib-compile-schemas svn meson ninja cmake rsync dtc\"
 HOSTTOOLS:remove = \"chrpath flock ldd pzstd\"
 BB_NUMBER_THREADS = \"8\"
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/local.conf
