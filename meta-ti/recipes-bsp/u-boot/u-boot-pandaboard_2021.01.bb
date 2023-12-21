@@ -91,17 +91,17 @@ FILES:${PN} = "/boot"
 
 do_deploy () {
     install -d ${DEPLOYDIR}
-    install -m 0644 ${B}/${UBOOT_BINARY} ${DEPLOYDIR}/${UBOOT_IMAGE}
+    install -m 0644 ${B}/${UBOOT_BINARY} ${DEPLOYDIR}/boot/${UBOOT_IMAGE}
 
     cd ${DEPLOYDIR}
     rm -f ${UBOOT_SYMLINK}
 
-    install -m 0644 ${B}/MLO ${DEPLOYDIR}/${MLO_IMAGE}
+    install -m 0644 ${B}/MLO ${DEPLOYDIR}/boot/${MLO_IMAGE}
 
-    install -m 0644 ${WORKDIR}/boot-sdcard.script ${DEPLOYDIR}/uEnv-sdcard.txt
-    install -m 0644 ${WORKDIR}/boot-label.script ${DEPLOYDIR}/uEnv-label.txt
-    install -m 0644 ${WORKDIR}/boot-nfs.script ${DEPLOYDIR}/uEnv-nfs.txt
-    install -m 0644 ${WORKDIR}/boot-nfs2.script ${DEPLOYDIR}/uEnv-nfs2.txt
+    install -m 0644 ${WORKDIR}/boot-sdcard.script ${DEPLOYDIR}/boot/uEnv-sdcard.txt
+    install -m 0644 ${WORKDIR}/boot-label.script ${DEPLOYDIR}/boot/uEnv-label.txt
+    install -m 0644 ${WORKDIR}/boot-nfs.script ${DEPLOYDIR}/boot/uEnv-nfs.txt
+    install -m 0644 ${WORKDIR}/boot-nfs2.script ${DEPLOYDIR}/boot/uEnv-nfs2.txt
 }
 
 addtask deploy before do_build after do_compile

@@ -100,21 +100,21 @@ do_install () {
 FILES:${PN} = "/boot"
 
 do_deploy () {
-    install -d ${DEPLOYDIR}
-    install -m 0644 ${B}/${UBOOT_BINARY} ${DEPLOYDIR}/${UBOOT_IMAGE}
+    install -d ${DEPLOYDIR}/boot
+    install -m 0644 ${B}/${UBOOT_BINARY} ${DEPLOYDIR}/boot/${UBOOT_IMAGE}
 
     cd ${DEPLOYDIR}
 
     install -m 0644 ${B}/MLO ${DEPLOYDIR}/${MLO_IMAGE}
 
-    install -m 0644 ${WORKDIR}/boot-beagle-sdcard.script ${DEPLOYDIR}/uEnv-beagle-sdcard.txt
-    install -m 0644 ${WORKDIR}/boot-beagle-label.script ${DEPLOYDIR}/uEnv-beagle-label.txt
-    install -m 0644 ${WORKDIR}/boot-beagle-nfs.script ${DEPLOYDIR}/uEnv-beagle-nfs.txt
-    install -m 0644 ${WORKDIR}/boot-beagle-nfs2.script ${DEPLOYDIR}/uEnv-beagle-nfs2.txt
-    install -m 0644 ${WORKDIR}/boot-beagle-sdcard.script ${DEPLOYDIR}/uEnv-beagleai-sdcard.txt
-    install -m 0644 ${WORKDIR}/boot-beagle-label.script ${DEPLOYDIR}/uEnv-beagleai-label.txt
-    install -m 0644 ${WORKDIR}/boot-beagle-nfs.script ${DEPLOYDIR}/uEnv-beagleai-nfs.txt
-    install -m 0644 ${WORKDIR}/boot-beagle-nfs2.script ${DEPLOYDIR}/uEnv-beagleai-nfs2.txt
+    install -m 0644 ${WORKDIR}/boot-beagle-sdcard.script ${DEPLOYDIR}/boot/uEnv-beagle-sdcard.txt
+    install -m 0644 ${WORKDIR}/boot-beagle-label.script ${DEPLOYDIR}/boot/uEnv-beagle-label.txt
+    install -m 0644 ${WORKDIR}/boot-beagle-nfs.script ${DEPLOYDIR}/boot/uEnv-beagle-nfs.txt
+    install -m 0644 ${WORKDIR}/boot-beagle-nfs2.script ${DEPLOYDIR}/boot/uEnv-beagle-nfs2.txt
+    install -m 0644 ${WORKDIR}/boot-beagle-sdcard.script ${DEPLOYDIR}/boot/uEnv-beagleai-sdcard.txt
+    install -m 0644 ${WORKDIR}/boot-beagle-label.script ${DEPLOYDIR}/boot/uEnv-beagleai-label.txt
+    install -m 0644 ${WORKDIR}/boot-beagle-nfs.script ${DEPLOYDIR}/boot/uEnv-beagleai-nfs.txt
+    install -m 0644 ${WORKDIR}/boot-beagle-nfs2.script ${DEPLOYDIR}/boot/uEnv-beagleai-nfs2.txt
 }
 
 addtask deploy before do_build after do_compile
