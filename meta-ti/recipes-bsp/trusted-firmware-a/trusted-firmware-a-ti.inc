@@ -1,0 +1,10 @@
+PV:k3 = "2.9+git${SRCPV}"
+SRCREV_tfa:k3 = "d7a7135d32a8c7da004c0c19b75bd4e2813f9759"
+SRC_URI:k3 = "git://git.trustedfirmware.org/TF-A/trusted-firmware-a.git;protocol=https;name=tfa;branch=master"
+COMPATIBLE_MACHINE:k3 = "k3"
+TFA_BUILD_TARGET:k3 = "all"
+TFA_INSTALL_TARGET:k3 = "bl31"
+TFA_SPD:k3 = "opteed"
+
+EXTRA_OEMAKE:append:k3 = "${@ ' K3_USART=' + d.getVar('TFA_K3_USART') if d.getVar('TFA_K3_USART') else ''}"
+EXTRA_OEMAKE:append:k3 = "${@ ' K3_PM_SYSTEM_SUSPEND=' + d.getVar('TFA_K3_SYSTEM_SUSPEND') if d.getVar('TFA_K3_SYSTEM_SUSPEND') else ''}"
