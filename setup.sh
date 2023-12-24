@@ -600,7 +600,7 @@ export CROSS_COMPILE=${CROSS}
 }
 
 bitbake() {
-	cd ${OE_BASE}/build-${DISTRO}-${TARGET} && source env.source && ${OE_BASE}/bitbake/bin/bitbake $@
+	cd ${OE_BASE}/build-${DISTRO}-${TARGET} && source env.source && ${OE_BASE}/bin/python3 ${OE_BASE}/bitbake/bin/bitbake $@
 }
 
 echo
@@ -614,7 +614,7 @@ ERROR=0
 
 [ $ERROR != 1 ] && [ "x$0" = "x./setup.sh" ] && error "Script must be executed via sourcing: '. setup.sh [<target>] [<machine>] [--debug] [--force]'"
 
-[ $ERROR != 1 ] && { python_v3_check; [ $? != 0 ] && error "Python v3.7 is required"; }
+[ $ERROR != 1 ] && { python_v3_check; [ $? != 0 ] && error "Python v3.7 is required for bitbake"; }
 
 [ $ERROR != 1 ] && { prepare_tools; [ $? != 0 ] && error "Please install missing tools"; }
 
