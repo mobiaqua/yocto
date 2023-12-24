@@ -1,0 +1,12 @@
+diff -urp old/libuuid/src/parse.c new/libuuid/src/parse.c
+--- old/libuuid/src/parse.c	2023-12-24 08:17:35
++++ new/libuuid/src/parse.c	2023-12-24 08:14:27
+@@ -40,6 +40,8 @@
+ #include "c.h"
+ #include "uuidP.h"
+ 
++int uuid_parse_range(const char *in_start, const char *in_end, uuid_t uu);
++
+ int uuid_parse(const char *in, uuid_t uu)
+ {
+ 	size_t len = strlen(in);
