@@ -533,7 +533,7 @@ unzip-native texinfo-native texinfo-dummy-native patch-replacement-native makede
 chrpath-replacement-native meson-native ninja-native cmake-native rsync-native zstd-native\"
 SANITY_REQUIRED_UTILITIES:remove = \"chrpath\"
 PACKAGE_DEPENDS:remove = \"dwarfsrcfiles-native pseudo-native\"
-HOSTTOOLS += \"codesign Rez SetFile lipo otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep tic bc dc dos2unix sw_vers xcrun glib-genmarshal glib-compile-schemas svn meson ninja cmake rsync dtc\"
+HOSTTOOLS += \"codesign Rez SetFile lipo otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep unzip tic bc dc dos2unix sw_vers xcrun glib-genmarshal glib-compile-schemas svn meson ninja cmake rsync dtc\"
 HOSTTOOLS:remove = \"chrpath flock ldd pzstd\"
 BB_NUMBER_THREADS = \"8\"
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/local.conf
