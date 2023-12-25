@@ -54,8 +54,8 @@ PACKAGECONFIG[selinux] = "-Dselinux=enabled,-Dselinux=disabled,libselinux"
 
 EXTRA_OEMESON = "-Ddtrace=false -Dfam=false -Dsystemtap=false"
 
-# MobiAqua: added macOS SDK libs
-EXTRA_OEMESON:append:darwin = " -Dc_link_args='${LDFLAGS} -framework Foundation -framework AppKit' -Ddefault_library=static"
+# MobiAqua: added macOS SDK libs and disable tests
+EXTRA_OEMESON:append:darwin = " -Dc_link_args='${LDFLAGS} -framework Foundation -framework AppKit' -Ddefault_library=static -Dtests=false"
 
 do_configure:prepend() {
 	sed -i -e '1s,#!.*,#!${USRBINPATH}/env python3,' ${S}/gio/gdbus-2.0/codegen/gdbus-codegen.in
@@ -148,8 +148,7 @@ do_install:append:mingw32() {
         rm -f ${D}${bindir}/gtester-report
 }
 
-# MobiAqua: removed 'python3 python3-distutils python3-xml'
-CODEGEN_PYTHON_RDEPENDS = ""
+CODEGEN_PYTHON_RDEPENDS = "python3 python3-distutils python3-xml"
 CODEGEN_PYTHON_RDEPENDS:mingw32 = ""
 
 RDEPENDS:${PN}-codegen += "${CODEGEN_PYTHON_RDEPENDS}"

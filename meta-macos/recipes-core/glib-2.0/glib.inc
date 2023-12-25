@@ -140,8 +140,7 @@ do_install:append:mingw32() {
         rm -f ${D}${bindir}/gtester-report
 }
 
-# MobiAqua: removed 'python3 python3-distutils python3-xml'
-CODEGEN_PYTHON_RDEPENDS = ""
+CODEGEN_PYTHON_RDEPENDS = "python3 python3-distutils python3-xml"
 CODEGEN_PYTHON_RDEPENDS:mingw32 = ""
 
 RDEPENDS:${PN}-codegen += "${CODEGEN_PYTHON_RDEPENDS}"
