@@ -525,8 +525,7 @@ MACHINE = \"${MACHINE}\"
 DISTRO = \"${DISTRO}\"
 INHERIT = \"rm_work\"
 BUILD_DEBUG = \"${BUILD_DEBUG}\"
-ASSUME_PROVIDED += \" git-native perl-native python-native python3-native python3-mako-native \
-python3-cryptography-native \
+ASSUME_PROVIDED += \" git-native perl-native python-native \
 desktop-file-utils-native linux-libc-headers-native intltool-native gzip-native dtc-native \
 findutils-native bison-native flex-native help2man-native bc-native subversion-native m4-native \
 unzip-native texinfo-native texinfo-dummy-native patch-replacement-native makedepend-native \
