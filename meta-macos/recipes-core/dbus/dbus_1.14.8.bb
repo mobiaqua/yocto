@@ -165,11 +165,9 @@ do_install() {
 
 	mkdir -p ${D}${localstatedir}/lib/dbus
 
-	# MobiAqua: disabled chown
-	#chown messagebus:messagebus ${D}${localstatedir}/lib/dbus
+	chown messagebus:messagebus ${D}${localstatedir}/lib/dbus
 
-	# MobiAqua: disabled chown
-	#chown root:messagebus ${D}${libexecdir}/dbus-daemon-launch-helper
+	chown root:messagebus ${D}${libexecdir}/dbus-daemon-launch-helper
 	chmod 4755 ${D}${libexecdir}/dbus-daemon-launch-helper
 
 	# Remove Red Hat initscript
