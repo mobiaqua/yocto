@@ -1,0 +1,39 @@
+diff -urp old/setup.py new/setup.py
+--- old/setup.py	2021-10-13 01:59:28
++++ new/setup.py	2023-12-26 18:17:45
+@@ -17,10 +17,10 @@ extra_link_args = []
+ extra_link_args = []
+ 
+ 
+-def _ask_pkg_config(resultlist, option, result_prefix='', sysroot=False):
++def _ask_pkg_config(resultlist, option, result_prefix='', sysroot=False, pkg='libffi'):
+     pkg_config = os.environ.get('PKG_CONFIG','pkg-config')
+     try:
+-        p = subprocess.Popen([pkg_config, option, 'libffi'],
++        p = subprocess.Popen([pkg_config, option, pkg],
+                              stdout=subprocess.PIPE)
+     except OSError as e:
+         if e.errno not in [errno.ENOENT, errno.EACCES]:
+@@ -105,8 +105,8 @@ def use_pkg_config():
+     return config.try_compile('#ifndef _MSC_VER\n#error "not MSVC"\n#endif')
+ 
+ def use_pkg_config():
+-    if sys.platform == 'darwin' and os.path.exists('/usr/local/bin/brew'):
+-        use_homebrew_for_libffi()
++    #if sys.platform == 'darwin' and os.path.exists('/usr/local/bin/brew'):
++    #    use_homebrew_for_libffi()
+ 
+     _ask_pkg_config(include_dirs,       '--cflags-only-I', '-I', sysroot=True)
+     _ask_pkg_config(extra_compile_args, '--cflags-only-other')
+@@ -150,7 +150,10 @@ if 'darwin' in sys.platform:
+ 
+ if 'darwin' in sys.platform:
+     # priority is given to `pkg_config`, but always fall back on SDK's libffi.
+-    extra_compile_args += ['-iwithsysroot/usr/include/ffi']
++    #extra_compile_args += ['-iwithsysroot/usr/include/ffi']
++    libs = []
++    _ask_pkg_config(libs, '--libs-only-l', '-l', sysroot=False, pkg='python3-embed')
++    libraries += libs
+ 
+ if 'freebsd' in sys.platform:
+     include_dirs.append('/usr/local/include')
