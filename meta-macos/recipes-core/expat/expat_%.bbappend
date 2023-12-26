@@ -1,2 +1,1 @@
-EXTRA_OECONF:append:class-native = " --enable-shared=no"
-EXTRA_OECONF:append:class-nativesdk = " --enable-shared=no"
+EXTRA_OECMAKE:append:class-native = " -DBUILD_SHARED_LIBS=OFF"
