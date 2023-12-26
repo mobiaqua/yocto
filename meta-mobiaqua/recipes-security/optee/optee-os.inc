@@ -6,6 +6,8 @@ LICENSE = "BSD-2-Clause"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=c1f21c4f72f372ef38a5a4aee55ec173"
 
 inherit deploy
+# MobiAqua added 'python3native'
+#inherit deploy python3native
 require optee.inc
 
 CVE_PRODUCT = "linaro:op-tee op-tee:op-tee_os"
@@ -19,6 +21,9 @@ SRC_URI = "git://github.com/OP-TEE/optee_os.git;branch=master;protocol=https"
 
 S = "${WORKDIR}/git"
 B = "${WORKDIR}/build"
+
+# MobiAqua: Added 'PYTHON3'
+#EXTRA_OEMAKE += "PYTHON3=${PYTHON}"
 
 EXTRA_OEMAKE += " \
     PLATFORM=${OPTEEMACHINE} \
