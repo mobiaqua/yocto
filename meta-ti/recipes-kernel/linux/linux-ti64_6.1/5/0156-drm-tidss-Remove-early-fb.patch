@@ -28,7 +28,7 @@ index 0ab01f243e60..447a32079371 100644
  	}
  
 +	/* Remove possible early fb before setting up the fbdev */
-+	ret = drm_aperture_remove_framebuffers(false, &tidss_driver);
++	ret = drm_aperture_remove_framebuffers(&tidss_driver);
 +	if (ret)
 +		goto err_drm_dev_unreg;
 +

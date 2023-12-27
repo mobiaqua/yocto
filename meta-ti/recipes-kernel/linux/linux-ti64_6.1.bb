@@ -5,7 +5,7 @@ DEPENDS += "openssl-native ncurses-native elf-native kmod-native linux-firmware"
 COMPATIBLE_MACHINE = "beagle64"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.1.46"
+LINUX_VERSION = "6.1.69"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -56,7 +56,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://1/0260-phy-dphy-add-support-to-calculate-the-timing-based-o.patch \
             file://1/0261-phy-cadence-cdns-dphy-rx-Add-common-module-reset-sup.patch \
             file://1/0269-media-Accept-non-subdev-sinks-in-v4l2_create_fwnode_.patch \
-            file://1/0272-media-cadence-csi2rx-Unregister-v4l2-async-notifier.patch \
             file://1/0273-media-cadence-csi2rx-Cleanup-media-entity-properly.patch \
             file://1/0274-media-cadence-csi2rx-Add-get_fmt-and-set_fmt-pad-ops.patch \
             file://1/0275-media-cadence-csi2rx-Add-external-DPHY-support.patch \
@@ -230,12 +229,10 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://2/0351-phy-cadence-torrent-Add-USXGMII-156.25MHz-SGMII-QSGM.patch \
             file://2/0357-remoteproc-ti-k3-Add-support-for-graceful-shutdown.patch \
             file://2/0358-remoteproc-k3-m4-Introduce-PM-suspend-resume-handler.patch \
-            file://2/0365-iopoll-Call-cpu_relax-in-busy-loops.patch \
             file://2/0366-iopoll-Do-not-use-timekeeping-in-read_poll_timeout_a.patch \
             file://2/0397-clk-keystone-syscon-clk-Allow-the-clock-node-to-not-.patch \
             file://2/0404-dma-buf-heaps-carveout-heap-initialize-ret-variable.patch \
             file://2/0405-drm-tidss-add-missing-break.patch \
-            file://3/0001-i2c-core-run-atomic-i2c-xfer-when-preemptible.patch \
             file://3/0002-kernel-reboot-add-device-to-sys_off_handler.patch \
             file://3/0025-media-ti-j721e-csi2rx-Fix-stream-stop-sequence.patch \
             file://3/0026-remoteproc-k3-m4-set-as-wakeup-capable-but-keep-disa.patch \
@@ -247,7 +244,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://3/0061-media-platform-img-vxe-finish-adding-profile-level-a.patch \
             file://3/0078-irqchip-irq-ti-sci-inta-Add-null-check-for-parent_ir.patch \
             file://3/0081-media-ti-j721e-csi2rx-Fix-buffer-cleanup-sequence.patch \
-            file://3/0090-bus-ti-sysc-Flush-posted-write-on-enable-before-rese.patch \
             file://3/0121-arm64-dts-ti-k3-j721e-main-Add-properties-to-support.patch \
             file://3/0127-drm-tidss-Set-OLDI-clock-to-bypass-25MHz-during-prob.patch \
             file://3/0128-arm64-dts-ti-Add-k3-j721e-beagleboneai64.patch \
@@ -266,7 +262,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://4/0020-thermal-drivers-k3_j72xx_bandgap-Use-bool-for-i2128-.patch \
             file://4/0021-thermal-drivers-k3_j72xx_bandgap-Remove-fuse_base-fr.patch \
             file://4/0022-thermal-drivers-k3_j72xx_bandgap-Map-fuse_base-only-.patch \
-            file://4/0029-drivers-mmc-host-sdhci_am654-fix-start-loop-index.patch \
             file://4/0030-drivers-mmc-host-sdhci_am654-update-OTAP-and-ITAP-de.patch \
             file://5/0002-media-ti-j721e-csi2rx-Assert-pixel-reset-before-stop.patch \
             file://5/0003-media-cadence-csi2rx-Fix-check-for-running-bit.patch \
@@ -301,9 +296,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://5/0165-drm-tidss-Add-some-support-for-splash-screen.patch \
             file://5/0166-drm-tidss-Fix-atomic_flush-check.patch \
             file://5/0167-drm-tidss-Use-DRM_PLANE_COMMIT_ACTIVE_ONLY.patch \
-            file://5/0204-bus-ti-sysc-Fix-build-warning-for-64-bit-build.patch \
             file://5/0205-bus-ti-sysc-Build-driver-for-TI-K3-SoCs.patch \
-            file://5/0206-bus-ti-sysc-Configure-uart-quirks-for-k3-SoC.patch \
             file://5/0207-watchdog-rti_wdt-Use-managed-APIs-to-handle-runtime-.patch \
             file://5/0208-watchdog-rti_wdt-Drop-RPM-watchdog-when-unused.patch \
             file://5/0212-media-img-vxe-vxd-decoder-Remove-Padding-in-Output.patch \
@@ -319,7 +312,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://5/0276-drm-tidss-Add-support-for-AM62P-DSS1.patch \
             file://5/0278-arm64-dts-ti-k3-j721e-main-Add-DSI-and-DPHY-TX.patch \
             file://5/0284-Input-gpio-keys-Add-system-suspend-support-for-dedic.patch \
-            file://5/0317-tick-rcu-Fix-false-positive-softirq-work-is-pending-.patch \
             file://0001_fix_nonlinux_compile.patch \
             file://0002-bootup-hacks-move-mmc-early.patch \
             file://0003-Kbuild.include.patch \
@@ -330,7 +322,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://ti_config \
 "
 
-SRC_URI[sha256sum] = "f5f67bcfccd47f8d9db2d5ba24e33af7778f40a777577d1fba424f4a1712a296"
+SRC_URI[sha256sum] = "7e3d2694d18ce502068cc88a430da809abbd17d0773268524ebece442612b541"
 
 S = "${WORKDIR}/linux-${PV}"
 
