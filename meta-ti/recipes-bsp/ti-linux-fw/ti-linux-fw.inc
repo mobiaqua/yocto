@@ -17,20 +17,19 @@ CNM_WAVE521_FW_VERSION = "1.0.3"
 TI_DM_FW_VERSION = "09.01.02"
 TI_SYSFW_VERSION = "09.01.08"
 
-TI_LINUX_FW_SRCREV ?= "9ee2fedb1fb4815f54310dd872d34faf9948c7c1"
+TI_LINUX_FW_SRCREV ?= "2944354aca1f95525c30d625cb17672930e72572"
 SRCREV = "${TI_LINUX_FW_SRCREV}"
 
 BRANCH ?= "ti-linux-firmware"
 
-K3_IMAGE_GEN_SRCREV ?= "150f1956b4bdcba36e7dffc78a4342df602f8d6e"
+K3_IMAGE_GEN_SRCREV ?= "ffae8800a5c81c149835ed1aa5e2fbbe65a49c0d"
+K3_IMAGE_GEN_BRANCH ?= "master"
 SRCREV_imggen = "${K3_IMAGE_GEN_SRCREV}"
 SRCREV_FORMAT = "imggen"
 
-K3_IMAGE_GEN_BRANCH ?= "master"
-
 SRC_URI = " \
     git://git.ti.com/git/processor-firmware/ti-linux-firmware.git;protocol=https;branch=${BRANCH} \
-    git://git.ti.com/git/k3-image-gen/k3-image-gen.git;protocol=https;branch=${K3_IMAGE_GEN_BRANCH};destsuffix=imggen;name=imggen \
+    git://github.com/beagleboard/k3-image-gen.git;protocol=https;branch=${K3_IMAGE_GEN_BRANCH};destsuffix=imggen;name=imggen \
 "
 
 S = "${WORKDIR}/git"
@@ -51,5 +50,6 @@ INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
 INSANE_SKIP:${PN} += "arch"
 
 # Firmware in Linux Firmware has no configure nor build steps
-do_compile[noexec] = "1"
-do_configure[noexec] = "1"
+# MobiAqua: disable for now
+#do_compile[noexec] = "1"
+#do_configure[noexec] = "1"

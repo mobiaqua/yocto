@@ -21,6 +21,7 @@ SRCREV = "ea96725b5156135d5875415f75d2188f6f56622a"
 
 SRC_URI = "git://github.com/beagleboard/u-boot.git;branch=v2021.01-ti-08.05.00.001;protocol=https \
            file://avoid-python2.patch \
+           file://k3-force-local-bash.patch \
           "
 
 S = "${WORKDIR}/git"

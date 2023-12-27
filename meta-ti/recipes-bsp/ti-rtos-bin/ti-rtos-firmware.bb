@@ -25,15 +25,22 @@ PLAT_SFX:am62pxx = "am62pxx"
 FILESEXTRAPATHS:prepend := "${METATIBASE}/recipes-bsp/ti-sci-fw/files/:"
 require recipes-bsp/ti-linux-fw/ti-linux-fw.inc
 
+# MobiAqua: null configure/compile
+do_compile[noexec] = "1"
+do_configure[noexec] = "1"
+
 PV = "${CORESDK_RTOS_VERSION}"
 PR = "${INC_PR}.1"
 
 # Secure Build
 inherit ti-secdev
 
+DM_FW_DIR = "ti-dm/${PLAT_SFX}"
 IPC_FW_DIR = "ti-ipc/${PLAT_SFX}"
 
+INSTALL_DM_FW_DIR  = "${nonarch_base_libdir}/firmware/${DM_FW_DIR}"
 INSTALL_IPC_FW_DIR = "${nonarch_base_libdir}/firmware/${IPC_FW_DIR}"
+DM_FIRMWARE = "ipc_echo_testb_mcu1_0_release_strip.xer5f"
 
 MCU_1_0_FW = "ipc_echo_test_mcu1_0_release_strip.xer5f"
 MCU_1_1_FW = "ipc_echo_test_mcu1_1_release_strip.xer5f"
@@ -50,6 +57,8 @@ C7X_2_FW   = "ipc_echo_test_c7x_2_release_strip.xe71"
 C7X_3_FW   = "ipc_echo_test_c7x_3_release_strip.xe71"
 C7X_4_FW   = "ipc_echo_test_c7x_4_release_strip.xe71"
 
+DM_FW_LIST = ""
+DM_FW_LIST:j721e =   "${DM_FIRMWARE}"
 IPC_FW_LIST = ""
 IPC_FW_LIST:am65xx =  "${MCU_1_0_FW} ${MCU_1_1_FW}"
 IPC_FW_LIST:am64xx =  "${MCU_1_0_FW} ${MCU_1_1_FW} ${MCU_2_0_FW} ${MCU_2_1_FW} ${MCU_3_0_FW}"
@@ -94,10 +103,23 @@ do_install:prepend:am62axx() {
 }
 
 do_install() {
+    # Sign the firmware
+    # DM Firmware
+    for FW_NAME in ${DM_FW_LIST}
+    do
+        ${TI_SECURE_DEV_PKG}/scripts/secure-binary-image.sh ${S}/${DM_FW_DIR}/${FW_NAME} ${S}/${DM_FW_DIR}/${FW_NAME}.signed
+    done
     # IPC Firmware
     for FW_NAME in ${IPC_FW_LIST}
     do
         ${TI_SECURE_DEV_PKG}/scripts/secure-binary-image.sh ${S}/${IPC_FW_DIR}/${FW_NAME} ${S}/${IPC_FW_DIR}/${FW_NAME}.signed
+    done
+    # DM Firmware
+    install -d ${D}${INSTALL_DM_FW_DIR}
+    for FW_NAME in ${DM_FW_LIST}
+    do
+        install -m 0644 ${S}/${DM_FW_DIR}/${FW_NAME}        ${D}${INSTALL_DM_FW_DIR}/${FW_NAME}.unsigned
+        install -m 0644 ${S}/${DM_FW_DIR}/${FW_NAME}.signed ${D}${INSTALL_DM_FW_DIR}/${FW_NAME}
     done
 
     # IPC Firmware
@@ -109,6 +131,15 @@ do_install() {
     done
 }
 
+do_deploy() {
+    # DM Firmware is needed for rebuilding U-Boot
+    install -d ${DEPLOYDIR}
+    for FW_NAME in ${DM_FW_LIST}
+    do
+        install -m 0644 ${S}/${DM_FW_DIR}/${FW_NAME}        ${DEPLOYDIR}/${FW_NAME}.unsigned
+        install -m 0644 ${S}/${DM_FW_DIR}/${FW_NAME}.signed ${DEPLOYDIR}/${FW_NAME}
+    done
+}
 # Set up names for the firmwares
 ALTERNATIVE:${PN}:am65xx = "\
                     am65x-mcu-r5f0_0-fw   am65x-mcu-r5f0_0-fw-sec \
@@ -138,14 +169,20 @@ ALTERNATIVE:${PN}:am62axx = "\
                     "
 
 ALTERNATIVE:${PN}:j721e = "\
-                    j7-mcu-r5f0_1-fw    j7-mcu-r5f0_1-fw-sec \
-                    j7-main-r5f0_0-fw   j7-main-r5f0_0-fw-sec \
-                    j7-main-r5f0_1-fw   j7-main-r5f0_1-fw-sec \
-                    j7-main-r5f1_0-fw   j7-main-r5f1_0-fw-sec \
-                    j7-main-r5f1_1-fw   j7-main-r5f1_1-fw-sec \
-                    j7-c66_0-fw         j7-c66_0-fw-sec \
-                    j7-c66_1-fw         j7-c66_1-fw-sec \
-                    j7-c71_0-fw         j7-c71_0-fw-sec \
+                    j7-mcu-r5f0_0-fw \
+                    j7-mcu-r5f0_1-fw \
+                    j7-main-r5f0_1-fw \
+                    j7-main-r5f1_0-fw \
+                    j7-main-r5f1_1-fw \
+                    j7-c66_0-fw \
+                    j7-c66_1-fw \
+                    j7-c71_0-fw\
+                    j7-main-r5f0_1-fw-sec \
+                    j7-main-r5f1_0-fw-sec \
+                    j7-main-r5f1_1-fw-sec \
+                    j7-c66_0-fw-sec \
+                    j7-c66_1-fw-sec \
+                    j7-c71_0-fw-sec \
                     "
 
 ALTERNATIVE:${PN}:j7200 = "\
@@ -209,21 +246,19 @@ ALTERNATIVE_LINK_NAME[am62a-mcu-r5f0_0-fw-sec] = "${nonarch_base_libdir}/firmwar
 ALTERNATIVE_LINK_NAME[am62a-c71_0-fw]     = "${nonarch_base_libdir}/firmware/am62a-c71_0-fw"
 ALTERNATIVE_LINK_NAME[am62a-c71_0-fw-sec] = "${nonarch_base_libdir}/firmware/am62a-c71_0-fw-sec"
 
+ALTERNATIVE_LINK_NAME[j7-mcu-r5f0_0-fw] = "${nonarch_base_libdir}/firmware/j7-mcu-r5f0_0-fw"
 ALTERNATIVE_LINK_NAME[j7-mcu-r5f0_1-fw]     = "${nonarch_base_libdir}/firmware/j7-mcu-r5f0_1-fw"
-ALTERNATIVE_LINK_NAME[j7-mcu-r5f0_1-fw-sec] = "${nonarch_base_libdir}/firmware/j7-mcu-r5f0_1-fw-sec"
-ALTERNATIVE_LINK_NAME[j7-main-r5f0_0-fw]     = "${nonarch_base_libdir}/firmware/j7-main-r5f0_0-fw"
-ALTERNATIVE_LINK_NAME[j7-main-r5f0_0-fw-sec] = "${nonarch_base_libdir}/firmware/j7-main-r5f0_0-fw-sec"
-ALTERNATIVE_LINK_NAME[j7-main-r5f0_1-fw]     = "${nonarch_base_libdir}/firmware/j7-main-r5f0_1-fw"
+ALTERNATIVE_LINK_NAME[j7-main-r5f0_1-fw] = "${nonarch_base_libdir}/firmware/j7-main-r5f0_1-fw"
+ALTERNATIVE_LINK_NAME[j7-main-r5f1_0-fw] = "${nonarch_base_libdir}/firmware/j7-main-r5f1_0-fw"
+ALTERNATIVE_LINK_NAME[j7-main-r5f1_1-fw] = "${nonarch_base_libdir}/firmware/j7-main-r5f1_1-fw"
+ALTERNATIVE_LINK_NAME[j7-c66_0-fw] = "${nonarch_base_libdir}/firmware/j7-c66_0-fw"
+ALTERNATIVE_LINK_NAME[j7-c66_1-fw] = "${nonarch_base_libdir}/firmware/j7-c66_1-fw"
+ALTERNATIVE_LINK_NAME[j7-c71_0-fw] = "${nonarch_base_libdir}/firmware/j7-c71_0-fw"
 ALTERNATIVE_LINK_NAME[j7-main-r5f0_1-fw-sec] = "${nonarch_base_libdir}/firmware/j7-main-r5f0_1-fw-sec"
-ALTERNATIVE_LINK_NAME[j7-main-r5f1_0-fw]     = "${nonarch_base_libdir}/firmware/j7-main-r5f1_0-fw"
 ALTERNATIVE_LINK_NAME[j7-main-r5f1_0-fw-sec] = "${nonarch_base_libdir}/firmware/j7-main-r5f1_0-fw-sec"
-ALTERNATIVE_LINK_NAME[j7-main-r5f1_1-fw]     = "${nonarch_base_libdir}/firmware/j7-main-r5f1_1-fw"
 ALTERNATIVE_LINK_NAME[j7-main-r5f1_1-fw-sec] = "${nonarch_base_libdir}/firmware/j7-main-r5f1_1-fw-sec"
-ALTERNATIVE_LINK_NAME[j7-c66_0-fw]     = "${nonarch_base_libdir}/firmware/j7-c66_0-fw"
 ALTERNATIVE_LINK_NAME[j7-c66_0-fw-sec] = "${nonarch_base_libdir}/firmware/j7-c66_0-fw-sec"
-ALTERNATIVE_LINK_NAME[j7-c66_1-fw]     = "${nonarch_base_libdir}/firmware/j7-c66_1-fw"
 ALTERNATIVE_LINK_NAME[j7-c66_1-fw-sec] = "${nonarch_base_libdir}/firmware/j7-c66_1-fw-sec"
-ALTERNATIVE_LINK_NAME[j7-c71_0-fw]     = "${nonarch_base_libdir}/firmware/j7-c71_0-fw"
 ALTERNATIVE_LINK_NAME[j7-c71_0-fw-sec] = "${nonarch_base_libdir}/firmware/j7-c71_0-fw-sec"
 
 ALTERNATIVE_LINK_NAME[j7200-mcu-r5f0_1-fw]     = "${nonarch_base_libdir}/firmware/j7200-mcu-r5f0_1-fw"
@@ -300,23 +335,20 @@ ALTERNATIVE_TARGET[am62p-mcu-r5f0_0-fw-sec] = "${INSTALL_IPC_FW_DIR}/${MCU_2_0_F
 ALTERNATIVE_TARGET[am62a-mcu-r5f0_0-fw]     = "${INSTALL_IPC_FW_DIR}/${MCU_2_0_FW}"
 ALTERNATIVE_TARGET[am62a-mcu-r5f0_0-fw-sec] = "${INSTALL_IPC_FW_DIR}/${MCU_2_0_FW}.signed"
 ALTERNATIVE_TARGET[am62a-c71_0-fw]     = "${INSTALL_IPC_FW_DIR}/${C7X_1_FW}"
-ALTERNATIVE_TARGET[am62a-c71_0-fw-sec] = "${INSTALL_IPC_FW_DIR}/${C7X_1_FW}.signed"
 
+ALTERNATIVE_TARGET[j7-mcu-r5f0_0-fw] = "${INSTALL_DM_FW_DIR}/${DM_FIRMWARE}"
 ALTERNATIVE_TARGET[j7-mcu-r5f0_1-fw]     = "${INSTALL_IPC_FW_DIR}/${MCU_1_1_FW}"
-ALTERNATIVE_TARGET[j7-mcu-r5f0_1-fw-sec] = "${INSTALL_IPC_FW_DIR}/${MCU_1_1_FW}.signed"
-ALTERNATIVE_TARGET[j7-main-r5f0_0-fw]     = "${INSTALL_IPC_FW_DIR}/${MCU_2_0_FW}"
-ALTERNATIVE_TARGET[j7-main-r5f0_0-fw-sec] = "${INSTALL_IPC_FW_DIR}/${MCU_2_0_FW}.signed"
 ALTERNATIVE_TARGET[j7-main-r5f0_1-fw]     = "${INSTALL_IPC_FW_DIR}/${MCU_2_1_FW}"
+ALTERNATIVE_TARGET[j7-main-r5f1_0-fw] = "${INSTALL_IPC_FW_DIR}/${MCU_3_0_FW}"
+ALTERNATIVE_TARGET[j7-main-r5f1_1-fw] = "${INSTALL_IPC_FW_DIR}/${MCU_3_1_FW}"
+ALTERNATIVE_TARGET[j7-c66_0-fw] = "${INSTALL_IPC_FW_DIR}/${C66_1_FW}"
+ALTERNATIVE_TARGET[j7-c66_1-fw] = "${INSTALL_IPC_FW_DIR}/${C66_2_FW}"
+ALTERNATIVE_TARGET[j7-c71_0-fw] = "${INSTALL_IPC_FW_DIR}/${C7X_1_FW}"
 ALTERNATIVE_TARGET[j7-main-r5f0_1-fw-sec] = "${INSTALL_IPC_FW_DIR}/${MCU_2_1_FW}.signed"
-ALTERNATIVE_TARGET[j7-main-r5f1_0-fw]     = "${INSTALL_IPC_FW_DIR}/${MCU_3_0_FW}"
 ALTERNATIVE_TARGET[j7-main-r5f1_0-fw-sec] = "${INSTALL_IPC_FW_DIR}/${MCU_3_0_FW}.signed"
-ALTERNATIVE_TARGET[j7-main-r5f1_1-fw]     = "${INSTALL_IPC_FW_DIR}/${MCU_3_1_FW}"
 ALTERNATIVE_TARGET[j7-main-r5f1_1-fw-sec] = "${INSTALL_IPC_FW_DIR}/${MCU_3_1_FW}.signed"
-ALTERNATIVE_TARGET[j7-c66_0-fw]     = "${INSTALL_IPC_FW_DIR}/${C66_1_FW}"
 ALTERNATIVE_TARGET[j7-c66_0-fw-sec] = "${INSTALL_IPC_FW_DIR}/${C66_1_FW}.signed"
-ALTERNATIVE_TARGET[j7-c66_1-fw]     = "${INSTALL_IPC_FW_DIR}/${C66_2_FW}"
 ALTERNATIVE_TARGET[j7-c66_1-fw-sec] = "${INSTALL_IPC_FW_DIR}/${C66_2_FW}.signed"
-ALTERNATIVE_TARGET[j7-c71_0-fw]     = "${INSTALL_IPC_FW_DIR}/${C7X_1_FW}"
 ALTERNATIVE_TARGET[j7-c71_0-fw-sec] = "${INSTALL_IPC_FW_DIR}/${C7X_1_FW}.signed"
 
 ALTERNATIVE_TARGET[j7200-mcu-r5f0_1-fw]     = "${INSTALL_IPC_FW_DIR}/${MCU_1_1_FW}"

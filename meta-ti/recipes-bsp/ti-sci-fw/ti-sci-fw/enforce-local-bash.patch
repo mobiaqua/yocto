@@ -1,0 +1,47 @@
+diff -urp old/imggen/Makefile new/Makefile
+--- old/Makefile	2023-12-27 17:22:18
++++ new/Makefile	2023-12-27 17:32:46
+@@ -196,18 +196,18 @@ $(SYSFW_HS_CERTS_PATH): $(SYSFW_HS_INNER_CERT_PATH)
+ ifneq ($(SOC_TYPE),gp)
+ $(SYSFW_HS_CERTS_PATH): $(SYSFW_HS_INNER_CERT_PATH)
+ 	@echo "Signing the SYSFW inner certificate with $(KEY) key...";
+-	./gen_x509_cert.sh -d -c m3 -b $< -o $@ -l $(LOADADDR) -k $(KEY) -r $(SW_REV);
++	bash ./gen_x509_cert.sh -d -c m3 -b $< -o $@ -l $(LOADADDR) -k $(KEY) -r $(SW_REV);
+ 
+ $(soc_objroot)/sysfw.bin-$(SOC_TYPE): $(SYSFW_HS_CERTS_PATH) $(SYSFW_PATH) | _objtree_build
+ 	cat $^ > $@
+ else
+ $(soc_objroot)/sysfw.bin-$(SOC_TYPE): $(SYSFW_PATH) | _objtree_build
+ 	@echo "Signing the SYSFW release image with $(KEY) key...";
+-	./gen_x509_cert.sh -c m3 -b $< -o $@ -l $(LOADADDR) -k $(KEY) -r $(SW_REV);
++	bash ./gen_x509_cert.sh -c m3 -b $< -o $@ -l $(LOADADDR) -k $(KEY) -r $(SW_REV);
+ endif
+ 
+ $(ITS): | _objtree_build
+-	./gen_its.sh $(SOC) $(SOC_TYPE) $(CONFIG) $(SOC_BINS) > $@
++	bash ./gen_its.sh $(SOC) $(SOC_TYPE) $(CONFIG) $(SOC_BINS) > $@
+ 
+ $(ITB): $(ITS) $(SOC_BINS) | _bindir_build
+ 	$(MKIMAGE) -f $< -r $@
+@@ -232,10 +232,10 @@ $(TIBOOT3): $(SBL) $(SYSFW_PATH) $(SYSFW_HS_INNER_CERT
+ 
+ ifneq (,$(COMBINED_SYSFW_BRDCFG_LOADADDR))
+ $(TIBOOT3): $(SBL) $(SYSFW_PATH) $(SYSFW_HS_INNER_CERT_PATH) $(COMBINED_SYSFW_BRDCFG) | _bindir_build
+-	./scripts/gen_x509_combined_cert.sh -b $(SBL) -l $(SBL_LOADADDDR) -s $(SYSFW_PATH) -m $(LOADADDR) -c "$(SYSFW_HS_INNER_CERT_PATH)" -d $(COMBINED_SYSFW_BRDCFG) -n $(COMBINED_SYSFW_BRDCFG_LOADADDR) -k $(KEY) -r $(SW_REV) -o $@
++	bash ./scripts/gen_x509_combined_cert.sh -b $(SBL) -l $(SBL_LOADADDDR) -s $(SYSFW_PATH) -m $(LOADADDR) -c "$(SYSFW_HS_INNER_CERT_PATH)" -d $(COMBINED_SYSFW_BRDCFG) -n $(COMBINED_SYSFW_BRDCFG_LOADADDR) -k $(KEY) -r $(SW_REV) -o $@
+ else
+ $(TIBOOT3): $(SBL) $(SYSFW_PATH) $(SYSFW_HS_INNER_CERT_PATH) $(COMBINED_TIFS_BRDCFG) $(COMBINED_DM_BRDCFG) | _bindir_build
+-	./scripts/gen_x509_combined_cert.sh -b $(SBL) -l $(SBL_LOADADDDR) -s $(SYSFW_PATH) -m $(LOADADDR) -c "$(SYSFW_HS_INNER_CERT_PATH)" -d $(COMBINED_TIFS_BRDCFG) -n $(COMBINED_TIFS_BRDCFG_LOADADDR) -t $(COMBINED_DM_BRDCFG) -y $(COMBINED_DM_BRDCFG_LOADADDR) -k $(KEY) -r $(SW_REV) -o $@
++	bash ./scripts/gen_x509_combined_cert.sh -b $(SBL) -l $(SBL_LOADADDDR) -s $(SYSFW_PATH) -m $(LOADADDR) -c "$(SYSFW_HS_INNER_CERT_PATH)" -d $(COMBINED_TIFS_BRDCFG) -n $(COMBINED_TIFS_BRDCFG_LOADADDR) -t $(COMBINED_DM_BRDCFG) -y $(COMBINED_DM_BRDCFG_LOADADDR) -k $(KEY) -r $(SW_REV) -o $@
+ endif
+ 
+ .PHONY: tiboot3.bin
+@@ -247,7 +247,7 @@ $(soc_objroot)/%.o: %.c | _objtree_build
+ 	python3 ./scripts/sysfw_boardcfg_validator.py -b $@-pre-validated -i -o $@ -s $(BASE_SOC) -l $@.log
+ 
+ %.bin-signed: %.bin
+-	$(TI_SECURE_DEV_PKG)/scripts/secure-binary-image.sh $< $@
++	bash $(TI_SECURE_DEV_PKG)/scripts/secure-binary-image.sh $< $@
+ 
+ %.bin: %.o
+ 	$(CROSS_COMPILE)objcopy -S -O binary $< $@
