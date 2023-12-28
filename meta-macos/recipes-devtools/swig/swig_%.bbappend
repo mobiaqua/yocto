@@ -1,0 +1,2 @@
+EXTRA_OECONF = " PY3CONFIG=yes"
+
