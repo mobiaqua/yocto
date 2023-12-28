@@ -32,7 +32,7 @@ diff -urp old/setup.py new/setup.py
 -    extra_compile_args += ['-iwithsysroot/usr/include/ffi']
 +    #extra_compile_args += ['-iwithsysroot/usr/include/ffi']
 +    libs = []
-+    _ask_pkg_config(libs, '--libs-only-l', '-l', sysroot=False, pkg='python3-embed')
++    _ask_pkg_config(libs, '--libs-only-l', '-l', sysroot=False, pkg='python3')
 +    libraries += libs
  
  if 'freebsd' in sys.platform:
