@@ -4,10 +4,6 @@ PREPROCESS_RELOCATE_DIRS ?= ""
 def process_file_linux(cmd, fpath, rootdir, baseprefix, tmpdir, d, break_hardlinks = False):
     import subprocess, oe.qa
 
-# MobiAqua: starts here
-    return
-# MobiAqua: ends here
-
     with oe.qa.ELFFile(fpath) as elf:
         try:
             elf.open()
@@ -58,30 +54,47 @@ def process_file_linux(cmd, fpath, rootdir, baseprefix, tmpdir, d, break_hardlin
             bb.fatal("chrpath command failed with exit code %d:\n%s\n%s" % (e.returncode, e.stdout, e.stderr))
 
 def process_file_darwin(cmd, fpath, rootdir, baseprefix, tmpdir, d, break_hardlinks = False):
-    import subprocess as sub
+# MobiAqua: start here:
 
-# MobiAqua: starts here
-    return
-# MobiAqua: ends here
+    import subprocess, re
 
-    p = sub.Popen([d.expand("${HOST_PREFIX}otool"), '-L', fpath],stdout=sub.PIPE,stderr=sub.PIPE)
-    out, err = p.communicate()
-    # If returned successfully, process stdout for results
-    if p.returncode != 0:
+    try:
+        out = subprocess.check_output([d.expand("${HOST_PREFIX}otool"), "-l", fpath], universal_newlines=True)
+    except subprocess.CalledProcessError:
         return
-    for l in out.split("\n"):
-        if "(compatibility" not in l:
-            continue
-        rpath = l.partition("(compatibility")[0].strip()
-        if baseprefix not in rpath:
-            continue
 
-        if break_hardlinks:
-            bb.utils.break_hardlinks(fpath)
+    #bb.note("process_file_darwin(fpath=%s, rootdir=%s, baseprefix=%s, tmpdir=%s" %(fpath, rootdir, baseprefix, tmpdir))
 
-        newpath = "@loader_path/" + os.path.relpath(rpath, os.path.dirname(fpath.replace(rootdir, "/")))
-        p = sub.Popen([d.expand("${HOST_PREFIX}install_name_tool"), '-change', rpath, newpath, fpath],stdout=sub.PIPE,stderr=sub.PIPE)
-        out, err = p.communicate()
+    lines = [line.strip() for line in out.split("\n")]
+    line_number = 1
+    while line_number < len(lines):
+        line = lines[line_number]
+        line_number += 1
+
+        if line == 'cmd LC_LOAD_DYLIB':
+            cmdsize, path = lines[line_number:line_number + 2]
+            #bb.note("lpath: %s" %(path))
+            lpath = re.compile(r"name (.*) \(offset \d+\)").match(path).groups()[0]
+            line_number += 2
+
+            if lpath.startswith("@"):
+                continue
+
+            if baseprefix not in lpath:
+                continue
+
+            if break_hardlinks:
+                bb.utils.break_hardlinks(fpath)
+
+            newpath = "@executable_path/" + os.path.relpath(lpath, os.path.dirname(fpath.replace(rootdir, "/")))
+            #bb.note("Setting lpath for %s from %s to %s" %(fpath, lpath, newpath))
+
+            try:
+                subprocess.check_output([d.expand("${HOST_PREFIX}install_name_tool"), "-change", lpath, newpath, fpath], universal_newlines=True)
+            except subprocess.CalledProcessError as e:
+                return bb.fatal("install_name_tool command failed with exit code %d:\n%s\n%s" % (e.returncode, e.stdout, e.stderr))
+
+# MobiAqua: ends here
 
 def process_dir(rootdir, directory, d, break_hardlinks = False):
     bb.debug(2, "Checking %s for binaries to process" % directory)
