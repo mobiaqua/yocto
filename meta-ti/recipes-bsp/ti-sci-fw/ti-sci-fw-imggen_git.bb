@@ -7,7 +7,7 @@ DEPENDS = "openssl-native u-boot-mkimage-native dtc-native ti-sci-fw"
 
 PR = "${SRCREV}"
 
-SRCREV = "ffae8800a5c81c149835ed1aa5e2fbbe65a49c0d"
+SRCREV = "150f1956b4bdcba36e7dffc78a4342df602f8d6e"
 
 SRC_URI = "git://git.ti.com/git/k3-image-gen/k3-image-gen.git;protocol=https;branch=master \
            file://enforce-local-bash.patch \
@@ -31,10 +31,7 @@ SYSFW_SOC ?= "unknown"
 SYSFW_SUFFIX ?= "unknown"
 SYSFW_CONFIG ?= "unknown"
 
-SYSFW_PREFIX = "sci"
-SYSFW_PREFIX:beagle64r5 = "fs"
-
-SYSFW_BINARY = "sysfw-${SYSFW_SOC}-${SYSFW_CONFIG}.itb"
+SYSFW_BINARY = "sysfw-${SYSFW_SOC}-${SYSFW_SUFFIX}-${SYSFW_CONFIG}.itb"
 
 CFLAGS[unexport] = "1"
 LDFLAGS[unexport] = "1"
