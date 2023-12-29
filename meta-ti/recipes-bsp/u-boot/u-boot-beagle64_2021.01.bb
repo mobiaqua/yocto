@@ -20,9 +20,18 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files/beagle64:${THISDIR}/files:"
 
 # We use the revision in order to avoid having to fetch it from the
 # repo during parse
-SRCREV = "ea96725b5156135d5875415f75d2188f6f56622a"
+SRCREV = "bbe43c9db56745f1d77c61570c0857b36d53fffc"
 
-SRC_URI = "git://github.com/beagleboard/u-boot.git;branch=v2021.01-ti-08.05.00.001;protocol=https \
+SRC_URI = "git://git.ti.com/git/ti-u-boot/ti-u-boot.git;branch=ti-u-boot-2021.01;protocol=https \
+           file://0003-board_detect.c-mainline-fixes.patch \
+           file://0004-add-k3-j721e-beagleboneai64.dts.patch \
+           file://0005-config-default-setup.patch \
+           file://0006-Revert-net-ti-icssg-prueth-Enable-MDIO-manual-mode.patch \
+           file://0007-Revert-net-ti-am65-cpsw-nuss-Enable-MDIO-manual-mode.patch \
+           file://0008-Revert-net-ti-cpsw-mdio-Add-workaround-for-errata-i2.patch \
+           file://0009-arm-dts-Add-DDR-configuration-for-k3-j721e-r5-beagle.patch \
+           file://0014-arm-dts-k3-j721e-ddr-beagleboneai64-lp4-3200-Update-.patch \
+           file://0015-arm-dts-k3-j721e-ddr-beagleboneai64-lp4-3200-Update-.patch \
            file://avoid-python2.patch \
            file://k3-force-local-bash.patch \
           "

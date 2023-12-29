@@ -1,0 +1,53 @@
+From 5919c72d7c2734854e1f1a2401c42cac5e96ce0c Mon Sep 17 00:00:00 2001
+From: Nishanth Menon <nm@ti.com>
+Date: Tue, 15 Nov 2022 23:52:23 -0600
+Subject: [PATCH 14/15] arm: dts: k3-j721e-ddr-beagleboneai64-lp4-3200: Update
+ tRRD and tFAW parameters
+
+While reviewing potential alternate DDR sourcing option with
+K4FBE3D4HM-MGCJ part, the tRRB and tFAW parameters needed a bit of
+tweak Update the tRRD and tFAW which was missed in the first update
+around.
+
+While at this, document the alternate source part to state that we are
+using a common de-rated speed setting to maintain common bootloader for
+all variants of the board.
+
+Fixes: a7e2af1e154c ("arm: dts: Add DDR configuration for k3-j721e-r5-beagleboneai64")
+Signed-off-by: Kevin Scholz <k-scholz@ti.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ arch/arm/dts/k3-j721e-ddr-beagleboneai64-lp4-3200.dtsi | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/dts/k3-j721e-ddr-beagleboneai64-lp4-3200.dtsi b/arch/arm/dts/k3-j721e-ddr-beagleboneai64-lp4-3200.dtsi
+index f183785266..09445f92c0 100644
+--- a/arch/arm/dts/k3-j721e-ddr-beagleboneai64-lp4-3200.dtsi
++++ b/arch/arm/dts/k3-j721e-ddr-beagleboneai64-lp4-3200.dtsi
+@@ -5,6 +5,8 @@
+  * This file was generated on 10/21/2022
+  * Part Number: Kingston Q3222PM1WDGTK-U
+  * Configuration: LPDDR4-3200, wrDBI enabled, j721e-SK latencies
++ * Also common for:
++ * * Part Number: Samsung K4FBE3D4HM-MGC @ LPDDR4-3200 (instead of 3700)
+  */
+ 
+ #define DDRSS_PLL_FHS_CNT 10
+@@ -50,11 +52,11 @@
+ #define DDRSS_CTL_35_DATA 0x0E380E38
+ #define DDRSS_CTL_36_DATA 0x00050804
+ #define DDRSS_CTL_37_DATA 0x09040008
+-#define DDRSS_CTL_38_DATA 0x10000204
++#define DDRSS_CTL_38_DATA 0x14000304
+ #define DDRSS_CTL_39_DATA 0x15480068
+-#define DDRSS_CTL_40_DATA 0x10003120
++#define DDRSS_CTL_40_DATA 0x14004220
+ #define DDRSS_CTL_41_DATA 0x15480068
+-#define DDRSS_CTL_42_DATA 0x20003120
++#define DDRSS_CTL_42_DATA 0x20004220
+ #define DDRSS_CTL_43_DATA 0x000A0A09
+ #define DDRSS_CTL_44_DATA 0x0400078A
+ #define DDRSS_CTL_45_DATA 0x17100D04
+-- 
+2.43.0
+

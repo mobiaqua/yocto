@@ -1,0 +1,1368 @@
+From aca4f98abc71ed3fcda6314628a640b3f248d07f Mon Sep 17 00:00:00 2001
+From: Robert Nelson <robertcnelson@gmail.com>
+Date: Fri, 21 Oct 2022 17:27:44 -0500
+Subject: [PATCH 04/15] add: k3-j721e-beagleboneai64.dts
+
+Signed-off-by: Robert Nelson <robertcnelson@gmail.com>
+---
+ arch/arm/dts/Makefile                         |   3 +-
+ .../dts/k3-j721e-beagleboneai64-u-boot.dtsi   | 252 ++++++++
+ arch/arm/dts/k3-j721e-beagleboneai64.dts      | 579 ++++++++++++++++++
+ arch/arm/mach-k3/j721e_init.c                 |   8 +-
+ board/ti/j721e/evm.c                          |  15 +-
+ configs/j721e_evm_a72_defconfig               |   4 +-
+ configs/j721e_evm_r5_defconfig                |   4 +-
+ include/configs/j721e_evm.h                   | 330 +++++++++-
+ 8 files changed, 1178 insertions(+), 17 deletions(-)
+ create mode 100644 arch/arm/dts/k3-j721e-beagleboneai64-u-boot.dtsi
+ create mode 100644 arch/arm/dts/k3-j721e-beagleboneai64.dts
+
+diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
+index b9b8cbcfaf..c3005fc08e 100644
+--- a/arch/arm/dts/Makefile
++++ b/arch/arm/dts/Makefile
+@@ -981,7 +981,8 @@ dtb-$(CONFIG_SOC_K3_J721E) += k3-j721e-common-proc-board.dtb \
+ 			      k3-j7200-common-proc-board.dtb \
+ 			      k3-j7200-r5-common-proc-board.dtb \
+ 			      k3-j721e-sk.dtb \
+-			      k3-j721e-r5-sk.dtb
++			      k3-j721e-r5-sk.dtb \
++			      k3-j721e-beagleboneai64.dtb
+ dtb-$(CONFIG_SOC_K3_J721S2) += k3-j721s2-common-proc-board.dtb\
+ 			       k3-j721s2-r5-common-proc-board.dtb
+ dtb-$(CONFIG_SOC_K3_J784S4) += k3-j784s4-evm.dtb\
+diff --git a/arch/arm/dts/k3-j721e-beagleboneai64-u-boot.dtsi b/arch/arm/dts/k3-j721e-beagleboneai64-u-boot.dtsi
+new file mode 100644
+index 0000000000..3f23ecdf3e
+--- /dev/null
++++ b/arch/arm/dts/k3-j721e-beagleboneai64-u-boot.dtsi
+@@ -0,0 +1,252 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2018 Texas Instruments Incorporated - http://www.ti.com/
++ */
++
++#include <dt-bindings/net/ti-dp83867.h>
++
++/ {
++	chosen {
++		firmware-loader = &fs_loader0;
++		stdout-path = "serial2:115200n8";
++		tick-timer = &timer1;
++	};
++
++	aliases {
++		remoteproc0 = &sysctrler;
++		remoteproc1 = &a72_0;
++		remoteproc2 = &main_r5fss0_core0;
++		remoteproc3 = &main_r5fss0_core1;
++	};
++
++	fs_loader0: fs_loader@0 {
++		u-boot,dm-pre-reloc;
++		compatible = "u-boot,fs-loader";
++	};
++};
++
++&cbass_main{
++	u-boot,dm-spl;
++
++	main-navss {
++		u-boot,dm-spl;
++	};
++};
++
++&cbass_mcu_wakeup {
++	u-boot,dm-spl;
++
++	timer1: timer@40400000 {
++		compatible = "ti,omap5430-timer";
++		reg = <0x0 0x40400000 0x0 0x80>;
++		ti,timer-alwon;
++		clock-frequency = <25000000>;
++		u-boot,dm-spl;
++	};
++
++	mcu-navss {
++		u-boot,dm-spl;
++
++		ringacc@2b800000 {
++			reg =	<0x0 0x2b800000 0x0 0x400000>,
++				<0x0 0x2b000000 0x0 0x400000>,
++				<0x0 0x28590000 0x0 0x100>,
++				<0x0 0x2a500000 0x0 0x40000>,
++				<0x0 0x28440000 0x0 0x40000>;
++			reg-names = "rt", "fifos", "proxy_gcfg", "proxy_target", "cfg";
++			u-boot,dm-spl;
++		};
++
++		dma-controller@285c0000 {
++			reg =	<0x0 0x285c0000 0x0 0x100>,
++				<0x0 0x284c0000 0x0 0x4000>,
++				<0x0 0x2a800000 0x0 0x40000>,
++				<0x0 0x284a0000 0x0 0x4000>,
++				<0x0 0x2aa00000 0x0 0x40000>,
++				<0x0 0x28400000 0x0 0x2000>;
++			reg-names = "gcfg", "rchan", "rchanrt", "tchan",
++					    "tchanrt", "rflow";
++			u-boot,dm-spl;
++		};
++	};
++
++	chipid@43000014 {
++		u-boot,dm-spl;
++	};
++};
++
++&secure_proxy_main {
++	u-boot,dm-spl;
++};
++
++&dmsc {
++	u-boot,dm-spl;
++	k3_sysreset: sysreset-controller {
++		compatible = "ti,sci-sysreset";
++		u-boot,dm-spl;
++	};
++};
++
++&k3_pds {
++	u-boot,dm-spl;
++};
++
++&k3_clks {
++	u-boot,dm-spl;
++};
++
++&k3_reset {
++	u-boot,dm-spl;
++};
++
++&wkup_pmx0 {
++	u-boot,dm-spl;
++	mcu_cpsw_pins_default: mcu_cpsw_pins_default {
++		pinctrl-single,pins = <
++			J721E_WKUP_IOPAD(0x0058, PIN_OUTPUT, 0) /* (N4) MCU_RGMII1_TX_CTL */
++			J721E_WKUP_IOPAD(0x005c, PIN_INPUT, 0) /* (N5) MCU_RGMII1_RX_CTL */
++			J721E_WKUP_IOPAD(0x0060, PIN_OUTPUT, 0) /* (M2) MCU_RGMII1_TD3 */
++			J721E_WKUP_IOPAD(0x0064, PIN_OUTPUT, 0) /* (M3) MCU_RGMII1_TD2 */
++			J721E_WKUP_IOPAD(0x0068, PIN_OUTPUT, 0) /* (M4) MCU_RGMII1_TD1 */
++			J721E_WKUP_IOPAD(0x006c, PIN_OUTPUT, 0) /* (M5) MCU_RGMII1_TD0 */
++			J721E_WKUP_IOPAD(0x0078, PIN_INPUT, 0) /* (L2) MCU_RGMII1_RD3 */
++			J721E_WKUP_IOPAD(0x007c, PIN_INPUT, 0) /* (L5) MCU_RGMII1_RD2 */
++			J721E_WKUP_IOPAD(0x0080, PIN_INPUT, 0) /* (M6) MCU_RGMII1_RD1 */
++			J721E_WKUP_IOPAD(0x0084, PIN_INPUT, 0) /* (L6) MCU_RGMII1_RD0 */
++			J721E_WKUP_IOPAD(0x0070, PIN_INPUT, 0) /* (N1) MCU_RGMII1_TXC */
++			J721E_WKUP_IOPAD(0x0074, PIN_INPUT, 0) /* (M1) MCU_RGMII1_RXC */
++		>;
++	};
++
++	mcu_mdio_pins_default: mcu_mdio1_pins_default {
++		pinctrl-single,pins = <
++			J721E_WKUP_IOPAD(0x008c, PIN_OUTPUT, 0) /* (L1) MCU_MDIO0_MDC */
++			J721E_WKUP_IOPAD(0x0088, PIN_INPUT, 0) /* (L4) MCU_MDIO0_MDIO */
++		>;
++	};
++};
++
++&main_pmx0 {
++	u-boot,dm-spl;
++};
++
++&main_uart0 {
++	u-boot,dm-spl;
++};
++
++&mcu_uart0 {
++	u-boot,dm-spl;
++};
++
++&main_sdhci0 {
++	u-boot,dm-spl;
++};
++
++&main_sdhci1 {
++	u-boot,dm-spl;
++};
++
++&main_usbss0_pins_default {
++	u-boot,dm-spl;
++};
++
++&usbss0 {
++	u-boot,dm-spl;
++	ti,usb2-only;
++};
++
++&usb0 {
++	dr_mode = "peripheral";
++	u-boot,dm-spl;
++};
++
++&mcu_cpsw {
++	pinctrl-names = "default";
++	pinctrl-0 = <&mcu_cpsw_pins_default &mcu_mdio_pins_default>;
++};
++
++&davinci_mdio {
++	phy0: ethernet-phy@0 {
++		reg = <0>;
++		ti,rx-internal-delay = <DP83867_RGMIIDCTL_2_00_NS>;
++		ti,fifo-depth = <DP83867_PHYCR_FIFO_DEPTH_4_B_NIB>;
++	};
++};
++
++&cpsw_port1 {
++	phy-mode = "rgmii-rxid";
++	phy-handle = <&phy0>;
++};
++
++&mcu_cpsw {
++	reg = <0x0 0x46000000 0x0 0x200000>,
++	      <0x0 0x40f00200 0x0 0x2>;
++	reg-names = "cpsw_nuss", "mac_efuse";
++	/delete-property/ ranges;
++
++	cpsw-phy-sel@40f04040 {
++		compatible = "ti,am654-cpsw-phy-sel";
++		reg= <0x0 0x40f04040 0x0 0x4>;
++		reg-names = "gmii-sel";
++	};
++};
++
++&main_mmc1_pins_default {
++	u-boot,dm-spl;
++};
++
++&wkup_i2c0_pins_default {
++	u-boot,dm-spl;
++};
++
++&wkup_i2c0 {
++	u-boot,dm-spl;
++};
++
++&main_i2c0 {
++	u-boot,dm-spl;
++};
++
++&main_i2c0_pins_default {
++	u-boot,dm-spl;
++};
++
++&exp2 {
++	u-boot,dm-spl;
++};
++
++&mcu_fss0_ospi0_pins_default {
++	u-boot,dm-spl;
++};
++
++&fss {
++	u-boot,dm-spl;
++};
++
++&ospi0 {
++	u-boot,dm-spl;
++
++	flash@0 {
++		u-boot,dm-spl;
++	};
++};
++
++&ospi1 {
++	u-boot,dm-spl;
++
++	flash@0 {
++		u-boot,dm-spl;
++	};
++};
++
++&mcu_fss0_ospi1_pins_default {
++	u-boot,dm-spl;
++};
++
++&main_r5fss0 {
++	ti,cluster-mode = <0>;
++};
++
++&main_r5fss1 {
++	ti,cluster-mode = <0>;
++};
+diff --git a/arch/arm/dts/k3-j721e-beagleboneai64.dts b/arch/arm/dts/k3-j721e-beagleboneai64.dts
+new file mode 100644
+index 0000000000..ab0e720de1
+--- /dev/null
++++ b/arch/arm/dts/k3-j721e-beagleboneai64.dts
+@@ -0,0 +1,579 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2019 Texas Instruments Incorporated - https://www.ti.com/
++ */
++
++/dts-v1/;
++
++#include "k3-j721e-som-p0.dtsi"
++#include <dt-bindings/gpio/gpio.h>
++
++/ {
++	aliases {
++		remoteproc0 = &sysctrler;
++		remoteproc1 = &a72_0;
++	};
++
++	chosen {
++		stdout-path = "serial2:115200n8";
++		bootargs = "console=ttyS2,115200n8 earlycon=ns16550a,mmio32,0x02800000";
++	};
++
++	memory@80000000 {
++		device_type = "memory";
++		/* 4G RAM */
++		reg = <0x00000000 0x80000000 0x00000000 0x80000000>,
++		      <0x00000008 0x80000000 0x00000000 0x80000000>;
++	};
++
++	reserved_memory: reserved-memory {
++		#address-cells = <2>;
++		#size-cells = <2>;
++		ranges;
++
++		secure_ddr: optee@9e800000 {
++			reg = <0x00 0x9e800000 0x00 0x01800000>;
++			alignment = <0x1000>;
++			no-map;
++		};
++
++		mcu_r5fss0_core0_dma_memory_region: r5f-dma-memory@a0000000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa0000000 0x00 0x100000>;
++			no-map;
++		};
++
++		mcu_r5fss0_core0_memory_region: r5f-memory@a0100000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa0100000 0x00 0xf00000>;
++			no-map;
++		};
++
++		mcu_r5fss0_core1_dma_memory_region: r5f-dma-memory@a1000000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa1000000 0x00 0x100000>;
++			no-map;
++		};
++
++		mcu_r5fss0_core1_memory_region: r5f-memory@a1100000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa1100000 0x00 0xf00000>;
++			no-map;
++		};
++
++		main_r5fss0_core0_dma_memory_region: r5f-dma-memory@a2000000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa2000000 0x00 0x100000>;
++			no-map;
++		};
++
++		main_r5fss0_core0_memory_region: r5f-memory@a2100000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa2100000 0x00 0xf00000>;
++			no-map;
++		};
++
++		main_r5fss0_core1_dma_memory_region: r5f-dma-memory@a3000000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa3000000 0x00 0x100000>;
++			no-map;
++		};
++
++		main_r5fss0_core1_memory_region: r5f-memory@a3100000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa3100000 0x00 0xf00000>;
++			no-map;
++		};
++
++		main_r5fss1_core0_dma_memory_region: r5f-dma-memory@a4000000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa4000000 0x00 0x100000>;
++			no-map;
++		};
++
++		main_r5fss1_core0_memory_region: r5f-memory@a4100000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa4100000 0x00 0xf00000>;
++			no-map;
++		};
++
++		main_r5fss1_core1_dma_memory_region: r5f-dma-memory@a5000000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa5000000 0x00 0x100000>;
++			no-map;
++		};
++
++		main_r5fss1_core1_memory_region: r5f-memory@a5100000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa5100000 0x00 0xf00000>;
++			no-map;
++		};
++
++		c66_1_dma_memory_region: c66-dma-memory@a6000000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa6000000 0x00 0x100000>;
++			no-map;
++		};
++
++		c66_0_memory_region: c66-memory@a6100000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa6100000 0x00 0xf00000>;
++			no-map;
++		};
++
++		c66_0_dma_memory_region: c66-dma-memory@a7000000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa7000000 0x00 0x100000>;
++			no-map;
++		};
++
++		c66_1_memory_region: c66-memory@a7100000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa7100000 0x00 0xf00000>;
++			no-map;
++		};
++
++		c71_0_dma_memory_region: c71-dma-memory@a8000000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa8000000 0x00 0x100000>;
++			no-map;
++		};
++
++		c71_0_memory_region: c71-memory@a8100000 {
++			compatible = "shared-dma-pool";
++			reg = <0x00 0xa8100000 0x00 0xf00000>;
++			no-map;
++		};
++
++		rtos_ipc_memory_region: ipc-memories@aa000000 {
++			reg = <0x00 0xaa000000 0x00 0x01c00000>;
++			alignment = <0x1000>;
++			no-map;
++		};
++	};
++
++	a72_0: a72@0 {
++		compatible = "ti,am654-rproc";
++		reg = <0x0 0x00a90000 0x0 0x10>;
++		power-domains = <&k3_pds 61 TI_SCI_PD_EXCLUSIVE>,
++				<&k3_pds 202 TI_SCI_PD_EXCLUSIVE>;
++		resets = <&k3_reset 202 0>;
++		clocks = <&k3_clks 61 1>;
++		assigned-clocks = <&k3_clks 202 2>, <&k3_clks 61 1>;
++		assigned-clock-rates = <2000000000>, <200000000>;
++		ti,sci = <&dmsc>;
++		ti,sci-proc-id = <32>;
++		ti,sci-host-id = <10>;
++		u-boot,dm-spl;
++	};
++
++	leds {
++		pinctrl-names = "default";
++		pinctrl-0 = <&eeprom_wp_pins_default>;
++
++		compatible = "gpio-leds";
++
++		wp0 {
++			label = "EEPROM_WP";
++			gpios = <&wkup_gpio0 5 GPIO_ACTIVE_LOW>;
++			default-state = "off";
++			status = "okay";
++		};
++	};
++};
++
++&cbass_mcu_wakeup {
++	mcu_secproxy: secproxy@28380000 {
++		u-boot,dm-spl;
++		compatible = "ti,am654-secure-proxy";
++		reg = <0x0 0x2a380000 0x0 0x80000>,
++		      <0x0 0x2a400000 0x0 0x80000>,
++		      <0x0 0x2a480000 0x0 0x80000>;
++		reg-names = "rt", "scfg", "target_data";
++		#mbox-cells = <1>;
++	};
++
++	sysctrler: sysctrler {
++		u-boot,dm-spl;
++		compatible = "ti,am654-system-controller";
++		mboxes= <&mcu_secproxy 4>, <&mcu_secproxy 5>;
++		mbox-names = "tx", "rx";
++	};
++
++	dm_tifs: dm-tifs {
++		compatible = "ti,j721e-dm-sci";
++		ti,host-id = <3>;
++		ti,secure-host;
++		mbox-names = "rx", "tx";
++		mboxes= <&mcu_secproxy 21>,
++			<&mcu_secproxy 23>;
++		u-boot,dm-spl;
++	};
++};
++
++&cbass_main {
++	main_esm: esm@700000 {
++		compatible = "ti,j721e-esm";
++		reg = <0x0 0x700000 0x0 0x1000>;
++		ti,esm-pins = <344>, <345>;
++		u-boot,dm-spl;
++	};
++};
++
++&dmsc {
++	mboxes= <&mcu_secproxy 8>, <&mcu_secproxy 6>, <&mcu_secproxy 5>;
++	mbox-names = "tx", "rx", "notify";
++	ti,host-id = <4>;
++	ti,secure-host;
++};
++
++&main_pmx0 {
++	main_mmc1_pins_default: main_mmc1_pins_default {
++		pinctrl-single,pins = <
++			J721E_IOPAD(0x254, PIN_INPUT, 0) /* (R29) MMC1_CMD */
++			J721E_IOPAD(0x250, PIN_INPUT, 0) /* (P25) MMC1_CLK */
++			J721E_IOPAD(0x2ac, PIN_INPUT, 0) /* (P25) MMC1_CLKLB */
++			J721E_IOPAD(0x24c, PIN_INPUT, 0) /* (R24) MMC1_DAT0 */
++			J721E_IOPAD(0x248, PIN_INPUT, 0) /* (P24) MMC1_DAT1 */
++			J721E_IOPAD(0x244, PIN_INPUT, 0) /* (R25) MMC1_DAT2 */
++			J721E_IOPAD(0x240, PIN_INPUT, 0) /* (R26) MMC1_DAT3 */
++			J721E_IOPAD(0x258, PIN_INPUT, 0) /* (P23) MMC1_SDCD */
++			J721E_IOPAD(0x25c, PIN_INPUT, 0) /* (R28) MMC1_SDWP */
++		>;
++	};
++};
++
++&main_pmx0 {
++	main_usbss0_pins_default: main_usbss0_pins_default {
++		pinctrl-single,pins = <
++			J721E_IOPAD(0x290, PIN_OUTPUT, 0) /* (U6) USB0_DRVVBUS */
++			J721E_IOPAD(0x210, PIN_INPUT, 7) /* (W3) MCAN1_RX.GPIO1_3 */
++		>;
++	};
++
++	main_usbss1_pins_default: main_usbss1_pins_default {
++		pinctrl-single,pins = <
++			J721E_IOPAD(0x214, PIN_OUTPUT, 4) /* (V4) MCAN1_TX.USB1_DRVVBUS */
++		>;
++	};
++
++	main_i2c0_pins_default: main-i2c0-pins-default {
++		pinctrl-single,pins = <
++			J721E_IOPAD(0x220, PIN_INPUT_PULLUP, 0) /* (AC5) I2C0_SCL */
++			J721E_IOPAD(0x224, PIN_INPUT_PULLUP, 0) /* (AA5) I2C0_SDA */
++		>;
++	};
++};
++
++&wkup_pmx0 {
++	wkup_i2c0_pins_default: wkup-i2c0-pins-default {
++		pinctrl-single,pins = <
++			J721E_WKUP_IOPAD(0xf8, PIN_INPUT_PULLUP, 0) /* (J25) WKUP_I2C0_SCL */
++			J721E_WKUP_IOPAD(0xfc, PIN_INPUT_PULLUP, 0) /* (H24) WKUP_I2C0_SDA */
++		>;
++	};
++
++	eeprom_wp_pins_default: eeprom-wp-pins-default {
++		pinctrl-single,pins = <
++			J721E_WKUP_IOPAD(0xc4, PIN_OUTPUT_PULLUP, 7) /* (G24) WKUP_GPIO0_5 */
++		>;
++	};
++
++	mcu_fss0_ospi1_pins_default: mcu-fss0-ospi1-pins-default {
++		pinctrl-single,pins = <
++			J721E_WKUP_IOPAD(0x34, PIN_OUTPUT, 0) /* (F22) MCU_OSPI1_CLK */
++			J721E_WKUP_IOPAD(0x50, PIN_OUTPUT, 0) /* (C22) MCU_OSPI1_CSn0 */
++			J721E_WKUP_IOPAD(0x40, PIN_INPUT, 0) /* (D22) MCU_OSPI1_D0 */
++			J721E_WKUP_IOPAD(0x44, PIN_INPUT, 0) /* (G22) MCU_OSPI1_D1 */
++			J721E_WKUP_IOPAD(0x48, PIN_INPUT, 0) /* (D23) MCU_OSPI1_D2 */
++			J721E_WKUP_IOPAD(0x4c, PIN_INPUT, 0) /* (C23) MCU_OSPI1_D3 */
++			J721E_WKUP_IOPAD(0x3c, PIN_INPUT, 0) /* (B23) MCU_OSPI1_DQS */
++			J721E_WKUP_IOPAD(0x38, PIN_INPUT, 0) /* (A23) MCU_OSPI1_LBCLKO */
++		>;
++	};
++};
++
++&wkup_uart0 {
++	/* Wakeup UART is used by System firmware */
++	status = "reserved";
++};
++
++&main_uart0 {
++	power-domains = <&k3_pds 146 TI_SCI_PD_SHARED>;
++};
++
++&main_uart3 {
++	/* UART not brought out */
++	status = "disabled";
++};
++
++&main_uart5 {
++	/* UART not brought out */
++	status = "disabled";
++};
++
++&main_uart6 {
++	/* UART not brought out */
++	status = "disabled";
++};
++
++&main_uart7 {
++	/* UART not brought out */
++	status = "disabled";
++};
++
++&main_uart8 {
++	/* UART not brought out */
++	status = "disabled";
++};
++
++&main_uart9 {
++	/* UART not brought out */
++	status = "disabled";
++};
++
++&main_sdhci0 {
++	/* eMMC */
++	non-removable;
++	ti,driver-strength-ohm = <50>;
++};
++
++&main_sdhci1 {
++	/* SD card */
++	pinctrl-names = "default";
++	pinctrl-0 = <&main_mmc1_pins_default>;
++	ti,driver-strength-ohm = <50>;
++};
++
++&wkup_i2c0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&wkup_i2c0_pins_default>;
++	clock-frequency = <400000>;
++
++	eeprom@50 {
++		compatible = "atmel,24c04";
++		reg = <0x50>;
++	};
++};
++
++&main_i2c0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&main_i2c0_pins_default>;
++	clock-frequency = <400000>;
++
++	exp1: gpio@20 {
++		compatible = "ti,tca6416";
++		reg = <0x20>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++
++	exp2: gpio@22 {
++		compatible = "ti,tca6424";
++		reg = <0x22>;
++		gpio-controller;
++		#gpio-cells = <2>;
++	};
++};
++
++&usbss0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&main_usbss0_pins_default>;
++	ti,vbus-divider;
++};
++
++&usb0 {
++	dr_mode = "otg";
++	maximum-speed = "super-speed";
++};
++
++&usbss1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&main_usbss1_pins_default>;
++	ti,usb2-only;
++};
++
++&usb1 {
++	dr_mode = "host";
++	maximum-speed = "high-speed";
++};
++
++&ospi1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&mcu_fss0_ospi1_pins_default>;
++
++	flash@0{
++		compatible = "jedec,spi-nor";
++		reg = <0x0>;
++		spi-tx-bus-width = <1>;
++		spi-rx-bus-width = <4>;
++		spi-max-frequency = <40000000>;
++		cdns,tshsl-ns = <60>;
++		cdns,tsd2d-ns = <60>;
++		cdns,tchsh-ns = <60>;
++		cdns,tslch-ns = <60>;
++		cdns,read-delay = <2>;
++		#address-cells = <1>;
++		#size-cells = <1>;
++	};
++};
++
++&mcu_ringacc {
++	ti,sci = <&dm_tifs>;
++};
++
++&mcu_udmap {
++	ti,sci = <&dm_tifs>;
++};
++
++&mailbox0_cluster0 {
++	interrupts = <436>;
++
++	mbox_mcu_r5fss0_core0: mbox-mcu-r5fss0-core0 {
++		ti,mbox-rx = <0 0 0>;
++		ti,mbox-tx = <1 0 0>;
++	};
++
++	mbox_mcu_r5fss0_core1: mbox-mcu-r5fss0-core1 {
++		ti,mbox-rx = <2 0 0>;
++		ti,mbox-tx = <3 0 0>;
++	};
++};
++
++&mailbox0_cluster1 {
++	interrupts = <432>;
++
++	mbox_main_r5fss0_core0: mbox-main-r5fss0-core0 {
++		ti,mbox-rx = <0 0 0>;
++		ti,mbox-tx = <1 0 0>;
++	};
++
++	mbox_main_r5fss0_core1: mbox-main-r5fss0-core1 {
++		ti,mbox-rx = <2 0 0>;
++		ti,mbox-tx = <3 0 0>;
++	};
++};
++
++&mailbox0_cluster2 {
++	interrupts = <428>;
++
++	mbox_main_r5fss1_core0: mbox-main-r5fss1-core0 {
++		ti,mbox-rx = <0 0 0>;
++		ti,mbox-tx = <1 0 0>;
++	};
++
++	mbox_main_r5fss1_core1: mbox-main-r5fss1-core1 {
++		ti,mbox-rx = <2 0 0>;
++		ti,mbox-tx = <3 0 0>;
++	};
++};
++
++&mailbox0_cluster3 {
++	interrupts = <424>;
++
++	mbox_c66_0: mbox-c66-0 {
++		ti,mbox-rx = <0 0 0>;
++		ti,mbox-tx = <1 0 0>;
++	};
++
++	mbox_c66_1: mbox-c66-1 {
++		ti,mbox-rx = <2 0 0>;
++		ti,mbox-tx = <3 0 0>;
++	};
++};
++
++&mailbox0_cluster4 {
++	interrupts = <420>;
++
++	mbox_c71_0: mbox-c71-0 {
++		ti,mbox-rx = <0 0 0>;
++		ti,mbox-tx = <1 0 0>;
++	};
++};
++
++&mailbox0_cluster5 {
++	status = "disabled";
++};
++
++&mailbox0_cluster6 {
++	status = "disabled";
++};
++
++&mailbox0_cluster7 {
++	status = "disabled";
++};
++
++&mailbox0_cluster8 {
++	status = "disabled";
++};
++
++&mailbox0_cluster9 {
++	status = "disabled";
++};
++
++&mailbox0_cluster10 {
++	status = "disabled";
++};
++
++&mailbox0_cluster11 {
++	status = "disabled";
++};
++
++&mcu_r5fss0_core0 {
++	mboxes = <&mailbox0_cluster0 &mbox_mcu_r5fss0_core0>;
++	memory-region = <&mcu_r5fss0_core0_dma_memory_region>,
++			<&mcu_r5fss0_core0_memory_region>;
++};
++
++&mcu_r5fss0_core1 {
++	mboxes = <&mailbox0_cluster0 &mbox_mcu_r5fss0_core1>;
++	memory-region = <&mcu_r5fss0_core1_dma_memory_region>,
++			<&mcu_r5fss0_core1_memory_region>;
++};
++
++&main_r5fss0_core0 {
++	mboxes = <&mailbox0_cluster1 &mbox_main_r5fss0_core0>;
++	memory-region = <&main_r5fss0_core0_dma_memory_region>,
++			<&main_r5fss0_core0_memory_region>;
++};
++
++&main_r5fss0_core1 {
++	mboxes = <&mailbox0_cluster1 &mbox_main_r5fss0_core1>;
++	memory-region = <&main_r5fss0_core1_dma_memory_region>,
++			<&main_r5fss0_core1_memory_region>;
++};
++
++&main_r5fss1_core0 {
++	mboxes = <&mailbox0_cluster2 &mbox_main_r5fss1_core0>;
++	memory-region = <&main_r5fss1_core0_dma_memory_region>,
++			<&main_r5fss1_core0_memory_region>;
++};
++
++&main_r5fss1_core1 {
++	mboxes = <&mailbox0_cluster2 &mbox_main_r5fss1_core1>;
++	memory-region = <&main_r5fss1_core1_dma_memory_region>,
++			<&main_r5fss1_core1_memory_region>;
++};
++
++&c66_0 {
++	mboxes = <&mailbox0_cluster3 &mbox_c66_0>;
++	memory-region = <&c66_0_dma_memory_region>,
++			<&c66_0_memory_region>;
++};
++
++&c66_1 {
++	mboxes = <&mailbox0_cluster3 &mbox_c66_1>;
++	memory-region = <&c66_1_dma_memory_region>,
++			<&c66_1_memory_region>;
++};
++
++&c71_0 {
++	mboxes = <&mailbox0_cluster4 &mbox_c71_0>;
++	memory-region = <&c71_0_dma_memory_region>,
++			<&c71_0_memory_region>;
++};
++
++/* EEPROM might be read before SYSFW is available */
++&wkup_i2c0 {
++	/delete-property/ power-domains;
++};
+diff --git a/arch/arm/mach-k3/j721e_init.c b/arch/arm/mach-k3/j721e_init.c
+index f3fb184c6f..29c5027edd 100644
+--- a/arch/arm/mach-k3/j721e_init.c
++++ b/arch/arm/mach-k3/j721e_init.c
+@@ -304,7 +304,8 @@ void board_init_f(ulong dummy)
+ 
+ #ifdef CONFIG_ESM_K3
+ 	if (board_ti_k3_is("J721EX-PM2-SOM") ||
+-	    board_ti_k3_is("J7200X-PM2-SOM")) {
++	    board_ti_k3_is("J7200X-PM2-SOM") ||
++	    board_ti_k3_is("BBONEAI-64-B0-")) {
+ 		ret = uclass_get_device_by_driver(UCLASS_MISC,
+ 						  DM_GET_DRIVER(k3_esm), &dev);
+ 		if (ret)
+@@ -314,7 +315,8 @@ void board_init_f(ulong dummy)
+ 
+ #ifdef CONFIG_ESM_PMIC
+ 	if (board_ti_k3_is("J721EX-PM2-SOM") ||
+-	    board_ti_k3_is("J7200X-PM2-SOM")) {
++	    board_ti_k3_is("J7200X-PM2-SOM") ||
++	    board_ti_k3_is("BBONEAI-64-B0-")) {
+ 		ret = uclass_get_device_by_driver(UCLASS_MISC,
+ 						  DM_GET_DRIVER(pmic_esm),
+ 						  &dev);
+@@ -335,7 +337,7 @@ u32 spl_mmc_boot_mode(const u32 boot_device)
+ {
+ 	switch (boot_device) {
+ 	case BOOT_DEVICE_MMC1:
+-		return MMCSD_MODE_EMMCBOOT;
++		return MMCSD_MODE_FS;
+ 	case BOOT_DEVICE_MMC2:
+ 		return MMCSD_MODE_FS;
+ 	default:
+diff --git a/board/ti/j721e/evm.c b/board/ti/j721e/evm.c
+index 7bd4590408..825c4ecfe0 100644
+--- a/board/ti/j721e/evm.c
++++ b/board/ti/j721e/evm.c
+@@ -26,6 +26,8 @@
+ 
+ #include "../common/board_detect.h"
+ 
++#define board_is_bboneai_64_b0()	(board_ti_k3_is("BBONEAI-64-B0-"))
++
+ #define board_is_j721e_som()	(board_ti_k3_is("J721EX-PM1-SOM") || \
+ 				 board_ti_k3_is("J721EX-PM2-SOM"))
+ 
+@@ -92,7 +94,10 @@ int board_fit_config_name_match(const char *name)
+ {
+ 	bool eeprom_read = board_ti_was_eeprom_read();
+ 
+-	if (board_is_j721e_pm1_som()) {
++	if (board_is_bboneai_64_b0()) {
++		if (!strcmp(name, "k3-j721e-beaglebonai64"))
++			return 0;
++	} else if (board_is_j721e_pm1_som()) {
+ 		/* Loading for pm1 board a72 spl/u-boot */
+ 		if (!strcmp(name, "k3-j721e-tps65917-proc-board"))
+ 			return 0;
+@@ -214,6 +219,8 @@ static void setup_board_eeprom_env(void)
+ 		name = "J721EX-PM1-SOM";
+ 	else if (board_ti_k3_is("J721EX-PM2-SOM"))
+ 		name = "J721EX-PM2-SOM";
++	else if (board_ti_k3_is("BBONEAI-64-B0-"))
++		name = "BBONEAI-64-B0-";
+ 	else if (board_is_j721e_sk())
+ 		name = "j721e-sk";
+ 	else if (board_is_j7200_som())
+@@ -565,7 +572,8 @@ void spl_board_init(void)
+ 
+ 
+ #ifdef CONFIG_ESM_K3
+-	if (board_ti_k3_is("J721EX-PM2-SOM")) {
++	if (board_ti_k3_is("J721EX-PM2-SOM") ||
++	    board_ti_k3_is("BBONEAI-64-B0-")) {
+ 		ret = uclass_get_device_by_driver(UCLASS_MISC,
+ 						  DM_GET_DRIVER(k3_esm), &dev);
+ 		if (ret)
+@@ -574,7 +582,8 @@ void spl_board_init(void)
+ #endif
+ 
+ #ifdef CONFIG_ESM_PMIC
+-	if (board_ti_k3_is("J721EX-PM2-SOM")) {
++	if (board_ti_k3_is("J721EX-PM2-SOM") ||
++	    board_ti_k3_is("BBONEAI-64-B0-")) {
+ 		ret = uclass_get_device_by_driver(UCLASS_MISC,
+ 						  DM_GET_DRIVER(pmic_esm),
+ 						  &dev);
+diff --git a/configs/j721e_evm_a72_defconfig b/configs/j721e_evm_a72_defconfig
+index 5d449c6acb..4e48fd08f8 100644
+--- a/configs/j721e_evm_a72_defconfig
++++ b/configs/j721e_evm_a72_defconfig
+@@ -21,7 +21,7 @@ CONFIG_SPL_LIBDISK_SUPPORT=y
+ CONFIG_SPL_SPI_FLASH_SUPPORT=y
+ CONFIG_SPL_SPI_SUPPORT=y
+ # CONFIG_PSCI_RESET is not set
+-CONFIG_DEFAULT_DEVICE_TREE="k3-j721e-common-proc-board"
++CONFIG_DEFAULT_DEVICE_TREE="k3-j721e-beagleboneai64"
+ CONFIG_DISTRO_DEFAULTS=y
+ # CONFIG_SYS_MALLOC_CLEAR_ON_INIT is not set
+ CONFIG_SPL_LOAD_FIT=y
+@@ -78,7 +78,7 @@ CONFIG_MMC_SPEED_MODE_SET=y
+ # CONFIG_SPL_EFI_PARTITION is not set
+ CONFIG_OF_CONTROL=y
+ CONFIG_SPL_OF_CONTROL=y
+-CONFIG_OF_LIST="k3-j721e-common-proc-board k3-j721e-tps65917-proc-board k3-j721e-sk"
++CONFIG_OF_LIST="k3-j721e-common-proc-board k3-j721e-beagleboneai64"
+ CONFIG_SPL_MULTI_DTB_FIT=y
+ CONFIG_SPL_MULTI_DTB_FIT_NO_COMPRESSION=y
+ CONFIG_ENV_OVERWRITE=y
+diff --git a/configs/j721e_evm_r5_defconfig b/configs/j721e_evm_r5_defconfig
+index 72ac8c69b7..7f27a63d5a 100644
+--- a/configs/j721e_evm_r5_defconfig
++++ b/configs/j721e_evm_r5_defconfig
+@@ -20,7 +20,7 @@ CONFIG_SPL_FS_FAT=y
+ CONFIG_SPL_SPI_SUPPORT=y
+ CONFIG_SPL_MTD_SUPPORT=y
+ CONFIG_SPL_NOR_SUPPORT=y
+-CONFIG_DEFAULT_DEVICE_TREE="k3-j721e-r5-common-proc-board"
++CONFIG_DEFAULT_DEVICE_TREE="k3-j721e-r5-beagleboneai64"
+ # CONFIG_SYS_MALLOC_CLEAR_ON_INIT is not set
+ CONFIG_SPL_LOAD_FIT=y
+ CONFIG_SPL_LOAD_FIT_ADDRESS=0x80080000
+@@ -68,7 +68,7 @@ CONFIG_CMD_MTDPARTS=y
+ CONFIG_OF_CONTROL=y
+ CONFIG_SPL_OF_CONTROL=y
+ CONFIG_SPL_MULTI_DTB_FIT=y
+-CONFIG_SPL_OF_LIST="k3-j721e-r5-common-proc-board k3-j721e-r5-sk"
++CONFIG_SPL_OF_LIST="k3-j721e-r5-beagleboneai64"
+ CONFIG_SPL_MULTI_DTB_FIT_NO_COMPRESSION=y
+ CONFIG_ENV_OVERWRITE=y
+ CONFIG_SYS_RELOC_GD_ENV_ADDR=y
+diff --git a/include/configs/j721e_evm.h b/include/configs/j721e_evm.h
+index 50b018b6ed..690fea4528 100644
+--- a/include/configs/j721e_evm.h
++++ b/include/configs/j721e_evm.h
+@@ -77,14 +77,304 @@
+ #define EXTRA_ENV_J721E_BOARD_SETTINGS					\
+ 	"default_device_tree=" CONFIG_DEFAULT_DEVICE_TREE ".dtb\0"	\
+ 	"findfdt="							\
++		"echo board_name=[$board_name] ...;"			\
+ 		"setenv name_fdt ${default_device_tree};"		\
+ 		"if test $board_name = J721EX-PM1-SOM; then "		\
+-			"setenv name_fdt k3-j721e-proc-board-tps65917.dtb; fi;" \
+-		"if test $board_name = j721e; then "			\
+-			"setenv name_fdt k3-j721e-common-proc-board.dtb; fi;" \
+-		"if test $board_name = j721e-eaik || test $board_name = j721e-sk; then " \
+-			"setenv name_fdt k3-j721e-sk.dtb; fi;"	\
++			"setenv name_fdt k3-j721e-proc-board-tps65917.dtb; " \
++		"elif test $board_name = J721EX-PM2-SOM; then "		\
++			"setenv name_fdt k3-j721e-common-proc-board.dtb; " \
++		"elif test $board_name = BBONEAI-64-B0-; then "		\
++			"setenv name_fdt k3-j721e-beagleboneai64.dtb; " \
++		"elif test $board_name = j721e; then "			\
++			"setenv name_fdt k3-j721e-common-proc-board.dtb; " \
++		"elif test $board_name = j721e-eaik || test $board_name = j721e-sk; then " \
++			"setenv name_fdt k3-j721e-sk.dtb; "		\
++		"else " \
++			"setenv name_fdt k3-j721e-beagleboneai64.dtb; "	\
++		"fi; " \
++		"echo name_fdt=[${name_fdt}] ...;"			\
+ 		"setenv fdtfile ${name_fdt}\0"				\
++	"eeprom_dump=i2c dev 0; "					\
++		"i2c md 0x51 0x00.1 40; "				\
++		"\0"							\
++	"eeprom_dump_2byte=i2c dev 0; "					\
++		"i2c md 0x50 0x00.2 40; "				\
++		"\0"							\
++	"eeprom_production_bbai=i2c dev 0; "				\
++		"i2c md 0x51 0x00.1 40; "				\
++		"i2c mw 0x51 0x00.1 aa; "				\
++		"i2c mw 0x51 0x01.1 55; "				\
++		"i2c mw 0x51 0x02.1 33; "				\
++		"i2c mw 0x51 0x03.1 ee; "				\
++		"i2c mw 0x51 0x04.1 01; "				\
++		"i2c mw 0x51 0x05.1 37; "				\
++		"i2c mw 0x51 0x06.1 00; "				\
++		"i2c mw 0x51 0x07.1 10; "				\
++		"i2c mw 0x51 0x08.1 2e; "				\
++		"i2c mw 0x51 0x09.1 00; "				\
++		"i2c mw 0x51 0x0a.1 42; "				\
++		"i2c mw 0x51 0x0b.1 42; "				\
++		"i2c mw 0x51 0x0c.1 4f; "				\
++		"i2c mw 0x51 0x0d.1 4e; "				\
++		"i2c mw 0x51 0x0e.1 45; "				\
++		"i2c mw 0x51 0x0f.1 41; "				\
++		"i2c mw 0x51 0x10.1 49; "				\
++		"i2c mw 0x51 0x11.1 2d; "				\
++		"i2c mw 0x51 0x12.1 36; "				\
++		"i2c mw 0x51 0x13.1 34; "				\
++		"i2c mw 0x51 0x14.1 2d; "				\
++		"i2c mw 0x51 0x15.1 42; "				\
++		"i2c mw 0x51 0x16.1 30; "				\
++		"i2c mw 0x51 0x17.1 2d; "				\
++		"i2c mw 0x51 0x18.1 00; "				\
++		"i2c mw 0x51 0x19.1 00; "				\
++		"i2c mw 0x51 0x1a.1 42; "				\
++		"i2c mw 0x51 0x1b.1 30; "				\
++		"i2c mw 0x51 0x1c.1 30; "				\
++		"i2c mw 0x51 0x1d.1 30; "				\
++		"i2c mw 0x51 0x1e.1 37; "				\
++		"i2c mw 0x51 0x1f.1 38; "				\
++		"i2c mw 0x51 0x20.1 30; "				\
++		"i2c mw 0x51 0x21.1 31; "				\
++		"i2c mw 0x51 0x22.1 42; "				\
++		"i2c mw 0x51 0x23.1 30; "				\
++		"i2c mw 0x51 0x24.1 30; "				\
++		"i2c mw 0x51 0x25.1 30; "				\
++		"i2c mw 0x51 0x26.1 30; "				\
++		"i2c mw 0x51 0x27.1 31; "				\
++		"i2c mw 0x51 0x28.1 36; "				\
++		"i2c mw 0x51 0x29.1 34; "				\
++		"i2c mw 0x51 0x2a.1 57; "				\
++		"i2c mw 0x51 0x2b.1 57; "				\
++		"i2c mw 0x51 0x2c.1 32; "				\
++		"i2c mw 0x51 0x2d.1 32; "				\
++		"i2c mw 0x51 0x2e.1 42; "				\
++		"i2c mw 0x51 0x2f.1 42; "				\
++		"i2c mw 0x51 0x30.1 42; "				\
++		"i2c mw 0x51 0x31.1 42; "				\
++		"i2c mw 0x51 0x32.1 42; "				\
++		"i2c mw 0x51 0x33.1 42; "				\
++		"i2c mw 0x51 0x34.1 53; "				\
++		"i2c mw 0x51 0x35.1 53; "				\
++		"i2c mw 0x51 0x36.1 53; "				\
++		"i2c mw 0x51 0x37.1 53; "				\
++		"i2c mw 0x51 0x38.1 11; "				\
++		"i2c mw 0x51 0x39.1 02; "				\
++		"i2c mw 0x51 0x3a.1 00; "				\
++		"i2c mw 0x51 0x3b.1 60; "				\
++		"i2c mw 0x51 0x3c.1 7d; "				\
++		"i2c mw 0x51 0x3d.1 fe; "				\
++		"i2c mw 0x51 0x3e.1 ff; "				\
++		"i2c mw 0x51 0x3f.1 ff; "				\
++		"i2c md 0x51 0x00.1 40; "				\
++		"\0"							\
++	"eeprom_production_bbai_2byte=i2c dev 0; "			\
++		"i2c md 0x50 0x00.2 40; "				\
++		"i2c mw 0x50 0x00.2 aa; "				\
++		"i2c mw 0x50 0x01.2 55; "				\
++		"i2c mw 0x50 0x02.2 33; "				\
++		"i2c mw 0x50 0x03.2 ee; "				\
++		"i2c mw 0x50 0x04.2 01; "				\
++		"i2c mw 0x50 0x05.2 37; "				\
++		"i2c mw 0x50 0x06.2 00; "				\
++		"i2c mw 0x50 0x07.2 10; "				\
++		"i2c mw 0x50 0x08.2 2e; "				\
++		"i2c mw 0x50 0x09.2 00; "				\
++		"i2c mw 0x50 0x0a.2 42; "				\
++		"i2c mw 0x50 0x0b.2 42; "				\
++		"i2c mw 0x50 0x0c.2 4f; "				\
++		"i2c mw 0x50 0x0d.2 4e; "				\
++		"i2c mw 0x50 0x0e.2 45; "				\
++		"i2c mw 0x50 0x0f.2 41; "				\
++		"i2c mw 0x50 0x10.2 49; "				\
++		"i2c mw 0x50 0x11.2 2d; "				\
++		"i2c mw 0x50 0x12.2 36; "				\
++		"i2c mw 0x50 0x13.2 34; "				\
++		"i2c mw 0x50 0x14.2 2d; "				\
++		"i2c mw 0x50 0x15.2 42; "				\
++		"i2c mw 0x50 0x16.2 30; "				\
++		"i2c mw 0x50 0x17.2 2d; "				\
++		"i2c mw 0x50 0x18.2 00; "				\
++		"i2c mw 0x50 0x19.2 00; "				\
++		"i2c mw 0x50 0x1a.2 42; "				\
++		"i2c mw 0x50 0x1b.2 30; "				\
++		"i2c mw 0x50 0x1c.2 30; "				\
++		"i2c mw 0x50 0x1d.2 30; "				\
++		"i2c mw 0x50 0x1e.2 37; "				\
++		"i2c mw 0x50 0x1f.2 38; "				\
++		"i2c mw 0x50 0x20.2 30; "				\
++		"i2c mw 0x50 0x21.2 31; "				\
++		"i2c mw 0x50 0x22.2 42; "				\
++		"i2c mw 0x50 0x23.2 30; "				\
++		"i2c mw 0x50 0x24.2 30; "				\
++		"i2c mw 0x50 0x25.2 30; "				\
++		"i2c mw 0x50 0x26.2 30; "				\
++		"i2c mw 0x50 0x27.2 31; "				\
++		"i2c mw 0x50 0x28.2 36; "				\
++		"i2c mw 0x50 0x29.2 34; "				\
++		"i2c mw 0x50 0x2a.2 57; "				\
++		"i2c mw 0x50 0x2b.2 57; "				\
++		"i2c mw 0x50 0x2c.2 32; "				\
++		"i2c mw 0x50 0x2d.2 32; "				\
++		"i2c mw 0x50 0x2e.2 42; "				\
++		"i2c mw 0x50 0x2f.2 42; "				\
++		"i2c mw 0x50 0x30.2 42; "				\
++		"i2c mw 0x50 0x31.2 42; "				\
++		"i2c mw 0x50 0x32.2 42; "				\
++		"i2c mw 0x50 0x33.2 42; "				\
++		"i2c mw 0x50 0x34.2 53; "				\
++		"i2c mw 0x50 0x35.2 53; "				\
++		"i2c mw 0x50 0x36.2 53; "				\
++		"i2c mw 0x50 0x37.2 53; "				\
++		"i2c mw 0x50 0x38.2 11; "				\
++		"i2c mw 0x50 0x39.2 02; "				\
++		"i2c mw 0x50 0x3a.2 00; "				\
++		"i2c mw 0x50 0x3b.2 60; "				\
++		"i2c mw 0x50 0x3c.2 7d; "				\
++		"i2c mw 0x50 0x3d.2 fe; "				\
++		"i2c mw 0x50 0x3e.2 ff; "				\
++		"i2c mw 0x50 0x3f.2 ff; "				\
++		"i2c md 0x50 0x00.2 40; "				\
++		"\0"							\
++	"eeprom_bbai_erase=i2c dev 0; "					\
++		"i2c md 0x51 0x00.1 40; "				\
++		"i2c mw 0x51 0x00.1 ff; "				\
++		"i2c mw 0x51 0x01.1 ff; "				\
++		"i2c mw 0x51 0x02.1 ff; "				\
++		"i2c mw 0x51 0x03.1 ff; "				\
++		"i2c mw 0x51 0x04.1 ff; "				\
++		"i2c mw 0x51 0x05.1 ff; "				\
++		"i2c mw 0x51 0x06.1 ff; "				\
++		"i2c mw 0x51 0x07.1 ff; "				\
++		"i2c mw 0x51 0x08.1 ff; "				\
++		"i2c mw 0x51 0x09.1 ff; "				\
++		"i2c mw 0x51 0x0a.1 ff; "				\
++		"i2c mw 0x51 0x0b.1 ff; "				\
++		"i2c mw 0x51 0x0c.1 ff; "				\
++		"i2c mw 0x51 0x0d.1 ff; "				\
++		"i2c mw 0x51 0x0e.1 ff; "				\
++		"i2c mw 0x51 0x0f.1 ff; "				\
++		"i2c mw 0x51 0x10.1 ff; "				\
++		"i2c mw 0x51 0x11.1 ff; "				\
++		"i2c mw 0x51 0x12.1 ff; "				\
++		"i2c mw 0x51 0x13.1 ff; "				\
++		"i2c mw 0x51 0x14.1 ff; "				\
++		"i2c mw 0x51 0x15.1 ff; "				\
++		"i2c mw 0x51 0x16.1 ff; "				\
++		"i2c mw 0x51 0x17.1 ff; "				\
++		"i2c mw 0x51 0x18.1 ff; "				\
++		"i2c mw 0x51 0x19.1 ff; "				\
++		"i2c mw 0x51 0x1a.1 ff; "				\
++		"i2c mw 0x51 0x1b.1 ff; "				\
++		"i2c mw 0x51 0x1c.1 ff; "				\
++		"i2c mw 0x51 0x1d.1 ff; "				\
++		"i2c mw 0x51 0x1e.1 ff; "				\
++		"i2c mw 0x51 0x1f.1 ff; "				\
++		"i2c mw 0x51 0x20.1 ff; "				\
++		"i2c mw 0x51 0x21.1 ff; "				\
++		"i2c mw 0x51 0x22.1 ff; "				\
++		"i2c mw 0x51 0x23.1 ff; "				\
++		"i2c mw 0x51 0x24.1 ff; "				\
++		"i2c mw 0x51 0x25.1 ff; "				\
++		"i2c mw 0x51 0x26.1 ff; "				\
++		"i2c mw 0x51 0x27.1 ff; "				\
++		"i2c mw 0x51 0x28.1 ff; "				\
++		"i2c mw 0x51 0x29.1 ff; "				\
++		"i2c mw 0x51 0x2a.1 ff; "				\
++		"i2c mw 0x51 0x2b.1 ff; "				\
++		"i2c mw 0x51 0x2c.1 ff; "				\
++		"i2c mw 0x51 0x2d.1 ff; "				\
++		"i2c mw 0x51 0x2e.1 ff; "				\
++		"i2c mw 0x51 0x2f.1 ff; "				\
++		"i2c mw 0x51 0x30.1 ff; "				\
++		"i2c mw 0x51 0x31.1 ff; "				\
++		"i2c mw 0x51 0x32.1 ff; "				\
++		"i2c mw 0x51 0x33.1 ff; "				\
++		"i2c mw 0x51 0x34.1 ff; "				\
++		"i2c mw 0x51 0x35.1 ff; "				\
++		"i2c mw 0x51 0x36.1 ff; "				\
++		"i2c mw 0x51 0x37.1 ff; "				\
++		"i2c mw 0x51 0x38.1 ff; "				\
++		"i2c mw 0x51 0x39.1 ff; "				\
++		"i2c mw 0x51 0x3a.1 ff; "				\
++		"i2c mw 0x51 0x3b.1 ff; "				\
++		"i2c mw 0x51 0x3c.1 ff; "				\
++		"i2c mw 0x51 0x3d.1 ff; "				\
++		"i2c mw 0x51 0x3e.1 ff; "				\
++		"i2c mw 0x51 0x3f.1 ff; "				\
++		"i2c md 0x51 0x00.1 40; "				\
++		"\0"							\
++	"eeprom_bbai_erase_2byte=i2c dev 0; "				\
++		"i2c md 0x50 0x00.2 40; "				\
++		"i2c mw 0x50 0x00.2 ff; "				\
++		"i2c mw 0x50 0x01.2 ff; "				\
++		"i2c mw 0x50 0x02.2 ff; "				\
++		"i2c mw 0x50 0x03.2 ff; "				\
++		"i2c mw 0x50 0x04.2 ff; "				\
++		"i2c mw 0x50 0x05.2 ff; "				\
++		"i2c mw 0x50 0x06.2 ff; "				\
++		"i2c mw 0x50 0x07.2 ff; "				\
++		"i2c mw 0x50 0x08.2 ff; "				\
++		"i2c mw 0x50 0x09.2 ff; "				\
++		"i2c mw 0x50 0x0a.2 ff; "				\
++		"i2c mw 0x50 0x0b.2 ff; "				\
++		"i2c mw 0x50 0x0c.2 ff; "				\
++		"i2c mw 0x50 0x0d.2 ff; "				\
++		"i2c mw 0x50 0x0e.2 ff; "				\
++		"i2c mw 0x50 0x0f.2 ff; "				\
++		"i2c mw 0x50 0x10.2 ff; "				\
++		"i2c mw 0x50 0x11.2 ff; "				\
++		"i2c mw 0x50 0x12.2 ff; "				\
++		"i2c mw 0x50 0x13.2 ff; "				\
++		"i2c mw 0x50 0x14.2 ff; "				\
++		"i2c mw 0x50 0x15.2 ff; "				\
++		"i2c mw 0x50 0x16.2 ff; "				\
++		"i2c mw 0x50 0x17.2 ff; "				\
++		"i2c mw 0x50 0x18.2 ff; "				\
++		"i2c mw 0x50 0x19.2 ff; "				\
++		"i2c mw 0x50 0x1a.2 ff; "				\
++		"i2c mw 0x50 0x1b.2 ff; "				\
++		"i2c mw 0x50 0x1c.2 ff; "				\
++		"i2c mw 0x50 0x1d.2 ff; "				\
++		"i2c mw 0x50 0x1e.2 ff; "				\
++		"i2c mw 0x50 0x1f.2 ff; "				\
++		"i2c mw 0x50 0x20.2 ff; "				\
++		"i2c mw 0x50 0x21.2 ff; "				\
++		"i2c mw 0x50 0x22.2 ff; "				\
++		"i2c mw 0x50 0x23.2 ff; "				\
++		"i2c mw 0x50 0x24.2 ff; "				\
++		"i2c mw 0x50 0x25.2 ff; "				\
++		"i2c mw 0x50 0x26.2 ff; "				\
++		"i2c mw 0x50 0x27.2 ff; "				\
++		"i2c mw 0x50 0x28.2 ff; "				\
++		"i2c mw 0x50 0x29.2 ff; "				\
++		"i2c mw 0x50 0x2a.2 ff; "				\
++		"i2c mw 0x50 0x2b.2 ff; "				\
++		"i2c mw 0x50 0x2c.2 ff; "				\
++		"i2c mw 0x50 0x2d.2 ff; "				\
++		"i2c mw 0x50 0x2e.2 ff; "				\
++		"i2c mw 0x50 0x2f.2 ff; "				\
++		"i2c mw 0x50 0x30.2 ff; "				\
++		"i2c mw 0x50 0x31.2 ff; "				\
++		"i2c mw 0x50 0x32.2 ff; "				\
++		"i2c mw 0x50 0x33.2 ff; "				\
++		"i2c mw 0x50 0x34.2 ff; "				\
++		"i2c mw 0x50 0x35.2 ff; "				\
++		"i2c mw 0x50 0x36.2 ff; "				\
++		"i2c mw 0x50 0x37.2 ff; "				\
++		"i2c mw 0x50 0x38.2 ff; "				\
++		"i2c mw 0x50 0x39.2 ff; "				\
++		"i2c mw 0x50 0x3a.2 ff; "				\
++		"i2c mw 0x50 0x3b.2 ff; "				\
++		"i2c mw 0x50 0x3c.2 ff; "				\
++		"i2c mw 0x50 0x3d.2 ff; "				\
++		"i2c mw 0x50 0x3e.2 ff; "				\
++		"i2c mw 0x50 0x3f.2 ff; "				\
++		"i2c md 0x50 0x00.2 40; "				\
++		"\0"							\
++	"emmc_erase_boot0=mmc dev 0 1; "				\
++		"mmc erase 0 0x2400; "					\
++		"\0"							\
+ 	"name_kern=Image\0"						\
+ 	"console=ttyS2,115200n8\0"					\
+ 	"args_all=setenv optargs ${optargs} "				\
+@@ -210,6 +500,33 @@
+ #define EXTRA_ENV_J721E_BOARD_SETTINGS_MTD
+ #endif
+ 
++#if CONFIG_IS_ENABLED(CMD_USB)
++# define BOOT_TARGET_USB(func) func(USB, usb, 0)
++#else
++# define BOOT_TARGET_USB(func)
++#endif
++
++#if CONFIG_IS_ENABLED(CMD_PXE)
++# define BOOT_TARGET_PXE(func) func(PXE, pxe, na)
++#else
++# define BOOT_TARGET_PXE(func)
++#endif
++
++#if CONFIG_IS_ENABLED(CMD_DHCP)
++# define BOOT_TARGET_DHCP(func) func(DHCP, dhcp, na)
++#else
++# define BOOT_TARGET_DHCP(func)
++#endif
++
++#define BOOT_TARGET_DEVICES(func) \
++	func(MMC, mmc, 1) \
++	func(MMC, mmc, 0) \
++	BOOT_TARGET_USB(func) \
++	BOOT_TARGET_PXE(func) \
++	BOOT_TARGET_DHCP(func)
++
++#include <config_distro_bootcmd.h>
++
+ /* Incorporate settings into the U-Boot environment */
+ #define CONFIG_EXTRA_ENV_SETTINGS					\
+ 	DEFAULT_LINUX_BOOT_ENV						\
+@@ -221,7 +538,8 @@
+ 	EXTRA_ENV_DFUARGS						\
+ 	DEFAULT_UFS_TI_ARGS						\
+ 	EXTRA_ENV_J721E_BOARD_SETTINGS_MTD				\
+-	EXTRA_ENV_CONFIG_MAIN_CPSW0_QSGMII_PHY
++	EXTRA_ENV_CONFIG_MAIN_CPSW0_QSGMII_PHY				\
++	BOOTENV
+ 
+ /* Now for the remaining common defines */
+ #include <configs/ti_armv7_common.h>
+-- 
+2.43.0
+
