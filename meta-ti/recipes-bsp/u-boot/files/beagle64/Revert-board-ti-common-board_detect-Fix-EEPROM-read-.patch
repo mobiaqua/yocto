@@ -1,0 +1,94 @@
+From 48a5bb84f24c7beafc73c0f0b5db8464ffdc1f20 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pawe=C5=82=20Ko=C5=82odziejski?= <aquadran@gmail.com>
+Date: Fri, 29 Dec 2023 21:11:07 +0100
+Subject: [PATCH] Revert "board: ti: common: board_detect: Fix EEPROM read
+ quirk for 2-byte"
+
+This reverts commit 574bd4b6d74db47422b480823bdb46ec7d4f68e5.
+---
+ board/ti/common/board_detect.c | 46 +++++++++-------------------------
+ 1 file changed, 12 insertions(+), 34 deletions(-)
+
+diff --git a/board/ti/common/board_detect.c b/board/ti/common/board_detect.c
+index 90ebed4338..90e31a27b6 100644
+--- a/board/ti/common/board_detect.c
++++ b/board/ti/common/board_detect.c
+@@ -87,8 +87,6 @@ static int __maybe_unused ti_i2c_eeprom_get(int bus_addr, int dev_addr,
+ 					    u32 header, u32 size, uint8_t *ep)
+ {
+ 	int rc;
+-	uint8_t offset_test;
+-	bool one_byte_addressing = true;
+ 
+ #if defined(CONFIG_DM_I2C)
+ 	struct udevice *dev;
+@@ -116,23 +114,8 @@ static int __maybe_unused ti_i2c_eeprom_get(int bus_addr, int dev_addr,
+ 	 */
+ 	(void)dm_i2c_read(dev, 0, ep, size);
+ 
+-	if (*((u32 *)ep) != header)
+-		one_byte_addressing = false;
+-
+-       /*
+-        * Handle case of bad 2 byte eeproms that responds to 1 byte addressing
+-        * but gets stuck in const addressing when read requests are performed
+-        * on offsets. We perform an offset test to make sure it is not a 2 byte
+-        * eeprom that works with 1 byte addressing but just without an offset
+-        */
+-
+-	rc = dm_i2c_read(dev, 0x1, &offset_test, sizeof(offset_test));
+-
+-	if (*((u32 *)ep) != (header & 0xFF))
+-		one_byte_addressing = false;
+-
+ 	/* Corrupted data??? */
+-	if (!one_byte_addressing) {
++	if (*((u32 *)ep) != header) {
+ 		/*
+ 		 * read the eeprom header using i2c again, but use only a
+ 		 * 2 byte address (some newer boards need this..)
+@@ -168,23 +151,8 @@ static int __maybe_unused ti_i2c_eeprom_get(int bus_addr, int dev_addr,
+ 	 */
+ 	(void)i2c_read(dev_addr, 0x0, byte, ep, size);
+ 
+-	if (*((u32 *)ep) != header)
+-		one_byte_addressing = false;
+-
+-	/*
+-	 * Handle case of bad 2 byte eeproms that responds to 1 byte addressing
+-	 * but gets stuck in const addressing when read requests are performed
+-	 * on offsets. We perform an offset test to make sure it is not a 2 byte
+-	 * eeprom that works with 1 byte addressing but just without an offset
+-	 */
+-
+-	rc = i2c_read(dev_addr, 0x1, byte, &offset_test, sizeof(offset_test));
+-
+-	if (*((u32 *)ep) != (header & 0xFF))
+-		one_byte_addressing = false;
+-
+ 	/* Corrupted data??? */
+-	if (!one_byte_addressing) {
++	if (*((u32 *)ep) != header) {
+ 		/*
+ 		 * read the eeprom header using i2c again, but use only a
+ 		 * 2 byte address (some newer boards need this..)
+@@ -476,6 +444,16 @@ int __maybe_unused ti_i2c_eeprom_am6_get(int bus_addr, int dev_addr,
+ 	if (rc)
+ 		return rc;
+ 
++	/*
++	 * Handle case of bad 2 byte eeproms that responds to 1 byte addressing
++	 * but gets stuck in const addressing when read requests are performed
++	 * on offsets. We re-read the board ID to ensure we have sane data back
++	 */
++	rc = ti_i2c_eeprom_get(bus_addr, dev_addr, TI_EEPROM_HEADER_MAGIC,
++			       sizeof(board_id), (uint8_t *)&board_id);
++	if (rc)
++		return rc;
++
+ 	if (board_id.header.id != TI_AM6_EEPROM_RECORD_BOARD_ID) {
+ 		pr_err("%s: Invalid board ID record!\n", __func__);
+ 		return -EINVAL;
+-- 
+2.43.0
+

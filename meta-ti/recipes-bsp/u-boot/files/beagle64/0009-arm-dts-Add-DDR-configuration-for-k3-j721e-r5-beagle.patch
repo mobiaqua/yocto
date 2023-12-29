@@ -30,9 +30,9 @@ index c3005fc08e..a9be750ca7 100644
 -			      k3-j721e-beagleboneai64.dtb
 +			      k3-j721e-beagleboneai64.dtb \
 +			      k3-j721e-r5-beagleboneai64.dtb
- dtb-$(CONFIG_SOC_K3_J721S2) += k3-j721s2-common-proc-board.dtb\
- 			       k3-j721s2-r5-common-proc-board.dtb
- dtb-$(CONFIG_SOC_K3_J784S4) += k3-j784s4-evm.dtb\
+ dtb-$(CONFIG_SOC_K3_J721S2) += k3-am68-sk-base-board.dtb\
+ 			       k3-am68-sk-r5-base-board.dtb\
+ 			       k3-j721s2-common-proc-board.dtb\
 diff --git a/arch/arm/dts/k3-j721e-ddr-beagleboneai64-lp4-3200.dtsi b/arch/arm/dts/k3-j721e-ddr-beagleboneai64-lp4-3200.dtsi
 new file mode 100644
 index 0000000000..f183785266

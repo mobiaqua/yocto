@@ -1,0 +1,13 @@
+diff -urp old/board/ti/j721e/evm.c new/board/ti/j721e/evm.c
+--- old/board/ti/j721e/evm.c	2023-12-29 20:19:42
++++ new/board/ti/j721e/evm.c	2023-12-29 20:22:45
+@@ -517,7 +517,8 @@ int board_late_init(void)
+ #endif
+ 
+ #if defined(CONFIG_TARGET_J721E_A72_EVM) || defined(CONFIG_TARGET_J721E_R5_EVM)
+-	configure_serdes_sierra();
++	if (board_is_j721e_som())
++		configure_serdes_sierra();
+ #endif
+ 
+ 	return 0;
