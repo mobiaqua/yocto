@@ -25,10 +25,6 @@ PLAT_SFX:am62pxx = "am62pxx"
 FILESEXTRAPATHS:prepend := "${METATIBASE}/recipes-bsp/ti-sci-fw/files/:"
 require recipes-bsp/ti-linux-fw/ti-linux-fw.inc
 
-# MobiAqua: null configure/compile
-do_compile[noexec] = "1"
-do_configure[noexec] = "1"
-
 PV = "${CORESDK_RTOS_VERSION}"
 PR = "${INC_PR}.1"
 

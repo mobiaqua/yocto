@@ -7,6 +7,9 @@ SECTION = "bootloaders"
 PROVIDES = "virtual/bootloader"
 DEPENDS += "flex-native bison-native kern-tools-native openssl-native dtc-native"
 
+# SYSFW/TIFS Firmware
+DEPENDS:append:k3r5 = " ti-sci-fw-imggen"
+
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://Licenses/README;md5=5a7450c57ffe5ae63fd732446b988025"
 PE = "1"

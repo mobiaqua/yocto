@@ -17,6 +17,3 @@ do_install() {
         install -d ${D}${nonarch_base_libdir}/firmware
         install -m 0644 ${S}/ti-img/${TARGET} ${D}${nonarch_base_libdir}/firmware/${TARGET}
 }
-
-do_compile[noexec] = "1"
-do_configure[noexec] = "1"

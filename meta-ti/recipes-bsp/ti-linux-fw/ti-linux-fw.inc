@@ -22,15 +22,7 @@ SRCREV = "${TI_LINUX_FW_SRCREV}"
 
 BRANCH ?= "ti-linux-firmware"
 
-K3_IMAGE_GEN_SRCREV ?= "ffae8800a5c81c149835ed1aa5e2fbbe65a49c0d"
-K3_IMAGE_GEN_BRANCH ?= "master"
-SRCREV_imggen = "${K3_IMAGE_GEN_SRCREV}"
-SRCREV_FORMAT = "imggen"
-
-SRC_URI = " \
-    git://git.ti.com/git/processor-firmware/ti-linux-firmware.git;protocol=https;branch=${BRANCH} \
-    git://github.com/beagleboard/k3-image-gen.git;protocol=https;branch=${K3_IMAGE_GEN_BRANCH};destsuffix=imggen;name=imggen \
-"
+SRC_URI = "git://git.ti.com/git/processor-firmware/ti-linux-firmware.git;protocol=https;branch=${BRANCH}"
 
 S = "${WORKDIR}/git"
 
@@ -50,6 +42,5 @@ INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
 INSANE_SKIP:${PN} += "arch"
 
 # Firmware in Linux Firmware has no configure nor build steps
-# MobiAqua: disable for now
-#do_compile[noexec] = "1"
-#do_configure[noexec] = "1"
+do_compile[noexec] = "1"
+do_configure[noexec] = "1"
