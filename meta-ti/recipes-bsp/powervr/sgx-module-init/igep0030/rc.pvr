@@ -1,0 +1,21 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          pvr-init
+# Required-Start:    checkroot
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: PVR SGX driver init.
+### END INIT INFO
+
+[ -e /sbin/modprobe ] || exit 1
+
+LOAD_MODULE=/sbin/modprobe
+
+[ "$VERBOSE" != no ] && echo -n "Loading PVR modules: omapdrm_pvr_ti335x"
+
+$LOAD_MODULE omapdrm_pvr_ti335x
+
+export LD_LIBRARY_PATH=/usr/lib/gles-ti335x
+
+[ -e /usr/bin/pvrsrvinit ] && /usr/bin/pvrsrvinit
