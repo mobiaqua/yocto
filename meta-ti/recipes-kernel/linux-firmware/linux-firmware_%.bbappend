@@ -1,4 +1,1 @@
-do_deploy:prepend:beagle64 () {
-    install -d ${DEPLOYDIR}/firmwares/cadence
-    install -m 0644 ${WORKDIR}/linux-firmware-${PV}/cadence/mhdp8546.bin ${DEPLOYDIR}/firmwares/cadence/
-}
+SYSROOT_DIRS_IGNORE:remove:beagle64 = "${nonarch_base_libdir}/firmware"

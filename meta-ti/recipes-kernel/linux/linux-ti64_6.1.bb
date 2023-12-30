@@ -327,7 +327,7 @@ SRC_URI[sha256sum] = "7e3d2694d18ce502068cc88a430da809abbd17d0773268524ebece4426
 S = "${WORKDIR}/linux-${PV}"
 
 do_applypath() {
-    sed 's|MOBIAQUA_FW_PATH|${DEPLOY_DIR_IMAGE}/firmwares|g' ${WORKDIR}/ti_config > ${S}/arch/${ARCH}/configs/ti_defconfig
+    sed 's|MOBIAQUA_FW_PATH|${STAGING_DIR_HOST}${nonarch_base_libdir}/firmware/|g' ${WORKDIR}/ti_config > ${S}/arch/${ARCH}/configs/ti_defconfig
 }
 
 addtask applypath before do_patch after do_unpack

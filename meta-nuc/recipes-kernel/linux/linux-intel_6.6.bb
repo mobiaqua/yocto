@@ -39,7 +39,7 @@ kernel_do_configure:prepend() {
 }
 
 do_applypath() {
-        sed 's|MOBIAQUA_FW_PATH|${DEPLOY_DIR_IMAGE}/firmwares|g' ${WORKDIR}/nuc_config > ${S}/arch/${ARCH}/configs/nuc_defconfig
+        sed 's|MOBIAQUA_FW_PATH|${STAGING_DIR_HOST}${nonarch_base_libdir}/firmware/|g' ${WORKDIR}/nuc_config > ${S}/arch/${ARCH}/configs/nuc_defconfig
 }
 
 addtask applypath before do_patch after do_unpack

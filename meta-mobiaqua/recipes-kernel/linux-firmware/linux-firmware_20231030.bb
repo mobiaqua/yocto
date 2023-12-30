@@ -1529,12 +1529,3 @@ INSANE_SKIP:${PN} = "already-stripped"
 
 # No need to put firmware into the sysroot
 SYSROOT_DIRS_IGNORE += "${nonarch_base_libdir}/firmware"
-
-
-# MobiAqua: added deploy step
-inherit deploy
-
-do_deploy () {
-}
-
-addtask deploy before do_build after do_compile

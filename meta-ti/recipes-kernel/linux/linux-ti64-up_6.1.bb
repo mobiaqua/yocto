@@ -38,7 +38,7 @@ SRC_URI += "${KERNEL_GIT_URI};protocol=${KERNEL_GIT_PROTOCOL};branch=${BRANCH} \
 S = "${WORKDIR}/git"
 
 do_applypath() {
-    sed 's|MOBIAQUA_FW_PATH|${DEPLOY_DIR_IMAGE}/firmwares|g' ${WORKDIR}/ti_config > ${S}/arch/${ARCH}/configs/ti_defconfig
+    sed 's|MOBIAQUA_FW_PATH|${STAGING_DIR_HOST}${nonarch_base_libdir}/firmware/|g' ${WORKDIR}/ti_config > ${S}/arch/${ARCH}/configs/ti_defconfig
 }
 
 addtask applypath before do_patch after do_unpack
