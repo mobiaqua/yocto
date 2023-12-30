@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm 6.6.1 Kernel Configuration
+# Linux/arm 6.6.8 Kernel Configuration
 #
 CONFIG_CC_VERSION_TEXT="arm-mobiaqua-linux-gnueabi-gcc (GCC) 11.4.0"
 CONFIG_CC_IS_GCC=y
@@ -5380,8 +5380,6 @@ CONFIG_STACKTRACE=y
 # CONFIG_DEBUG_NOTIFIERS is not set
 # CONFIG_DEBUG_MAPLE_TREE is not set
 # end of Debug kernel data structures
-
-# CONFIG_DEBUG_CREDENTIALS is not set
 
 #
 # RCU Debugging
