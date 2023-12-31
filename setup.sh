@@ -581,7 +581,7 @@ DEFAULTTUNE:virtclass-multilib-lib32 = \"x86\"
 
 		if [ "$MACHINE" = "nuc" ]; then
 			META_MACHINE=nuc
-		elif [ "$MACHINE" = "panda" ] || [ "$MACHINE" = "beagle" ] || [ "$MACHINE" = "beagle64" ]; then
+		elif [ "$MACHINE" = "panda" ] || [ "$MACHINE" = "beagle" ] || [ "$MACHINE" = "beagle64" ] || [ "$MACHINE" = "igep0030" ]; then
 			META_MACHINE=ti
 		else
 			META_MACHINE=none
