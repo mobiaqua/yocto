@@ -1,4 +1,5 @@
 require common-base.inc
+require common-net.inc
 
 DESCRIPTION = "<description>"
 
