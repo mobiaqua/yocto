@@ -10,7 +10,7 @@ INSTALL_PKGS += "x-loader-igep-mlo writeloader linux-firmware-sd8686"
 RDEPENDS += ""
 RRECOMMENDS += ""
 
-IMAGE_BASENAME = "rootfs-release-car"
+IMAGE_BASENAME = "rootfs-release"
 IMAGE_INSTALL += "${INSTALL_PKGS} "
 
 inherit mobiaqua-clean-boot

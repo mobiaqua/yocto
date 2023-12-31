@@ -7,4 +7,4 @@ DEPENDS += ""
 RDEPENDS += ""
 RRECOMMENDS += ""
 
-IMAGE_BASENAME = "rootfs-devel-car"
+IMAGE_BASENAME = "rootfs-devel"
