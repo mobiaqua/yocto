@@ -1,0 +1,79 @@
+diff -urp old/include/configs/socfpga_de10_nano.h new/include/configs/socfpga_de10_nano.h
+--- old/include/configs/socfpga_de10_nano.h	2024-01-03 14:52:01
++++ new/include/configs/socfpga_de10_nano.h	2024-01-03 17:53:08
+@@ -10,6 +10,75 @@
+ /* Memory configurations */
+ #define PHYS_SDRAM_1_SIZE		0x40000000	/* 1GiB */
+ 
++/* Extra Environment */
++#ifndef CONFIG_SPL_BUILD
++
++#define CFG_EXTRA_ENV_SETTINGS \
++	"verify=n\0" \
++	"fdt_addr=0x02000000\0" \
++	"fdtfile=" CONFIG_DEFAULT_FDT_FILE "\0" \
++	"bootm_size=0xa000000\0" \
++	"kernel_addr_r="__stringify(CONFIG_SYS_LOAD_ADDR)"\0" \
++	"fdt_addr_r=0x02000000\0" \
++	"scriptaddr=0x02100000\0" \
++	"pxefile_addr_r=0x02200000\0" \
++	"ramdisk_addr_r=0x02300000\0" \
++	"socfpga_legacy_reset_compat=1\0" \
++	\
++	"fpga_cfg="\
++		"env exists fpga_file || setenv fpga_file ${board}.rbf;"\
++		"if test -e mmc 0:1 ${fpga_file}; then "\
++			"echo Loading FPGA ${board}.rbf file...; "\
++			"load mmc 0:1 ${kernel_addr_r} ${fpga_file}; "\
++			"fpga load 0 ${kernel_addr_r} ${filesize}; "\
++			"bridge enable; "\
++		"fi;\0"\
++	\
++	"hdmi_init="\
++		"run hdmi_cfg; "\
++		"if test \"${HDMI_status}\" = \"complete\"; then "\
++			"run hdmi_fdt_mod; "\
++		"fi;\0"\
++	"hdmi_fdt_mod="\
++		"echo Patching FDT for HDMI output...; "\
++		"load mmc 0:1 ${fdt_addr} socfpga_cyclone5_de10_nano.dtb; "\
++		"setenv fdt_addr_r;" \
++		"fdt addr ${fdt_addr}; "\
++		"fdt resize; "\
++		"fdt mknode / framebuffer@3F000000; "\
++		"setenv fdt_frag /framebuffer@3F000000; "\
++		"fdt set ${fdt_frag} compatible \"simple-framebuffer\"; "\
++		"fdt set ${fdt_frag} reg <0x3F000000 0x800000>; "\
++		"fdt set ${fdt_frag} format \"x8r8g8b8\"; "\
++		"fdt set ${fdt_frag} width <${HDMI_h_active_pix}>; "\
++		"fdt set ${fdt_frag} height <${HDMI_v_active_lin}>; "\
++		"fdt set ${fdt_frag} stride <${HDMI_stride}>; "\
++		"fdt set /aliases display0 /framebuffer@3F000000;"\
++		"sleep 2;\0"\
++	"HDMI_enable_dvi="\
++		"no\0"\
++	"hdmi_cfg="\
++		"if test -e mmc 0:1 STARTUP.BMP; then "\
++			"echo Loading bitmap STARTUP.BMP...; "\
++			"load mmc 0:1 0x0C300000 STARTUP.BMP; "\
++			"echo HDMI initialisation...; "\
++			"hdmi_config 2; "\
++			"dcache flush;"\
++			"if test \"${HDMI_enable_dvi}\" = \"yes\"; then "\
++				"i2c dev 2; i2c mw 0x39 0xAF 0x04 0x01; "\
++			"fi; "\
++		"fi;\0"\
++	"hdmi_dump_regs="\
++		"dump_adv7513_regs.bin 2;\0"\
++	"hdmi_dump_edid="\
++		"dump_adv7513_edid.bin 2;\0"\
++	\
++	BOOTENV
++
++#define CONFIG_BOOTCOMMAND "run fpga_cfg; run hdmi_init; run distro_bootcmd"
++
++#endif
++
+ /* The rest of the configuration is shared */
+ #include <configs/socfpga_common.h>
+ 

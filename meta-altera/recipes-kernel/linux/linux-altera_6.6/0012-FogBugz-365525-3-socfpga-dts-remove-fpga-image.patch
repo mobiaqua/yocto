@@ -1,0 +1,35 @@
+From 6a4be19da325a9069d83bff19ff5e45d29fc1c46 Mon Sep 17 00:00:00 2001
+From: Austin Zhang <austin.zhang@intel.com>
+Date: Mon, 18 Sep 2023 14:45:17 +0800
+Subject: [PATCH 252/351] FogBugz #365525-3: socfpga: dts: remove fpga image 
+ specific info
+
+Remove ranges and fpga-bridges information from the base fpga region.
+This should added in the overlay and because it is specific to the
+hardware loaded in the FPGA.
+
+Signed-off-by: Alan Tull <atull@opensource.altera.com>
+Signed-off-by: Matthew Gerlach <mgerlach@opensource.altera.com>
+
+Rebased to 6.5
+Signed-off-by: Austin Zhang <austin.zhang@intel.com>
+---
+ arch/arm/boot/dts/intel/socfpga/socfpga.dtsi | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/intel/socfpga/socfpga.dtsi b/arch/arm/boot/dts/intel/socfpga/socfpga.dtsi
+index 4c1d140f40f8..dcb7777e8cdd 100644
+--- a/arch/arm/boot/dts/intel/socfpga/socfpga.dtsi
++++ b/arch/arm/boot/dts/intel/socfpga/socfpga.dtsi
+@@ -87,7 +87,7 @@ pdma: pdma@ffe01000 {
+ 			};
+ 		};
+ 
+-		base_fpga_region {
++		base_fpga_region: base-fpga-region {
+ 			compatible = "fpga-region";
+ 			fpga-mgr = <&fpgamgr0>;
+ 
+-- 
+2.43.0
+

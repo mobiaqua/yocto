@@ -1,0 +1,129 @@
+From 578bac8feecbce1a4b598990dd4a55e805e07811 Mon Sep 17 00:00:00 2001
+From: Austin Zhang <austin.zhang@intel.com>
+Date: Tue, 19 Sep 2023 03:09:10 +0800
+Subject: [PATCH 264/351] i2c: designware: introduce a custom scl recovery for
+ SoCFPGA platforms
+
+[upstream commit b2f670af1feab3325cce5a251128f30711148771]
+
+The I2C pins on the SoCFPGA platforms do not go through a GPIO module,
+thus cannot be recovered by the default method of by doing a GPIO access.
+Only a reset of the I2C IP block can a recovery be successful, so this
+change effectively resets the I2C controller, NOT any attached clients.
+
+Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Signed-off-by: Dinh Nguyen <dinguyen@kernel.org>
+---
+v6: Updated commit log to emphasize this change only resets the I2C
+    controller and not any attached clients.
+v5: removed strayed nextline
+v4: re-arrange code per Andy Shevchenko's recommendation
+v3: simplify the function
+    update commit message
+v2: remove change to MODEL_MASK
+    s/i2c_custom_scl_recovery/i2c_socfpga_scl_recovery
+---
+ drivers/i2c/busses/i2c-designware-core.h    |  1 +
+ drivers/i2c/busses/i2c-designware-master.c  | 49 ++++++++++++++++++---
+ drivers/i2c/busses/i2c-designware-platdrv.c |  1 +
+ 3 files changed, 45 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-designware-core.h b/drivers/i2c/busses/i2c-designware-core.h
+index a7f6f3eafad7..bd63106075f0 100644
+--- a/drivers/i2c/busses/i2c-designware-core.h
++++ b/drivers/i2c/busses/i2c-designware-core.h
+@@ -308,6 +308,7 @@ struct dw_i2c_dev {
+ #define MODEL_BAIKAL_BT1			BIT(9)
+ #define MODEL_AMD_NAVI_GPU			BIT(10)
+ #define MODEL_WANGXUN_SP			BIT(11)
++#define MODEL_SOCFPGA				BIT(12)
+ #define MODEL_MASK				GENMASK(11, 8)
+ 
+ /*
+diff --git a/drivers/i2c/busses/i2c-designware-master.c b/drivers/i2c/busses/i2c-designware-master.c
+index ca1035e010c7..9e7e5717633d 100644
+--- a/drivers/i2c/busses/i2c-designware-master.c
++++ b/drivers/i2c/busses/i2c-designware-master.c
+@@ -901,10 +901,26 @@ static void i2c_dw_unprepare_recovery(struct i2c_adapter *adap)
+ 	i2c_dw_init_master(dev);
+ }
+ 
+-static int i2c_dw_init_recovery_info(struct dw_i2c_dev *dev)
++static int i2c_socfpga_scl_recovery(struct i2c_adapter *adap)
++{
++	struct i2c_bus_recovery_info *bri = adap->bus_recovery_info;
++
++	bri->prepare_recovery(adap);
++	bri->unprepare_recovery(adap);
++
++	return 0;
++}
++
++static int i2c_dw_init_socfpga_recovery_info(struct dw_i2c_dev *dev,
++					     struct i2c_bus_recovery_info *rinfo)
++{
++	rinfo->recover_bus = i2c_socfpga_scl_recovery;
++	return 1;
++}
++
++static int i2c_dw_init_generic_recovery_info(struct dw_i2c_dev *dev,
++					     struct i2c_bus_recovery_info *rinfo)
+ {
+-	struct i2c_bus_recovery_info *rinfo = &dev->rinfo;
+-	struct i2c_adapter *adap = &dev->adapter;
+ 	struct gpio_desc *gpio;
+ 
+ 	gpio = devm_gpiod_get_optional(dev->dev, "scl", GPIOD_OUT_HIGH);
+@@ -930,13 +946,34 @@ static int i2c_dw_init_recovery_info(struct dw_i2c_dev *dev)
+ 	}
+ 
+ 	rinfo->recover_bus = i2c_generic_scl_recovery;
+-	rinfo->prepare_recovery = i2c_dw_prepare_recovery;
+-	rinfo->unprepare_recovery = i2c_dw_unprepare_recovery;
+-	adap->bus_recovery_info = rinfo;
+ 
+ 	dev_info(dev->dev, "running with gpio recovery mode! scl%s",
+ 		 rinfo->sda_gpiod ? ",sda" : "");
+ 
++	return 1;
++}
++
++static int i2c_dw_init_recovery_info(struct dw_i2c_dev *dev)
++{
++	struct i2c_bus_recovery_info *rinfo = &dev->rinfo;
++	struct i2c_adapter *adap = &dev->adapter;
++	int ret;
++
++	switch (dev->flags & MODEL_MASK) {
++	case MODEL_SOCFPGA:
++		ret = i2c_dw_init_socfpga_recovery_info(dev, rinfo);
++		break;
++	default:
++		ret = i2c_dw_init_generic_recovery_info(dev, rinfo);
++		break;
++	}
++	if (ret <= 0)
++		return ret;
++
++	rinfo->prepare_recovery = i2c_dw_prepare_recovery;
++	rinfo->unprepare_recovery = i2c_dw_unprepare_recovery;
++	adap->bus_recovery_info = rinfo;
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/i2c/busses/i2c-designware-platdrv.c b/drivers/i2c/busses/i2c-designware-platdrv.c
+index 855b698e99c0..be1d31ded851 100644
+--- a/drivers/i2c/busses/i2c-designware-platdrv.c
++++ b/drivers/i2c/busses/i2c-designware-platdrv.c
+@@ -153,6 +153,7 @@ static const struct of_device_id dw_i2c_of_match[] = {
+ 	{ .compatible = "snps,designware-i2c", },
+ 	{ .compatible = "mscc,ocelot-i2c", .data = (void *)MODEL_MSCC_OCELOT },
+ 	{ .compatible = "baikal,bt1-sys-i2c", .data = (void *)MODEL_BAIKAL_BT1 },
++	{ .compatible = "intel,socfpga-i2c", .data = (void *)MODEL_SOCFPGA },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, dw_i2c_of_match);
+-- 
+2.43.0
+

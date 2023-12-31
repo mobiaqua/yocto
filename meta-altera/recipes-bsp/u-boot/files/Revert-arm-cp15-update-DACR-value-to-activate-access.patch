@@ -1,0 +1,36 @@
+From 5956b66504a718484e26fd27b7ca4c5449aef18f Mon Sep 17 00:00:00 2001
+From: Yau Wai Gan <yau.wai.gan@intel.com>
+Date: Mon, 2 Aug 2021 18:42:18 +0800
+Subject: [PATCH 281/740] Revert arm: cp15: update DACR value to activate
+ access control
+
+SOCFPGA architecture requires setting DACR to all-supervisor mode to enable
+mmu.
+
+Signed-off-by: Yau Wai Gan <yau.wai.gan@intel.com>
+---
+ arch/arm/lib/cache-cp15.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/lib/cache-cp15.c b/arch/arm/lib/cache-cp15.c
+index 0893915b30..d24df6ffde 100644
+--- a/arch/arm/lib/cache-cp15.c
++++ b/arch/arm/lib/cache-cp15.c
+@@ -193,12 +193,9 @@ static inline void mmu_setup(void)
+ 	asm volatile("mcr p15, 0, %0, c2, c0, 0"
+ 		     : : "r" (gd->arch.tlb_addr) : "memory");
+ #endif
+-	/*
+-	 * initial value of Domain Access Control Register (DACR)
+-	 * Set the access control to client (1U) for each of the 16 domains
+-	 */
++	/* Set the access control to all-supervisor */
+ 	asm volatile("mcr p15, 0, %0, c3, c0, 0"
+-		     : : "r" (0x55555555));
++		     : : "r" (~0));
+ 
+ 	/* and enable the mmu */
+ 	reg = get_cr();	/* get control reg. */
+-- 
+2.43.0
+

@@ -26,6 +26,7 @@ hob-image-*.bb
 !meta-macos
 !meta-ti
 !meta-nuc
+!meta-altera
 !meta-softvm
 /documentation/*/eclipse/
 /documentation/*/*.html

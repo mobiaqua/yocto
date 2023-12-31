@@ -447,6 +447,9 @@ setup() {
 			MACHINE=$1
 		elif [ "$1" = "nuc" ]; then
 			MACHINE=$1
+		elif [ "$1" = "fpga" ]; then
+			TARGET=$1
+			MACHINE=de10nano
 		elif [ "$1" = "softvm" ]; then
 			TARGET=$1
 			MACHINE=emu-x86-64
@@ -477,6 +480,13 @@ setup() {
 			return 1
 		fi
 		image=dsp-rootfs-devel
+		CROSS=arm-mobiaqua-linux-gnueabi-
+	elif [ "$TARGET" = "fpga" ]; then
+		if [ "$MACHINE" != "de10nano" ]; then
+			print_help
+			return 1
+		fi
+		image=fpga-rootfs-devel
 		CROSS=arm-mobiaqua-linux-gnueabi-
 	elif [ "$TARGET" = "softvm" ]; then
 		image=quartus-x86-rootfs
@@ -583,6 +593,8 @@ DEFAULTTUNE:virtclass-multilib-lib32 = \"x86\"
 			META_MACHINE=nuc
 		elif [ "$MACHINE" = "panda" ] || [ "$MACHINE" = "beagle" ] || [ "$MACHINE" = "beagle64" ] || [ "$MACHINE" = "igep0030" ]; then
 			META_MACHINE=ti
+		elif [ "$MACHINE" = "de10nano" ]; then
+			META_MACHINE=altera
 		else
 			META_MACHINE=none
 		fi

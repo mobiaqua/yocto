@@ -1,0 +1,35 @@
+From 419043d400ed299d7f7593f380f99825221b41c0 Mon Sep 17 00:00:00 2001
+From: Tien Fong Chee <tien.fong.chee@intel.com>
+Date: Wed, 10 Nov 2021 14:43:20 +0800
+Subject: [PATCH 302/740] HSD #1509758009-2: i2c: designware_i2c: Remove clk
+ disabled codes
+
+l4_sp_clk is disabled when i2c device is removed, this would
+causing unexpected failing behavior for other peripherals which
+are still running with l4_sp_clk. The patch removes the codes
+implementation for disabling the lp_spl_clk.
+
+Signed-off-by: Tien Fong Chee <tien.fong.chee@intel.com>
+---
+ drivers/i2c/designware_i2c.c | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/drivers/i2c/designware_i2c.c b/drivers/i2c/designware_i2c.c
+index e54de42abc..d08db98600 100644
+--- a/drivers/i2c/designware_i2c.c
++++ b/drivers/i2c/designware_i2c.c
+@@ -790,11 +790,6 @@ int designware_i2c_remove(struct udevice *dev)
+ {
+ 	struct dw_i2c *priv = dev_get_priv(dev);
+ 
+-#if CONFIG_IS_ENABLED(CLK)
+-	clk_disable(&priv->clk);
+-	clk_free(&priv->clk);
+-#endif
+-
+ 	return reset_release_bulk(&priv->resets);
+ }
+ 
+-- 
+2.43.0
+

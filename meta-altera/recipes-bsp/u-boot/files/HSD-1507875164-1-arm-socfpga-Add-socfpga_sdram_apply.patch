@@ -1,0 +1,94 @@
+From 70676becd5430dcc33d54b99cd425aa3474f15cc Mon Sep 17 00:00:00 2001
+From: Ley Foon Tan <ley.foon.tan@intel.com>
+Date: Thu, 16 Apr 2020 11:37:06 +0800
+Subject: [PATCH 114/740] HSD #1507875164-1: arm: socfpga: Add
+ socfpga_sdram_apply_static_cfg()
+
+Revert commit fce0cb41a42d ("ARM: socfpga: Remove
+socfpga_sdram_apply_static_cfg()")
+
+According to Cyclone 5 SoC handbook, software must write to static cfg
+register after write to any SDR register for it to take effect.
+
+Without setting this static cfg bit, F2SDRAM port is not working.
+
+Signed-off-by: Ley Foon Tan <ley.foon.tan@intel.com>
+---
+ arch/arm/mach-socfpga/include/mach/misc.h |  1 +
+ arch/arm/mach-socfpga/misc_gen5.c         | 34 ++++++++++++++++++++++-
+ 2 files changed, 34 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-socfpga/include/mach/misc.h b/arch/arm/mach-socfpga/include/mach/misc.h
+index b423ee3325..bdfcf764c7 100644
+--- a/arch/arm/mach-socfpga/include/mach/misc.h
++++ b/arch/arm/mach-socfpga/include/mach/misc.h
+@@ -25,6 +25,7 @@ static inline void socfpga_fpga_add(void *fpga_desc) {}
+ 
+ #ifdef CONFIG_TARGET_SOCFPGA_GEN5
+ void socfpga_sdram_remap_zero(void);
++void socfpga_sdram_apply_static_cfg(void);
+ static inline bool socfpga_is_booting_from_fpga(void)
+ {
+ 	if ((__image_copy_start >= (char *)SOCFPGA_FPGA_SLAVES_ADDRESS) &&
+diff --git a/arch/arm/mach-socfpga/misc_gen5.c b/arch/arm/mach-socfpga/misc_gen5.c
+index e7500c16f7..cf4b581173 100644
+--- a/arch/arm/mach-socfpga/misc_gen5.c
++++ b/arch/arm/mach-socfpga/misc_gen5.c
+@@ -217,6 +217,34 @@ int arch_early_init_r(void)
+ static struct socfpga_sdr_ctrl *sdr_ctrl =
+ 	(struct socfpga_sdr_ctrl *)SDR_CTRLGRP_ADDRESS;
+ 
++void socfpga_sdram_apply_static_cfg(void)
++{
++	const u32 applymask = 0x8;
++	u32 val = readl(&sdr_ctrl->static_cfg) | applymask;
++
++	/*
++	 * SDRAM staticcfg register specific:
++	 * When applying the register setting, the CPU must not access
++	 * SDRAM. Luckily for us, we can use i-cache here to help us
++	 * circumvent the SDRAM access issue. The idea is to make sure
++	 * that the code is in one full i-cache line by branching past
++	 * it and back. Once it is in the i-cache, we execute the core
++	 * of the code and apply the register settings.
++	 *
++	 * The code below uses 7 instructions, while the Cortex-A9 has
++	 * 32-byte cachelines, thus the limit is 8 instructions total.
++	 */
++	asm volatile(".align	5			\n"
++		     "		b 2f			\n"
++		     "1: 	str %0,	[%1]		\n"
++		     "		dsb			\n"
++		     "		isb			\n"
++		     "		b 3f			\n"
++		     "2:	b 1b			\n"
++		     "3:	nop			\n"
++		    : : "r"(val), "r"(&sdr_ctrl->static_cfg) : "memory", "cc");
++}
++
+ void do_bridge_reset(int enable, unsigned int mask)
+ {
+ 	int i;
+@@ -234,7 +262,10 @@ void do_bridge_reset(int enable, unsigned int mask)
+ 		writel(iswgrp_handoff[2],
+ 		       socfpga_get_sysmgr_addr() +
+ 		       SYSMGR_GEN5_FPGAINFGRP_MODULE);
+-		writel(iswgrp_handoff[3], &sdr_ctrl->fpgaport_rst);
++		if (iswgrp_handoff[3]) {
++			writel(iswgrp_handoff[3], &sdr_ctrl->fpgaport_rst);
++			socfpga_sdram_apply_static_cfg();
++		}
+ 		writel(iswgrp_handoff[0],
+ 		       socfpga_get_rstmgr_addr() + RSTMGR_GEN5_BRGMODRST);
+ 		writel(iswgrp_handoff[1], &nic301_regs->remap);
+@@ -246,6 +277,7 @@ void do_bridge_reset(int enable, unsigned int mask)
+ 		writel(0, socfpga_get_sysmgr_addr() +
+ 		       SYSMGR_GEN5_FPGAINFGRP_MODULE);
+ 		writel(0, &sdr_ctrl->fpgaport_rst);
++		socfpga_sdram_apply_static_cfg();
+ 		writel(0x7, socfpga_get_rstmgr_addr() + RSTMGR_GEN5_BRGMODRST);
+ 		writel(1, &nic301_regs->remap);
+ 	}
+-- 
+2.43.0
+

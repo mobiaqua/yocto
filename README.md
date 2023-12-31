@@ -14,6 +14,10 @@
 
     IGEPv3
 
+  - "fpga"
+
+    DE10 Nano (HPS)
+
   - "softvm"
 
     Virtual Machine target for software.

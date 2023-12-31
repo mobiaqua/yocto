@@ -1,0 +1,59 @@
+From f50d5a60146b5dca790715de2b316f2917fb1ccb Mon Sep 17 00:00:00 2001
+From: Dinh Nguyen <dinguyen@kernel.org>
+Date: Tue, 21 Jun 2022 09:34:39 -0500
+Subject: [PATCH 265/351] arm: dts: socfpga: use the "intel,socfpga-i2c"
+ binding
+
+[upstream commit 61cc507cd83b10bd561921d11386f524fcea419d]
+
+The I2C pins on Intel's SoCFPGA platform are not connected to GPIOs and
+thus cannot be recovered by the standard GPIO method. The driver has
+been updated to use the "intel,socfpga-i2c" binding to reset the I2C
+host for error recovery.
+
+Link: https://lore.kernel.org/lkml/20220620230109.986298-1-dinguyen@kernel.org/
+Signed-off-by: Dinh Nguyen <dinguyen@kernel.org>
+---
+ arch/arm/boot/dts/intel/socfpga/socfpga.dtsi         |  8 ++++----
+ 4 files changed, 19 insertions(+), 19 deletions(-)
+
+diff --git a/arch/arm/boot/dts/intel/socfpga/socfpga.dtsi b/arch/arm/boot/dts/intel/socfpga/socfpga.dtsi
+index dcb7777e8cdd..c06dff41d139 100644
+--- a/arch/arm/boot/dts/intel/socfpga/socfpga.dtsi
++++ b/arch/arm/boot/dts/intel/socfpga/socfpga.dtsi
+@@ -670,7 +670,7 @@ portc: gpio-controller@0 {
+ 		i2c0: i2c@ffc04000 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+-			compatible = "snps,designware-i2c";
++			compatible = "intel,socfpga-i2c", "snps,designware-i2c";
+ 			reg = <0xffc04000 0x1000>;
+ 			resets = <&rst I2C0_RESET>;
+ 			clocks = <&l4_sp_clk>;
+@@ -681,7 +681,7 @@ i2c0: i2c@ffc04000 {
+ 		i2c1: i2c@ffc05000 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+-			compatible = "snps,designware-i2c";
++			compatible = "intel,socfpga-i2c", "snps,designware-i2c";
+ 			reg = <0xffc05000 0x1000>;
+ 			resets = <&rst I2C1_RESET>;
+ 			clocks = <&l4_sp_clk>;
+@@ -692,7 +692,7 @@ i2c1: i2c@ffc05000 {
+ 		i2c2: i2c@ffc06000 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+-			compatible = "snps,designware-i2c";
++			compatible = "intel,socfpga-i2c", "snps,designware-i2c";
+ 			reg = <0xffc06000 0x1000>;
+ 			resets = <&rst I2C2_RESET>;
+ 			clocks = <&l4_sp_clk>;
+@@ -703,7 +703,7 @@ i2c2: i2c@ffc06000 {
+ 		i2c3: i2c@ffc07000 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+-			compatible = "snps,designware-i2c";
++			compatible = "intel,socfpga-i2c", "snps,designware-i2c";
+ 			reg = <0xffc07000 0x1000>;
+ 			resets = <&rst I2C3_RESET>;
+ 			clocks = <&l4_sp_clk>;

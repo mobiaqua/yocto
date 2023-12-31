@@ -1,0 +1,26 @@
+diff -urp old/arch/arm/dts/socfpga_cyclone5_de10_nano.dts new/arch/arm/dts/socfpga_cyclone5_de10_nano.dts
+--- old/arch/arm/dts/socfpga_cyclone5_de10_nano.dts	2024-01-04 10:37:53
++++ new/arch/arm/dts/socfpga_cyclone5_de10_nano.dts	2024-01-04 10:23:27
+@@ -55,6 +55,22 @@
+ 	status = "okay";
+ };
+ 
++&i2c0 {
++	status = "okay";
++};
++
++&i2c1 {
++	status = "okay";
++};
++
++&i2c2 {
++	status = "okay";
++};
++
++&i2c3 {
++	status = "okay";
++};
++
+ &porta {
+ 	bank-name = "porta";
+ };
