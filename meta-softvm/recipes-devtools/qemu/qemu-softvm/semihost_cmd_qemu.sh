@@ -4,7 +4,7 @@ CMD=`basename $0`
 
 HOME_PATH=~/.softvm
 if [ ! -f $HOME_PATH/config ]; then
-    echo "$CMD : Missing confgiration file! Aborting..."
+    echo "$CMD : Missing confguration file! Aborting..."
     exit 1
 fi
 . $HOME_PATH/config
