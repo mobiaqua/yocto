@@ -8,7 +8,7 @@ KMACHINE:core2-32-intel-common = "intel-core2-32"
 KMACHINE:x86-64-v3-intel-common = "intel-corei7-64"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.6.5"
+LINUX_VERSION = "6.6.10"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -27,7 +27,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
            file://nuc_config \
            "
 
-SRC_URI[sha256sum] = "7c92795854a68d218c576097d50611f8eea86fd55810e0bc27724f020753b19e"
+SRC_URI[sha256sum] = "9ee627e4c109aec7fca3eda5898e81d201af2c7eb2f7d9d7d94c1f0e1205546c"
 
 S = "${WORKDIR}/linux-${PV}"
 
