@@ -10,11 +10,3 @@ index 4165304d3..e61ee27c2 100644
  
  /**
   * __vmalloc_node - allocate virtually contiguous memory
-diff -ur old/mm/pgtable-generic.c new/mm/pgtable-generic.c
---- old/mm/pgtable-generic.c	2023-08-27 23:49:51
-+++ new/mm/pgtable-generic.c	2023-11-19 21:39:49
-@@ -285,3 +285,4 @@
- 	pte_unmap_unlock(pte, ptl);
- 	goto again;
- }
-+EXPORT_SYMBOL(__pte_offset_map_lock);
