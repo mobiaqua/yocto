@@ -4,6 +4,7 @@ ARM, MIPS and several other processors, which can be installed in a boot \
 ROM and used to initialize and test the hardware or to download and run \
 application code."
 SECTION = "bootloaders"
+PROVIDES = "virtual/bootloader"
 DEPENDS += "flex-native bison-native kern-tools-native"
 
 LICENSE = "GPL-2.0-or-later"
