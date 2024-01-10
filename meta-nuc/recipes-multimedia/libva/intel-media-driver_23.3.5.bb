@@ -19,9 +19,15 @@ REQUIRED_DISTRO_FEATURES = "opengl"
 DEPENDS += "libva gmmlib"
 
 SRC_URI = "git://github.com/intel/media-driver.git;protocol=https;nobranch=1 \
+           file://0001-Disable-VP9-padding-on-MTL.patch \
+           file://0002-Add-VASurfaceAttribMemoryType-for-ACM.patch \
+           file://0003-Force-ARGB-surface-to-tile4-for-ACM.patch \
+           file://0004-Set-sRGB-color-space-for-non-video-wall-and-no-backg.patch \
+           file://0005-XRGB-force-to-do-swizzle-for-AVC-HEVC.patch \
+           file://0006-Add-DG2-DIDs.patch \
           "
 
-SRCREV = "cf942344b9e439d19873f1d47c0c890d7c63b6ad"
+SRCREV = "0f36979420a33bf12d17fa939af8d16b36ef8fcd"
 S = "${WORKDIR}/git"
 
 COMPATIBLE_HOST:x86-x32 = "null"
