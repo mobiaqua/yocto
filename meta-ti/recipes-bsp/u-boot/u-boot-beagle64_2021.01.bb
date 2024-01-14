@@ -110,11 +110,6 @@ do_deploy () {
     then
         install -D -m 644 ${UBOOT_EXTLINUX_CONFIG} ${DEPLOYDIR}/${UBOOT_EXTLINUX_INSTALL_DIR}/${UBOOT_EXTLINUX_CONF_NAME}
     fi
-
-    if [ -n "${UBOOT_DTB}" ]
-    then
-        install -m 644 ${B}/arch/${UBOOT_ARCH}/dts/${UBOOT_DTB_BINARY} ${DEPLOYDIR}/
-    fi
 }
 
 addtask deploy before do_build after do_compile

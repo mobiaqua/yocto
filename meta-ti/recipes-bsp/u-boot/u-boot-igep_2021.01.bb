@@ -79,9 +79,7 @@ do_deploy () {
     install -d ${DEPLOYDIR}
     install -m 0644 ${B}/${UBOOT_BINARY} ${DEPLOYDIR}/boot/${UBOOT_IMAGE}
 
-    cd ${DEPLOYDIR}
-
-    install -m 0644 ${B}/MLO ${DEPLOYDIR}/${MLO_IMAGE}
+    install -m 0644 ${B}/MLO ${DEPLOYDIR}/boot/${MLO_IMAGE}
 
     #install -m 0644 ${WORKDIR}/boot-igep-sdcard.script ${DEPLOYDIR}/boot/uEnv-igep-sdcard.txt
     #install -m 0644 ${WORKDIR}/boot-igep-label.script ${DEPLOYDIR}/boot/uEnv-igep-label.txt

@@ -104,9 +104,7 @@ do_deploy () {
     install -d ${DEPLOYDIR}/boot
     install -m 0644 ${B}/${UBOOT_BINARY} ${DEPLOYDIR}/boot/${UBOOT_IMAGE}
 
-    cd ${DEPLOYDIR}
-
-    install -m 0644 ${B}/MLO ${DEPLOYDIR}/${MLO_IMAGE}
+    install -m 0644 ${B}/MLO ${DEPLOYDIR}/boot/${MLO_IMAGE}
 
     install -m 0644 ${WORKDIR}/boot-beagle-sdcard.script ${DEPLOYDIR}/boot/uEnv-beagle-sdcard.txt
     install -m 0644 ${WORKDIR}/boot-beagle-label.script ${DEPLOYDIR}/boot/uEnv-beagle-label.txt
