@@ -36,9 +36,7 @@ do_configure() {
 	sed -i 's|/usr/\S*include[\w/]*||g' ${S}/configure
 	sed -i 's|/usr/\S*lib[\w/]*||g' ${S}/configure
 
-	./configure ${EXTRA_OECONF} \
-		--extra-libs="${DCE_LIBS} ${DRM_LIBS} ${GBM_LIBS} ${EGL_LIBS}" \
-		--extra-cflags="${EXTRA_CFLAGS} ${DCE_CFLAGS} ${DRM_CFLAGS} ${GBM_CFLAGS} ${EGL_CFLAGS}"
+	./configure ${EXTRA_OECONF}
 }
 
 do_compile () {
