@@ -63,7 +63,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v5.x/linux-${LINUX_VERSION}.tar.xz \
            file://ti/0012-crypto-omap-increase-priority-of-DES-3DES.patch \
            file://ti/0013-drm-atomic-integrate-private-objects-with-suspend-re.patch \
            file://ti/0014-iommu-omap-Add-transition-support-between-hwmod-and-.patch \
-           file://ti/0015-iommu-omap-convert-spinlocks-to-mutexes.patch \
            file://ti/0016-HACK-regulator-tps65917-palmas-Disable-bypass-for-ld.patch \
            file://ti/0017-Revert-Revert-drm-omap-add-OMAP_BO-flags-to-affect-b.patch \
            file://wlan/0001-wlan.patch \
