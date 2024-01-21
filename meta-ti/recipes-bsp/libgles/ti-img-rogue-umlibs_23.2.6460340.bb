@@ -12,7 +12,7 @@ PR = "r1"
 
 BRANCH = "linuxws/kirkstone/k6.1/${PV}"
 SRC_URI = "git://git.ti.com/git/graphics/ti-img-rogue-umlibs.git;protocol=https;branch=${BRANCH}"
-SRCREV = "49958a8e820a321d22ac3c635bd21d4a3118c006"
+SRCREV = "c2671c6eaf85ec6a1183c023bbb4d6e9e288fc10"
 S = "${WORKDIR}/git/targetfs/j721e_linux/lws-generic/release"
 
 RDEPENDS:${PN} += "libdrm"
