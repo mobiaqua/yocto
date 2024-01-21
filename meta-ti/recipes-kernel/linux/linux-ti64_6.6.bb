@@ -5,7 +5,7 @@ DEPENDS += "openssl-native ncurses-native elf-native kmod-native linux-firmware"
 COMPATIBLE_MACHINE = "beagle64"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.6.7"
+LINUX_VERSION = "6.6.13"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -192,7 +192,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://5/0055-phy-cadence-cdns-dphy-rx-Add-runtime-PM-support.patch \
             file://5/0057-HACK-drm-tidss-Power-up-attached-PM-domains-on-probe.patch \
             file://5/0094-drm-tidss-Add-support-for-AM62P-DSS0.patch \
-            file://5/0130-phy-ti-gmii-sel-Fix-register-offset-when-parent-is-n.patch \
             file://5/0153-Revert-drm-tidss-Annotate-dma-fence-critical-section.patch \
             file://5/0154-drm-tidss-Use-pm_runtime_resume_and_get.patch \
             file://5/0155-drm-tidss-Use-PM-autosuspend.patch \
@@ -220,6 +219,10 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://5/0276-drm-tidss-Add-support-for-AM62P-DSS1.patch \
             file://5/0278-arm64-dts-ti-k3-j721e-main-Add-DSI-and-DPHY-TX.patch \
             file://5/0284-Input-gpio-keys-Add-system-suspend-support-for-dedic.patch \
+            file://6/0002-serial-8250_omap-Set-the-console-genpd-always-on-if-.patch \
+            file://6/0004-media-ti-j721e-csi2rx-Submit-all-available-buffers.patch \
+            file://6/0005-dmaengine-ti-k3-udma-Report-short-packet-errors.patch \
+            file://6/0006-media-img-vxe-vxd-decoder-Suppress-Decoder-Compiler-.patch \
             file://0001_fix_nonlinux_compile.patch \
             file://0002-bootup-hacks-move-mmc-early.patch \
             file://0004_wait-for-rootfs.patch \
@@ -229,7 +232,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://ti_config \
 "
 
-SRC_URI[sha256sum] = "0ce68ec6019019140043263520955ecd04839e55a1baab2fa9155b42bb6fd841"
+SRC_URI[sha256sum] = "88b89e7dd41ead4e3ab1e411c8bb8d592575acf815cf1df3c0dc57e2e882c0bc"
 
 S = "${WORKDIR}/linux-${PV}"
 
