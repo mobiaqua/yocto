@@ -1,0 +1,36 @@
+From 7796de24466cab05b5098c7d19f2cfedcd45a719 Mon Sep 17 00:00:00 2001
+From: Brandon Brnich <b-brnich@ti.com>
+Date: Tue, 9 Jan 2024 14:16:30 -0600
+Subject: [PATCH 6/7] media: img: vxe-vxd: decoder: Suppress Decoder Compiler
+ Warnings
+
+Cross compiling using gcc version 12 introduces new warnings due to
+uninitialized variables. Properly initialize them to remove warnings in
+Kernel build.
+
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/media/platform/img/vxe-vxd/decoder/reg_io2.h | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/platform/img/vxe-vxd/decoder/reg_io2.h b/drivers/media/platform/img/vxe-vxd/decoder/reg_io2.h
+index a18ffda4efcb..b73cab6748b0 100644
+--- a/drivers/media/platform/img/vxe-vxd/decoder/reg_io2.h
++++ b/drivers/media/platform/img/vxe-vxd/decoder/reg_io2.h
+@@ -39,8 +39,10 @@
+  */
+ #define REGIO_CHECK_VALUE_FITS_WITHIN_FIELD(group, reg, field, value, type) \
+ 	{ \
+-		type __value = value; \
+-		unsigned int temp = (unsigned int)(__value); \
++		type __value = 0; \
++		unsigned int temp = 0; \
++		__value = value; \
++		temp = (unsigned int)(__value); \
+ 		if (temp > group ## _ ## reg ## _ ## field ## _LSBMASK) { \
+ 			IMG_ASSERT((((unsigned int)__value) & \
+ 			(unsigned int)~(group ## _ ## reg ## _ ## field ## _LSBMASK)) == \
+-- 
+2.43.0
+

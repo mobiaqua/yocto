@@ -5,7 +5,7 @@ DEPENDS += "openssl-native ncurses-native elf-native kmod-native linux-firmware"
 COMPATIBLE_MACHINE = "beagle64"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.1.69"
+LINUX_VERSION = "6.1.74"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -312,6 +312,10 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://5/0276-drm-tidss-Add-support-for-AM62P-DSS1.patch \
             file://5/0278-arm64-dts-ti-k3-j721e-main-Add-DSI-and-DPHY-TX.patch \
             file://5/0284-Input-gpio-keys-Add-system-suspend-support-for-dedic.patch \
+            file://6/0002-serial-8250_omap-Set-the-console-genpd-always-on-if-.patch \
+            file://6/0004-media-ti-j721e-csi2rx-Submit-all-available-buffers.patch \
+            file://6/0005-dmaengine-ti-k3-udma-Report-short-packet-errors.patch \
+            file://6/0006-media-img-vxe-vxd-decoder-Suppress-Decoder-Compiler-.patch \
             file://0001_fix_nonlinux_compile.patch \
             file://0002-bootup-hacks-move-mmc-early.patch \
             file://0003-Kbuild.include.patch \
@@ -322,7 +326,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://ti_config \
 "
 
-SRC_URI[sha256sum] = "7e3d2694d18ce502068cc88a430da809abbd17d0773268524ebece442612b541"
+SRC_URI[sha256sum] = "b7fbd1d79faed2ce3570ef79dc1223e4e19c868b86326b14a435db56ebbb2022"
 
 S = "${WORKDIR}/linux-${PV}"
 
