@@ -67,7 +67,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
            file://0014-revert-hdmi-audio.patch \
            file://0020-restore-dmabuf-map.patch \
            file://0030-HACK-drm-omap-flush-the-mapped-page-in-kmap-kunmap.patch \
-           file://0050-add-export-vmalloc_node_range-for-sgx.patch \
            file://0200-beagle-ai.patch \
            file://defconfig \
            "
