@@ -18,7 +18,7 @@ SRC_URI = "git://github.com/mobiaqua/sgx-pvr5-module.git;protocol=https;branch=m
 
 S = "${WORKDIR}/git"
 
-SRCREV = "0a6e21ebc6b2da9aa36be81b121848c92b03fe46"
+SRCREV = "f94669f560268679108c47261016fa9f287c6bac"
 
 BUILD_TYPE = "release"
 
