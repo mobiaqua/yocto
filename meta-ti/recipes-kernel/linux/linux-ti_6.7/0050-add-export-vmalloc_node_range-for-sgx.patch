@@ -1,0 +1,12 @@
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index 4165304d3..e61ee27c2 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -3131,6 +3131,7 @@ void *__vmalloc_node_range(unsigned long size, unsigned long align,
+ 
+ 	return NULL;
+ }
++EXPORT_SYMBOL(__vmalloc_node_range);
+ 
+ /**
+  * __vmalloc_node - allocate virtually contiguous memory

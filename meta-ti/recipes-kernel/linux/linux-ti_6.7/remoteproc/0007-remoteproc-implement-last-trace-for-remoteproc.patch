@@ -1,0 +1,247 @@
+From b8e3c7f5fd13923ce707d41b8c6f4d5590baf586 Mon Sep 17 00:00:00 2001
+From: Suman Anna <s-anna@ti.com>
+Date: Mon, 14 Feb 2022 11:24:45 -0800
+Subject: [PATCH] remoteproc: implement last trace for remoteproc
+
+The last trace is a way of preserving the remoteproc traces past
+remoteproc recovery. This is achieved by creating a new traceY_last
+debugfs entry during a crash for each trace entry, and copying the
+trace buffer contents into the corresponding last trace entry. This
+copied contents can then be read out using a debugfs entry. All the
+trace entries are cleaned up during the resource cleanup phase when
+shutting down a remoteproc. The design assumes that the same firmware
+is being used for the error recovery.
+
+Eg:
+	cat <debugfs_root>/remoteproc/remoteprocX/traceY_last
+should give the traces that were printed out just before the recovery
+happened on remoteproc X for trace Y.
+
+Signed-off-by: Suman Anna <s-anna@ti.com>
+Signed-off-by: Subramaniam Chanderashekarapuram <subramaniam.ca@ti.com>
+[dfustini: resolved trivial conflicts for 5.10]
+Signed-off-by: Drew Fustini <dfustini@baylibre.com>
+---
+ drivers/remoteproc/remoteproc_core.c | 140 ++++++++++++++++++++++++++-
+ include/linux/remoteproc.h           |   4 +
+ 2 files changed, 141 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
+index f8c048c5f8a3..fee36bef77ac 100644
+--- a/drivers/remoteproc/remoteproc_core.c
++++ b/drivers/remoteproc/remoteproc_core.c
+@@ -37,6 +37,7 @@
+ #include <linux/of_reserved_mem.h>
+ #include <linux/virtio_ids.h>
+ #include <linux/virtio_ring.h>
++#include <linux/vmalloc.h>
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
+ #include <asm/byteorder.h>
+@@ -682,6 +683,92 @@ void rproc_vdev_release(struct kref *ref)
+ 	device_unregister(&rvdev->dev);
+ }
+ 
++/**
++ * rproc_process_last_trace() - setup a buffer to capture the trace snapshot
++ *				before recovery
++ * @rproc: the remote processor
++ * @trace: the trace resource descriptor
++ * @count: the index of the trace under process
++ *
++ * The last trace is allocated if a previous last trace entry does not exist,
++ * and the contents of the trace buffer are copied during a recovery cleanup.
++ *
++ * NOTE: The memory in the original trace buffer is currently not zeroed out,
++ * but can be done if the remote processor is not zero initializing the trace
++ * memory region.
++ *
++ * Returns 0 on success, or an appropriate error code otherwise
++ */
++static int rproc_process_last_trace(struct rproc *rproc,
++				    struct rproc_debug_trace *trace, int count)
++{
++	struct rproc_debug_trace *trace_last, *tmp_trace;
++	struct rproc_mem_entry *tmem;
++	struct device *dev = &rproc->dev;
++	char name[16];
++	int i = 0;
++
++	if (!rproc || !trace)
++		return -EINVAL;
++
++	/* lookup trace va if not stored already */
++	tmem = &trace->trace_mem;
++	if (!tmem->va) {
++		tmem->va = rproc_da_to_va(rproc, tmem->da, tmem->len, NULL);
++		if (!tmem->va)
++			return -EINVAL;
++	}
++
++	if (count > rproc->num_last_traces) {
++		/* create a new trace_last entry */
++		snprintf(name, sizeof(name), "trace%d_last", count - 1);
++		trace_last = kzalloc(sizeof(*trace_last), GFP_KERNEL);
++		if (!trace_last)
++			return -ENOMEM;
++		tmem = &trace_last->trace_mem;
++	} else {
++		/* reuse the already existing trace_last entry */
++		list_for_each_entry_safe(trace_last, tmp_trace,
++					 &rproc->last_traces, node) {
++			if (++i == count)
++				break;
++		}
++
++		tmem = &trace_last->trace_mem;
++		if (tmem->len != trace->trace_mem.len) {
++			dev_warn(dev, "len does not match between trace and trace_last\n");
++			return -EINVAL;
++		}
++
++		goto copy_and_exit;
++	}
++
++	/* allocate memory and create debugfs file for the new last_trace */
++	tmem->len = trace->trace_mem.len;
++	tmem->va = vmalloc(sizeof(u32) * tmem->len);
++	if (!tmem->va) {
++		kfree(trace_last);
++		return -ENOMEM;
++	}
++
++	trace_last->tfile = rproc_create_trace_file(name, rproc, trace_last);
++	if (!trace_last->tfile) {
++		dev_err(dev, "trace%d_last create debugfs failed\n", count - 1);
++		vfree(tmem->va);
++		kfree(trace_last);
++		return -EINVAL;
++	}
++
++	list_add_tail(&trace_last->node, &rproc->last_traces);
++	rproc->num_last_traces++;
++
++copy_and_exit:
++	/* copy the trace contents to last trace */
++	memcpy(tmem->va, trace->trace_mem.va, trace->trace_mem.len);
++
++	return 0;
++}
++
+ /**
+  * rproc_handle_trace() - handle a shared trace buffer resource
+  * @rproc: the remote processor
+@@ -1358,6 +1445,19 @@ static int rproc_alloc_registered_carveouts(struct rproc *rproc)
+ 	return 0;
+ }
+ 
++/**
++ * rproc_free_trace() - helper function to cleanup a trace entry
++ * @trace: the last trace element to be cleaned up
++ * @ltrace: flag to indicate if this is last trace or regular trace
++ */
++static void rproc_free_trace(struct rproc_debug_trace *trace, bool ltrace)
++{
++	rproc_remove_trace_file(trace->tfile);
++	list_del(&trace->node);
++	if (ltrace)
++		vfree(trace->trace_mem.va);
++	kfree(trace);
++}
+ 
+ /**
+  * rproc_resource_cleanup() - clean up and free all acquired resources
+@@ -1375,10 +1475,14 @@ void rproc_resource_cleanup(struct rproc *rproc)
+ 
+ 	/* clean up debugfs trace entries */
+ 	list_for_each_entry_safe(trace, ttmp, &rproc->traces, node) {
+-		rproc_remove_trace_file(trace->tfile);
++		rproc_free_trace(trace, false);
+ 		rproc->num_traces--;
+-		list_del(&trace->node);
+-		kfree(trace);
++	}
++
++	/* clean up debugfs last trace entries */
++	list_for_each_entry_safe(trace, ttmp, &rproc->last_traces, node) {
++		rproc_free_trace(trace, true);
++		rproc->num_last_traces--;
+ 	}
+ 
+ 	/* clean up iommu mapping entries */
+@@ -1895,6 +1999,32 @@ static int rproc_stop(struct rproc *rproc, bool crashed)
+ 	return 0;
+ }
+ 
++/**
++ * rproc_store_last_traces() - preserve traces from last run
++ * @rproc:     rproc handle
++ *
++ * This function will copy the trace contents from the previous crashed run
++ * into newly created or already existing last_trace entries during an error
++ * recovery. This will allow the user to inspect the trace contents from the
++ * last crashed run, as the regular trace files will be replaced with traces
++ * with the subsequent recovered run.
++ */
++static void rproc_store_last_traces(struct rproc *rproc)
++{
++	struct rproc_debug_trace *trace, *ttmp;
++	int count = 0, ret;
++
++	/* handle last trace here */
++	list_for_each_entry_safe(trace, ttmp, &rproc->traces, node) {
++		ret = rproc_process_last_trace(rproc, trace, ++count);
++		if (ret) {
++			dev_err(&rproc->dev, "could not process last_trace%d\n",
++				count - 1);
++			break;
++		}
++	}
++}
++
+ /*
+  * __rproc_detach(): Does the opposite of __rproc_attach()
+  */
+@@ -1966,6 +2096,9 @@ int rproc_trigger_recovery(struct rproc *rproc)
+ 	/* generate coredump */
+ 	rproc_coredump(rproc);
+ 
++	/* generate last traces */
++	rproc_store_last_traces(rproc);
++
+ 	/* load firmware */
+ 	ret = request_firmware(&firmware_p, rproc->firmware, dev);
+ 	if (ret < 0) {
+@@ -2628,6 +2761,7 @@ struct rproc *rproc_alloc(struct device *dev, const char *name,
+ 	INIT_LIST_HEAD(&rproc->carveouts);
+ 	INIT_LIST_HEAD(&rproc->mappings);
+ 	INIT_LIST_HEAD(&rproc->traces);
++	INIT_LIST_HEAD(&rproc->last_traces);
+ 	INIT_LIST_HEAD(&rproc->rvdevs);
+ 	INIT_LIST_HEAD(&rproc->subdevs);
+ 	INIT_LIST_HEAD(&rproc->dump_segments);
+diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
+index c891cefa8659..0d8a7a0e61b8 100644
+--- a/include/linux/remoteproc.h
++++ b/include/linux/remoteproc.h
+@@ -500,6 +500,8 @@ struct rproc_dump_segment {
+  * @dbg_dir: debugfs directory of this rproc device
+  * @traces: list of trace buffers
+  * @num_traces: number of trace buffers
++ * @last_traces: list of last trace buffers
++ * @num_last_traces: number of last trace buffers
+  * @carveouts: list of physically contiguous memory allocations
+  * @mappings: list of iommu mappings we initiated, needed on shutdown
+  * @bootaddr: address of first instruction to boot rproc with (optional)
+@@ -542,6 +544,8 @@ struct rproc {
+ 	struct dentry *dbg_dir;
+ 	struct list_head traces;
+ 	int num_traces;
++	struct list_head last_traces;
++	int num_last_traces;
+ 	struct list_head carveouts;
+ 	struct list_head mappings;
+ 	u64 bootaddr;
+-- 
+2.32.0 (Apple Git-132)
+
