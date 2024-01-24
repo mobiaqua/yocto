@@ -4,6 +4,8 @@ LIC_FILES_CHKSUM = "file://GPL-COPYING;md5=60422928ba677faaa13d6ab5f5baaa1e"
 
 inherit module
 
+PROVIDES = "virtual/gpudriver"
+
 COMPATIBLE_MACHINE = "(beagle|panda|igep0030)"
 
 PR = "r0"

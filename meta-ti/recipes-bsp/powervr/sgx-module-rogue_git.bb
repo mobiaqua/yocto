@@ -5,10 +5,12 @@ LIC_FILES_CHKSUM = "file://README;beginline=14;endline=19;md5=0403c7dea01a2b8232
 
 inherit module
 
+PROVIDES = "virtual/gpudriver"
+
 COMPATIBLE_MACHINE = "beagle64"
 
 PR = "r0"
-PV = "23.1"
+PV = "23.2"
 PR:append = "+gitr-${SRCREV}"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
@@ -25,8 +27,12 @@ S = "${WORKDIR}/git"
 
 SRCREV = "2595524729c5acbabcbdee2185de64e7fcd6b36a"
 
-EXTRA_OEMAKE += 'KERNELDIR="${STAGING_KERNEL_DIR}" BUILD=release PVR_BUILD_DIR=j721e_linux WINDOW_SYSTEM=lws-generic'
+TARGET_PRODUCT:beagle64 = "j721e_linux"
+PVR_BUILD = "release"
+PVR_WS = "lws-generic"
+
+EXTRA_OEMAKE += 'KERNELDIR="${STAGING_KERNEL_DIR}" BUILD=${PVR_BUILD} PVR_BUILD_DIR=${TARGET_PRODUCT} WINDOW_SYSTEM=${PVR_WS}'
 
 do_install() {
-	make -C ${STAGING_KERNEL_DIR} M=${B}/binary_j721e_linux_lws-generic_release/target_aarch64/kbuild INSTALL_MOD_PATH=${D}${root_prefix} PREFIX=${STAGING_DIR_HOST} modules_install
+    make -C ${STAGING_KERNEL_DIR} M=${B}/binary_${TARGET_PRODUCT}_${PVR_WS}_${PVR_BUILD}/target_aarch64/kbuild INSTALL_MOD_PATH=${D}${root_prefix} PREFIX=${STAGING_DIR_HOST} modules_install
 }

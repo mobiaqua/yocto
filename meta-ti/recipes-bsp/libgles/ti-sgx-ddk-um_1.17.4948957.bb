@@ -10,62 +10,41 @@ PR = "r1"
 
 BRANCH = "ti-img-sgx/dunfell/${PV}"
 
-SRC_URI = "git://git.ti.com/git/graphics/omap5-sgx-ddk-um-linux.git;protocol=https;branch=${BRANCH}"
-
+SRC_URI = " \
+    git://git.ti.com/git/graphics/omap5-sgx-ddk-um-linux.git;protocol=https;branch=${BRANCH} \
+"
 SRCREV = "742cf38aba13e1ba1a910cf1f036a1a212c263b6"
+
+TARGET_PRODUCT:panda = "ti443x"
+TARGET_PRODUCT:beagle = "ti572x"
+TARGET_PRODUCT:igep0030 = "ti335x"
 
 RDEPENDS:${PN} += "libdrm libdrm-omap"
 
 S = "${WORKDIR}/git"
 
-do_install:igep0030 () {
-    install -d ${D}${libdir}/gles-ti335x
+do_compile() {
+}
+
+do_install() {
+    install -d ${D}${libdir}/gles-${TARGET_PRODUCT}
     for library in GLESv1_PVR_MESA GLESv2_PVR_MESA PVRScopeServices dbm glslcompiler pvr_dri_support srv_init srv_um usc
     do
-        cp -p ${S}/targetfs/ti335x/lib/lib${library}.so.${PV} ${D}${libdir}/gles-ti335x/lib${library}.so
-        ln -s lib${library}.so ${D}${libdir}/gles-ti443x/lib${library}.so.1
+        if [ "${TARGET_PRODUCT}" = "ti572x" ]; then
+            cp -p ${S}/targetfs/jacinto6evm/lib/lib${library}.so.${PV} ${D}${libdir}/gles-${TARGET_PRODUCT}/lib${library}.so
+        else
+            cp -p ${S}/targetfs/${TARGET_PRODUCT}/lib/lib${library}.so.${PV} ${D}${libdir}/gles-${TARGET_PRODUCT}/lib${library}.so
+        fi
+        ln -s lib${library}.so ${D}${libdir}/gles-${TARGET_PRODUCT}/lib${library}.so.1
     done
 
     install -d ${D}${sysconfdir}/profile.d
     echo "#!/bin/sh
 
-export LD_LIBRARY_PATH=/usr/lib/gles-ti335x
+export LD_LIBRARY_PATH=/usr/lib/gles-${TARGET_PRODUCT}
 " > ${D}${sysconfdir}/profile.d/sgx_gles.sh
     chmod 755 ${D}${sysconfdir}/profile.d/sgx_gles.sh
 }
-
-do_install:panda () {
-    install -d ${D}${libdir}/gles-ti443x
-    for library in GLESv1_PVR_MESA GLESv2_PVR_MESA PVRScopeServices dbm glslcompiler pvr_dri_support srv_init srv_um usc
-    do
-        cp -p ${S}/targetfs/ti443x/lib/lib${library}.so.${PV} ${D}${libdir}/gles-ti443x/lib${library}.so
-        ln -s lib${library}.so ${D}${libdir}/gles-ti443x/lib${library}.so.1
-    done
-
-    install -d ${D}${sysconfdir}/profile.d
-    echo "#!/bin/sh
-
-export LD_LIBRARY_PATH=/usr/lib/gles-ti443x
-" > ${D}${sysconfdir}/profile.d/sgx_gles.sh
-    chmod 755 ${D}${sysconfdir}/profile.d/sgx_gles.sh
-}
-
-do_install:beagle () {
-    install -d ${D}${libdir}/gles-ti572x
-    for library in GLESv1_PVR_MESA GLESv2_PVR_MESA PVRScopeServices dbm glslcompiler pvr_dri_support srv_init srv_um usc
-    do
-        cp -p ${S}/targetfs/jacinto6evm/lib/lib${library}.so.${PV} ${D}${libdir}/gles-ti572x/lib${library}.so
-        ln -s lib${library}.so ${D}${libdir}/gles-ti572x/lib${library}.so.1
-    done
-
-    install -d ${D}${sysconfdir}/profile.d
-    echo "#!/bin/sh
-
-export LD_LIBRARY_PATH=/usr/lib/gles-ti572x
-" > ${D}${sysconfdir}/profile.d/sgx_gles.sh
-    chmod 755 ${D}${sysconfdir}/profile.d/sgx_gles.sh
-}
-
 
 PACKAGES = "${PN}"
 PACKAGEFUNCS:remove = "package_do_shlibs"

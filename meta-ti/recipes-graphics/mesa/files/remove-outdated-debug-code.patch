@@ -1,12 +1,12 @@
 diff -urp old/src/gallium/frontends/pvr/pvrdri.c new/src/gallium/frontends/pvr/pvrdri.c
 --- old/src/gallium/frontends/pvr/pvrdri.c	2023-04-08 13:24:28
 +++ new/src/gallium/frontends/pvr/pvrdri.c	2023-04-08 13:33:31
-@@ -248,21 +244,6 @@ PVRDRIDestroyScreen(__DRIscreen *psDRIScreen)
+@@ -248,21 +244,13 @@ PVRDRIDestroyScreen(__DRIscreen *psDRIScreen)
  PVRDRIDestroyScreen(__DRIscreen *psDRIScreen)
  {
     PVRDRIScreen *psPVRScreen = psDRIScreen->driverPrivate;
--
--#if defined(DEBUG)
+ 
+ #if defined(DEBUG)
 -   if (psPVRScreen->iBufferAlloc != 0 ||
 -       psPVRScreen->iDrawableAlloc != 0 ||
 -       psPVRScreen->iContextAlloc != 0) {
@@ -14,23 +14,23 @@ diff -urp old/src/gallium/frontends/pvr/pvrdri.c new/src/gallium/frontends/pvr/p
 -                   __func__, psPVRScreen->iContextAlloc,
 -                   psPVRScreen->iDrawableAlloc, psPVRScreen->iBufferAlloc);
 -
--      if (psPVRScreen->iRefCount > 1) {
--         errorMessage("%s: PVRDRIScreen resources will not be freed until its %d references are removed",
--                      __func__, psPVRScreen->iRefCount - 1);
--      }
+       if (psPVRScreen->iRefCount > 1) {
+          errorMessage("%s: PVRDRIScreen resources will not be freed until its %d references are removed",
+                       __func__, psPVRScreen->iRefCount - 1);
+       }
 -   }
--#endif
+ #endif
  
     PVRDRIScreenRemoveReference(psPVRScreen);
  }
 diff -urp old/src/gallium/frontends/sgx/pvrdri.c new/src/gallium/frontends/sgx/pvrdri.c
 --- old/src/gallium/frontends/sgx/pvrdri.c	2023-04-08 13:24:28
 +++ new/src/gallium/frontends/sgx/pvrdri.c	2023-04-08 13:33:41
-@@ -608,21 +608,6 @@ PVRDRIDestroyScreen(__DRIscreen *psDRIScreen)
+@@ -608,21 +608,13 @@ PVRDRIDestroyScreen(__DRIscreen *psDRIScreen)
  {
     PVRDRIScreen *psPVRScreen = psDRIScreen->driverPrivate;
  
--#if defined(DEBUG)
+ #if defined(DEBUG)
 -   if (psPVRScreen->iBufferAlloc != 0 ||
 -       psPVRScreen->iDrawableAlloc != 0 ||
 -       psPVRScreen->iContextAlloc != 0) {
@@ -38,13 +38,13 @@ diff -urp old/src/gallium/frontends/sgx/pvrdri.c new/src/gallium/frontends/sgx/p
 -                   __func__, psPVRScreen->iContextAlloc,
 -                   psPVRScreen->iDrawableAlloc, psPVRScreen->iBufferAlloc);
 -
--      if (psPVRScreen->iRefCount > 1) {
--         mesa_loge("%s: PVRDRIScreen resources will not be freed until its %d references are removed",
--                      __func__, psPVRScreen->iRefCount - 1);
--      }
+       if (psPVRScreen->iRefCount > 1) {
+          mesa_loge("%s: PVRDRIScreen resources will not be freed until its %d references are removed",
+                       __func__, psPVRScreen->iRefCount - 1);
+       }
 -   }
--#endif
--
+ #endif
+ 
     PVRDRIScreenRemoveReference(psPVRScreen);
  }
  
