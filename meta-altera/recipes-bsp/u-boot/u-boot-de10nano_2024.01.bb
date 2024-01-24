@@ -34,6 +34,7 @@ SRC_URI = "git://source.denx.de/u-boot/u-boot.git;protocol=https;branch=master \
            file://arm-socfpga-Add-bsp-generator-scripts-with-qts-filte.patch \
            file://Add-DE10-Nano-HDMI-configuration-and-debug-apps.patch \
            file://fpga-hdmi-enable.patch \
+           file://rtc-mod.patch \
           "
 
 S = "${WORKDIR}/git"

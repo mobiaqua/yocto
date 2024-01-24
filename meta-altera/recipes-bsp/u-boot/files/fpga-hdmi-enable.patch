@@ -49,7 +49,7 @@ diff -urp old/include/configs/socfpga_de10_nano.h new/include/configs/socfpga_de
 +		"fdt set ${fdt_frag} height <${HDMI_v_active_lin}>; "\
 +		"fdt set ${fdt_frag} stride <${HDMI_stride}>; "\
 +		"fdt set /aliases display0 /framebuffer@3F000000;"\
-+		"sleep 2;\0"\
++		"\0"\
 +	"HDMI_enable_dvi="\
 +		"no\0"\
 +	"hdmi_cfg="\
