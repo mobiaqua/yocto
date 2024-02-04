@@ -1,23 +1,23 @@
 DESCRIPTION = "Userspace libraries for PowerVR SGX chipset on TI SoCs"
 HOMEPAGE = "https://git.ti.com/graphics/omap5-sgx-ddk-um-linux"
 LICENSE = "TI-TSPA"
-LIC_FILES_CHKSUM = "file://TI-Linux-Graphics-DDK-UM-Manifest.doc;md5=b17390502bc89535c86cfbbae961a2a8"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=7232b98c1c58f99e3baa03de5207e76f"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 COMPATIBLE_MACHINE = "igep0030|panda|beagle"
 
 PR = "r1"
 
-BRANCH = "ti-img-sgx/dunfell/${PV}"
+BRANCH = "${PV}/mesa/glibc-2.35"
 
 SRC_URI = " \
     git://git.ti.com/git/graphics/omap5-sgx-ddk-um-linux.git;protocol=https;branch=${BRANCH} \
 "
-SRCREV = "742cf38aba13e1ba1a910cf1f036a1a212c263b6"
+SRCREV = "70364424dd496833fad5b243c9e6cc8b077f04ac"
 
-TARGET_PRODUCT:panda = "ti443x"
-TARGET_PRODUCT:beagle = "ti572x"
-TARGET_PRODUCT:igep0030 = "ti335x"
+TARGET_PRODUCT:panda = "ti443x_linux"
+TARGET_PRODUCT:beagle = "ti572x_linux"
+TARGET_PRODUCT:igep0030 = "ti335x_linux"
 
 RDEPENDS:${PN} += "libdrm libdrm-omap"
 
@@ -30,11 +30,7 @@ do_install() {
     install -d ${D}${libdir}/gles-${TARGET_PRODUCT}
     for library in GLESv1_PVR_MESA GLESv2_PVR_MESA PVRScopeServices dbm glslcompiler pvr_dri_support srv_init srv_um usc
     do
-        if [ "${TARGET_PRODUCT}" = "ti572x" ]; then
-            cp -p ${S}/targetfs/jacinto6evm/lib/lib${library}.so.${PV} ${D}${libdir}/gles-${TARGET_PRODUCT}/lib${library}.so
-        else
-            cp -p ${S}/targetfs/${TARGET_PRODUCT}/lib/lib${library}.so.${PV} ${D}${libdir}/gles-${TARGET_PRODUCT}/lib${library}.so
-        fi
+        cp -p ${S}/targetfs/${TARGET_PRODUCT}/lws-generic/release/usr/lib/lib${library}.so.${PV} ${D}${libdir}/gles-${TARGET_PRODUCT}/lib${library}.so
         ln -s lib${library}.so ${D}${libdir}/gles-${TARGET_PRODUCT}/lib${library}.so.1
     done
 

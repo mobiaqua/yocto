@@ -16,6 +16,6 @@ LOAD_MODULE=/sbin/modprobe
 
 $LOAD_MODULE omapdrm_pvr_ti335x
 
-export LD_LIBRARY_PATH=/usr/lib/gles-ti335x
+export LD_LIBRARY_PATH=/usr/lib/gles-ti335x_linux
 
 [ -e /usr/bin/pvrsrvinit ] && /usr/bin/pvrsrvinit
