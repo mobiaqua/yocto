@@ -5,7 +5,7 @@ DEPENDS += "openssl-native ncurses-native elf-native kmod-native linux-firmware"
 COMPATIBLE_MACHINE = "beagle64"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.1.74"
+LINUX_VERSION = "6.1.77"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -281,20 +281,16 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://5/0094-drm-tidss-Add-support-for-AM62P-DSS0.patch \
             file://5/0129-phy-ti-gmii-sel-Allow-parent-to-not-be-syscon-node.patch \
             file://5/0130-phy-ti-gmii-sel-Fix-register-offset-when-parent-is-n.patch \
-            file://5/0153-Revert-drm-tidss-Annotate-dma-fence-critical-section.patch \
             file://5/0154-drm-tidss-Use-pm_runtime_resume_and_get.patch \
             file://5/0155-drm-tidss-Use-PM-autosuspend.patch \
             file://5/0156-drm-tidss-Remove-early-fb.patch \
             file://5/0157-drm-tidss-Drop-useless-variable-init.patch \
             file://5/0158-drm-tidss-Fix-OLDI-default-rate-setup.patch \
             file://5/0159-drm-tidss-Return-error-value-from-from-softreset.patch \
-            file://5/0160-drm-tidss-Check-for-K2G-in-in-dispc_softreset.patch \
             file://5/0161-drm-tidss-Add-simple-K2G-manual-reset.patch \
-            file://5/0162-drm-tidss-Fix-dss-reset.patch \
             file://5/0163-drm-tidss-Add-dispc_is_idle.patch \
             file://5/0164-drm-tidss-IRQ-code-cleanup.patch \
             file://5/0165-drm-tidss-Add-some-support-for-splash-screen.patch \
-            file://5/0166-drm-tidss-Fix-atomic_flush-check.patch \
             file://5/0167-drm-tidss-Use-DRM_PLANE_COMMIT_ACTIVE_ONLY.patch \
             file://5/0205-bus-ti-sysc-Build-driver-for-TI-K3-SoCs.patch \
             file://5/0207-watchdog-rti_wdt-Use-managed-APIs-to-handle-runtime-.patch \
@@ -326,7 +322,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://ti_config \
 "
 
-SRC_URI[sha256sum] = "b7fbd1d79faed2ce3570ef79dc1223e4e19c868b86326b14a435db56ebbb2022"
+SRC_URI[sha256sum] = "3b54ec567716cdfb3618caf38c58a8aab1372cc41c16430633febe9ccdb3f91d"
 
 S = "${WORKDIR}/linux-${PV}"
 

@@ -49,7 +49,7 @@ index 6e9253761fc1..27f067109da4 100644
  		}
  
  		last_ping = heartbeat_ms - time_left_ms;
-@@ -289,19 +285,13 @@ static int rti_wdt_probe(struct platform_device *pdev)
+@@ -289,22 +285,16 @@ static int rti_wdt_probe(struct platform_device *pdev)
  	ret = watchdog_register_device(wdd);
  	if (ret) {
  		dev_err(dev, "cannot register watchdog device\n");
@@ -59,6 +59,9 @@ index 6e9253761fc1..27f067109da4 100644
  
  	if (last_ping)
  		watchdog_set_last_hw_keepalive(wdd, last_ping);
+ 
+ 	if (!watchdog_hw_running(wdd))
+ 		pm_runtime_put_sync(&pdev->dev);
  
  	return 0;
 -
@@ -70,11 +73,14 @@ index 6e9253761fc1..27f067109da4 100644
  }
  
  static int rti_wdt_remove(struct platform_device *pdev)
-@@ -309,8 +299,6 @@ static int rti_wdt_remove(struct platform_device *pdev)
+@@ -309,11 +299,6 @@ static int rti_wdt_remove(struct platform_device *pdev)
  	struct rti_wdt_device *wdt = platform_get_drvdata(pdev);
  
  	watchdog_unregister_device(&wdt->wdd);
--	pm_runtime_put(&pdev->dev);
+-
+-	if (!pm_runtime_suspended(&pdev->dev))
+-		pm_runtime_put(&pdev->dev);
+-
 -	pm_runtime_disable(&pdev->dev);
  
  	return 0;
