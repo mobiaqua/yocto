@@ -16,6 +16,7 @@ SRC_URI += "\
     file://0009-Revert-cmd-go-make-sure-CC-and-CXX-are-absolute.patch \
     file://0001-exec.go-do-not-write-linker-flags-into-buildids.patch \
     file://0001-src-cmd-dist-buildgo.go-do-not-hardcode-host-compile.patch \
+    file://0010-net-Fix-issue-with-DNS-not-being-updated.patch  \
     file://CVE-2022-27664.patch \
     file://0001-net-http-httputil-avoid-query-parameter-smuggling.patch \
     file://CVE-2022-41715.patch \
@@ -46,6 +47,7 @@ SRC_URI += "\
     file://CVE-2023-29409.patch \
     file://CVE-2023-39319.patch \
     file://CVE-2023-39318.patch \
+    file://CVE-2023-39326.patch \
 "
 SRC_URI[main.sha256sum] = "a1a48b23afb206f95e7bbaa9b898d965f90826f6f1d1fc0c1d784ada0cd300fd"
 
@@ -54,5 +56,5 @@ SRC_URI[main.sha256sum] = "a1a48b23afb206f95e7bbaa9b898d965f90826f6f1d1fc0c1d784
 # https://github.com/golang/go/issues/30999#issuecomment-910470358
 CVE_CHECK_IGNORE += "CVE-2021-29923"
 
-# This is specific to Microsoft Windows
-CVE_CHECK_IGNORE += "CVE-2022-41716"
+# This are specific to Microsoft Windows
+CVE_CHECK_IGNORE += "CVE-2022-41716 CVE-2023-45283 CVE-2023-45284"
