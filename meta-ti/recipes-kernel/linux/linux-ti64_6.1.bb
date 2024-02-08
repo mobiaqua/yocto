@@ -312,6 +312,9 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://6/0004-media-ti-j721e-csi2rx-Submit-all-available-buffers.patch \
             file://6/0005-dmaengine-ti-k3-udma-Report-short-packet-errors.patch \
             file://6/0006-media-img-vxe-vxd-decoder-Suppress-Decoder-Compiler-.patch \
+            file://6/0031-media-i2c-imx219-Add-mbus_frame_desc-for-pad.patch \
+            file://6/0044-remoteproc-k3-r5-Wait-for-core0-power-up-before-powe.patch \
+            file://6/0047-mux-mmio-use-reg-property-when-parent-device-is-not-.patch \
             file://0001_fix_nonlinux_compile.patch \
             file://0002-bootup-hacks-move-mmc-early.patch \
             file://0003-Kbuild.include.patch \
