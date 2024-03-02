@@ -22,6 +22,7 @@ if [ "$QUARTUS_ROOT" = ".." ]; then
     QUARTUS_ROOT=`dirname \`pwd\``
 fi
 
+export NFS_WORKSPACE=`pwd`
 
 CMD="./QuartusProgrammerSetup-13.0.1.232.run --mode unattended --unattendedmodeui none --installdir /opt/tools/altera"
 
@@ -40,7 +41,7 @@ if [ ! -d ${QUARTUS_ROOT}/tools ]; then
     mkdir -p ${QUARTUS_ROOT}/tools
 fi
 
-${SOFTVM_INSTALL_PATH}/tools/semihost_cmd_emu.sh ${QUARTUS_ROOT}/tools $VMMODE $CMD
+${SOFTVM_INSTALL_PATH}/tools/semihost_cmd_qemu.sh ${QUARTUS_ROOT}/tools $VMMODE $CMD
 if [ $? -ne 0 ]; then
     echo
     echo " --- Installation failed! ---"

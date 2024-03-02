@@ -2,12 +2,16 @@
 
 CMD=`basename $0`
 
+ORG_NFS_WORKSPACE=$NFS_WORKSPACE
+
 HOME_PATH=~/.softvm
 if [ ! -f $HOME_PATH/config ]; then
     echo "$CMD : Missing confguration file! Aborting..."
     exit 1
 fi
 . $HOME_PATH/config
+
+NFS_WORKSPACE=${ORG_NFS_WORKSPACE:=$NFS_WORKSPACE}
 
 # arguments:
 # <this_script_name> <tools path> <vm mode> <cmd> [<cmd args>]

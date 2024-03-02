@@ -22,6 +22,7 @@ if [ "$QUARTUS_ROOT" = ".." ]; then
     QUARTUS_ROOT=`dirname \`pwd\``
 fi
 
+export NFS_WORKSPACE=`pwd`
 
 CMD="./QuartusSetupWeb-13.0.1.232.run --mode unattended --unattendedmodeui none --installdir /opt/tools/altera"
 
