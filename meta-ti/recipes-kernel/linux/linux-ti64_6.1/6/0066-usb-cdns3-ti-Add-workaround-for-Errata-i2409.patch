@@ -1,0 +1,60 @@
+From b9e5d91ad98df1996983104cd2c8e535240ea02c Mon Sep 17 00:00:00 2001
+From: Roger Quadros <rogerq@kernel.org>
+Date: Thu, 8 Feb 2024 13:39:53 +0200
+Subject: [PATCH 066/130] usb: cdns3-ti: Add workaround for Errata i2409
+
+TI USB2 PHY is known to have a lockup issue on very short
+suspend intervals. Enable the Suspend Residency quirk flag to
+workaround this as described in Errata i2409 [1].
+
+[1] - https://www.ti.com/lit/er/sprz457h/sprz457h.pdf
+
+Signed-off-by: Roger Quadros <rogerq@kernel.org>
+Reviewed-by: Ravi Gunasekaran <r-gunasekaran@ti.com>
+---
+ drivers/usb/cdns3/cdns3-ti.c | 15 ++++++++++++++-
+ 1 file changed, 14 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/usb/cdns3/cdns3-ti.c b/drivers/usb/cdns3/cdns3-ti.c
+index 07c318770362..23269ba6d63a 100644
+--- a/drivers/usb/cdns3/cdns3-ti.c
++++ b/drivers/usb/cdns3/cdns3-ti.c
+@@ -15,6 +15,7 @@
+ #include <linux/io.h>
+ #include <linux/of_platform.h>
+ #include <linux/pm_runtime.h>
++#include "core.h"
+ 
+ /* USB Wrapper register offsets */
+ #define USBSS_PID		0x0
+@@ -84,6 +85,18 @@ static inline void cdns_ti_writel(struct cdns_ti *data, u32 offset, u32 value)
+ 	writel(value, data->usbss + offset);
+ }
+ 
++static struct cdns3_platform_data cdns_ti_pdata = {
++	.quirks = CDNS3_DRD_SUSPEND_RESIDENCY_ENABLE,	/* Errata i2409 */
++};
++
++static const struct of_dev_auxdata cdns_ti_auxdata[] = {
++	{
++		.compatible = "cdns,usb3",
++		.platform_data = &cdns_ti_pdata,
++	},
++	{},
++};
++
+ static int cdns_ti_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+@@ -175,7 +188,7 @@ static int cdns_ti_probe(struct platform_device *pdev)
+ 	reg |= USBSS_W1_PWRUP_RST;
+ 	cdns_ti_writel(data, USBSS_W1, reg);
+ 
+-	error = of_platform_populate(node, NULL, NULL, dev);
++	error = of_platform_populate(node, NULL, cdns_ti_auxdata, dev);
+ 	if (error) {
+ 		dev_err(dev, "failed to create children: %d\n", error);
+ 		goto err;
+-- 
+2.43.1
+

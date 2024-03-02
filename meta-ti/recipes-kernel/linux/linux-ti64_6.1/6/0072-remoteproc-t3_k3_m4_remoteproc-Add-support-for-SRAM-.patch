@@ -1,0 +1,32 @@
+From 006112344b6ff6c55119de1915ac1eecc759fa72 Mon Sep 17 00:00:00 2001
+From: Hari Nagalla <hnagalla@ti.com>
+Date: Wed, 7 Feb 2024 17:38:06 -0600
+Subject: [PATCH 072/130] remoteproc: t3_k3_m4_remoteproc: Add support for SRAM
+ regions
+
+Extend on chip SRAM support for M4 remote proc drivers. Timing/latency
+critical applications may use on-chip SRAM.
+
+Signed-off-by: Hari Nagalla <hnagalla@ti.com>
+---
+ drivers/remoteproc/ti_k3_m4_remoteproc.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/remoteproc/ti_k3_m4_remoteproc.c b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+index 12970144a563..b53f1edf1198 100644
+--- a/drivers/remoteproc/ti_k3_m4_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+@@ -460,6 +460,10 @@ static int k3_m4_rproc_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		goto release_tsp;
+ 
++	ret = k3_rproc_of_get_sram_memories(pdev, kproc);
++	if (ret)
++		goto release_tsp;
++
+ 	ret = k3_reserved_mem_init(kproc);
+ 	if (ret) {
+ 		dev_err(dev, "reserved memory init failed, ret = %d\n", ret);
+-- 
+2.43.1
+

@@ -1,0 +1,33 @@
+From 21bbf30fcc1bd923c862ff3cf19741f9d5318fbf Mon Sep 17 00:00:00 2001
+From: Brandon Brnich <b-brnich@ti.com>
+Date: Fri, 26 Jan 2024 16:33:33 -0600
+Subject: [PATCH 053/130] media: img: vxe-vxd: decoder: Set Contiguous
+ Allocation as Default
+
+Re-enable contiguous allocation by default for decoder capture buffers.
+Higher performance is seen in this case as no address translation needs to
+be done by decoder MMU.
+
+Fixes: 6aad0284013e ("TEMP: media: img: vxe-vxd: decoder: Disable CMA for capture buffers")
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+Acked-by: Darren Etheridge <detheridge@ti.com>
+---
+ drivers/media/platform/img/vxe-vxd/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/img/vxe-vxd/Makefile b/drivers/media/platform/img/vxe-vxd/Makefile
+index a01d90320d1b..3270153b22cd 100644
+--- a/drivers/media/platform/img/vxe-vxd/Makefile
++++ b/drivers/media/platform/img/vxe-vxd/Makefile
+@@ -44,7 +44,7 @@ ERROR_RECOVERY_SIMULATION ?=n
+ # This config enables allocation of capture buffers from
+ # dma contiguous memory.
+ # If unsure, say Y
+-CAPTURE_CONTIG_ALLOC ?=n
++CAPTURE_CONTIG_ALLOC ?=y
+ 
+ vxd-dec-y += common/img_mem_man.o \
+ 	common/img_mem_unified.o \
+-- 
+2.43.1
+

@@ -1,0 +1,41 @@
+From a5aa7690fcba25174ef074734793c3ff4c8f5587 Mon Sep 17 00:00:00 2001
+From: Brandon Brnich <b-brnich@ti.com>
+Date: Mon, 29 Jan 2024 16:12:07 -0600
+Subject: [PATCH 054/130] media: img: vxe-vxd: encoder: Expose I-Frame Period
+ Control
+
+Functionality was already in place to properly set I-frame period for a
+given h264 encode. However, it was not being exposed to control menu making
+it irrelevant. Add this to the control menu to allow user to select their
+desired I-frame period.
+
+User can manipulate I-frame period by adding the following control after
+the v4l2h264enc elemenet in gstreamer pipelines:
+
+v4l2h264enc extra-controls="enc,h264_i_frame_period=3"
+
+This will make every 3rd frame an I-frame.
+
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+Acked-by: Darren Etheridge <detheridge@ti.com>
+---
+ drivers/media/platform/img/vxe-vxd/encoder/vxe_v4l2.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/media/platform/img/vxe-vxd/encoder/vxe_v4l2.c b/drivers/media/platform/img/vxe-vxd/encoder/vxe_v4l2.c
+index 02f54b6738da..6f5833b36828 100644
+--- a/drivers/media/platform/img/vxe-vxd/encoder/vxe_v4l2.c
++++ b/drivers/media/platform/img/vxe-vxd/encoder/vxe_v4l2.c
+@@ -869,6 +869,9 @@ static int vxe_open(struct file *file)
+ 	v4l2_ctrl_new_std(v4l2_ctrl_hdl, &vxe_enc_ctrl_ops,
+ 			  V4L2_CID_MPEG_VIDEO_GOP_SIZE,
+ 			  0, 2047, 1, 30);
++	v4l2_ctrl_new_std(v4l2_ctrl_hdl, &vxe_enc_ctrl_ops,
++			  V4L2_CID_MPEG_VIDEO_H264_I_PERIOD,
++			  0, 2047, 1, 30);
+ 	v4l2_ctrl_new_std(v4l2_ctrl_hdl, &vxe_enc_ctrl_ops,
+ 			  V4L2_CID_MPEG_VIDEO_MAX_REF_PIC,
+ 			  1, 16, 1, 1);
+-- 
+2.43.1
+

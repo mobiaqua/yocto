@@ -5,7 +5,7 @@ DEPENDS += "openssl-native ncurses-native elf-native kmod-native linux-firmware"
 COMPATIBLE_MACHINE = "beagle64"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.1.77"
+LINUX_VERSION = "6.1.80"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -310,11 +310,22 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://5/0284-Input-gpio-keys-Add-system-suspend-support-for-dedic.patch \
             file://6/0002-serial-8250_omap-Set-the-console-genpd-always-on-if-.patch \
             file://6/0004-media-ti-j721e-csi2rx-Submit-all-available-buffers.patch \
-            file://6/0005-dmaengine-ti-k3-udma-Report-short-packet-errors.patch \
             file://6/0006-media-img-vxe-vxd-decoder-Suppress-Decoder-Compiler-.patch \
             file://6/0031-media-i2c-imx219-Add-mbus_frame_desc-for-pad.patch \
+            file://6/0035-thermal-k3_j72xx_bandgap-implement-suspend-resume-su.patch \
             file://6/0044-remoteproc-k3-r5-Wait-for-core0-power-up-before-powe.patch \
             file://6/0047-mux-mmio-use-reg-property-when-parent-device-is-not-.patch \
+            file://6/0052-media-img-vxe-vxd-decoder-Add-DMA-Coherent-Mask.patch \
+            file://6/0053-media-img-vxe-vxd-decoder-Set-Contiguous-Allocation-.patch \
+            file://6/0054-media-img-vxe-vxd-encoder-Expose-I-Frame-Period-Cont.patch \
+            file://6/0055-clk-keystone-sci-clk-Adding-support-for-non-contiguo.patch \
+            file://6/0065-usb-cdns3-Add-quirk-flag-to-enable-suspend-residency.patch \
+            file://6/0066-usb-cdns3-ti-Add-workaround-for-Errata-i2409.patch \
+            file://6/0071-remoteproc-k3-Add-support-for-SRAM-regions.patch \
+            file://6/0072-remoteproc-t3_k3_m4_remoteproc-Add-support-for-SRAM-.patch \
+            file://6/0073-phy-ti-gmii-sel-add-resume-support.patch \
+            file://6/0075-remoteproc-k3-dsp-Introduce-PM-suspend-resume-handle.patch \
+            file://6/0104-media-ti-j721e-csi2rx-Fix-locking-in-restart_dma.patch \
             file://0001_fix_nonlinux_compile.patch \
             file://0002-bootup-hacks-move-mmc-early.patch \
             file://0003-Kbuild.include.patch \
@@ -325,7 +336,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://ti_config \
 "
 
-SRC_URI[sha256sum] = "3b54ec567716cdfb3618caf38c58a8aab1372cc41c16430633febe9ccdb3f91d"
+SRC_URI[sha256sum] = "568ecaaebb8b87c7c8246bba67bc83402972bf34f5811651a2d3cd548ff7b671"
 
 S = "${WORKDIR}/linux-${PV}"
 
