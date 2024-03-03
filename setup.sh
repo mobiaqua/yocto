@@ -23,6 +23,22 @@ print_help() {
 	ERROR=1
 }
 
+get_oe_base() {
+	SCRIPT_BASE=`dirname $0`
+
+	if [ "$SCRIPT_BASE" = "." ] || [ -z "$SCRIPT_BASE" ]; then
+		OE_BASE=`dirname \`pwd\``
+	else
+		OE_BASE=`dirname ${SCRIPT_BASE}`
+	fi
+
+	if [ "$OE_BASE" = ".." ]; then
+		OE_BASE=`dirname \`pwd\``
+	fi
+
+	export OE_BASE
+}
+
 python_v3_check() {
 	VER=`/usr/bin/env python3.7 --version 2>&1 | grep "Python 3"`
 	if [ "$VER" != "" ]; then
@@ -40,7 +56,7 @@ get_os() {
 	else
 		OS=`uname -s`
 	fi
-	export $OS
+	export OS
 }
 
 gnutools="[ awk b2sum base32 base64 basename cat chcon chgrp chmod chroot cksum cmp comm cp \
@@ -55,7 +71,8 @@ whoami yes"
 tools="bison perl wget texi2html file bison flex help2man unzip xz dos2unix meson ninja cmake rsync zstd"
 
 prepare_tools() {
-	OE_BASE=`pwd -P`
+	get_oe_base
+	cd $OE_BASE
 	mkdir -p ${OE_BASE}/bin
 
 	/bin/rm -f ${OE_BASE}/bin/chown
