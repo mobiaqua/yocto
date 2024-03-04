@@ -27,13 +27,9 @@ get_oe_base() {
 	SCRIPT_BASE=`dirname $0`
 
 	if [ "$SCRIPT_BASE" = "." ] || [ -z "$SCRIPT_BASE" ]; then
-		OE_BASE=`dirname \`pwd\``
+		OE_BASE=`pwd`
 	else
-		OE_BASE=`dirname ${SCRIPT_BASE}`
-	fi
-
-	if [ "$OE_BASE" = ".." ]; then
-		OE_BASE=`dirname \`pwd\``
+		OE_BASE=${SCRIPT_BASE}
 	fi
 
 	export OE_BASE
@@ -296,6 +292,7 @@ prepare_tools() {
 setup() {
 	export OE_BASE=`${OE_BASE}/bin/readlink -f "$OE_BASE"`
 	export BUILDDIR=$OE_BASE
+	cd $OE_BASE
 
 	export DISTRO=mobiaqua
 	export TARGET=media
