@@ -39,6 +39,15 @@ get_oe_base() {
 	export OE_BASE
 }
 
+os_check() {
+	get_os
+	if [ "$OS" == "Darwin" ]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
 python_v3_check() {
 	VER=`/usr/bin/env python3.7 --version 2>&1 | grep "Python 3"`
 	if [ "$VER" != "" ]; then
@@ -81,353 +90,205 @@ prepare_tools() {
 " > ${OE_BASE}/bin/chown
 	/bin/chmod +x ${OE_BASE}/bin/chown
 
-	get_os
-	case $OS in
-	Darwin)
-		if [ ! -e /opt/local/bin/gsed ]; then
-			echo "* ERROR *  Missing GNU sed!"
-			return 1
-		fi
-		if [ ! -e /opt/local/bin/ggrep ]; then
-			echo "* ERROR *  Missing GNU grep!"
-			return 1
-		fi
-		if [ ! -e /opt/local/bin/gpatch ]; then
-			echo "* ERROR *  Missing GNU patch!"
-			return 1
-		fi
-		if [ ! -e /opt/local/bin/gm4 ]; then
-			echo "* ERROR *  Missing GNU m4!"
-			return 1
-		fi
-		if [ ! -e /opt/local/bin/ginstall ]; then
-			echo "* ERROR *  Missing GNU coreutils!"
-			return 1
-		fi
-		if [ ! -e /opt/local/bin/gxargs ]; then
-			echo "* ERROR *  Missing GNU findutils!"
-			return 1
-		fi
-		if [ ! -e /opt/local/bin/gcmp ]; then
-			echo "* ERROR *  Missing GNU diffutils!"
-			return 1
-		fi
-		if [ ! -e /opt/local/bin/diffstat ]; then
-			echo "* ERROR *  Missing GNU diffstat!"
-			return 1
-		fi
+	if [ ! -e /opt/local/bin/gsed ]; then
+		echo "* ERROR *  Missing GNU sed!"
+		return 1
+	fi
+	if [ ! -e /opt/local/bin/ggrep ]; then
+		echo "* ERROR *  Missing GNU grep!"
+		return 1
+	fi
+	if [ ! -e /opt/local/bin/gpatch ]; then
+		echo "* ERROR *  Missing GNU patch!"
+		return 1
+	fi
+	if [ ! -e /opt/local/bin/gm4 ]; then
+		echo "* ERROR *  Missing GNU m4!"
+		return 1
+	fi
+	if [ ! -e /opt/local/bin/ginstall ]; then
+		echo "* ERROR *  Missing GNU coreutils!"
+		return 1
+	fi
+	if [ ! -e /opt/local/bin/gxargs ]; then
+		echo "* ERROR *  Missing GNU findutils!"
+		return 1
+	fi
+	if [ ! -e /opt/local/bin/gcmp ]; then
+		echo "* ERROR *  Missing GNU diffutils!"
+		return 1
+	fi
+	if [ ! -e /opt/local/bin/diffstat ]; then
+		echo "* ERROR *  Missing GNU diffstat!"
+		return 1
+	fi
 
-		for i in $gnutools; do
-			/bin/rm -f ${OE_BASE}/bin/$i
-			if [ -e /opt/local/bin/g$i ]; then
-				/bin/ln -s /opt/local/bin/g$i ${OE_BASE}/bin/$i
-			fi
-		done
-
-		for i in $tools; do
-			/bin/rm -f ${OE_BASE}/bin/$i
-			if [ -e /opt/local/bin/$i ]; then
-				/bin/ln -s /opt/local/bin/$i ${OE_BASE}/bin/$i
-			else
-				echo "* ERROR *  Missing $i!"
-				return 1
-			fi
-		done
-
-		/bin/rm -f ${OE_BASE}/bin/SetFile
-		/bin/ln -s /usr/bin/SetFile ${OE_BASE}/bin/SetFile
-
-		/bin/rm -f ${OE_BASE}/bin/codesign
-		/bin/ln -s /usr/bin/codesign ${OE_BASE}/bin/codesign
-
-		/bin/rm -f ${OE_BASE}/bin/Rez
-		/bin/ln -s /usr/bin/Rez ${OE_BASE}/bin/Rez
-
-		/bin/rm -f ${OE_BASE}/bin/lipo
-		/bin/ln -s /usr/bin/lipo ${OE_BASE}/bin/lipo
-
-		/bin/rm -f ${OE_BASE}/bin/ggrep
-		/bin/ln -s /opt/local/bin/ggrep ${OE_BASE}/bin/ggrep
-
-		if [ ! -e /opt/local/bin/desktop-file-install ]; then
-			echo "* ERROR *  Missing desktop-file-utils package"
-			return 1
+	for i in $gnutools; do
+		/bin/rm -f ${OE_BASE}/bin/$i
+		if [ -e /opt/local/bin/g$i ]; then
+			/bin/ln -s /opt/local/bin/g$i ${OE_BASE}/bin/$i
 		fi
+	done
 
-		if [ ! -e /opt/local/bin/intltoolize ]; then
-			echo "* ERROR *  Missing intltool package"
-			return 1
-		fi
-
-		/bin/rm -f ${OE_BASE}/bin/bc
-		/bin/rm -f ${OE_BASE}/bin/dc
-		if [ -e /opt/local/bin/bc ]; then
-			/bin/ln -s /opt/local/bin/bc ${OE_BASE}/bin/bc
-			/bin/ln -s /opt/local/bin/dc ${OE_BASE}/bin/dc
+	for i in $tools; do
+		/bin/rm -f ${OE_BASE}/bin/$i
+		if [ -e /opt/local/bin/$i ]; then
+			/bin/ln -s /opt/local/bin/$i ${OE_BASE}/bin/$i
 		else
-			echo "* ERROR *  Missing GNU bc package"
+			echo "* ERROR *  Missing $i!"
 			return 1
 		fi
+	done
 
-		/bin/rm -f ${OE_BASE}/bin/python
-		/bin/rm -f ${OE_BASE}/bin/python3
-		if [ -e /opt/local/bin/python3.7 ]; then
-			/bin/ln -s python3 ${OE_BASE}/bin/python
-			/bin/ln -s /opt/local/bin/python3.7 ${OE_BASE}/bin/python3
-		else
-			echo "* ERROR *  Missing MacPorts python"
-			return 1
-		fi
+	/bin/rm -f ${OE_BASE}/bin/SetFile
+	/bin/ln -s /usr/bin/SetFile ${OE_BASE}/bin/SetFile
 
-		/bin/rm -f ${OE_BASE}/bin/tar
-		if [ -e /opt/local/bin/gnutar ]; then
-			/bin/ln -s /opt/local/bin/gnutar ${OE_BASE}/bin/tar
-		else
-			echo "* ERROR *  Missing GNU tar package"
-			return 1
-		fi
+	/bin/rm -f ${OE_BASE}/bin/codesign
+	/bin/ln -s /usr/bin/codesign ${OE_BASE}/bin/codesign
 
-		/bin/rm -f ${OE_BASE}/bin/cpio
-		if [ -e /opt/local/bin/gnucpio ]; then
-			/bin/ln -s /opt/local/bin/gnucpio ${OE_BASE}/bin/cpio
-		else
-			echo "* ERROR *  Missing GNU cpio package"
-			return 1
-		fi
+	/bin/rm -f ${OE_BASE}/bin/Rez
+	/bin/ln -s /usr/bin/Rez ${OE_BASE}/bin/Rez
 
-		/bin/rm -f ${OE_BASE}/bin/perl
-		/bin/rm -f ${OE_BASE}/bin/pod2man
-		if [ -e /opt/local/bin/perl ]; then
-			/bin/ln -s /opt/local/bin/perl ${OE_BASE}/bin/perl
-			/bin/ln -s /opt/local/bin/pod2man ${OE_BASE}/bin/pod2man
-		else
-			echo "* ERROR *  Missing MacPorts perl package"
-			return 1
-		fi
+	/bin/rm -f ${OE_BASE}/bin/lipo
+	/bin/ln -s /usr/bin/lipo ${OE_BASE}/bin/lipo
 
-		/bin/rm -f ${OE_BASE}/bin/makeinfo
-		if [ -e /opt/local/bin/makeinfo ]; then
-			/bin/ln -s /opt/local/bin/makeinfo ${OE_BASE}/bin/makeinfo
-		else
-			echo "* ERROR *  Missing texinfo package"
-			return 1
-		fi
+	/bin/rm -f ${OE_BASE}/bin/ggrep
+	/bin/ln -s /opt/local/bin/ggrep ${OE_BASE}/bin/ggrep
 
-		if [ ! -e /opt/local/bin/svn ]; then
-			echo "* ERROR *  Missing subversion package"
-			return 1
-		fi
+	if [ ! -e /opt/local/bin/desktop-file-install ]; then
+		echo "* ERROR *  Missing desktop-file-utils package"
+		return 1
+	fi
 
-		if [ ! -e /opt/local/bin/glibtool ]; then
-			echo "* ERROR *  Missing glib2 package"
-			return 1
-		fi
+	if [ ! -e /opt/local/bin/intltoolize ]; then
+		echo "* ERROR *  Missing intltool package"
+		return 1
+	fi
 
-		/bin/rm -f ${OE_BASE}/bin/xargs
-		if [ -e /opt/local/bin/gxargs ]; then
-			/bin/ln -s /opt/local/bin/gxargs ${OE_BASE}/bin/xargs
-		else
-			echo "* ERROR *  Missing findutils package"
-			return 1
-		fi
+	/bin/rm -f ${OE_BASE}/bin/bc
+	/bin/rm -f ${OE_BASE}/bin/dc
+	if [ -e /opt/local/bin/bc ]; then
+		/bin/ln -s /opt/local/bin/bc ${OE_BASE}/bin/bc
+		/bin/ln -s /opt/local/bin/dc ${OE_BASE}/bin/dc
+	else
+		echo "* ERROR *  Missing GNU bc package"
+		return 1
+	fi
 
-		/bin/rm -f ${OE_BASE}/bin/find
-		if [ -e /opt/local/bin/gfind ]; then
-			/bin/ln -s /opt/local/bin/gfind ${OE_BASE}/bin/find
-		else
-			echo "* ERROR *  Missing findutils package"
-			return 1
-		fi
+	/bin/rm -f ${OE_BASE}/bin/python
+	/bin/rm -f ${OE_BASE}/bin/python3
+	if [ -e /opt/local/bin/python3.7 ]; then
+		/bin/ln -s python3 ${OE_BASE}/bin/python
+		/bin/ln -s /opt/local/bin/python3.7 ${OE_BASE}/bin/python3
+	else
+		echo "* ERROR *  Missing MacPorts python"
+		return 1
+	fi
 
-		/bin/rm -f ${OE_BASE}/bin/tic
-		if [ -e /opt/local/bin/tic ]; then
-			/bin/ln -s /opt/local/bin/tic ${OE_BASE}/bin/tic
-		else
-			echo "* ERROR *  Missing ncurses package"
-			return 1
-		fi
+	/bin/rm -f ${OE_BASE}/bin/tar
+	if [ -e /opt/local/bin/gnutar ]; then
+		/bin/ln -s /opt/local/bin/gnutar ${OE_BASE}/bin/tar
+	else
+		echo "* ERROR *  Missing GNU tar package"
+		return 1
+	fi
 
-		/bin/rm -f ${OE_BASE}/bin/dtc
-		if [ -e /opt/local/bin/dtc ]; then
-			/bin/ln -s /opt/local/bin/dtc ${OE_BASE}/bin/dtc
-		else
-			echo "* ERROR *  Missing dtc package"
-			return 1
-		fi
+	/bin/rm -f ${OE_BASE}/bin/cpio
+	if [ -e /opt/local/bin/gnucpio ]; then
+		/bin/ln -s /opt/local/bin/gnucpio ${OE_BASE}/bin/cpio
+	else
+		echo "* ERROR *  Missing GNU cpio package"
+		return 1
+	fi
 
-		/bin/rm -f ${OE_BASE}/bin/rustc
-		if [ -e /opt/local/bin/rustc ]; then
-			/bin/ln -s /opt/local/bin/rustc ${OE_BASE}/bin/rustc
-		else
-			echo "* ERROR *  Missing rust package"
-			return 1
-		fi
+	/bin/rm -f ${OE_BASE}/bin/perl
+	/bin/rm -f ${OE_BASE}/bin/pod2man
+	if [ -e /opt/local/bin/perl ]; then
+		/bin/ln -s /opt/local/bin/perl ${OE_BASE}/bin/perl
+		/bin/ln -s /opt/local/bin/pod2man ${OE_BASE}/bin/pod2man
+	else
+		echo "* ERROR *  Missing MacPorts perl package"
+		return 1
+	fi
 
-		/bin/rm -f ${OE_BASE}/bin/cargo
-		if [ -e /opt/local/bin/cargo ]; then
-			/bin/ln -s /opt/local/bin/cargo ${OE_BASE}/bin/cargo
-		else
-			echo "* ERROR *  Missing cargo package"
-			return 1
-		fi
+	/bin/rm -f ${OE_BASE}/bin/makeinfo
+	if [ -e /opt/local/bin/makeinfo ]; then
+		/bin/ln -s /opt/local/bin/makeinfo ${OE_BASE}/bin/makeinfo
+	else
+		echo "* ERROR *  Missing texinfo package"
+		return 1
+	fi
 
-		/bin/rm -f ${OE_BASE}/bin/bash
-		if [ -e /opt/local/bin/bash ]; then
-			/bin/ln -s /opt/local/bin/bash ${OE_BASE}/bin/bash
-		else
-			echo "* ERROR *  Missing bash package"
-			return 1
-		fi
+	if [ ! -e /opt/local/bin/svn ]; then
+		echo "* ERROR *  Missing subversion package"
+		return 1
+	fi
 
+	if [ ! -e /opt/local/bin/glibtool ]; then
+		echo "* ERROR *  Missing glib2 package"
+		return 1
+	fi
 
-		echo "#!/bin/bash
+	/bin/rm -f ${OE_BASE}/bin/xargs
+	if [ -e /opt/local/bin/gxargs ]; then
+		/bin/ln -s /opt/local/bin/gxargs ${OE_BASE}/bin/xargs
+	else
+		echo "* ERROR *  Missing findutils package"
+		return 1
+	fi
+
+	/bin/rm -f ${OE_BASE}/bin/find
+	if [ -e /opt/local/bin/gfind ]; then
+		/bin/ln -s /opt/local/bin/gfind ${OE_BASE}/bin/find
+	else
+		echo "* ERROR *  Missing findutils package"
+		return 1
+	fi
+
+	/bin/rm -f ${OE_BASE}/bin/tic
+	if [ -e /opt/local/bin/tic ]; then
+		/bin/ln -s /opt/local/bin/tic ${OE_BASE}/bin/tic
+	else
+		echo "* ERROR *  Missing ncurses package"
+		return 1
+	fi
+
+	/bin/rm -f ${OE_BASE}/bin/dtc
+	if [ -e /opt/local/bin/dtc ]; then
+		/bin/ln -s /opt/local/bin/dtc ${OE_BASE}/bin/dtc
+	else
+		echo "* ERROR *  Missing dtc package"
+		return 1
+	fi
+
+	/bin/rm -f ${OE_BASE}/bin/rustc
+	if [ -e /opt/local/bin/rustc ]; then
+		/bin/ln -s /opt/local/bin/rustc ${OE_BASE}/bin/rustc
+	else
+		echo "* ERROR *  Missing rust package"
+		return 1
+	fi
+
+	/bin/rm -f ${OE_BASE}/bin/cargo
+	if [ -e /opt/local/bin/cargo ]; then
+		/bin/ln -s /opt/local/bin/cargo ${OE_BASE}/bin/cargo
+	else
+		echo "* ERROR *  Missing cargo package"
+		return 1
+	fi
+
+	/bin/rm -f ${OE_BASE}/bin/bash
+	if [ -e /opt/local/bin/bash ]; then
+		/bin/ln -s /opt/local/bin/bash ${OE_BASE}/bin/bash
+	else
+		echo "* ERROR *  Missing bash package"
+		return 1
+	fi
+
+	echo "#!/bin/bash
 
 " > ${OE_BASE}/bin/makedepend
-		/bin/chmod +x ${OE_BASE}/bin/makedepend
-
-		;;
-	Linux)
-		if [ -e /bin/readlink ]; then
-			rm -f ${OE_BASE}/bin/readlink
-			/bin/ln -s /bin/readlink ${OE_BASE}/bin/readlink
-		fi
-		if [ -e /bin/sed ]; then
-			rm -f ${OE_BASE}/bin/sed
-			/bin/ln -s /bin/sed ${OE_BASE}/bin/sed
-		fi
-		if [ -e /bin/grep ]; then
-			rm -f ${OE_BASE}/bin/ggrep
-			/bin/ln -s /bin/grep ${OE_BASE}/bin/ggrep
-		fi
-
-		/bin/rm -f ${OE_BASE}/bin/sw_vers
-		echo "#!/bin/bash
-
-echo -n \"12.0.0\"
-" > ${OE_BASE}/bin/sw_vers
-		/bin/chmod +x ${OE_BASE}/bin/sw_vers
-
-		/bin/rm -f ${OE_BASE}/bin/otool
-		echo "#!/bin/bash
-
-" > ${OE_BASE}/bin/otool
-		/bin/chmod +x ${OE_BASE}/bin/otool
-
-		/bin/rm -f ${OE_BASE}/bin/lipo
-		echo "#!/bin/bash
-
-" > ${OE_BASE}/bin/lipo
-		/bin/chmod +x ${OE_BASE}/bin/lipo
-
-		/bin/rm -f ${OE_BASE}/bin/SetFile
-		echo "#!/bin/bash
-
-" > ${OE_BASE}/bin/SetFile
-		/bin/chmod +x ${OE_BASE}/bin/SetFile
-
-		/bin/rm -f ${OE_BASE}/bin/codesign
-		echo "#!/bin/bash
-
-" > ${OE_BASE}/bin/codesign
-		/bin/chmod +x ${OE_BASE}/bin/codesign
-
-		/bin/rm -f ${OE_BASE}/bin/Rez
-		echo "#!/bin/bash
-
-" > ${OE_BASE}/bin/Rez
-		/bin/chmod +x ${OE_BASE}/bin/Rez
-
-		/bin/rm -f ${OE_BASE}/bin/install_name_tool
-		echo "#!/bin/bash
-
-" > ${OE_BASE}/bin/install_name_tool
-		/bin/chmod +x ${OE_BASE}/bin/install_name_tool
-
-		/bin/rm -f ${OE_BASE}/bin/xcrun
-		echo "#!/bin/bash
-
-" > ${OE_BASE}/bin/xcrun
-		/bin/chmod +x ${OE_BASE}/bin/xcrun
-
-		for i in $tools; do
-			if [ ! -e /usr/bin/$i ] && [ ! -e /bin/$i ]; then
-				echo "* ERROR *  Missing $i!"
-				return 1
-			fi
-		done
-
-		if [ ! -e /usr/bin/git ]; then
-			echo "* ERROR *  Missing git-core package"
-			return 1
-		fi
-
-		if [ ! -e /usr/bin/desktop-file-install ]; then
-			echo "* ERROR *  Missing desktop-file-utils package"
-			return 1
-		fi
-
-		if [ ! -e /usr/bin/intltoolize ]; then
-			echo "* ERROR *  Missing intltool package"
-			return 1
-		fi
-
-		if [ ! -e /usr/bin/m4 ]; then
-			echo "* ERROR *  Missing m4 package"
-			return 1
-		fi
-
-		if [ ! -e /usr/bin/pod2man ]; then
-			echo "* ERROR *  Missing perl package"
-			return 1
-		fi
-
-		if [ ! -e /usr/bin/makeinfo ]; then
-			echo "* ERROR *  Missing texinfo package"
-			return 1
-		fi
-
-		if [ ! -e /usr/bin/svn ]; then
-			echo "* ERROR *  Missing subversion package"
-			return 1
-		fi
-
-		if [ ! -e /usr/bin/gapplication ]; then
-			echo "* ERROR *  Missing libglib2.0-bin package"
-			return 1
-		fi
-
-		if [ ! -e /usr/bin/xargs ]; then
-			echo "* ERROR *  Missing findutils package"
-			return 1
-		fi
-
-		if [ ! -e /usr/bin/find ]; then
-			echo "* ERROR *  Missing findutils package"
-			return 1
-		fi
-
-		if [ ! -e /usr/bin/tic ]; then
-			echo "* ERROR *  Missing ncurses package"
-			return 1
-		fi
-
-		if [ ! -e /usr/bin/dtc ]; then
-			echo "* ERROR *  Missing dtc package"
-			return 1
-		fi
-
-		if [ ! -e /usr/bin/rustc ]; then
-			echo "* ERROR *  Missing rust package"
-			return 1
-		fi
-
-		if [ ! -e /usr/bin/cargo ]; then
-			echo "* ERROR *  Missing cargo package"
-			return 1
-		fi
-
-		;;
-	esac
+	/bin/chmod +x ${OE_BASE}/bin/makedepend
 
 	return 0
 }
@@ -676,6 +537,8 @@ ERROR=0
 [ $ERROR != 1 ] && [ -z "$BASH_VERSION" ] && error "Script NOT running in 'bash' shell"
 
 [ $ERROR != 1 ] && [ "x$0" = "x./setup.sh" ] && error "Script must be executed via sourcing: '. setup.sh [<target>] [<machine>] [--debug] [--force]'"
+
+[ $ERROR != 1 ] && { os_check; [ $? != 0 ] && error "Script supported only on macOS"; }
 
 [ $ERROR != 1 ] && { python_v3_check; [ $? != 0 ] && error "Python v3.7 is required for bitbake"; }
 
