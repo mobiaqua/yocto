@@ -45,12 +45,25 @@ os_check() {
 }
 
 python_v3_check() {
-	VER=`/usr/bin/env python3.7 --version 2>&1 | grep "Python 3"`
+	get_oe_base
+	VER=`$OE_BASE/python/installation/bin/python3 --version 2>&1 | grep "Python 3"`
 	if [ "$VER" != "" ]; then
 		return 0
 	else
 		return 1
 	fi
+}
+
+python_build() {
+	cd $OE_BASE/python/sources
+	echo
+	echo "--- Building Python from sources... ---"
+	echo
+	./configure --prefix=$OE_BASE/python/installation --with-computed-gotos --enable-optimizations --disable-shared --disable-framework && \
+	make -j`sysctl -n hw.ncpu` && \
+	make install && \
+	$OE_BASE/python/installation/bin/python3 -m pip install setuptools pyelftools cryptography
+	return $?
 }
 
 get_os() {
@@ -76,7 +89,6 @@ whoami yes"
 tools="bison perl wget texi2html file bison flex help2man unzip xz dos2unix meson ninja cmake rsync zstd"
 
 prepare_tools() {
-	get_oe_base
 	cd $OE_BASE
 	mkdir -p ${OE_BASE}/bin
 
@@ -173,11 +185,11 @@ prepare_tools() {
 
 	/bin/rm -f ${OE_BASE}/bin/python
 	/bin/rm -f ${OE_BASE}/bin/python3
-	if [ -e /opt/local/bin/python3.7 ]; then
-		/bin/ln -s python3 ${OE_BASE}/bin/python
-		/bin/ln -s /opt/local/bin/python3.7 ${OE_BASE}/bin/python3
+	if [ -e $OE_BASE/python/installation/bin/python3 ]; then
+		/bin/ln -s $OE_BASE/python/installation/bin/python3 ${OE_BASE}/bin/python
+		/bin/ln -s $OE_BASE/python/installation/bin/python3 ${OE_BASE}/bin/python3
 	else
-		echo "* ERROR *  Missing MacPorts python"
+		echo "* ERROR *  Missing custom python build"
 		return 1
 	fi
 
@@ -496,6 +508,7 @@ unset newpath LD_LIBRARY_PATH
 TARGET=${TARGET}
 export PYTHONPATH=\${OE_BASE}/bitbake/lib
 export LANG=C
+export LC_ALL=C
 unset TERMINFO
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/env.source
 
@@ -537,7 +550,7 @@ ERROR=0
 
 [ $ERROR != 1 ] && { os_check; [ $? != 0 ] && error "Script supported only on macOS"; }
 
-[ $ERROR != 1 ] && { python_v3_check; [ $? != 0 ] && error "Python v3.7 is required for bitbake"; }
+[ $ERROR != 1 ] && { python_v3_check; [ $? != 0 ] && { python_build; [ $? != 0 ] && error "Failed to build custom python"; } }
 
 [ $ERROR != 1 ] && { prepare_tools; [ $? != 0 ] && error "Please install missing tools"; }
 

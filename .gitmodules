@@ -1,0 +1,3 @@
+[submodule "python/sources"]
+	path = python/sources
+	url = https://github.com/mobiaqua/python.git
