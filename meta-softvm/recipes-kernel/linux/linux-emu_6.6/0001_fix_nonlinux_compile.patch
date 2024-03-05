@@ -2,28 +2,28 @@ diff --git a/scripts/kconfig/mconf-cfg.sh b/scripts/kconfig/mconf-cfg.sh
 index b520e407a..c432286a1 100755
 --- a/scripts/kconfig/mconf-cfg.sh
 +++ b/scripts/kconfig/mconf-cfg.sh
-@@ -1,6 +1,6 @@
+@@ -1,6 +1,7 @@
  #!/bin/sh
  # SPDX-License-Identifier: GPL-2.0
--
+ 
 +exit 0
- PKG="ncursesw"
- PKG2="ncurses"
+ cflags=$1
+ libs=$2
  
 diff --git a/scripts/mod/file2alias.c b/scripts/mod/file2alias.c
 index 5258247d7..6e4412b2b 100644
 --- a/scripts/mod/file2alias.c
 +++ b/scripts/mod/file2alias.c
 @@ -42,9 +42,6 @@ typedef struct {
- typedef struct {
  	__u8 b[16];
  } uuid_le;
+ 
 -typedef struct {
 -	__u8 b[16];
 -} uuid_t;
+ 
  #define	UUID_STRING_LEN		36
  
- /* Big exception to the "don't include kernel headers into userspace, which
 @@ -104,17 +101,6 @@ static inline void add_wildcard(char *str)
  		strcat(str + len, "*");
  }
@@ -117,3 +117,15 @@ index b2c0fce3f..48496bc57 100644
  	select HAVE_OPTPROBES
  	select HAVE_PCSPKR_PLATFORM
  	select HAVE_PERF_EVENTS
+diff -urp old/include/linux/objtool.h new/include/linux/objtool.h
+--- old/include/linux/objtool.h	2023-11-18 12:54:51
++++ new/include/linux/objtool.h	2023-11-18 12:56:06
+@@ -4,7 +4,7 @@
+ 
+ #include <linux/objtool_types.h>
+ 
+-#ifdef CONFIG_OBJTOOL
++#if 1
+ 
+ #include <asm/asm.h>
+ 
