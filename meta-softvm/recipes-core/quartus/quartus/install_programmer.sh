@@ -1,5 +1,7 @@
 #!/bin/sh
 
+version=13.0.1.232
+
 CMD=`basename $0`
 
 HOME_PATH=~/.softvm
@@ -24,10 +26,10 @@ fi
 
 export NFS_WORKSPACE=`pwd`
 
-CMD="./QuartusProgrammerSetup-13.0.1.232.run --mode unattended --unattendedmodeui none --installdir /opt/tools/altera"
+CMD="./install-quartus-expect.sh $version prog"
 
 echo
-echo " --- Installing Quartus II Programmer 13.0.1 ---"
+echo " --- Installing Quartus II Programmer $version ---"
 echo
 if [ `uname -m` = "x86_64" ]; then
     echo "It will take about minute to complete..."

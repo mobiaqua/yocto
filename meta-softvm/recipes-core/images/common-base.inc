@@ -15,6 +15,6 @@ RRECOMMENDS += ""
 RDEPENDS += ""
 
 IMAGE_LINGUAS = " "
-IMAGE_INSTALL += "base-files qemu-exit cmdline-parse ${VIRTUAL-RUNTIME_init_manager} ${INSTALL_PKGS} "
+IMAGE_INSTALL += "base-files qemu-exit cmdline-parse expect ${VIRTUAL-RUNTIME_init_manager} ${INSTALL_PKGS} "
 
 inherit image

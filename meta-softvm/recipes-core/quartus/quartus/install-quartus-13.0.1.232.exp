@@ -1,0 +1,34 @@
+#!/usr/bin/expect -f
+
+set installpath [lindex $::argv 0]
+set yesno "\\\[\[Yy\]/\[Nn\]\\\]"
+set q2we "Quartus II Web Edition \\\(Free\\\)"
+
+log_user 0
+spawn ./QuartusSetupWeb-13.0.1.232.run --mode text --installdir $installpath
+while true {
+    expect {
+        -re "Press \\\[Enter\\\] to continue *:" { send "\r" }
+        -re "You already had $::q2we .* installed in this directory, .*, do you want to update that installation\\\? $::yesno:" { puts ""; exit 1 }
+        -re "Do you accept this license\\\? $::yesno:" { send "y\r" }
+        -re "Installation \[Dd\]irectory \\\[.*\\\]:" { send "\r" }
+        -re "$::q2we *$::yesno :" { send "y\r" }
+        -re "$::q2we *- Quartus II Software 64-bit support \\\(.*\\\) $::yesno :" { send "y\r" }
+        -re "$::q2we *- Quartus II Help \\\(.*\\\) $::yesno :" { send "n\r" }
+        -re "$::q2we *- Devices $::yesno :" { send "y\r" }
+        -re "$::q2we *- Devices - Arria II \\\(.*\\\) $::yesno :" { send "n\r" }
+        -re "$::q2we *- Devices - Cyclone II/III/IV \(.*\) $::yesno :" { send "y\r" }
+        -re "$::q2we *- Devices - Cyclone V \\\(.*\\\) $::yesno :" { send "n\r" }
+        -re "$::q2we *- Devices - MAX II/V, MAX 3000/7000 \\\(.*\\\) $::yesno :" { send "n\r" }
+        -re "ModelSim-Altera Starter Edition \\\(Free\\\) \\\(.*\\\) $::yesno :" { send "n\r" }
+        -re "ModelSim-Altera Edition \\\(.*\\\) $::yesno :" { send "n\r" }
+        -re "Is the selection above correct\\\? $::yesno:" { send "y\r" }
+        -re "Create shortcuts on Desktop $::yesno:" { send "n\r" }
+        -re "Launch Quartus .* $::yesno:" { send "n\r" }
+        -re "Provide your feedback at .* $::yesno:" { send "n\r" }
+        eof { break }
+    }
+}
+
+foreach {pid spawnid os_error_flag value} [wait] break
+exit "$value"
