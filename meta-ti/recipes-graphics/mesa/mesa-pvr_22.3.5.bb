@@ -27,10 +27,7 @@ PACKAGECONFIG:append:panda = " sgx"
 PACKAGECONFIG:append:beagle = " sgx"
 PACKAGECONFIG:append:beagle64 = " pvr"
 
-# Temporary work around to use a different SRCREV for SGX Mesa, vs Rogue Mesa
-# Idea is these two should be the same, but currently a segfault is happening
-# on certain platforms if the sgx commit is used.
-SRCREV = "${@bb.utils.contains('PACKAGECONFIG', 'sgx', '1be98ba80452ebe38546a7fca26b5a70f2629083', '54fd9d7dea098b6f11c2a244b0c6763dc8c5690c', d)}"
+SRCREV = "1be98ba80452ebe38546a7fca26b5a70f2629083"
 PR = "sgxrgx${SRCPV}"
 
 PACKAGECONFIG[pvr] = "-Dgallium-pvr-alias=tidss,"
