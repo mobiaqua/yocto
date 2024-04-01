@@ -17,15 +17,14 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 DEPENDS = "libdrm virtual/kernel"
 
-BRANCH = "linuxws/kirkstone/k6.1/23.2.6460340"
+BRANCH = "linuxws/kirkstone/k6.1/23.3.6512818"
 
 SRC_URI = "git://git.ti.com/git/graphics/ti-img-rogue-driver.git;protocol=https;branch=${BRANCH} \
-           file://fix_make.patch \
           "
 
 S = "${WORKDIR}/git"
 
-SRCREV = "2595524729c5acbabcbdee2185de64e7fcd6b36a"
+SRCREV = "c89c1efa4a1ee5da64fd525f45e9e33728cf6181"
 
 TARGET_PRODUCT:beagle64 = "j721e_linux"
 PVR_BUILD = "release"
