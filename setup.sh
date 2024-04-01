@@ -12,7 +12,7 @@ print_help() {
 	echo
 	echo "* ERROR *  Wrong params!"
 	echo
-	echo ". setup.sh [<target>] [<machine>] [--debug] [--force]"
+	echo ". setup.sh [<target>] [<machine>] [--debug]"
 	echo
 	echo "Targets list:"
 	echo "- media (default)"
@@ -311,13 +311,10 @@ setup() {
 	export MACHINE=beagle
 	CROSS=arm-mobiaqua-linux-gnueabi-
 	BUILD_DEBUG="0"
-	FORCE_CONFIG=
 
 	while [ $# -ne 0 ] ; do
 		if [ "$1" = "--debug" ]; then
 			BUILD_DEBUG="1"
-		elif [ "$1" = "--force" ]; then
-			FORCE_CONFIG="1"
 		elif [ "$1" = "--help" ]; then
 			print_help
 			return 1
@@ -449,9 +446,8 @@ export BB_ENV_PASSTHROUGH_ADDITIONS
 
 	DL_DIR=${MA_DL_DIR:="$HOME/sources"}
 
-	if [ ! -f ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/local.conf ] || [ ! -f ${OE_BASE}/build-${DISTRO}-${TARGET}/env.source ] || [ "${FORCE_CONFIG}" = "1" ]; then
-		PATH_TO_TOOLS="build-${DISTRO}-${TARGET}/tmp/sysroots/`uname -m`-`uname -s | awk '{print tolower($0)}'`/usr"
-		echo "DL_DIR = \"${DL_DIR}\"
+	PATH_TO_TOOLS="build-${DISTRO}-${TARGET}/tmp/sysroots/`uname -m`-`uname -s | awk '{print tolower($0)}'`/usr"
+	echo "DL_DIR = \"${DL_DIR}\"
 OE_BASE = \"${OE_BASE}\"
 MACHINE = \"${MACHINE}\"
 DISTRO = \"${DISTRO}\"
@@ -469,36 +465,36 @@ HOSTTOOLS:remove = \"chrpath flock ldd pzstd\"
 BB_NUMBER_THREADS = \"8\"
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/local.conf
 
-		if [ "$TARGET" = "softvm" ]; then
-			echo "require conf/multilib.conf
+	if [ "$TARGET" = "softvm" ]; then
+		echo "require conf/multilib.conf
 MULTILIBS = \"multilib:lib32\"
 DEFAULTTUNE:virtclass-multilib-lib32 = \"x86\"
 " >> ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/local.conf
-		fi
+	fi
 
-		if [ "$MACHINE" = "nuc" ]; then
-			META_MACHINE=nuc
-		elif [ "$MACHINE" = "panda" ] || [ "$MACHINE" = "beagle" ] || [ "$MACHINE" = "beagle64" ] || [ "$MACHINE" = "igep0030" ]; then
-			META_MACHINE=ti
-		elif [ "$MACHINE" = "de10nano" ]; then
-			META_MACHINE=altera
-		else
-			META_MACHINE=none
-		fi
+	if [ "$MACHINE" = "nuc" ]; then
+		META_MACHINE=nuc
+	elif [ "$MACHINE" = "panda" ] || [ "$MACHINE" = "beagle" ] || [ "$MACHINE" = "beagle64" ] || [ "$MACHINE" = "igep0030" ]; then
+		META_MACHINE=ti
+	elif [ "$MACHINE" = "de10nano" ]; then
+		META_MACHINE=altera
+	else
+		META_MACHINE=none
+	fi
 
-		echo "DL_DIR = \"${DL_DIR}\"
+	echo "DL_DIR = \"${DL_DIR}\"
 POKY_BBLAYERS_CONF_VERSION = \"2\"
 BBPATH = \"\${TOPDIR}\"
 BBFILES ?= \"\"
 BBLAYERS = \"${OE_BASE}/meta ${OE_BASE}/meta-macos ${OE_BASE}/meta-${DISTRO}\"
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/bblayers.conf
 
-if [ "$META_MACHINE" != "none" ]; then
-	echo "BBLAYERS += \"${OE_BASE}/meta-${META_MACHINE}\"
+	if [ "$META_MACHINE" != "none" ]; then
+		echo "BBLAYERS += \"${OE_BASE}/meta-${META_MACHINE}\"
 " >> ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/bblayers.conf
-fi
+	fi
 
-		echo "OE_BASE=\"${OE_BASE}\"
+	echo "OE_BASE=\"${OE_BASE}\"
 export BBPATH=\"\${OE_BASE}/bitbake/:\${OE_BASE}/build-${DISTRO}-${TARGET}/\"
 for newpath in \"\${OE_BASE}/bitbake/bin\" \"\${OE_BASE}/bin\" \"\${OE_BASE}/scripts\"; do
     PATH=\$(echo \$PATH | \${OE_BASE}/bin/sed -re \"s#(^|:)\$newpath(:|\$)#\2#g;s#^:##\")
@@ -514,17 +510,16 @@ unset TERMINFO
 
 
 
-		echo "source ${OE_BASE}/build-${DISTRO}-${TARGET}/env.source
+	echo "source ${OE_BASE}/build-${DISTRO}-${TARGET}/env.source
 export CROSS_COMPILE=${CROSS}
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/crosstools-setup
 
 
 
-		echo "--- Created:"
-		echo " -  ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/local.conf,"
-		echo " -  ${OE_BASE}/build-${DISTRO}-${TARGET}/env.source,"
-		echo " -  ${OE_BASE}/build-${DISTRO}-${TARGET}/crosstools-setup ---"
-	fi
+	echo "--- Created:"
+	echo " -  ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/local.conf,"
+	echo " -  ${OE_BASE}/build-${DISTRO}-${TARGET}/env.source,"
+	echo " -  ${OE_BASE}/build-${DISTRO}-${TARGET}/crosstools-setup ---"
 
 	echo
 	echo "--- MobiAqua Yocto configuration finished ---"
