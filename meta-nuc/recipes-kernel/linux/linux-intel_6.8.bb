@@ -8,13 +8,13 @@ KMACHINE:core2-32-intel-common = "intel-core2-32"
 KMACHINE:x86-64-v3-intel-common = "intel-corei7-64"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.6.16"
+LINUX_VERSION = "6.8.2"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
 KMETA = "kernel-meta"
 KCONF_BSP_AUDIT_LEVEL = "1"
-FILESEXTRAPATHS:prepend := "${THISDIR}/linux-intel_6.6:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/linux-intel_6.8:"
 KBUILD_DEFCONFIG = "nuc_defconfig"
 
 SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
@@ -27,7 +27,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
            file://nuc_config \
            "
 
-SRC_URI[sha256sum] = "b21d5795a3bead4f112916423222faa8a0f519e4201df343e3eb88dc9e4aaa30"
+SRC_URI[sha256sum] = "9ac322d85bcf98a04667d929f5c2666b15bd58c6c2d68dd512c72acbced07d04"
 
 S = "${WORKDIR}/linux-${PV}"
 
@@ -35,6 +35,7 @@ kernel_do_configure:prepend() {
         install -m 644 ${WORKDIR}/asm-posix_types.h ${S}/tools/include/asm/posix_types.h
         install -m 644 ${WORKDIR}/asm-types.h ${S}/tools/include/asm/types.h
         install -m 644 ${WORKDIR}/byteswap.h ${S}/tools/include/byteswap.h
+        install -m 644 ${WORKDIR}/byteswap.h ${S}/scripts/mod/byteswap.h
         install -m 644 ${WORKDIR}/endian.h ${S}/tools/include/endian.h
 }
 
