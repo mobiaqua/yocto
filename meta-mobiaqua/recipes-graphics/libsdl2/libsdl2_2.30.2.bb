@@ -9,7 +9,7 @@ SECTION = "libs"
 
 LICENSE = "Zlib & BSD-2-Clause"
 LIC_FILES_CHKSUM = "\
-    file://LICENSE.txt;md5=31f575634fd56b27fc6b6cbe8dc9bd38 \
+    file://LICENSE.txt;md5=25231a5b96ccdd8f39eb53c07717be64 \
     file://src/hidapi/LICENSE.txt;md5=7c3949a631240cb6c31c50f3eb696077 \
     file://src/hidapi/LICENSE-bsd.txt;md5=b5fa085ce0926bb50d0621620a82361f \
     file://src/video/yuv2rgb/LICENSE;md5=79f8f3418d91531e05f0fc94ca67e071 \
@@ -31,7 +31,7 @@ DEPENDS = "virtual/libgles2 virtual/libgbm alsa-lib"
 
 SRC_URI = "http://www.libsdl.org/release/SDL2-${PV}.tar.gz"
 
-SRC_URI[sha256sum] = "332cb37d0be20cb9541739c61f79bae5a477427d79ae85e352089afdaf6666e4"
+SRC_URI[sha256sum] = "891d66ac8cae51361d3229e3336ebec1c407a8a2a063b61df14f5fdf3ab5ac31"
 
 S = "${WORKDIR}/SDL2-${PV}"
 
