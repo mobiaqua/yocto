@@ -804,7 +804,7 @@ index ba5231861..740de040d 100644
  	if (ifp->vif == cfg->p2p.bss_idx[P2PAPI_BSSCFG_PRIMARY].vif) {
  		/* A normal (non P2P) connection request setup. */
  		ie = NULL;
-@@ -2121,44 +2441,48 @@ brcmf_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev,
+@@ -2121,43 +2441,47 @@ brcmf_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev,
  		goto done;
  	}
  
@@ -857,8 +857,7 @@ index ba5231861..740de040d 100644
 -			bphy_err(drvr, "failed to clean up user-space RSNE\n");
 -			goto done;
 -		}
--		err = brcmf_set_sae_password(ifp, sme->crypto.sae_pwd,
--					     sme->crypto.sae_pwd_len);
+-		err = brcmf_fwvid_set_sae_password(ifp, &sme->crypto);
 -		if (!err && sme->crypto.psk)
 +		if (profile->use_fwsup == BRCMF_PROFILE_FWSUP_PSK)
  			err = brcmf_set_pmk(ifp, sme->crypto.psk,
@@ -869,8 +868,7 @@ index ba5231861..740de040d 100644
 +				bphy_err(drvr, "failed to clean up user-space RSNE\n");
 +				goto done;
 +			}
-+			err = brcmf_set_sae_password(ifp, sme->crypto.sae_pwd,
-+						     sme->crypto.sae_pwd_len);
++			err = brcmf_fwvid_set_sae_password(ifp, &sme->crypto);
 +			if (!err && sme->crypto.psk)
 +				err = brcmf_set_pmk(ifp, sme->crypto.psk,
 +						    BRCMF_WSEC_MAX_PSK_LEN);
@@ -2122,11 +2120,10 @@ index e90a30808..cb1455059 100644
  };
  
  /**
-@@ -467,5 +504,6 @@ s32 brcmf_notify_escan_complete(struct brcmf_cfg80211_info *cfg,
- void brcmf_set_mpc(struct brcmf_if *ndev, int mpc);
- void brcmf_abort_scanning(struct brcmf_cfg80211_info *cfg);
- void brcmf_cfg80211_free_netdev(struct net_device *ndev);
--
+@@ -467,4 +504,6 @@ s32 brcmf_notify_escan_complete(struct brcmf_cfg80211_info *cfg,
+ 
+ int brcmf_set_wsec(struct brcmf_if *ifp, const u8 *key, u16 key_len, u16 flags);
+ 
 +bool brcmf_is_apmode_operating(struct wiphy *wiphy);
 +void brcmf_cfg80211_update_proto_addr_mode(struct wireless_dev *wdev);
  #endif /* BRCMFMAC_CFG80211_H */
@@ -5877,18 +5874,6 @@ index 58ff57dc6..43eb32a6c 100644
  	}
  
  	if (sdata->vif.type == NL80211_IFTYPE_MONITOR) {
-@@ -1883,10 +1861,8 @@ static int ieee80211_change_station(struct wiphy *wiphy,
- 		}
- 
- 		if (sta->sdata->vif.type == NL80211_IFTYPE_AP_VLAN &&
--		    sta->sdata->u.vlan.sta) {
--			ieee80211_clear_fast_rx(sta);
-+		    sta->sdata->u.vlan.sta)
- 			RCU_INIT_POINTER(sta->sdata->u.vlan.sta, NULL);
--		}
- 
- 		if (test_sta_flag(sta, WLAN_STA_AUTHORIZED))
- 			ieee80211_vif_dec_num_mcast(sta->sdata);
 @@ -3046,14 +3022,14 @@ static int ieee80211_set_bitrate_mask(struct wiphy *wiphy,
  			continue;
  
