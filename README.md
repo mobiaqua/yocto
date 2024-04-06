@@ -20,7 +20,7 @@
 
   - "softvm"
 
-    Virtual Machine target for software.
+    Virtual Machine target for running Linux software.
 
   Example usage:
 
