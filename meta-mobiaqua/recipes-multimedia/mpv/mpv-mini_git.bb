@@ -19,7 +19,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://LICENSE.GPL;md5=b234ee4d69f5fce4486a80fdaf4a4263"
 
-SRCREV = "b7b5da5104a73e38e5db9563d6ff872b5686495c"
+SRCREV = "8d800b2cadba6c15525718939a556afb880de7ab"
 SRC_URI = "git://github.com/mobiaqua/mpv-mini.git;protocol=https;branch=main"
 
 S = "${WORKDIR}/git/src"

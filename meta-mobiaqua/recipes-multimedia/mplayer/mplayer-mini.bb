@@ -10,7 +10,7 @@ ERROR_QA:remove = "license-checksum"
 
 RCONFLICTS:${PN} = "mplayer"
 
-SRCREV = "60417c109a5838395eda5369a5fc4779abb9bc8d"
+SRCREV = "7f9b6622c90928fda46300145ac9b9889fdcaeb6"
 SRC_URI = "git://github.com/mobiaqua/mplayer-mini.git;protocol=https;branch=master"
 
 PV = "1.0+git"
