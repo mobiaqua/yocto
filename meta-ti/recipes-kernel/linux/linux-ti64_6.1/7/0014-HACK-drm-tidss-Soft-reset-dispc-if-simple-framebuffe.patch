@@ -1,0 +1,84 @@
+From 5287c9813d7f0806ecb4f5e9bc461701b33c6304 Mon Sep 17 00:00:00 2001
+From: Devarsh Thakkar <devarsht@ti.com>
+Date: Tue, 5 Mar 2024 22:39:29 +0530
+Subject: [PATCH 14/63] HACK: drm: tidss: Soft reset dispc if
+ simple-framebuffer is absent
+
+If bootloader is leaving DSS active on bootup, then simple-framebuffer
+needs to be enabled mandatorily to hold a reference on DSS power-domain
+as otherwise Linux power management framework being can power-off DSS on
+tidss probe deferral while DSS is still active, thus leading to a system
+hang.
+
+Fixes: e6fff24f7fd7 ("drm/tidss: Add some support for splash-screen")
+Signed-off-by: Devarsh Thakkar <devarsht@ti.com>
+---
+ drivers/gpu/drm/tidss/tidss_dispc.c |  7 ++++++-
+ drivers/gpu/drm/tidss/tidss_drv.c   | 13 +++++++++++++
+ drivers/gpu/drm/tidss/tidss_drv.h   |  1 +
+ 3 files changed, 20 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/tidss/tidss_dispc.c b/drivers/gpu/drm/tidss/tidss_dispc.c
+index a192f66a8b4d..5bcc9153a977 100644
+--- a/drivers/gpu/drm/tidss/tidss_dispc.c
++++ b/drivers/gpu/drm/tidss/tidss_dispc.c
+@@ -3338,7 +3338,12 @@ static int dispc_init_hw(struct dispc_device *dispc)
+ 
+ 	dispc->tidss->boot_enabled_vp_mask = 0;
+ 
+-	if (dispc_is_idle(dispc)) {
++	/* HACK: If simple-framebuffer device is absent, then soft reset dispc even if it is not
++	 * idle. This is to avoid powering-off of DSS (which can happen due
++	 * to probe deferral waiting for child drivers) while DSS is active thus leading to system
++	 * hang.
++	 */
++	if (dispc_is_idle(dispc) || !dispc->tidss->simplefb_enabled) {
+ 		ret = dispc_softreset(dispc);
+ 		if (ret)
+ 			goto err_clk_disable;
+diff --git a/drivers/gpu/drm/tidss/tidss_drv.c b/drivers/gpu/drm/tidss/tidss_drv.c
+index e06f6ed98338..962098e96b5f 100644
+--- a/drivers/gpu/drm/tidss/tidss_drv.c
++++ b/drivers/gpu/drm/tidss/tidss_drv.c
+@@ -209,6 +209,8 @@ static int tidss_attach_pm_domains(struct tidss_device *tidss)
+ static int tidss_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
++	struct device *simplefb_dev;
++	struct device_node *simplefb_node;
+ 	struct tidss_device *tidss;
+ 	struct drm_device *ddev;
+ 	int ret;
+@@ -230,6 +232,17 @@ static int tidss_probe(struct platform_device *pdev)
+ 
+ 	spin_lock_init(&tidss->wait_lock);
+ 
++	if (IS_ENABLED(CONFIG_FB_SIMPLE)) {
++		simplefb_node = of_find_compatible_node(NULL, NULL, "simple-framebuffer");
++		simplefb_dev = bus_find_device_by_of_node(&platform_bus_type, simplefb_node);
++		if (simplefb_dev) {
++			put_device(simplefb_dev);
++			of_node_put(simplefb_node);
++			tidss->simplefb_enabled = true;
++			dev_dbg(dev, "simple-framebuffer detected\n");
++		}
++	}
++
+ 	tidss->shared_mode = device_property_read_bool(dev, "ti,dss-shared-mode");
+ 
+ 	/* powering up associated OLDI domains */
+diff --git a/drivers/gpu/drm/tidss/tidss_drv.h b/drivers/gpu/drm/tidss/tidss_drv.h
+index 9bdd5c2cf0fc..25116ac968db 100644
+--- a/drivers/gpu/drm/tidss/tidss_drv.h
++++ b/drivers/gpu/drm/tidss/tidss_drv.h
+@@ -48,6 +48,7 @@ struct tidss_device {
+ 	struct device_link **pd_link;
+ 
+ 	u32 boot_enabled_vp_mask;
++	bool simplefb_enabled;
+ 
+ 	bool shared_mode; /* DSS resources shared between remote core and Linux */
+ 
+-- 
+2.44.0
+

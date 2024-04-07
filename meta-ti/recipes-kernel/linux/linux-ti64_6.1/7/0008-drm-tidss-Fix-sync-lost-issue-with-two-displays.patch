@@ -1,0 +1,62 @@
+From d141720b7542a747ae5f9e02645ef567ff408123 Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Date: Mon, 4 Mar 2024 20:07:16 +0530
+Subject: [PATCH 08/63] drm/tidss: Fix sync-lost issue with two displays
+
+[ commit c079e2e113f2ec2803ba859bbb442a6ab82c96bd upstream ]
+
+A sync lost issue can be observed with two displays, when moving a plane
+from one disabled display to an another disabled display, and then
+enabling the display to which the plane was moved to. The exact
+requirements for this to trigger are not clear.
+
+It looks like the issue is that the layers are left enabled in the first
+display's OVR registers. Even if the corresponding VP is disabled, it
+still causes an issue, as if the disabled VP and its OVR would still be
+in use, leading to the same VID being used by two OVRs. However, this is
+just speculation based on testing the DSS behavior.
+
+Experimentation shows that as a workaround, we can disable all the
+layers in the OVR when disabling a VP. There should be no downside to
+this, as the OVR is anyway effectively disabled if its VP is disabled,
+and it seems to solve the sync lost issue.
+
+However, there may be a bigger issue in play here, related to J721e
+erratum i2097 ("DSS: Disabling a Layer Connected to Overlay May Result
+in Synclost During the Next Frame"). Experimentation also shows that the
+OVR's CHANNELIN field has similar issue. So we may need to revisit this
+when we find out more about the core issue.
+
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Fixes: 32a1795f57ee ("drm/tidss: New driver for TI Keystone platform Display SubSystem")
+Reviewed-by: Aradhya Bhatia <a-bhatia1@ti.com>
+[a-bhatia1: Update VP variable (hw_videoport to vp_idx) to match in ti-6.1]
+Signed-off-by: Aradhya Bhatia <a-bhatia1@ti.com>
+---
+ drivers/gpu/drm/tidss/tidss_crtc.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/drivers/gpu/drm/tidss/tidss_crtc.c b/drivers/gpu/drm/tidss/tidss_crtc.c
+index d7958841eaa7..1f578079aa82 100644
+--- a/drivers/gpu/drm/tidss/tidss_crtc.c
++++ b/drivers/gpu/drm/tidss/tidss_crtc.c
+@@ -333,6 +333,16 @@ static void tidss_crtc_atomic_disable(struct drm_crtc *crtc,
+ 
+ 	dev_dbg(ddev->dev, "%s, event %p\n", __func__, crtc->state->event);
+ 
++	/*
++	 * If a layer is left enabled when the videoport is disabled, and the
++	 * vid pipeline that was used for the layer is taken into use on
++	 * another videoport, the DSS will report sync lost issues. Disable all
++	 * the layers here as a work-around.
++	 */
++	for (u32 layer = 0; layer < tidss->feat->num_planes; layer++)
++		dispc_ovr_enable_layer(tidss->dispc, tcrtc->vp_idx, layer,
++				       false);
++
+ 	reinit_completion(&tcrtc->framedone_completion);
+ 
+ 	dispc_vp_disable(tidss->dispc, tcrtc->vp_idx);
+-- 
+2.44.0
+

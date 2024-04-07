@@ -1,0 +1,38 @@
+From e44f83d2aa4366b3097307c5915d03696cf3e1b8 Mon Sep 17 00:00:00 2001
+From: Julien Masson <jmasson@baylibre.com>
+Date: Fri, 22 Mar 2024 17:56:55 +0100
+Subject: [PATCH] phy: cadence-torrent: initialize pcie_links variable
+
+When we use clang to build with -Wall and -Werror flags we can see
+this issue:
+
+drivers/phy/cadence/phy-cadence-torrent.c:2493:5: error: variable
+'pcie_links' is uninitialized when used here [-Werror,-Wuninitialized]
+                                pcie_links++;
+                                ^~~~~~~~~~
+
+pcie_links variable is now initialized to fix this.
+
+Fixes: d0d3c1e91c7a ("phy: cadence-torrent: Add PCIe multilink + USB with same SSC register config for 100MHz refclk")
+Signed-off-by: Julien Masson <jmasson@baylibre.com>
+Reviewed-by: Mattijs Korpershoek <mkorpershoek@baylibre.com>
+---
+ drivers/phy/cadence/phy-cadence-torrent.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/phy/cadence/phy-cadence-torrent.c b/drivers/phy/cadence/phy-cadence-torrent.c
+index 975b8686e9f5..a1cec29be782 100644
+--- a/drivers/phy/cadence/phy-cadence-torrent.c
++++ b/drivers/phy/cadence/phy-cadence-torrent.c
+@@ -2480,7 +2480,7 @@ int cdns_torrent_phy_configure_multilink(struct cdns_torrent_phy *cdns_phy)
+ 	struct cdns_reg_pairs *reg_pairs;
+ 	enum cdns_torrent_ssc_mode ssc;
+ 	struct regmap *regmap;
+-	u32 num_regs, pcie_links;
++	u32 num_regs, pcie_links = 0;
+ 
+ 	if (num_links == 2) {
+ 		phy_t1 = cdns_phy->phys[0].phy_type;
+-- 
+2.44.0
+

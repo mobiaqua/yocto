@@ -35,12 +35,12 @@ index 5328d8b8cff0..f3e3de71f69b 100644
  
  	drm_plane_helper_add(&tplane->plane, &tidss_plane_helper_funcs);
  
--	drm_plane_create_zpos_property(&tplane->plane, hw_plane_id, 0,
+-	drm_plane_create_zpos_property(&tplane->plane, tidss->num_planes, 0,
 -				       num_planes - 1);
 +	if (type == DRM_PLANE_TYPE_PRIMARY)
 +		drm_plane_create_zpos_immutable_property(&tplane->plane, 0);
 +	else
-+		drm_plane_create_zpos_property(&tplane->plane, hw_plane_id, 1,
++		drm_plane_create_zpos_property(&tplane->plane, tidss->num_planes, 1,
 +					       num_planes - 1);
  
  	ret = drm_plane_create_color_properties(&tplane->plane,

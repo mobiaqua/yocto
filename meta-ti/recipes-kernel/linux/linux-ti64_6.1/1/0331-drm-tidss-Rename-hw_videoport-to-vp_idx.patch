@@ -168,6 +168,15 @@ index cd3c43a6c806..19710a07879b 100644
  
  	tidss_runtime_put(tidss);
  }
+@@ -348,7 +348,7 @@ static void tidss_crtc_atomic_disable(struct drm_crtc 
+ 	 * the layers here as a work-around.
+ 	 */
+ 	for (u32 layer = 0; layer < tidss->feat->num_planes; layer++)
+-		dispc_ovr_enable_layer(tidss->dispc, tcrtc->hw_videoport, layer,
++		dispc_ovr_enable_layer(tidss->dispc, tcrtc->vp_idx, layer,
+ 				       false);
+ 
+ 	dispc_vp_disable(tidss->dispc, tcrtc->vp_idx);
 @@ -301,7 +301,7 @@ enum drm_mode_status tidss_crtc_mode_valid(struct drm_crtc *crtc,
  	struct drm_device *ddev = crtc->dev;
  	struct tidss_device *tidss = to_tidss(ddev);

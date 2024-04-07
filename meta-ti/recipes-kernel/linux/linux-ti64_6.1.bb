@@ -5,7 +5,7 @@ DEPENDS += "openssl-native ncurses-native elf-native kmod-native linux-firmware"
 COMPATIBLE_MACHINE = "beagle64"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.1.80"
+LINUX_VERSION = "6.1.84"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -326,6 +326,17 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://6/0073-phy-ti-gmii-sel-add-resume-support.patch \
             file://6/0075-remoteproc-k3-dsp-Introduce-PM-suspend-resume-handle.patch \
             file://6/0104-media-ti-j721e-csi2rx-Fix-locking-in-restart_dma.patch \
+            file://6/0131-media-img-vxe-vxd-encoder-Update-RGB-Format.patch \
+            file://7/0004-drm-bridge-Introduce-early_enable-and-late-disable.patch \
+            file://7/0005-drm-bridge-cdns-dsi-Implement-early_enable-and-late_.patch \
+            file://7/0008-drm-tidss-Fix-sync-lost-issue-with-two-displays.patch \
+            file://7/0013-media-ti-j721e-csi2rx-Remove-unused-link_validation-.patch \
+            file://7/0014-HACK-drm-tidss-Soft-reset-dispc-if-simple-framebuffe.patch \
+            file://7/0017-HACK-drm-tidss-Move-simplefb-detection-to-separate-f.patch \
+            file://7/0057-net-ethernet-ti-am65-cpsw-cpts-Add-workaround-for-er.patch \
+            file://7/0058-phy-cadence-torrent-Add-multi-link-PCIe-configuratio.patch \
+            file://7/0059-phy-cadence-torrent-Add-PCIe-multilink-USB-with-same.patch \
+            file://8/0001-phy-cadence-torrent-initialize-pcie_links-variable.patch \
             file://0001_fix_nonlinux_compile.patch \
             file://0002-bootup-hacks-move-mmc-early.patch \
             file://0003-Kbuild.include.patch \
@@ -336,7 +347,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://ti_config \
 "
 
-SRC_URI[sha256sum] = "568ecaaebb8b87c7c8246bba67bc83402972bf34f5811651a2d3cd548ff7b671"
+SRC_URI[sha256sum] = "af97d2ebe14765d0db3af6560309daf08535da25bfad36e5fb3e436f22a1707a"
 
 S = "${WORKDIR}/linux-${PV}"
 
