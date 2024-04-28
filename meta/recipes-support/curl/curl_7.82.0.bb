@@ -54,11 +54,18 @@ SRC_URI = "https://curl.se/download/${BP}.tar.xz \
            file://CVE-2023-38545.patch \
            file://CVE-2023-38546.patch \
            file://CVE-2023-46218.patch \
+           file://CVE-2023-46219-0001.patch \
+           file://CVE-2023-46219-0002.patch \
+           file://CVE-2023-46219-0003.patch \
+           file://CVE-2024-2398.patch \
            "
 SRC_URI[sha256sum] = "0aaa12d7bd04b0966254f2703ce80dd5c38dbbd76af0297d3d690cdce58a583c"
 
 # Curl has used many names over the years...
 CVE_PRODUCT = "haxx:curl haxx:libcurl curl:curl curl:libcurl libcurl:libcurl daniel_stenberg:curl"
+
+# This CVE reports that apple had to upgrade curl because of other already reported CVEs
+CVE_CHECK_IGNORE += "CVE-2023-42915"
 
 inherit autotools pkgconfig binconfig multilib_header
 
@@ -73,6 +80,8 @@ PACKAGECONFIG:class-nativesdk = "ipv6 openssl proxy random threaded-resolver ver
 PACKAGECONFIG[ares] = "--enable-ares,--disable-ares,c-ares,,,threaded-resolver"
 PACKAGECONFIG[brotli] = "--with-brotli,--without-brotli,brotli"
 PACKAGECONFIG[builtinmanual] = "--enable-manual,--disable-manual"
+# Don't use this in production
+PACKAGECONFIG[debug] = "--enable-debug,--disable-debug"
 PACKAGECONFIG[dict] = "--enable-dict,--disable-dict,"
 PACKAGECONFIG[gnutls] = "--with-gnutls,--without-gnutls,gnutls"
 PACKAGECONFIG[gopher] = "--enable-gopher,--disable-gopher,"
@@ -109,9 +118,7 @@ EXTRA_OECONF = " \
     --enable-crypto-auth \
     --with-ca-bundle=${sysconfdir}/ssl/certs/ca-certificates.crt \
     --without-libpsl \
-    --enable-debug \
     --enable-optimize \
-    --disable-curldebug \
     ${@'--without-ssl' if (bb.utils.filter('PACKAGECONFIG', 'gnutls mbedtls nss openssl', d) == '') else ''} \
 "
 

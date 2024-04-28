@@ -6,6 +6,7 @@
 # SPDX-License-Identifier: GPL-2.0-only
 #
 
+import contextlib
 import unittest
 import hashlib
 import tempfile
@@ -2159,6 +2160,12 @@ class GitShallowTest(FetcherTest):
         self.assertIn("fstests.doap", dir)
 
 class GitLfsTest(FetcherTest):
+    def skipIfNoGitLFS():
+        import shutil
+        if not shutil.which('git-lfs'):
+            return unittest.skip('git-lfs not installed')
+        return lambda f: f
+
     def setUp(self):
         FetcherTest.setUp(self)
 
@@ -2176,10 +2183,14 @@ class GitLfsTest(FetcherTest):
 
         bb.utils.mkdirhier(self.srcdir)
         self.git_init(cwd=self.srcdir)
-        with open(os.path.join(self.srcdir, '.gitattributes'), 'wt') as attrs:
-            attrs.write('*.mp3 filter=lfs -text')
-        self.git(['add', '.gitattributes'], cwd=self.srcdir)
-        self.git(['commit', '-m', "attributes", '.gitattributes'], cwd=self.srcdir)
+        self.commit_file('.gitattributes', '*.mp3 filter=lfs -text')
+
+    def commit_file(self, filename, content):
+        with open(os.path.join(self.srcdir, filename), "w") as f:
+            f.write(content)
+        self.git(["add", filename], cwd=self.srcdir)
+        self.git(["commit", "-m", "Change"], cwd=self.srcdir)
+        return self.git(["rev-parse", "HEAD"], cwd=self.srcdir).strip()
 
     def fetch(self, uri=None, download=True):
         uris = self.d.getVar('SRC_URI').split()
@@ -2191,6 +2202,82 @@ class GitLfsTest(FetcherTest):
             fetcher.download()
         ud = fetcher.ud[uri]
         return fetcher, ud
+
+    def get_real_git_lfs_file(self):
+        self.d.setVar('PATH', os.environ.get('PATH'))
+        fetcher, ud = self.fetch()
+        fetcher.unpack(self.d.getVar('WORKDIR'))
+        unpacked_lfs_file = os.path.join(self.d.getVar('WORKDIR'), 'git', "Cat_poster_1.jpg")
+        return unpacked_lfs_file
+
+    @skipIfNoGitLFS()
+    def test_fetch_lfs_on_srcrev_change(self):
+        """Test if fetch downloads missing LFS objects when a different revision within an existing repository is requested"""
+        self.git(["lfs", "install", "--local"], cwd=self.srcdir)
+
+        @contextlib.contextmanager
+        def hide_upstream_repository():
+            """Hide the upstream repository to make sure that git lfs cannot pull from it"""
+            temp_name = self.srcdir + ".bak"
+            os.rename(self.srcdir, temp_name)
+            try:
+                yield
+            finally:
+                os.rename(temp_name, self.srcdir)
+
+        def fetch_and_verify(revision, filename, content):
+            self.d.setVar('SRCREV', revision)
+            fetcher, ud = self.fetch()
+
+            with hide_upstream_repository():
+                workdir = self.d.getVar('WORKDIR')
+                fetcher.unpack(workdir)
+
+                with open(os.path.join(workdir, "git", filename)) as f:
+                    self.assertEqual(f.read(), content)
+
+        commit_1 = self.commit_file("a.mp3", "version 1")
+        commit_2 = self.commit_file("a.mp3", "version 2")
+
+        self.d.setVar('SRC_URI', "git://%s;protocol=file;lfs=1;branch=master" % self.srcdir)
+
+        # Seed the local download folder by fetching the latest commit and verifying that the LFS contents are
+        # available even when the upstream repository disappears.
+        fetch_and_verify(commit_2, "a.mp3", "version 2")
+        # Verify that even when an older revision is fetched, the needed LFS objects are fetched into the download
+        # folder.
+        fetch_and_verify(commit_1, "a.mp3", "version 1")
+
+    @skipIfNoGitLFS()
+    @skipIfNoNetwork()
+    def test_real_git_lfs_repo_succeeds_without_lfs_param(self):
+        self.d.setVar('SRC_URI', "git://gitlab.com/gitlab-examples/lfs.git;protocol=https;branch=master")
+        f = self.get_real_git_lfs_file()
+        self.assertTrue(os.path.exists(f))
+        self.assertEqual("c0baab607a97839c9a328b4310713307", bb.utils.md5_file(f))
+
+    @skipIfNoGitLFS()
+    @skipIfNoNetwork()
+    def test_real_git_lfs_repo_succeeds(self):
+        self.d.setVar('SRC_URI', "git://gitlab.com/gitlab-examples/lfs.git;protocol=https;branch=master;lfs=1")
+        f = self.get_real_git_lfs_file()
+        self.assertTrue(os.path.exists(f))
+        self.assertEqual("c0baab607a97839c9a328b4310713307", bb.utils.md5_file(f))
+
+    @skipIfNoGitLFS()
+    @skipIfNoNetwork()
+    def test_real_git_lfs_repo_succeeds(self):
+        self.d.setVar('SRC_URI', "git://gitlab.com/gitlab-examples/lfs.git;protocol=https;branch=master;lfs=0")
+        f = self.get_real_git_lfs_file()
+        # This is the actual non-smudged placeholder file on the repo if git-lfs does not run
+        lfs_file = (
+                   'version https://git-lfs.github.com/spec/v1\n'
+                   'oid sha256:34be66b1a39a1955b46a12588df9d5f6fc1da790e05cf01f3c7422f4bbbdc26b\n'
+                   'size 11423554\n'
+        )
+
+        with open(f) as fh:
+            self.assertEqual(lfs_file, fh.read())
 
     def test_lfs_enabled(self):
         import shutil
@@ -2210,12 +2297,16 @@ class GitLfsTest(FetcherTest):
             shutil.rmtree(self.gitdir, ignore_errors=True)
             fetcher.unpack(self.d.getVar('WORKDIR'))
 
-        # If git-lfs cannot be found, the unpack should throw an error
-        with self.assertRaises(bb.fetch2.FetchError):
-            fetcher.download()
-            ud.method._find_git_lfs = lambda d: False
-            shutil.rmtree(self.gitdir, ignore_errors=True)
-            fetcher.unpack(self.d.getVar('WORKDIR'))
+        old_find_git_lfs = ud.method._find_git_lfs
+        try:
+            # If git-lfs cannot be found, the unpack should throw an error
+            with self.assertRaises(bb.fetch2.FetchError):
+                fetcher.download()
+                ud.method._find_git_lfs = lambda d: False
+                shutil.rmtree(self.gitdir, ignore_errors=True)
+                fetcher.unpack(self.d.getVar('WORKDIR'))
+        finally:
+            ud.method._find_git_lfs = old_find_git_lfs
 
     def test_lfs_disabled(self):
         import shutil
@@ -2230,17 +2321,21 @@ class GitLfsTest(FetcherTest):
         fetcher, ud = self.fetch()
         self.assertIsNotNone(ud.method._find_git_lfs)
 
-        # If git-lfs can be found, the unpack should be successful. A
-        # live copy of git-lfs is not required for this case, so
-        # unconditionally forge its presence.
-        ud.method._find_git_lfs = lambda d: True
-        shutil.rmtree(self.gitdir, ignore_errors=True)
-        fetcher.unpack(self.d.getVar('WORKDIR'))
+        old_find_git_lfs = ud.method._find_git_lfs
+        try:
+            # If git-lfs can be found, the unpack should be successful. A
+            # live copy of git-lfs is not required for this case, so
+            # unconditionally forge its presence.
+            ud.method._find_git_lfs = lambda d: True
+            shutil.rmtree(self.gitdir, ignore_errors=True)
+            fetcher.unpack(self.d.getVar('WORKDIR'))
+            # If git-lfs cannot be found, the unpack should be successful
 
-        # If git-lfs cannot be found, the unpack should be successful
-        ud.method._find_git_lfs = lambda d: False
-        shutil.rmtree(self.gitdir, ignore_errors=True)
-        fetcher.unpack(self.d.getVar('WORKDIR'))
+            ud.method._find_git_lfs = lambda d: False
+            shutil.rmtree(self.gitdir, ignore_errors=True)
+            fetcher.unpack(self.d.getVar('WORKDIR'))
+        finally:
+            ud.method._find_git_lfs = old_find_git_lfs
 
 class GitURLWithSpacesTest(FetcherTest):
     test_git_urls = {

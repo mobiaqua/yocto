@@ -82,6 +82,7 @@ of the following environment variables (in any order):
     kvm-vhost - enable KVM with vhost when running x86/x86_64 (VT-capable CPU required)
     publicvnc - enable a VNC server open to all hosts
     audio - enable audio
+    qmp=<path> - create a QMP socket (defaults to unix:qmp.sock if unspecified)
     [*/]ovmf* - OVMF firmware file or base name for booting with UEFI
   tcpserial=<port> - specify tcp serial port number
   qemuparams=<xyz> - specify custom parameters to QEMU
@@ -216,6 +217,7 @@ class BaseConfig(object):
         self.cleaned = False
         # Files to cleanup after run
         self.cleanup_files = []
+        self.qmp = None
 
     def acquire_taplock(self, error=True):
         logger.debug("Acquiring lockfile %s..." % self.taplock)
@@ -362,7 +364,7 @@ class BaseConfig(object):
         if p.endswith('.qemuboot.conf'):
             self.qemuboot = p
             self.qbconfload = True
-        elif re.search('\.bin$', p) or re.search('bzImage', p) or \
+        elif re.search('\\.bin$', p) or re.search('bzImage', p) or \
              re.search('zImage', p) or re.search('vmlinux', p) or \
              re.search('fitImage', p) or re.search('uImage', p):
             self.kernel =  p
@@ -376,13 +378,13 @@ class BaseConfig(object):
                     fst = t
                     break
             if not fst:
-                m = re.search('.*\.(.*)$', self.rootfs)
+                m = re.search('.*\\.(.*)$', self.rootfs)
                 if m:
                     fst =  m.group(1)
             if fst:
                 self.check_arg_fstype(fst)
-                qb = re.sub('\.' + fst + "$", '', self.rootfs)
-                qb = '%s%s' % (re.sub('\.rootfs$', '', qb), '.qemuboot.conf')
+                qb = re.sub('\\.' + fst + "$", '', self.rootfs)
+                qb = '%s%s' % (re.sub('\\.rootfs$', '', qb), '.qemuboot.conf')
                 if os.path.exists(qb):
                     self.qemuboot = qb
                     self.qbconfload = True
@@ -447,30 +449,16 @@ class BaseConfig(object):
             self.set("MACHINE", arg)
 
     def set_dri_path(self):
-        # As runqemu can be run within bitbake (when using testimage, for example),
-        # we need to ensure that we run host pkg-config, and that it does not
-        # get mis-directed to native build paths set by bitbake.
-        env = os.environ.copy()
-        try:
-            del env['PKG_CONFIG_PATH']
-            del env['PKG_CONFIG_DIR']
-            del env['PKG_CONFIG_LIBDIR']
-            del env['PKG_CONFIG_SYSROOT_DIR']
-        except KeyError:
-            pass
-        try:
-            dripath = subprocess.check_output("PATH=/bin:/usr/bin:$PATH pkg-config --variable=dridriverdir dri", shell=True, env=env)
-        except subprocess.CalledProcessError as e:
-            raise RunQemuError("Could not determine the path to dri drivers on the host via pkg-config.\nPlease install Mesa development files (particularly, dri.pc) on the host machine.")
-        self.qemu_environ['LIBGL_DRIVERS_PATH'] = dripath.decode('utf-8').strip()
-
-        # This preloads uninative libc pieces and therefore ensures that RPATH/RUNPATH
-        # in host mesa drivers doesn't trick uninative into loading host libc.
-        preload_items = ['libdl.so.2', 'librt.so.1', 'libpthread.so.0']
-        uninative_path = os.path.dirname(self.get("UNINATIVE_LOADER"))
-        if os.path.exists(uninative_path):
-            preload_paths = [os.path.join(uninative_path, i) for i in preload_items]
-            self.qemu_environ['LD_PRELOAD'] = " ".join(preload_paths)
+        drivers_path = os.path.join(self.bindir_native, '../lib/dri')
+        if not os.path.exists(drivers_path) or not os.listdir(drivers_path):
+            raise RunQemuError("""
+qemu has been built without opengl support and accelerated graphics support is not available.
+To enable it, add:
+DISTRO_FEATURES_NATIVE:append = " opengl"
+DISTRO_FEATURES_NATIVESDK:append = " opengl"
+to your build configuration.
+""")
+        self.qemu_environ['LIBGL_DRIVERS_PATH'] = drivers_path
 
     def check_args(self):
         for debug in ("-d", "--debug"):
@@ -526,6 +514,10 @@ class BaseConfig(object):
             elif arg == 'publicvnc':
                 self.publicvnc = True
                 self.qemu_opt_script += ' -vnc :0'
+            elif arg == "qmp":
+                self.qmp = "unix:qmp.sock"
+            elif arg.startswith("qmp="):
+                self.qmp = arg[len('qmp='):]
             elif arg.startswith('tcpserial='):
                 self.tcpserial_portnum = '%s' % arg[len('tcpserial='):]
             elif arg.startswith('qemuparams='):
@@ -1346,6 +1338,10 @@ class BaseConfig(object):
             raise RunQemuError("Failed to boot, QB_SYSTEM_NAME is NULL!")
         self.qemu_system = qemu_system
 
+    def setup_qmp(self):
+        if self.qmp:
+            self.qemu_opt += " -qmp %s,server,nowait" % self.qmp
+
     def setup_vga(self):
         if self.nographic == True:
             if self.sdl == True:
@@ -1476,6 +1472,7 @@ class BaseConfig(object):
         if self.snapshot:
             self.qemu_opt += " -snapshot"
 
+        self.setup_qmp()
         self.setup_serial()
         self.setup_vga()
 

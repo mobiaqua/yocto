@@ -440,16 +440,18 @@ class RecipetoolCreateTests(RecipetoolBase):
         self._test_recipe_contents(recipefile, checkvars, inherits)
 
     def test_recipetool_create_github(self):
-        # Basic test to see if github URL mangling works
+        # Basic test to see if github URL mangling works. Deliberately use an
+        # older release of Meson at present so we don't need a toml parser.
         temprecipe = os.path.join(self.tempdir, 'recipe')
         os.makedirs(temprecipe)
         recipefile = os.path.join(temprecipe, 'meson_git.bb')
-        srcuri = 'https://github.com/mesonbuild/meson;rev=0.32.0'
-        result = runCmd(['recipetool', 'create', '-o', temprecipe, srcuri])
-        self.assertTrue(os.path.isfile(recipefile))
+        srcuri = 'https://github.com/mesonbuild/meson;rev=0.52.1'
+        cmd = ['recipetool', 'create', '-o', temprecipe, srcuri]
+        result = runCmd(cmd)
+        self.assertTrue(os.path.isfile(recipefile), msg="recipe %s not created for command %s, output %s" % (recipefile, " ".join(cmd), result.output))
         checkvars = {}
-        checkvars['LICENSE'] = set(['Apache-2.0'])
-        checkvars['SRC_URI'] = 'git://github.com/mesonbuild/meson;protocol=https;branch=master'
+        checkvars['LICENSE'] = set(['Apache-2.0', "Unknown"])
+        checkvars['SRC_URI'] = 'git://github.com/mesonbuild/meson;protocol=https;branch=0.52'
         inherits = ['setuptools3']
         self._test_recipe_contents(recipefile, checkvars, inherits)
 
@@ -473,10 +475,11 @@ class RecipetoolCreateTests(RecipetoolBase):
         self._test_recipe_contents(recipefile, checkvars, inherits)
 
     def test_recipetool_create_github_tarball(self):
-        # Basic test to ensure github URL mangling doesn't apply to release tarballs
+        # Basic test to ensure github URL mangling doesn't apply to release tarballs.
+        # Deliberately use an older release of Meson at present so we don't need a toml parser.
         temprecipe = os.path.join(self.tempdir, 'recipe')
         os.makedirs(temprecipe)
-        pv = '0.32.0'
+        pv = '0.52.1'
         recipefile = os.path.join(temprecipe, 'meson_%s.bb' % pv)
         srcuri = 'https://github.com/mesonbuild/meson/releases/download/%s/meson-%s.tar.gz' % (pv, pv)
         result = runCmd('recipetool create -o %s %s' % (temprecipe, srcuri))
