@@ -1,0 +1,36 @@
+diff -urp old/gettext-tools/gnulib-lib/obstack.c new/gettext-tools/gnulib-lib/obstack.c
+--- old/gettext-tools/gnulib-lib/obstack.c	2020-04-11 11:59:41
++++ new/gettext-tools/gnulib-lib/obstack.c	2024-04-28 22:50:57
+@@ -326,7 +326,7 @@ int obstack_exit_failure = EXIT_FAILURE;
+ #   include <libio/iolibio.h>
+ #  endif
+ 
+-static _Noreturn void
++static __attribute_noreturn__ void
+ print_and_abort (void)
+ {
+   /* Don't change any of these strings.  Yes, it would be possible to add
+diff -urp old/gettext-tools/libgettextpo/obstack.c new/gettext-tools/libgettextpo/obstack.c
+--- old/gettext-tools/libgettextpo/obstack.c	2020-07-04 00:17:34
++++ new/gettext-tools/libgettextpo/obstack.c	2024-04-28 22:50:50
+@@ -326,7 +326,7 @@ int obstack_exit_failure = EXIT_FAILURE;
+ #   include <libio/iolibio.h>
+ #  endif
+ 
+-static _Noreturn void
++static __attribute_noreturn__ void
+ print_and_abort (void)
+ {
+   /* Don't change any of these strings.  Yes, it would be possible to add
+diff -urp old/libtextstyle/lib/obstack.c new/libtextstyle/lib/obstack.c
+--- old/libtextstyle/lib/obstack.c	2020-07-04 00:33:54
++++ new/libtextstyle/lib/obstack.c	2024-04-28 22:46:40
+@@ -326,7 +326,7 @@ int obstack_exit_failure = EXIT_FAILURE;
+ #   include <libio/iolibio.h>
+ #  endif
+ 
+-static _Noreturn void
++static __attribute_noreturn__ void
+ print_and_abort (void)
+ {
+   /* Don't change any of these strings.  Yes, it would be possible to add
