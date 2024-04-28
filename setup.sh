@@ -17,6 +17,7 @@ print_help() {
 	echo "Targets list:"
 	echo "- media (default)"
 	echo "- dsp"
+	echo "- fpga"
 	echo "- softvm"
 	echo
 	[ "x$0" = "x./setup.sh" ] && exit 1
