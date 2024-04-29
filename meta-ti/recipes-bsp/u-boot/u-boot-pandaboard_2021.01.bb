@@ -91,11 +91,8 @@ do_install () {
 FILES:${PN} = "/boot"
 
 do_deploy () {
-    install -d ${DEPLOYDIR}
+    install -d ${DEPLOYDIR}/boot
     install -m 0644 ${B}/${UBOOT_BINARY} ${DEPLOYDIR}/boot/${UBOOT_IMAGE}
-
-    cd ${DEPLOYDIR}
-    rm -f ${UBOOT_SYMLINK}
 
     install -m 0644 ${B}/MLO ${DEPLOYDIR}/boot/${MLO_IMAGE}
 
