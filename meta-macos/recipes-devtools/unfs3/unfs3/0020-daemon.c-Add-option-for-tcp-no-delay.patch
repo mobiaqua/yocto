@@ -31,8 +31,8 @@ index e85dfd3..c3c9e2a 100644
  {
  
      int opt = 0;
--    char *optstring = "bcC:de:hl:m:n:prstTuwi:x:y:";
-+    char *optstring = "bcC:de:hl:m:Nn:prstTuwi:x:y:";
+-    char *optstring = "bcC:de:hl:m:n:prstTuwi:";
++    char *optstring = "bcC:de:hl:m:Nn:prstTuwi:";
  
      while (opt != -1) {
  	opt = getopt(argc, argv, optstring);
