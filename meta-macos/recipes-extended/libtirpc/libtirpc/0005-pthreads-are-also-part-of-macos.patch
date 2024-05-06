@@ -1,0 +1,25 @@
+From faaff61739a2844edd38ac2d091c3eca57bb8eec Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pawe=C5=82=20Ko=C5=82odziejski?= <aquadran@gmail.com>
+Date: Mon, 6 May 2024 12:17:33 +0200
+Subject: [PATCH 5/6] pthreads are also part of macos
+
+---
+ tirpc/reentrant.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tirpc/reentrant.h b/tirpc/reentrant.h
+index 5bb581a..5b48ef3 100644
+--- a/tirpc/reentrant.h
++++ b/tirpc/reentrant.h
+@@ -36,7 +36,7 @@
+  * These definitions are only guaranteed to be valid on Linux. 
+  */
+ 
+-#if defined(__linux__)
++#if defined(__linux__) || defined(__APPLE__)
+ 
+ #include <pthread.h>
+ 
+-- 
+2.44.0
+

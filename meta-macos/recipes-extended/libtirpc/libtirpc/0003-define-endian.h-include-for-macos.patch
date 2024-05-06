@@ -1,0 +1,28 @@
+From a97cb1de8dd4a0e2a088c7d8a64dbf8888d9fd3a Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pawe=C5=82=20Ko=C5=82odziejski?= <aquadran@gmail.com>
+Date: Mon, 6 May 2024 11:58:52 +0200
+Subject: [PATCH 3/6] define endian.h include for macos
+
+---
+ src/xdr_float.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/xdr_float.c b/src/xdr_float.c
+index 349d48f..f8d8ce1 100644
+--- a/src/xdr_float.c
++++ b/src/xdr_float.c
+@@ -83,7 +83,11 @@ static struct sgl_limits {
+ };
+ #else
+ 
++#if defined(__APPLE__)
++#include <machine/endian.h>
++#else
+ #include <endian.h>
++#endif
+ #define IEEEFP
+ 
+ #endif /* vax */
+-- 
+2.44.0
+

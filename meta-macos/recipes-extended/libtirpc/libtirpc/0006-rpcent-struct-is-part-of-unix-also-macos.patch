@@ -1,0 +1,25 @@
+From d409ff930c694c3d3d50a55d443c90b4e8b6abe6 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pawe=C5=82=20Ko=C5=82odziejski?= <aquadran@gmail.com>
+Date: Mon, 6 May 2024 12:18:30 +0200
+Subject: [PATCH 6/6] rpcent struct is part of unix also macos
+
+---
+ tirpc/rpc/rpcent.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tirpc/rpc/rpcent.h b/tirpc/rpc/rpcent.h
+index 5bff876..cc30744 100644
+--- a/tirpc/rpc/rpcent.h
++++ b/tirpc/rpc/rpcent.h
+@@ -50,7 +50,7 @@ extern "C" {
+ 
+ /* These are defined in /usr/include/rpc/netdb.h, unless we are using
+    the C library without RPC support. */
+-#if defined(__UCLIBC__) && !defined(__UCLIBC_HAS_RPC__) || !defined(__GLIBC__)
++#if defined(__UCLIBC__) && !defined(__UCLIBC_HAS_RPC__) || (!defined(__GLIBC__) && !defined(__APPLE__))
+ struct rpcent {
+ 	char	*r_name;	/* name of server for this rpc program */
+ 	char	**r_aliases;	/* alias list */
+-- 
+2.44.0
+

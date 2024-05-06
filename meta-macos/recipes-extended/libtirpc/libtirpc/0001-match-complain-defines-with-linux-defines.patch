@@ -1,0 +1,46 @@
+From 2426b0a83482f7798d15a77898eb4726e564717c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pawe=C5=82=20Ko=C5=82odziejski?= <aquadran@gmail.com>
+Date: Mon, 6 May 2024 11:57:57 +0200
+Subject: [PATCH 1/6] match complain defines with linux defines
+
+---
+ src/rpc_generic.c | 4 ++++
+ src/svc_dg.c      | 7 +++++++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/src/rpc_generic.c b/src/rpc_generic.c
+index aabbe4b..a82981b 100644
+--- a/src/rpc_generic.c
++++ b/src/rpc_generic.c
+@@ -56,6 +56,10 @@
+ #include <rpc/nettype.h>
+ #include "rpc_com.h"
+ 
++#if defined(__APPLE__)
++#define SOL_IPV6 IPPROTO_IPV6
++#endif
++
+ struct handle {
+ 	NCONF_HANDLE *nhandle;
+ 	int nflag;		/* Whether NETPATH or NETCONFIG */
+diff --git a/src/svc_dg.c b/src/svc_dg.c
+index a9f63ff..74b63ad 100644
+--- a/src/svc_dg.c
++++ b/src/svc_dg.c
+@@ -61,6 +61,13 @@
+ #define	MAX(a, b)	(((a) > (b)) ? (a) : (b))
+ #endif
+ 
++#if defined(__APPLE__)
++#define SOL_IP            IPPROTO_IP
++#define SOL_IPV6          IPPROTO_IPV6
++#define IPV6_PKTINFO      IP_PKTINFO
++#define IPV6_RECVPKTINFO  IP_RECVPKTINFO
++#endif
++
+ static void svc_dg_ops(SVCXPRT *);
+ static enum xprt_stat svc_dg_stat(SVCXPRT *);
+ static bool_t svc_dg_recv(SVCXPRT *, struct rpc_msg *);
+-- 
+2.44.0
+

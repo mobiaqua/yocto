@@ -1,0 +1,24 @@
+From 7b9577afa737bb2638329ec4695c6501913d75bd Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Pawe=C5=82=20Ko=C5=82odziejski?= <aquadran@gmail.com>
+Date: Mon, 6 May 2024 11:58:19 +0200
+Subject: [PATCH 2/6] added missing include for memset
+
+---
+ src/svc_raw.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/svc_raw.c b/src/svc_raw.c
+index a8a396f..0eb0965 100644
+--- a/src/svc_raw.c
++++ b/src/svc_raw.c
+@@ -43,6 +43,7 @@
+ #include <sys/types.h>
+ #include <rpc/raw.h>
+ #include <stdlib.h>
++#include <string.h>
+ 
+ #ifndef UDPMSGSIZE
+ #define	UDPMSGSIZE 8800
+-- 
+2.44.0
+
