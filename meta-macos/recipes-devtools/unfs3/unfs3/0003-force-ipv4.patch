@@ -1,0 +1,83 @@
+diff -urp old/daemon.c new/daemon.c
+--- old/daemon.c	2024-05-06 18:08:45
++++ new/daemon.c	2024-05-06 19:12:04
+@@ -727,6 +727,10 @@ static void _register_service(SVCXPRT *transp,
+     if (nconf == NULL)
+ 	return;
+ 
++#if defined(__APPLE__)
++    // only IPv4
++    return;
++#else
+     len = sizeof(domain);
+     if (getsockopt(transp->xp_fd, SOL_SOCKET, SO_DOMAIN, &domain, &len)) {
+ 	perror("getsockopt");
+@@ -734,6 +738,7 @@ static void _register_service(SVCXPRT *transp,
+ 		progname, versname);
+ 	daemon_exit(0);
+     }
++#endif
+ 
+     if (domain != PF_INET6)
+ 	return;
+@@ -808,7 +813,12 @@ static SVCXPRT *create_udp_transport(unsigned int port
+     SVCXPRT *transp = NULL;
+     int sock;
+ 
++#if defined(__APPLE__)
++    // only IPv4
++    sock = socket(PF_INET, SOCK_DGRAM, 0);
++#else
+     sock = socket(PF_INET6, SOCK_DGRAM, 0);
++#endif
+ 
+     if ((sock == -1) && (errno == EAFNOSUPPORT))
+ 	sock = socket(PF_INET, SOCK_DGRAM, 0);
+@@ -829,11 +839,17 @@ static SVCXPRT *create_udp_transport(unsigned int port
+     struct sockaddr_in6 sin6;
+ 
+     len = sizeof(domain);
++
++#if defined(__APPLE__)
++    // only IPv4
++    domain = PF_INET;
++#else
+     if (getsockopt(sock, SOL_SOCKET, SO_DOMAIN, &domain, &len)) {
+ 	perror("getsockopt");
+ 	fprintf(stderr, "Couldn't create a listening udp socket\n");
+ 	exit(1);
+     }
++#endif
+ 
+     if (domain == PF_INET6) {
+ 	/* Make sure we null the entire sockaddr_in6 structure */
+@@ -888,7 +904,12 @@ static SVCXPRT *create_tcp_transport(unsigned int port
+     SVCXPRT *transp = NULL;
+     int sock;
+ 
++#if defined(__APPLE__)
++    // only IPv4
++    sock = socket(PF_INET, SOCK_STREAM, 0);
++#else
+     sock = socket(PF_INET6, SOCK_STREAM, 0);
++#endif
+ 
+     if ((sock == -1) && (errno == EAFNOSUPPORT))
+ 	sock = socket(PF_INET, SOCK_STREAM, 0);
+@@ -909,11 +930,16 @@ static SVCXPRT *create_tcp_transport(unsigned int port
+     struct sockaddr_in6 sin6;
+ 
+     len = sizeof(domain);
++#if defined(__APPLE__)
++    // only IPv4
++    domain = PF_INET;
++#else
+     if (getsockopt(sock, SOL_SOCKET, SO_DOMAIN, &domain, &len)) {
+ 	perror("getsockopt");
+ 	fprintf(stderr, "Couldn't create a listening tcp socket\n");
+ 	exit(1);
+     }
++#endif
+ 
+     if (domain == PF_INET6) {
+ 	/* Make sure we null the entire sockaddr_in6 structure */
