@@ -11,7 +11,7 @@ DEPENDS:append=" virtual/kernel"
 
 INSTALL_PKGS = "\
 	kernel-modules alsa-utils alsa-state alsa-utils-alsamixer glibc-gconv-ibm850 glibc-gconv-cp1250 \
-	dropbear dbus util-linux libstdc++ opkg \
+	dropbear dbus util-linux libstdc++ opkg initscripts \
 "
 DEPEDS += "virtual/gles2"
 RRECOMMENDS += ""
