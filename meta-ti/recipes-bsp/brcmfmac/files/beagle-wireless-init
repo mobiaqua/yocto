@@ -1,0 +1,28 @@
+#!/bin/sh
+
+### BEGIN INIT INFO
+# Provides: load Beagle-AI wireless FW
+# Required-Start:
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:
+### END INIT INFO
+
+set -e
+
+dev=hci0
+
+/usr/bin/hciattach /dev/ttyS5 bcm43xx 921600 > /dev/null
+/usr/bin/hciconfig $dev up
+
+if ( /usr/bin/hcitool -i $dev dev | grep -q -E '\s43:4[35]:|AA:AA:AA:AA:AA:AA' ); then
+    SERIAL=`cat /proc/device-tree/serial-number | cut -c9-`
+    B1=`echo $SERIAL | cut -c3-4`
+    B2=`echo $SERIAL | cut -c5-6`
+    B3=`echo $SERIAL | cut -c7-8`
+    BDADDR=`printf '0x%02x 0x%02x 0x%02x 0xeb 0x27 0xb8' $((0x$B3 ^ 0xaa)) $((0x$B2 ^ 0xaa)) $((0x$B1 ^ 0xaa))`
+    /usr/bin/hcitool -i $dev cmd 0x3f 0x001 $BDADDR > /dev/null
+    /usr/bin/hciconfig $dev reset
+fi
+
+/usr/bin/hcitool -i $dev cmd 0x3f 0x1c 0x01 0x02 0x00 0x01 0x01 > /dev/null
