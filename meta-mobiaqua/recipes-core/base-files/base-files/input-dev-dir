@@ -1,0 +1,11 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          input-dev-dir
+# Required-Start:    checkroot
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: Create /dev/input dir.
+### END INIT INFO
+
+/bin/mkdir -p /dev/input 2>/dev/null
