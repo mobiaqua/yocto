@@ -4,6 +4,8 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += "file://dropbear.default"
 
+SRC_URI:remove = "file://CVE-2023-48795.patch"
+
 do_install:append() {
 	if ${@bb.utils.contains('VIRTUAL-RUNTIME_init_manager','busybox','true','false',d)}; then
 		install -d ${D}${sysconfdir}/rcS.d
