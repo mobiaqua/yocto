@@ -18,6 +18,8 @@ SRC_URI = "git://salsa.debian.org/debian/ncurses.git;protocol=https;branch=maste
            file://0002-configure-reproducible.patch \
            file://0003-gen-pkgconfig.in-Do-not-include-LDFLAGS-in-generated.patch \
            file://CVE-2023-29491.patch \
+           file://CVE-2023-50495.patch \
+           file://CVE-2023-45918.patch \
            "
 
 S = "${WORKDIR}/git"
