@@ -26,7 +26,7 @@ DEFAULT_PREFERENCE = "99"
 
 DEPENDS = "openssl"
 
-SRCREV = "96d941b30ea1d7195ee13dbab192984efb5572b7"
+SRCREV = "e7d2238ad751e4ce4ebc5118af750fd5cc0c5055"
 
 PV = "7.0+git${SRCPV}"
 PR = "r1"
