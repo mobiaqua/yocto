@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm 6.6.29 Kernel Configuration
+# Linux/arm 6.6.31 Kernel Configuration
 #
 CONFIG_CC_VERSION_TEXT="arm-mobiaqua-linux-gnueabi-gcc (GCC) 11.4.0"
 CONFIG_CC_IS_GCC=y
@@ -566,6 +566,7 @@ CONFIG_ARCH_HIBERNATION_POSSIBLE=y
 # end of Power management options
 
 CONFIG_AS_VFP_VMRS_FPINST=y
+CONFIG_CPU_MITIGATIONS=y
 
 #
 # General architecture-dependent options
