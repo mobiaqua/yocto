@@ -21,7 +21,7 @@ DEPENDS:append = " argp-standalone"
 
 SRC_URI = "https://gitlab.com/iucode-tool/releases/raw/master/iucode-tool_${PV}.tar.xz"
 # MobiAqua: removed 'libc-musl' to use argp-standalone for MacOS host
-SRC_URI:append:libc-musl = " file://0001-Makefile.am-Add-arg-parse-library-for-MUSL-support.patch"
+SRC_URI:append = " file://0001-Makefile.am-Add-arg-parse-library-for-MUSL-support.patch"
 
 SRC_URI[md5sum] = "63b33cc0ea1f8c73b443412abbf39d6f"
 SRC_URI[sha256sum] = "12b88efa4d0d95af08db05a50b3dcb217c0eb2bfc67b483779e33d498ddb2f95"
