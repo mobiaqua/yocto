@@ -1,38 +1,51 @@
-From 643cc41ae844e3aee94374621cf578cfc59eefc4 Mon Sep 17 00:00:00 2001
-From: Gowtham Tammana <g-tammana@ti.com>
-Date: Wed, 7 Apr 2021 12:05:08 -0500
-Subject: [PATCH] ARM: dts: dra7: Add device tree entry for SGX
+From 0c676c638705958a4ce3c032cfba7cd2c07cbe51 Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Mon, 13 May 2024 16:12:03 -0500
+Subject: [PATCH 097/168] ARM: dts: DRA7xx: Add device tree entry for SGX GPU
 
-Add SGX GPU device node entry to base DRA7x dtsi.
+[ Upstream commit 6804d0daf8c1be6828f12efb2fc4114996887e6a ]
 
-Signed-off-by: Gowtham Tammana <g-tammana@ti.com>
+Add SGX GPU device entry to base DRA7x dtsi file.
+
+Let's also leave out SYSC_IDLE_SMART_WKUP as it never has been used in
+the known working TI tree. The documentation says SYSC_IDLE_SMART_WKUP
+is available, but it's best to stick to a known working solution.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Reviewed-by: Javier Martinez Canillas <javierm@redhat.com>
+Message-ID: <20240109171950.31010-9-afd@ti.com>
+[tony@atomide.com: updated description for sysc change]
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Randolph Sapp <rs@ti.com>
 ---
- arch/arm/boot/dts/dra7.dtsi | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ arch/arm/boot/dts/ti/omap/dra7.dtsi | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/ti/omap/dra7.dtsi b/arch/arm/boot/dts/ti/omap/dra7.dtsi
-index 6ba6a1b50e00..f3d0434f2519 100644
+index 6509c742fb58..8527643cb69a 100644
 --- a/arch/arm/boot/dts/ti/omap/dra7.dtsi
 +++ b/arch/arm/boot/dts/ti/omap/dra7.dtsi
-@@ -758,6 +758,18 @@ target-module@56000000 {
+@@ -850,12 +850,19 @@ target-module@56000000 {
+ 					<SYSC_IDLE_SMART>;
+ 			ti,sysc-sidle = <SYSC_IDLE_FORCE>,
+ 					<SYSC_IDLE_NO>,
+-					<SYSC_IDLE_SMART>;
++					<SYSC_IDLE_SMART>,
++					<SYSC_IDLE_SMART_WKUP>;
+ 			clocks = <&gpu_clkctrl DRA7_GPU_CLKCTRL 0>;
+ 			clock-names = "fck";
  			#address-cells = <1>;
  			#size-cells = <1>;
  			ranges = <0 0x56000000 0x2000000>;
 +
-+			gpu: gpu@0 {
-+				compatible = "ti,dra7-sgx544", "img,sgx544";
-+				reg = <0x0 0x10000>;
++			gpu@0 {
++				compatible = "ti,am5728-gpu", "img,powervr-sgx544";
++				reg = <0x0 0x10000>; /* 64kB */
 +				interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
-+				clocks = <&l3_iclk_div>,
-+					 <&gpu_core_gclk_mux>,
-+					 <&gpu_hyd_gclk_mux>;
-+				clock-names = "iclk",
-+					      "fclk1",
-+					      "fclk2";
 +			};
  		};
  
  		crossbar_mpu: crossbar@4a002a48 {
 -- 
-2.32.0 (Apple Git-132)
+2.45.0
 
