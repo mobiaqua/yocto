@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm64 6.1.88 Kernel Configuration
+# Linux/arm64 6.1.91 Kernel Configuration
 #
 CONFIG_CC_VERSION_TEXT="aarch64-mobiaqua-linux-gcc (GCC) 11.4.0"
 CONFIG_CC_IS_GCC=y
@@ -544,6 +544,7 @@ CONFIG_CPU_FREQ_GOV_ONDEMAND=y
 
 CONFIG_HAVE_KVM=y
 # CONFIG_VIRTUALIZATION is not set
+CONFIG_CPU_MITIGATIONS=y
 
 #
 # General architecture-dependent options
