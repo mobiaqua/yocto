@@ -337,6 +337,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://7/0058-phy-cadence-torrent-Add-multi-link-PCIe-configuratio.patch \
             file://7/0059-phy-cadence-torrent-Add-PCIe-multilink-USB-with-same.patch \
             file://8/0001-phy-cadence-torrent-initialize-pcie_links-variable.patch \
+            file://9/0006-drm-bridge-cdns-dsi-Wait-for-Clk-and-Data-Lanes-to-b.patch \
             file://0001_fix_nonlinux_compile.patch \
             file://0002-bootup-hacks-move-mmc-early.patch \
             file://0003-Kbuild.include.patch \
