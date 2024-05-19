@@ -1,7 +1,7 @@
 require recipes-kernel/linux/linux-yocto.inc
 
 INC_PR = "r0"
-DEPENDS += "openssl-native ncurses-native elf-native kmod-native linux-firmware wireless-regdb"
+DEPENDS += "openssl-native ncurses-native elf-native kmod-native linux-firmware wireless-regdb intel-microcode"
 COMPATIBLE_MACHINE:intel-x86-common = "${MACHINE}"
 KMACHINE:corei7-64-intel-common = "intel-corei7-64"
 KMACHINE:core2-32-intel-common = "intel-core2-32"

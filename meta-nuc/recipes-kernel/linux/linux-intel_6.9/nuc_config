@@ -1138,7 +1138,7 @@ CONFIG_STANDALONE=y
 # Firmware loader
 #
 CONFIG_FW_LOADER=y
-CONFIG_EXTRA_FIRMWARE="i915/adlp_dmc.bin i915/adlp_guc_70.bin i915/tgl_huc.bin regulatory.db regulatory.db.p7s"
+CONFIG_EXTRA_FIRMWARE="intel-ucode/06-ba-02 i915/adlp_dmc.bin i915/adlp_guc_70.bin i915/tgl_huc.bin regulatory.db regulatory.db.p7s"
 CONFIG_EXTRA_FIRMWARE_DIR="MOBIAQUA_FW_PATH"
 # CONFIG_FW_LOADER_USER_HELPER is not set
 # CONFIG_FW_LOADER_COMPRESS is not set
