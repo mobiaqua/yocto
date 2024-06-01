@@ -305,8 +305,7 @@ def fork_off_task(cfg, data, databuilder, workerdata, fn, task, taskname, taskha
                 finally:
                     if fakeroot:
                         fakerootcmd = shlex.split(the_data.getVar("FAKEROOTCMD"))
-                        # MobiAqua: removed '-S'
-                        subprocess.run(fakerootcmd, check=True, stdout=subprocess.PIPE)
+                        subprocess.run(fakerootcmd + ['-S'], check=True, stdout=subprocess.PIPE)
                 return ret
             except:
                 os._exit(1)

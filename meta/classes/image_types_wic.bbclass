@@ -122,8 +122,7 @@ python do_write_wks_template () {
 }
 
 do_flush_pseudodb() {
-	# MobiAqua: removed '-S'
-	${FAKEROOTENV} ${FAKEROOTCMD}
+	${FAKEROOTENV} ${FAKEROOTCMD} -S
 }
 
 python () {
