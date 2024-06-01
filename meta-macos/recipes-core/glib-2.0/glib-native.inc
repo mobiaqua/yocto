@@ -5,10 +5,10 @@ HOMEPAGE = "https://developer.gnome.org/glib/"
 # pcre is under BSD;
 # docs/reference/COPYING is with a 'public domain'-like license!
 LICENSE = "LGPL-2.1-or-later & BSD-3-Clause & PD"
-LIC_FILES_CHKSUM = "file://COPYING;md5=4fbd65380cdd255951079008b364516c \
-                    file://glib/glib.h;beginline=4;endline=17;md5=b88abb7f3ad09607e71cb9d530155906 \
-                    file://gmodule/COPYING;md5=4fbd65380cdd255951079008b364516c \
-                    file://gmodule/gmodule.h;beginline=4;endline=17;md5=b88abb7f3ad09607e71cb9d530155906 \
+LIC_FILES_CHKSUM = "file://COPYING;md5=41890f71f740302b785c27661123bff5 \
+                    file://glib/glib.h;beginline=4;endline=17;md5=72f7cc2847407f65d8981ef112e4e630 \
+                    file://LICENSES/LGPL-2.1-or-later.txt;md5=41890f71f740302b785c27661123bff5 \
+                    file://gmodule/gmodule.h;beginline=4;endline=17;md5=72f7cc2847407f65d8981ef112e4e630 \
                     file://docs/reference/COPYING;md5=f51a5100c17af6bae00735cd791e1fcc"
 BUGTRACKER = "http://bugzilla.gnome.org"
 SECTION = "libs"
@@ -18,12 +18,12 @@ CVE_PRODUCT = "glib"
 # MobiAqua: override name
 PN = "glib-2.0-native"
 
-# MobiAqua: removed 'glib-2.0-native', added '*-native'
+# MobiAqua: removed 'glib-2.0-native', added '*-native', replace 'libpre' with 'libpre2'
 DEPENDS = "\
            virtual/libintl-native \
            virtual/libiconv-native \
            libffi-native \
-           libpcre-native \
+           libpcre2-native \
            zlib-native"
 
 PACKAGES += "${PN}-codegen ${PN}-utils"
@@ -33,10 +33,8 @@ LEAD_SONAME = "libglib-2.0.*"
 # MobiAqua: override path
 FILESEXTRAPATHS:prepend := "${THISDIR}/glib2.0:"
 
-# MobiAqua: removed 'gio-module-cache'. added 'native'
+# MobiAqua: removed 'gio-module-cache', 'gobject-introspection-data'. added 'native'
 inherit meson gettext gtk-doc pkgconfig ptest-gnome upstream-version-is-even bash-completion manpages native
-
-DEPENDS:append:class-target = "${@' gtk-doc' if d.getVar('GTKDOC_ENABLED') == 'True' else ''}"
 
 GTKDOC_MESON_OPTION = "gtk_doc"
 
@@ -47,15 +45,14 @@ PACKAGECONFIG ??= "\
                    ${@bb.utils.contains('PTEST_ENABLED', '1', 'tests', '', d)}"
 PACKAGECONFIG[libmount] = "-Dlibmount=enabled,-Dlibmount=disabled,util-linux"
 PACKAGECONFIG[manpages] = "-Dman=true, -Dman=false, libxslt-native xmlto-native"
-# libelf is auto-detected without a configuration option
-PACKAGECONFIG[libelf] = ",,elfutils"
+PACKAGECONFIG[libelf] = "-Dlibelf=enabled,-Dlibelf=disabled,elfutils"
 PACKAGECONFIG[tests] = "-Dinstalled_tests=true,-Dinstalled_tests=false,"
 PACKAGECONFIG[selinux] = "-Dselinux=enabled,-Dselinux=disabled,libselinux"
 
-EXTRA_OEMESON = "-Ddtrace=false -Dfam=false -Dsystemtap=false"
+EXTRA_OEMESON = "-Ddtrace=false -Dsystemtap=false"
 
 # MobiAqua: added macOS SDK libs and disable tests
-EXTRA_OEMESON:append:darwin = " -Dc_link_args='${LDFLAGS} -framework Foundation -framework AppKit' -Ddefault_library=static -Dtests=false"
+EXTRA_OEMESON:append:darwin = " -Ddefault_library=static -Dtests=false"
 
 do_configure:prepend() {
 	sed -i -e '1s,#!.*,#!${USRBINPATH}/env python3,' ${S}/gio/gdbus-2.0/codegen/gdbus-codegen.in
@@ -64,12 +61,9 @@ do_configure:prepend() {
 FILES:${PN} = "${libdir}/lib*${SOLIBS} \
                ${libdir}/gio \
                ${libexecdir}/*gio-querymodules \
+               ${libexecdir}/*gio-launch-desktop \
+               ${datadir}/glib-2.0/dtds \
                ${datadir}/glib-2.0/schemas"
-
-FILES:${PN}-utils += "${bindir}/glib-genmarshal \
-                      ${bindir}/glib-gettextize \
-                      ${bindir}/glib-mkenums \
-                      ${bindir}/glib-compile-resources"
 
 FILES:${PN}-dev += "${libdir}/glib-2.0/include \
                     ${libdir}/gio/modules/lib*${SOLIBSDEV} \
@@ -128,6 +122,11 @@ do_install:append () {
         mkdir -p ${D}${libdir}/gio/modules
 }
 
+do_install:append:class-native () {
+	# Link gio-querymodules into ${bindir} as otherwise tools like meson won't find it
+        ln -rs ${D}${libexecdir}/gio-querymodules ${D}${bindir}
+}
+
 do_install:append:class-target () {
 	# Tests are only installed on targets, not native builds.  Separating this out
 	# keeps glib-2.0-native from depending on DISTRO_FEATURES
@@ -141,8 +140,16 @@ do_install:append:class-target () {
                 mv ${D}${datadir}/installed-tests/glib/static-link.test ${D}${datadir}/installed-tests/glib/${MLPREFIX}static-link.test
         fi
 	fi
+        # https://gitlab.gnome.org/GNOME/glib/-/issues/2810
+        rm -f ${D}${datadir}/installed-tests/glib/thread-pool-slow.test
 }
-
+do_install:append:class-target:libc-musl () {
+        # Remove failing tests on musl libc systems, this helps set baseline for musl testing
+        # they remain to be rootcaused and fixed but marked known failures here.
+        for t in convert.test collate.test gdatetime.test date.test converter-stream.test option-context.test; do
+                rm -rf ${D}${datadir}/installed-tests/glib/$t
+        done
+}
 # As we do not build python3 for windows, makes no sense to ship the script that's using it
 do_install:append:mingw32() {
         rm -f ${D}${bindir}/gtester-report
@@ -160,6 +167,7 @@ RDEPENDS:${PN}-ptest += "\
             coreutils \
             libgcc \
             dbus \
+            desktop-file-utils \
             gnome-desktop-testing \
             tzdata \
             tzdata-americas \
@@ -179,6 +187,12 @@ RDEPENDS:${PN}-ptest += "\
             python3-modules \
             ${@bb.utils.contains('GI_DATA_ENABLED', 'True', 'python3-dbusmock', '', d)} \
             ${PN}-codegen \
+            locale-base-de-de \
+            locale-base-es-es \
+            locale-base-en-gb \
+            locale-base-en-us \
+            locale-base-fr-fr \
+            locale-base-ru-ru \
            "
 
 RDEPENDS:${PN}-ptest:append:libc-glibc = "\
@@ -193,18 +207,12 @@ RDEPENDS:${PN}-ptest:append:libc-glibc = "\
             glibc-gconv-iso8859-15 \
             glibc-charmap-invariant \
             glibc-localedata-translit-cjk-variants \
-            locale-base-tr-tr \
             locale-base-lt-lt \
             locale-base-ja-jp.euc-jp \
             locale-base-fa-ir \
-            locale-base-ru-ru \
-            locale-base-de-de \
             locale-base-hr-hr \
             locale-base-el-gr \
-            locale-base-fr-fr \
-            locale-base-es-es \
-            locale-base-en-gb \
-            locale-base-en-us \
             locale-base-pl-pl \
             locale-base-pl-pl.iso-8859-2 \
+            locale-base-tr-tr \
            "

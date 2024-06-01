@@ -26,3 +26,6 @@ PACKAGECONFIG[pulseaudio] = "-Denable-pulseaudio=ON,-Denable-pulseaudio=OFF,puls
 PACKAGECONFIG[portaudio] = "-Denable-portaudio=ON,-Denable-portaudio=OFF,portaudio-v19"
 PACKAGECONFIG[profiling] = "-Denable-profiling=ON,-Denable-profiling=OFF"
 PACKAGECONFIG[readline] = "-Denable-readline=ON,-Denable-readline=OFF,readline"
+
+# MobiAqua:
+INSANE_SKIP += "buildpaths"

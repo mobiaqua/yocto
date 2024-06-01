@@ -1,3 +1,4 @@
+Upstream-Status: Pending
 diff -urp old/Makeconfig new/Makeconfig
 --- old/Makeconfig	2020-11-15 20:53:02.000000000 +0100
 +++ new/Makeconfig	2020-11-15 21:04:37.000000000 +0100
@@ -57,8 +58,8 @@ diff -urp old/Makerules new/Makerules
 -	     $(patsubst %.oS,%.d,$(filter %.oS,$(extra-objs))) \
 +	     $(patsubst %.oF,%.d,$(filter %.oF,$(extra-objs))) \
  	     $(patsubst %.o,%.d,$(filter %.o,$(extra-test-objs:.os=.o))) \
- 	     $(addsuffix .d,$(tests) $(tests-internal) $(xtests) $(test-srcs))
- ifeq ($(build-programs),yes)
+ 	     $(addsuffix .d,$(tests) $(tests-internal) $(xtests) \
+ 		$(tests-container) $(tests-printers) \
 @@ -1093,7 +1093,7 @@ ifndef subdir
  install: $(inst_libdir)/libc.so
  $(inst_libdir)/libc.so: $(common-objpfx)format.lds \

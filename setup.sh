@@ -87,7 +87,7 @@ sha384sum sha512sum shred shuf sleep sort split stat stdbuf stty sum sync tac ta
 timeout touch tr true truncate tsort tty uname unexpand uniq unlink uptime users vdir wc who \
 whoami yes"
 
-tools="bison perl wget texi2html file bison flex help2man unzip xz dos2unix meson ninja cmake rsync zstd"
+tools="bison perl wget texi2html file bison flex help2man unzip xz dos2unix meson ninja cmake rsync"
 
 prepare_tools() {
 	cd $OE_BASE
@@ -454,11 +454,11 @@ MACHINE = \"${MACHINE}\"
 DISTRO = \"${DISTRO}\"
 INHERIT = \"rm_work\"
 BUILD_DEBUG = \"${BUILD_DEBUG}\"
-ASSUME_PROVIDED += \" git-native perl-native python-native rust-native cargo-native \
+ASSUME_PROVIDED += \" git-replacement-native perl-native python-native rust-native cargo-native \
 desktop-file-utils-native linux-libc-headers-native intltool-native gzip-native dtc-native \
 findutils-native bison-native flex-native help2man-native bc-native subversion-native m4-native \
 unzip-native texinfo-native texinfo-dummy-native patch-replacement-native makedepend-native \
-chrpath-replacement-native meson-native ninja-native cmake-native rsync-native zstd-native\"
+chrpath-replacement-native meson-native ninja-native cmake-native rsync-native\"
 SANITY_REQUIRED_UTILITIES:remove = \"chrpath\"
 PACKAGE_DEPENDS:remove = \"dwarfsrcfiles-native pseudo-native\"
 HOSTTOOLS += \"codesign Rez SetFile lipo otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep unzip tic bc dc dos2unix sw_vers xcrun glib-genmarshal glib-compile-schemas svn meson ninja cmake rsync dtc rustc cargo cc bash\"

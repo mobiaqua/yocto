@@ -1,13 +1,12 @@
 SUMMARY = "Yet Another V4L2 Test Application"
-LICENSE = "GPL-2.0-or-later"
+LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://COPYING.GPL;md5=751419260aa954499f7abaabaa882bbe"
 
 SRC_URI = "git://git.ideasonboard.org/yavta.git;branch=master \
           "
-SRCREV = "c7b5b7570476d8207a364e4d3625537078d3ba1f"
+SRCREV = "65f740aa1758531fd810339bc1b7d1d33666e28a"
 
 PV = "0.0"
-PR = "r1"
 S = "${WORKDIR}/git"
 
 EXTRA_OEMAKE = "-e MAKEFLAGS="

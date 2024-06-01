@@ -1,3 +1,4 @@
+Upstream-Status: Pending
 diff -urp old/libopkg/opkg_archive.c new/libopkg/opkg_archive.c
 --- old/libopkg/opkg_archive.c	2019-12-17 00:18:50.000000000 +0100
 +++ new/libopkg/opkg_archive.c	2020-11-27 19:22:52.000000000 +0100

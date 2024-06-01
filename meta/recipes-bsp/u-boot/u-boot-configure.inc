@@ -8,6 +8,8 @@ inherit uboot-config cml1
 
 DEPENDS += "kern-tools-native"
 
+CONFIGURE_FILES = "${@d.getVar('UBOOT_MACHINE') or '.config'}"
+
 do_configure () {
     if [ -n "${UBOOT_CONFIG}" ]; then
         unset i j
@@ -26,7 +28,6 @@ do_configure () {
             unset j
         done
         unset i
-        DEVTOOL_DISABLE_MENUCONFIG=true
     else
         if [ -n "${UBOOT_MACHINE}" ]; then
             oe_runmake -C ${S} O=${B} ${UBOOT_MACHINE}

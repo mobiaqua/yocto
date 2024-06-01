@@ -1,3 +1,4 @@
+Upstream-Status: Pending
 diff -urp old/setup.py new/setup.py
 --- old/setup.py	2021-10-13 01:59:28
 +++ new/setup.py	2023-12-26 18:17:45

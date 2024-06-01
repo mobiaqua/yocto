@@ -1,0 +1,3 @@
+DEPENDS:remove = "zstd"
+
+EXTRA_OECMAKE:remove = "-DENABLE_ZSTD_COMPRESSION=ON"

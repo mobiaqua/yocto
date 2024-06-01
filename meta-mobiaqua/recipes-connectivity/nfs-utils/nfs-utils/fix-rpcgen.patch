@@ -25,7 +25,7 @@ diff -urp old/tools/rpcgen/rpc_main.c new/tools/rpcgen/rpc_main.c
 --- old/tools/rpcgen/rpc_main.c	2020-02-09 20:41:19.000000000 +0100
 +++ new/tools/rpcgen/rpc_main.c	2020-11-29 22:06:18.000000000 +0100
 @@ -56,7 +56,7 @@
- #include "proto.h"
+ #include "nls.h"
  
  #ifndef _
 -#define _(String) gettext (String)
@@ -46,7 +46,7 @@ diff -urp old/tools/rpcgen/rpc_scan.c new/tools/rpcgen/rpc_scan.c
 --- old/tools/rpcgen/rpc_scan.c	2020-02-09 20:41:19.000000000 +0100
 +++ new/tools/rpcgen/rpc_scan.c	2020-11-29 22:11:55.000000000 +0100
 @@ -44,7 +44,7 @@
- #include "proto.h"
+ #include "nls.h"
  
  #ifndef _
 -#define _(String) gettext (String)

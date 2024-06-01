@@ -1,3 +1,4 @@
+Upstream-Status: Pending
 diff --git a/gcc/system.h b/gcc/system.h
 index b0edab02885..ab29fc19776 100644
 --- a/gcc/system.h
@@ -62,3 +63,43 @@ index b0edab02885..ab29fc19776 100644
  /* Some of glibc's string inlines cause warnings.  Plus we'd rather
     rely on (and therefore test) GCC's string builtins.  */
  #define __NO_STRING_INLINES
+diff -ur old/libcc1/libcc1plugin.cc new/libcc1/libcc1plugin.cc
+--- old/libcc1/libcc1plugin.cc	2023-07-27 10:13:07
++++ new/libcc1/libcc1plugin.cc	2024-06-02 19:10:10
+@@ -32,6 +32,7 @@
+ #undef PACKAGE_VERSION
+ 
+ #define INCLUDE_MEMORY
++#define INCLUDE_VECTOR
+ #include "gcc-plugin.h"
+ #include "system.h"
+ #include "coretypes.h"
+@@ -68,8 +69,6 @@
+ #include "rpc.hh"
+ #include "gcc-c-interface.h"
+ #include "context.hh"
+-
+-#include <vector>
+ 
+ using namespace cc1_plugin;
+ 
+diff -ur old/libcc1/libcp1plugin.cc new/libcc1/libcp1plugin.cc
+--- old/libcc1/libcp1plugin.cc	2023-07-27 10:13:07
++++ new/libcc1/libcp1plugin.cc	2024-06-02 19:32:22
+@@ -33,6 +33,7 @@
+ #undef PACKAGE_VERSION
+ 
+ #define INCLUDE_MEMORY
++#define INCLUDE_VECTOR
+ #include "gcc-plugin.h"
+ #include "system.h"
+ #include "coretypes.h"
+@@ -70,8 +71,6 @@
+ #include "marshall-cp.hh"
+ #include "rpc.hh"
+ #include "context.hh"
+-
+-#include <vector>
+ 
+ using namespace cc1_plugin;
+ 

@@ -31,9 +31,9 @@ DEPENDS = "virtual/libgles2 virtual/libgbm alsa-lib"
 
 SRC_URI = "http://www.libsdl.org/release/SDL2-${PV}.tar.gz"
 
-SRC_URI[sha256sum] = "891d66ac8cae51361d3229e3336ebec1c407a8a2a063b61df14f5fdf3ab5ac31"
-
 S = "${WORKDIR}/SDL2-${PV}"
+
+SRC_URI[sha256sum] = "891d66ac8cae51361d3229e3336ebec1c407a8a2a063b61df14f5fdf3ab5ac31"
 
 inherit autotools lib_package binconfig pkgconfig
 

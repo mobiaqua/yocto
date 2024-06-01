@@ -15,7 +15,7 @@ DEPENDS = "linux-ti"
 # Need to branch out with ${PV} var
 BRANCH = "ti-${PV}-k5.10"
 
-SRCREV = "2dc89a85f2296b19f9d6022977c100540b349d58"
+SRCREV = "849cfc1280821045d1ea6fc7339da914de01a0d1"
 
 SRC_URI = "git://github.com/mobiaqua/ti-gc320-driver.git;protocol=https;branch=${BRANCH}"
 
@@ -27,3 +27,5 @@ do_install() {
     install -d ${D}/${base_libdir}/modules/${KERNEL_VERSION}/extra
     install -m 644 ${S}/galcore.ko ${D}/${base_libdir}/modules/${KERNEL_VERSION}/extra
 }
+
+INSANE_SKIP += "buildpaths"

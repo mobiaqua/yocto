@@ -26,3 +26,4 @@ do_install() {
 }
 
 INSANE_SKIP:${PN} += "ldflags"
+INSANE_SKIP += "32bit-time"

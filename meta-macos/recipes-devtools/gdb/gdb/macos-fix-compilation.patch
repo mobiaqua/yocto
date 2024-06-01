@@ -7,8 +7,8 @@ diff -urp old/bfd/elf-bfd.h new/bfd/elf-bfd.h
  #include "bfdlink.h"
 +#include <string.h>
  
- #ifdef __cplusplus
- extern "C" {
+ #ifndef ENABLE_CHECKING
+ #define ENABLE_CHECKING 0
 diff -urp old/gdbsupport/enum-flags.h new/gdbsupport/enum-flags.h
 --- old/gdbsupport/enum-flags.h	2019-09-21 00:04:41
 +++ new/gdbsupport/enum-flags.h	2024-04-14 15:53:47
@@ -18,22 +18,9 @@ diff -urp old/gdbsupport/enum-flags.h new/gdbsupport/enum-flags.h
  
 +#include "diagnostics.h"
 +
+ #include "traits.h"
+ 
  /* Type-safe wrapper for enum flags.  enum flags are enums where the
-    values are bits that are meant to be ORed together.
- 
-@@ -81,9 +81,12 @@ struct enum_underlying_type
- template<typename T>
- struct enum_underlying_type
- {
-+  DIAGNOSTIC_PUSH
-+  DIAGNOSTIC_IGNORE_ENUM_CONSTEXPR_CONVERSION
-   typedef typename
-     integer_for_size<sizeof (T), static_cast<bool>(T (-1) < T (0))>::type
-     type;
-+  DIAGNOSTIC_POP
- };
- 
- template <typename E>
 diff -urp old/include/diagnostics.h new/include/diagnostics.h
 --- old/include/diagnostics.h	2019-02-27 05:51:50
 +++ new/include/diagnostics.h	2024-04-14 15:55:30
@@ -43,20 +30,20 @@ diff -urp old/include/diagnostics.h new/include/diagnostics.h
  
 +# if __has_warning ("-Wenum-constexpr-conversion")
 +#  define DIAGNOSTIC_IGNORE_ENUM_CONSTEXPR_CONVERSION \
-+  DIAGNOSTIC_IGNORE ("-Wenum-constexpr-conversion")
++   DIAGNOSTIC_IGNORE ("-Wenum-constexpr-conversion")
 +# endif
 +
- #elif defined (__GNUC__) /* GCC */
- 
- # define DIAGNOSTIC_IGNORE_UNUSED_FUNCTION \
+ # if __has_warning ("-Wuser-defined-warnings")
+ #  define DIAGNOSTIC_IGNORE_USER_DEFINED_WARNINGS \
+    DIAGNOSTIC_IGNORE ("-Wuser-defined-warnings")
 @@ -102,6 +107,10 @@
- 
  #ifndef DIAGNOSTIC_IGNORE_FORMAT_NONLITERAL
  # define DIAGNOSTIC_IGNORE_FORMAT_NONLITERAL
-+#endif
+ #endif
 +
 +#ifndef DIAGNOSTIC_IGNORE_ENUM_CONSTEXPR_CONVERSION
 +# define DIAGNOSTIC_IGNORE_ENUM_CONSTEXPR_CONVERSION
- #endif
++#endif
  
- #endif /* DIAGNOSTICS_H */
+ #ifndef DIAGNOSTIC_IGNORE_USER_DEFINED_WARNINGS
+ # define DIAGNOSTIC_IGNORE_USER_DEFINED_WARNINGS

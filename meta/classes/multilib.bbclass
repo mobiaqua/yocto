@@ -1,3 +1,9 @@
+#
+# Copyright OpenEmbedded Contributors
+#
+# SPDX-License-Identifier: MIT
+#
+
 python multilib_virtclass_handler () {
     cls = e.data.getVar("BBEXTENDCURR")
     variant = e.data.getVar("BBEXTENDVARIANT")
@@ -23,6 +29,9 @@ python multilib_virtclass_handler () {
         val=e.data.getVar(name)
         if val:
             e.data.setVar(name + "_MULTILIB_ORIGINAL", val)
+
+    # We nearly don't need this but dependencies on NON_MULTILIB_RECIPES don't work without it
+    d.setVar("SSTATE_ARCHS_TUNEPKG", "${@all_multilib_tune_values(d, 'TUNE_PKGARCH')}")
 
     overrides = e.data.getVar("OVERRIDES", False)
     pn = e.data.getVar("PN", False)
@@ -131,6 +140,7 @@ python multilib_virtclass_handler_postkeyexp () {
         return
 
     clsextend.map_depends_variable("DEPENDS")
+    clsextend.map_depends_variable("PACKAGE_WRITE_DEPS")
     clsextend.map_variable("PROVIDES")
 
     if bb.data.inherits_class('cross-canadian', d):

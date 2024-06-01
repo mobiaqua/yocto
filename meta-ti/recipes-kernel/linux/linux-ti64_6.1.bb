@@ -2,8 +2,10 @@ require recipes-kernel/linux/linux-yocto.inc
 
 INC_PR = "r0"
 DEPENDS += "openssl-native ncurses-native elf-native kmod-native linux-firmware"
+DEPENDS:remove = "util-linux-native elfutils-native"
 COMPATIBLE_MACHINE = "beagle64"
 KERNEL_VERSION_SANITY_SKIP = "1"
+INSANE_SKIP += "buildpaths"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 LINUX_VERSION = "6.1.91"
 PV = "${LINUX_VERSION}"

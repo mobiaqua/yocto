@@ -33,6 +33,7 @@ class Partition():
         self.include_path = args.include_path
         self.change_directory = args.change_directory
         self.fsopts = args.fsopts
+        self.fspassno = args.fspassno
         self.fstype = args.fstype
         self.label = args.label
         self.use_label = args.use_label
@@ -58,6 +59,8 @@ class Partition():
         self.updated_fstab_path = None
         self.has_fstab = False
         self.update_fstab_in_rootfs = False
+        self.hidden = args.hidden
+        self.mbr = args.mbr
 
         self.lineno = lineno
         self.source_file = ""
@@ -280,6 +283,20 @@ class Partition():
             os.ftruncate(sparse.fileno(), rootfs_size * 1024)
 
         extraopts = self.mkfs_extraopts or "-F -i 8192"
+
+        if os.getenv('SOURCE_DATE_EPOCH'):
+            sde_time = int(os.getenv('SOURCE_DATE_EPOCH'))
+            if pseudo:
+                pseudo = "export E2FSPROGS_FAKE_TIME=%s;%s " % (sde_time, pseudo)
+            else:
+                pseudo = "export E2FSPROGS_FAKE_TIME=%s; " % sde_time
+
+            # Set hash_seed to generate deterministic directory indexes
+            namespace = uuid.UUID("e7429877-e7b3-4a68-a5c9-2f2fdf33d460")
+            if self.fsuuid:
+                namespace = uuid.UUID(self.fsuuid)
+            hash_seed = str(uuid.uuid5(namespace, str(sde_time)))
+            extraopts += " -E hash_seed=%s" % hash_seed
 
         label_str = ""
         if self.label:

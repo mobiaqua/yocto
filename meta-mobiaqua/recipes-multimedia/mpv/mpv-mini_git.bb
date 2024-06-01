@@ -53,6 +53,8 @@ do_install () {
     oe_runmake install DESTDIR=${D}
 }
 
+FILES:${PN}-dbg = "${bindir}/.debug/mpv"
+
 DEBUG_BUILD = "${@['no','yes'][d.getVar('BUILD_DEBUG') == '1']}"
 
 RM_WORK_EXCLUDE += "${@['','${PN}'][d.getVar('BUILD_DEBUG') == '1']}"
@@ -60,3 +62,4 @@ RM_WORK_EXCLUDE += "${@['','${PN}'][d.getVar('BUILD_DEBUG') == '1']}"
 EXCLUDE_FROM_WORLD = "${@bb.utils.contains("LICENSE_FLAGS_ACCEPTED", "commercial", "0", "1", d)}"
 
 INSANE_SKIP:${PN} = "mime-xdg"
+INSANE_SKIP += "buildpaths"

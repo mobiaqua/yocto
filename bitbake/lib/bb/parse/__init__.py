@@ -49,20 +49,32 @@ class SkipPackage(SkipRecipe):
 __mtime_cache = {}
 def cached_mtime(f):
     if f not in __mtime_cache:
-        __mtime_cache[f] = os.stat(f)[stat.ST_MTIME]
+        res = os.stat(f)
+        __mtime_cache[f] = (res.st_mtime_ns, res.st_size, res.st_ino)
     return __mtime_cache[f]
 
 def cached_mtime_noerror(f):
     if f not in __mtime_cache:
         try:
-            __mtime_cache[f] = os.stat(f)[stat.ST_MTIME]
+            res = os.stat(f)
+            __mtime_cache[f] = (res.st_mtime_ns, res.st_size, res.st_ino)
         except OSError:
             return 0
     return __mtime_cache[f]
 
+def check_mtime(f, mtime):
+    try:
+        res = os.stat(f)
+        current_mtime = (res.st_mtime_ns, res.st_size, res.st_ino)
+        __mtime_cache[f] = current_mtime
+    except OSError:
+        current_mtime = 0
+    return current_mtime == mtime
+
 def update_mtime(f):
     try:
-        __mtime_cache[f] = os.stat(f)[stat.ST_MTIME]
+        res = os.stat(f)
+        __mtime_cache[f] = (res.st_mtime_ns, res.st_size, res.st_ino)
     except OSError:
         if f in __mtime_cache:
             del __mtime_cache[f]
@@ -99,12 +111,12 @@ def supports(fn, data):
             return 1
     return 0
 
-def handle(fn, data, include = 0):
+def handle(fn, data, include=0, baseconfig=False):
     """Call the handler that is appropriate for this file"""
     for h in handlers:
         if h['supports'](fn, data):
             with data.inchistory.include(fn):
-                return h['handle'](fn, data, include)
+                return h['handle'](fn, data, include, baseconfig)
     raise ParseError("not a BitBake file", fn)
 
 def init(fn, data):

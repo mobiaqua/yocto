@@ -7,15 +7,15 @@ inherit module
 
 PROVIDES = "virtual/gpudriver"
 
-COMPATIBLE_MACHINE = "beagle64"
-
 PR = "r0"
 PV = "23.2"
 PR:append = "+gitr-${SRCREV}"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-DEPENDS = "libdrm virtual/kernel"
+COMPATIBLE_MACHINE = "beagle64"
+
+DEPENDS = "virtual/kernel"
 
 BRANCH = "linuxws/kirkstone/k6.1/23.3.6512818"
 

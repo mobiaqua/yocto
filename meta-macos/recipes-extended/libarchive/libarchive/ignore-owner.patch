@@ -1,3 +1,4 @@
+Upstream-Status: Pending
 diff -urp old/libarchive/archive_write_disk_posix.c new/libarchive/archive_write_disk_posix.c
 --- old/libarchive/archive_write_disk_posix.c	2020-02-11 18:24:57.000000000 +0100
 +++ new/libarchive/archive_write_disk_posix.c	2020-11-28 18:55:24.000000000 +0100

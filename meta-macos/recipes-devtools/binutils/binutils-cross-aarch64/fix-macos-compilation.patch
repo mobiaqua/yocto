@@ -1,3 +1,4 @@
+Upstream-Status: Pending
 diff -urp old/gold/gold-threads.cc new/gold/gold-threads.cc
 --- old/gold/gold-threads.cc	2020-10-25 23:04:38.000000000 +0100
 +++ new/gold/gold-threads.cc	2020-10-25 23:24:04.000000000 +0100

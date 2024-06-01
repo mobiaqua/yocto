@@ -14,6 +14,8 @@ PR:append = "+gitr-${SRCREV}"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
+INSANE_SKIP += "buildpaths"
+
 DEPENDS = "libdrm virtual/kernel"
 
 SRC_URI = "git://github.com/mobiaqua/sgx-pvr5-module.git;protocol=https;branch=master"

@@ -7,7 +7,7 @@ PACKAGE_ARCH = "${MACHINE_ARCH}"
 
 COMPATIBLE_MACHINE = "panda"
 
-SRC_URI = "git://git.ti.com/glsdk/abefw-omap4plus.git;protocol=git"
+SRC_URI = "git://git.ti.com/glsdk/abefw-omap4plus.git;protocol=git;branch=master"
 
 S = "${WORKDIR}/git"
 

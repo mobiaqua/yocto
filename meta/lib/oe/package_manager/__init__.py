@@ -1,4 +1,6 @@
 #
+# Copyright OpenEmbedded Contributors
+#
 # SPDX-License-Identifier: GPL-2.0-only
 #
 
@@ -120,7 +122,8 @@ def generate_locale_archive(d, rootfs, target_arch, localedir):
         "riscv32": ["--uint32-align=4", "--little-endian"],
         "i586": ["--uint32-align=4", "--little-endian"],
         "i686": ["--uint32-align=4", "--little-endian"],
-        "x86_64": ["--uint32-align=4", "--little-endian"]
+        "x86_64": ["--uint32-align=4", "--little-endian"],
+        "loongarch64": ["--uint32-align=4", "--little-endian"]
     }
     if target_arch in locale_arch_options:
         arch_options = locale_arch_options[target_arch]
@@ -266,7 +269,7 @@ class PackageManager(object, metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def install(self, pkgs, attempt_only=False):
+    def install(self, pkgs, attempt_only=False, hard_depends_only=False):
         """
         Install a list of packages. 'pkgs' is a list object. If 'attempt_only' is
         True, installation failures are ignored.
@@ -396,7 +399,7 @@ class PackageManager(object, metaclass=ABCMeta):
                 bb.note("Installing complementary packages ... %s (skipped already provided packages %s)" % (
                     ' '.join(install_pkgs),
                     ' '.join(skip_pkgs)))
-                self.install(install_pkgs)
+                self.install(install_pkgs, hard_depends_only=True)
             except subprocess.CalledProcessError as e:
                 bb.fatal("Could not compute complementary packages list. Command "
                          "'%s' returned %d:\n%s" %
@@ -446,7 +449,7 @@ class PackageManager(object, metaclass=ABCMeta):
             return res
         return _append(uris, base_paths)
 
-def create_packages_dir(d, subrepo_dir, deploydir, taskname, filterbydependencies):
+def create_packages_dir(d, subrepo_dir, deploydir, taskname, filterbydependencies, include_self=False):
     """
     Go through our do_package_write_X dependencies and hardlink the packages we depend
     upon into the repo directory. This prevents us seeing other packages that may
@@ -483,14 +486,17 @@ def create_packages_dir(d, subrepo_dir, deploydir, taskname, filterbydependencie
         bb.fatal("Couldn't find ourself in BB_TASKDEPDATA?")
     pkgdeps = set()
     start = [start]
-    seen = set(start)
+    if include_self:
+        seen = set()
+    else:
+        seen = set(start)
     # Support direct dependencies (do_rootfs -> do_package_write_X)
     # or indirect dependencies within PN (do_populate_sdk_ext -> do_rootfs -> do_package_write_X)
     while start:
         next = []
         for dep2 in start:
             for dep in taskdepdata[dep2][3]:
-                if taskdepdata[dep][0] != pn:
+                if include_self or taskdepdata[dep][0] != pn:
                     if "do_" + taskname in dep:
                         pkgdeps.add(dep)
                 elif dep not in seen:

@@ -1,3 +1,9 @@
+#
+# Copyright OpenEmbedded Contributors
+#
+# SPDX-License-Identifier: MIT
+#
+
 def preferred_ml_updates(d):
     # If any of PREFERRED_PROVIDER, PREFERRED_RPROVIDER, REQUIRED_VERSION
     # or PREFERRED_VERSION are set, we need to mirror these variables in
@@ -189,6 +195,7 @@ python multilib_virtclass_handler_global () {
             # from a copy of the datastore
             localdata = bb.data.createCopy(d)
             localdata.delVar("KERNEL_VERSION")
+            localdata.delVar("KERNEL_VERSION_PKG_NAME")
 
             variants = (e.data.getVar("MULTILIB_VARIANTS") or "").split()
 

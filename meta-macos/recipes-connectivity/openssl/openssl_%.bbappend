@@ -40,6 +40,9 @@ do_configure () {
 	linux-gnu64-x86_64)
 		target=linux-x86_64
 		;;
+	linux-loongarch64)
+		target=linux64-loongarch64
+		;;
 	linux-mips | linux-mipsel)
 		# specifying TARGET_CC_ARCH prevents openssl from (incorrectly) adding target architecture flags
 		target="linux-mips32 ${TARGET_CC_ARCH}"
@@ -63,10 +66,10 @@ do_configure () {
 		target=linux-ppc64le
 		;;
 	linux-riscv32)
-		target=linux-generic32
+		target=linux32-riscv32
 		;;
 	linux-riscv64)
-		target=linux-generic64
+		target=linux64-riscv64
 		;;
 	linux-sparc | linux-supersparc)
 		target=linux-sparcv9

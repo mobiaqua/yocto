@@ -1,3 +1,4 @@
+Upstream-Status: Pending
 diff -urpu old/unix/configure.in new/unix/configure.in
 --- old/unix/configure.in	2020-07-06 22:41:07
 +++ new/unix/configure.in	2024-03-03 12:30:25

@@ -4,7 +4,6 @@ DESCRIPTION = "Initscripts provide the basic system startup initialization scrip
 SECTION = "base"
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://functions;beginline=7;endline=7;md5=829e563511c9a1d6d41f17a7a4989d6a"
-PR = "r155"
 
 INHIBIT_DEFAULT_DEPS = "1"
 
@@ -59,10 +58,12 @@ FILES:${PN}-functions = "${sysconfdir}/init.d/functions*"
 FILES:${PN}-sushell = "${base_sbindir}/sushell"
 
 HALTARGS ?= "-d -f"
+VARLIBMOUNTARGS ?= ""
 
 do_configure() {
 	sed -i -e "s:SED_HALTARGS:${HALTARGS}:g" ${WORKDIR}/halt
 	sed -i -e "s:SED_HALTARGS:${HALTARGS}:g" ${WORKDIR}/reboot
+	sed -i -e "s:SED_VARLIBMOUNTARGS:${VARLIBMOUNTARGS}:g" ${WORKDIR}/read-only-rootfs-hook.sh
 }
 
 do_install () {
@@ -107,6 +108,9 @@ do_install () {
 	if [ ${@ oe.types.boolean('${VOLATILE_LOG_DIR}') } = True ]; then
 		sed -i -e '\@^d root root 0755 /var/volatile/log none$@ a\l root root 0755 /var/log /var/volatile/log' \
 			${D}${sysconfdir}/default/volatiles/00_core
+	fi
+	if [ "${VOLATILE_TMP_DIR}" != "yes" ]; then
+		sed -i -e "/\<tmp\>/d" ${D}${sysconfdir}/default/volatiles/00_core
 	fi
 	install -m 0755    ${WORKDIR}/dmesg.sh		${D}${sysconfdir}/init.d
 	install -m 0644    ${WORKDIR}/logrotate-dmesg.conf ${D}${sysconfdir}/

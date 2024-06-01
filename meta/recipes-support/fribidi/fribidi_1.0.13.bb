@@ -9,13 +9,11 @@ BUGTRACKER = "https://github.com/fribidi/fribidi/issues"
 LICENSE = "LGPL-2.1-or-later"
 LIC_FILES_CHKSUM = "file://COPYING;md5=a916467b91076e631dd8edb7424769c7"
 
-SRC_URI = "https://github.com/${BPN}/${BPN}/releases/download/v${PV}/${BP}.tar.xz \
+SRC_URI = "${GITHUB_BASE_URI}/download/v${PV}/${BP}.tar.xz \
            "
 SRC_URI[sha256sum] = "7fa16c80c81bd622f7b198d31356da139cc318a63fc7761217af4130903f54a2"
 
-UPSTREAM_CHECK_URI = "https://github.com/${BPN}/${BPN}/releases"
-
-inherit meson lib_package pkgconfig
+inherit meson lib_package pkgconfig github-releases
 
 CVE_PRODUCT = "gnu_fribidi fribidi"
 

@@ -23,6 +23,8 @@ do_configure() {
     oe_runconf
 }
 
+INSANE_SKIP += "buildpaths"
+
 DEBUG_BUILD = "${@['no','yes'][d.getVar('BUILD_DEBUG') == '1']}"
 CFLAGS:append = "${@['',' -O0 -g3'][d.getVar('BUILD_DEBUG') == '1']}"
 

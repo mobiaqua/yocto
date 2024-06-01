@@ -3,7 +3,7 @@ diff -urp old/Makefile new/Makefile
 +++ new/Makefile	2021-11-04 23:59:33.000000000 +0100
 @@ -331,7 +331,7 @@ KBUILD_HOSTLDFLAGS += $(call os_x_before
  
- # macOS Mojave (10.14.X) 
+ # macOS Mojave (10.14.X)
  # Undefined symbols for architecture x86_64: "_PyArg_ParseTuple"
 -KBUILD_HOSTLDFLAGS += $(call os_x_after, 10, 14, "-lpython -dynamclib", "")
 +#KBUILD_HOSTLDFLAGS += $(call os_x_after, 10, 14, "-lpython -dynamclib", "")
