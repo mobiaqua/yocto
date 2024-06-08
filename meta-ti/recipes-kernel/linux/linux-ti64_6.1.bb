@@ -7,7 +7,7 @@ COMPATIBLE_MACHINE = "beagle64"
 KERNEL_VERSION_SANITY_SKIP = "1"
 INSANE_SKIP += "buildpaths"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.1.91"
+LINUX_VERSION = "6.1.92"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -350,7 +350,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://ti_config \
 "
 
-SRC_URI[sha256sum] = "880ace63ca2291b8b639e9bd862cc828649d3e1e00ccfee5861473debd2e4dec"
+SRC_URI[sha256sum] = "9019f427bfdc9ced5bc954d760d37ac08c0cdffb45ad28087fc45a73e64336c9"
 
 S = "${WORKDIR}/linux-${PV}"
 
