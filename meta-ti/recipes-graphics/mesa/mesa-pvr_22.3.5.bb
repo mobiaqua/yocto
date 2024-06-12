@@ -54,6 +54,8 @@ do_install:append () {
     rm -rf ${D}${datadir}/pkgconfig
 }
 
+INSANE_SKIP += "buildpaths"
+
 RM_WORK_EXCLUDE += "${@['','${PN}'][d.getVar('BUILD_DEBUG') == '1']}"
 DEBUG_BUILD = "${@['no','yes'][d.getVar('BUILD_DEBUG', d, 1) == '1']}"
 MESON_BUILDTYPE = "${@['release','debug'][d.getVar('BUILD_DEBUG', d, 1) == '1']}"
