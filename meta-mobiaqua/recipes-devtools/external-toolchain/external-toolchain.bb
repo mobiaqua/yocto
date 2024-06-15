@@ -4,6 +4,8 @@ PRIORITY = "optional"
 LICENSE = ""
 ERROR_QA:remove = "license-checksum"
 
+DEPENDS:append = " make-native "
+
 do_configure() {
     :
 }
