@@ -17,7 +17,7 @@ KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
 KMETA = "kernel-meta"
 KCONF_BSP_AUDIT_LEVEL = "1"
-FILESEXTRAPATHS:prepend := "${THISDIR}/linux-intel_6.9:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/linux-nuc_6.9:"
 KBUILD_DEFCONFIG = "nuc_defconfig"
 
 SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
