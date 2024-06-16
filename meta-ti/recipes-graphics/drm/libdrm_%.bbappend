@@ -1,12 +1,3 @@
-FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
-
-SRC_URI:append:panda = " file://add-deps.patch"
-SRC_URI:append:beagle = " file://add-deps.patch"
-
-PACKAGECONFIG:panda = "omap"
-PACKAGECONFIG:beagle = "omap"
-PACKAGECONFIG:beagle64 = ""
-
 # MobiAqua: added debug flags
 RM_WORK_EXCLUDE += "${@['','${PN}'][d.getVar('BUILD_DEBUG') == '1']}"
 DEBUG_BUILD = "${@['no','yes'][d.getVar('BUILD_DEBUG', d, 1) == '1']}"
