@@ -26,9 +26,9 @@ DEFAULT_PREFERENCE = "99"
 
 DEPENDS = "openssl"
 
-SRCREV = "e7d2238ad751e4ce4ebc5118af750fd5cc0c5055"
+SRCREV = "f0b747ef1a9b9bfd0942a6d459f642b4b993b378"
 
-PV = "7.0+git${SRCPV}"
+PV = "7.0.1+git${SRCPV}"
 PR = "r1"
 
 SRC_URI = "git://source.ffmpeg.org/ffmpeg.git;branch=release/7.0 \
