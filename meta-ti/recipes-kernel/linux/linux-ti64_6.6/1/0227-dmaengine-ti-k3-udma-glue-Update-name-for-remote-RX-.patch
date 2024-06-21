@@ -1,0 +1,43 @@
+From 4d02c7152a079bb190b0fbaca25d833e0acca286 Mon Sep 17 00:00:00 2001
+From: Siddharth Vadapalli <s-vadapalli@ti.com>
+Date: Wed, 24 Jan 2024 18:13:17 +0530
+Subject: [PATCH 227/330] dmaengine: ti: k3-udma-glue: Update name for remote
+ RX channel device
+
+commit 7edd7a2fd345b10e80ee854aaacc6452d6f46a7e upstream.
+
+A single RX Channel can have multiple flows. It is possible that a
+single device requests multiple flows on the same RX Channel. In such
+cases, the existing implementation of naming the device on the basis of
+the RX Channel can result in duplicate names. The existing implementation
+only uses the RX Channel source thread when naming, which implies duplicate
+names when different flows are being requested on the same RX Channel.
+
+In order to avoid duplicate names, include the RX flow as well in the name.
+
+Signed-off-by: Siddharth Vadapalli <s-vadapalli@ti.com>
+Acked-by: Peter Ujfalusi <peter.ujfalusi@gmail.com>
+Link: https://lore.kernel.org/r/20240124124319.820002-3-s-vadapalli@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/dma/ti/k3-udma-glue.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/dma/ti/k3-udma-glue.c b/drivers/dma/ti/k3-udma-glue.c
+index d8781625034b..eff1ae3d3efe 100644
+--- a/drivers/dma/ti/k3-udma-glue.c
++++ b/drivers/dma/ti/k3-udma-glue.c
+@@ -1072,8 +1072,8 @@ k3_udma_glue_request_remote_rx_chn(struct device *dev, const char *name,
+ 
+ 	rx_chn->common.chan_dev.class = &k3_udma_glue_devclass;
+ 	rx_chn->common.chan_dev.parent = xudma_get_device(rx_chn->common.udmax);
+-	dev_set_name(&rx_chn->common.chan_dev, "rchan_remote-0x%04x",
+-		     rx_chn->common.src_thread);
++	dev_set_name(&rx_chn->common.chan_dev, "rchan_remote-0x%04x-0x%02x",
++		     rx_chn->common.src_thread, rx_chn->flow_id_base);
+ 	ret = device_register(&rx_chn->common.chan_dev);
+ 	if (ret) {
+ 		dev_err(dev, "Channel Device registration failed %d\n", ret);
+-- 
+2.43.1
+

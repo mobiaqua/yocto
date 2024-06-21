@@ -1,0 +1,49 @@
+From 3fe4904c7184fb84c48c0a768f33267a8f974a57 Mon Sep 17 00:00:00 2001
+From: Markus Schneider-Pargmann <msp@baylibre.com>
+Date: Thu, 23 May 2024 14:20:57 +0200
+Subject: [PATCH 381/465] serial: 8250: omap: Set wakeup pinctrl on suspend
+
+To enable the serial driver and it's pin to be a wakeup source in
+suspend to ram states, select the wakeup pinctrl state on suspend and
+restore the default pinctrl state on resume.
+
+Signed-off-by: Markus Schneider-Pargmann <msp@baylibre.com>
+---
+ drivers/tty/serial/8250/8250_omap.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/drivers/tty/serial/8250/8250_omap.c b/drivers/tty/serial/8250/8250_omap.c
+index 44a8c1ce6085..0d46fb89b3ab 100644
+--- a/drivers/tty/serial/8250/8250_omap.c
++++ b/drivers/tty/serial/8250/8250_omap.c
+@@ -1667,6 +1667,13 @@ static int omap8250_suspend(struct device *dev)
+ 	struct generic_pm_domain *genpd = pd_to_genpd(dev->pm_domain);
+ 	int err = 0;
+ 
++	err = omap8250_select_wakeup_pinctrl(dev, priv);
++	if (err) {
++		dev_err(dev, "Failed to select wakeup pinctrl, aborting suspend %pe\n",
++			ERR_PTR(err));
++		return err;
++	}
++
+ 	serial8250_suspend_port(priv->line);
+ 
+ 	err = pm_runtime_resume_and_get(dev);
+@@ -1700,6 +1707,13 @@ static int omap8250_resume(struct device *dev)
+ 	struct generic_pm_domain *genpd = pd_to_genpd(dev->pm_domain);
+ 	int err;
+ 
++	err = pinctrl_select_default_state(dev);
++	if (err) {
++		dev_err(dev, "Failed to select default pinctrl state on resume: %pe\n",
++			ERR_PTR(err));
++		return err;
++	}
++
+ 	if (uart_console(&up->port) && console_suspend_enabled) {
+ 		if (console_suspend_enabled) {
+ 			err = pm_runtime_force_resume(dev);
+-- 
+2.45.1
+

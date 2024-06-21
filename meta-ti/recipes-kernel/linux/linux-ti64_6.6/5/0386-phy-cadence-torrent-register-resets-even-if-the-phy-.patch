@@ -1,0 +1,60 @@
+From ac7d192fef7cb7548f22b71a157a99bd45583d2d Mon Sep 17 00:00:00 2001
+From: Thomas Richard <thomas.richard@bootlin.com>
+Date: Thu, 6 Jun 2024 10:05:57 +0200
+Subject: [PATCH 386/465] phy: cadence-torrent: register resets even if the phy
+ is already configured
+
+[ Upstream commit 8512b6873461c4d31f89c3260a2d5043b3f9dbb2 ]
+
+Resets are needed during suspend and resume stages.
+So they shall be registered during the probe even the phy is already
+initialized.
+
+The function cdns_torrent_reset is renamed cdns_torrent_of_get_reset() to
+make it clear.
+
+Signed-off-by: Thomas Richard <thomas.richard@bootlin.com>
+Link: https://lore.kernel.org/r/20240412-j7200-phy-s2r-v1-5-f15815833974@bootlin.com
+Signed-off-by: Vinod Koul <vkoul@kernel.org>
+---
+ drivers/phy/cadence/phy-cadence-torrent.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/phy/cadence/phy-cadence-torrent.c b/drivers/phy/cadence/phy-cadence-torrent.c
+index bf1923919d7b..1b0394ca741b 100644
+--- a/drivers/phy/cadence/phy-cadence-torrent.c
++++ b/drivers/phy/cadence/phy-cadence-torrent.c
+@@ -2678,7 +2678,7 @@ static int cdns_torrent_clk_register(struct cdns_torrent_phy *cdns_phy)
+ 	return 0;
+ }
+ 
+-static int cdns_torrent_reset(struct cdns_torrent_phy *cdns_phy)
++static int cdns_torrent_of_get_reset(struct cdns_torrent_phy *cdns_phy)
+ {
+ 	struct device *dev = cdns_phy->dev;
+ 
+@@ -2847,6 +2847,10 @@ static int cdns_torrent_phy_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		return ret;
+ 
++	ret = cdns_torrent_of_get_reset(cdns_phy);
++	if (ret)
++		goto clk_cleanup;
++
+ 	ret = cdns_torrent_of_get_clk(cdns_phy);
+ 	if (ret)
+ 		goto clk_cleanup;
+@@ -2854,10 +2858,6 @@ static int cdns_torrent_phy_probe(struct platform_device *pdev)
+ 	regmap_field_read(cdns_phy->phy_pma_cmn_ctrl_1, &already_configured);
+ 
+ 	if (!already_configured) {
+-		ret = cdns_torrent_reset(cdns_phy);
+-		if (ret)
+-			goto clk_cleanup;
+-
+ 		ret = cdns_torrent_clk(cdns_phy);
+ 		if (ret)
+ 			goto clk_cleanup;
+-- 
+2.45.1
+

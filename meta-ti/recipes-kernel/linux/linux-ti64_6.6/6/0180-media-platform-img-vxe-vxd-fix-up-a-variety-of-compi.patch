@@ -1,0 +1,131 @@
+From 3d68edd86d04f1d20923a46a0b75f3ec96a818f6 Mon Sep 17 00:00:00 2001
+From: Darren Etheridge <detheridge@ti.com>
+Date: Sun, 16 Jun 2024 21:45:25 -0500
+Subject: [PATCH 180/222] media: platform: img: vxe-vxd: fix-up a variety of
+ compile warnings
+
+New warnings found when building with gcc11, squash them.
+
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+---
+ .../platform/imagination/vxe-vxd/decoder/h264_secure_parser.c     | 8 --------
+ drivers/media/platform/imagination/vxe-vxd/decoder/hw_control.c   | 2 ++
+ drivers/media/platform/imagination/vxe-vxd/decoder/vxd_core.c     | 2 +-
+ drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c     | 4 +++-
+ drivers/media/platform/imagination/vxe-vxd/encoder/topaz_api.c    | 4 ++--
+ drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c     | 2 +-
+ 6 files changed, 9 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/media/platform/imagination/vxe-vxd/decoder/h264_secure_parser.c b/drivers/media/platform/imagination/vxe-vxd/decoder/h264_secure_parser.c
+index 3973749eac58..b7995905eba5 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/decoder/h264_secure_parser.c
++++ b/drivers/media/platform/imagination/vxe-vxd/decoder/h264_secure_parser.c
+@@ -168,14 +168,6 @@ static const int bspp_subheightc[] = { -1, 2, 1, 1 };
+  */
+ static const int bspp_subwidthc[] = { -1, 2, 2, 1 };
+ 
+-/*
+- * inline functions for Minimum and Maximum value
+- */
+-static inline unsigned int umin(unsigned int a, unsigned int b)
+-{
+-	return (((a) < (b)) ? (a) : (b));
+-}
+-
+ static inline int smin(int a, int b)
+ {
+ 	return (((a) < (b)) ? (a) : (b));
+diff --git a/drivers/media/platform/imagination/vxe-vxd/decoder/hw_control.c b/drivers/media/platform/imagination/vxe-vxd/decoder/hw_control.c
+index 7a57b763ec54..ad457144d519 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/decoder/hw_control.c
++++ b/drivers/media/platform/imagination/vxe-vxd/decoder/hw_control.c
+@@ -779,6 +779,7 @@ static int vdeckm_get_message(const void *hndl_vxd, const enum hwctrl_msgid msgi
+ 	return result;
+ }
+ 
++#ifdef DEBUG_DECODER_DRIVER
+ static void hwctrl_dump_state(struct vxd_states *prev_state,
+ 			      struct vxd_states *cur_state,
+ 			      unsigned char pipe_minus1)
+@@ -825,6 +826,7 @@ static void hwctrl_dump_state(struct vxd_states *prev_state,
+ 		cur_state->fw_state.pipe_state[pipe_minus1].acheck_point
+ 		[VDECFW_CHECKPOINT_PICTURE_STARTED]);
+ }
++#endif
+ 
+ static unsigned int hwctrl_calculate_load(struct bspp_pict_hdr_info *pict_hdr_info)
+ {
+diff --git a/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_core.c b/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_core.c
+index b283841e2f71..ce33decddff7 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_core.c
++++ b/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_core.c
+@@ -1392,7 +1392,7 @@ int vxd_prepare_fw(struct vxd_dev *vxd)
+ 		return -ENOMEM;
+ 
+ 	vxd->firmware.ready = FALSE;
+-	ret = request_firmware_nowait(THIS_MODULE, FW_ACTION_HOTPLUG,
++	ret = request_firmware_nowait(THIS_MODULE, FW_ACTION_UEVENT,
+ 				      drv_fw_name, vxd->dev, GFP_KERNEL, vxd,
+ 				      vxd_fw_loaded);
+ 	if (ret < 0) {
+diff --git a/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c b/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c
+index 0bbb67052205..41a97a8cde1f 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c
++++ b/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c
+@@ -376,6 +376,7 @@ static void return_worker(void *work)
+ 	kfree(res);
+ }
+ 
++#ifdef ERROR_RECOVERY_SIMULATION
+ static void vxd_error_recovery(struct vxd_dec_ctx *ctx)
+ {
+ 	int ret = -1;
+@@ -390,6 +391,7 @@ static void vxd_error_recovery(struct vxd_dec_ctx *ctx)
+ 	if (ret)
+ 		pr_err("Reloading the firmware failed!!");
+ }
++#endif /* ERROR_RECOVERY_SIMULATION */
+ 
+ static struct vxd_dec_q_data *get_q_data(struct vxd_dec_ctx *ctx,
+ 					 enum v4l2_buf_type type)
+@@ -2233,7 +2235,7 @@ static int __maybe_unused vxd_dec_resume(struct device *dev)
+ static UNIVERSAL_DEV_PM_OPS(vxd_dec_pm_ops,
+ 	vxd_dec_suspend, vxd_dec_resume, NULL);
+ 
+-static const struct platform_driver vxd_dec_driver = {
++static struct platform_driver vxd_dec_driver = {
+ 	.probe = vxd_dec_probe,
+ 	.remove = vxd_dec_remove,
+ 	.driver = {
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/topaz_api.c b/drivers/media/platform/imagination/vxe-vxd/encoder/topaz_api.c
+index 66e073478cb0..7c70457b2483 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/encoder/topaz_api.c
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/topaz_api.c
+@@ -3116,8 +3116,8 @@ static int topaz_video_destroy_context(struct topaz_stream_context *str_ctx)
+ 					  &video->coded_package[i]->header_buffer->mem_info))
+ 			IMG_DBG_ASSERT("Free failed" == NULL);
+ 
+-			kfree(video->coded_package[i]->header_buffer);
+-			video->coded_package[i]->header_buffer = NULL;
++		kfree(video->coded_package[i]->header_buffer);
++		video->coded_package[i]->header_buffer = NULL;
+ 
+ 		kfree(video->coded_package[i]);
+ 		video->coded_package[i] = NULL;
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c b/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
+index cb625c871cab..52ac4ec86d12 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
+@@ -1935,7 +1935,7 @@ static int vxe_enc_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
+-static const struct platform_driver vxe_enc_driver = {
++static struct platform_driver vxe_enc_driver = {
+ 	.probe = vxe_enc_probe,
+ 	.remove = vxe_enc_remove,
+ 	.driver = {
+-- 
+2.45.2
+

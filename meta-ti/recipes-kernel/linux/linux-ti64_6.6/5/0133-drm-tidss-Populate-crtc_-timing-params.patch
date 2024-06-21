@@ -1,0 +1,29 @@
+From 7f2d809f1613673240286620104c6f8b8273250c Mon Sep 17 00:00:00 2001
+From: Aradhya Bhatia <a-bhatia1@ti.com>
+Date: Thu, 16 May 2024 21:13:51 +0530
+Subject: [PATCH 133/465] drm/tidss: Populate crtc_* timing params
+
+Some bridges like the cdns-dsi consume the crtc_* timing parameters for
+programming the blanking values. Allow for the normal timing parameters
+to get copied to crtc_* timing params.
+
+Signed-off-by: Aradhya Bhatia <a-bhatia1@ti.com>
+---
+ drivers/gpu/drm/tidss/tidss_crtc.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/gpu/drm/tidss/tidss_crtc.c b/drivers/gpu/drm/tidss/tidss_crtc.c
+index 94f8e3178df5..721374c5439e 100644
+--- a/drivers/gpu/drm/tidss/tidss_crtc.c
++++ b/drivers/gpu/drm/tidss/tidss_crtc.c
+@@ -108,6 +108,7 @@ static int tidss_crtc_atomic_check(struct drm_crtc *crtc,
+ 		return -EINVAL;
+ 	}
+ 
++	drm_mode_set_crtcinfo(&crtc_state->adjusted_mode, 0);
+ 	return dispc_vp_bus_check(dispc, hw_videoport, crtc_state);
+ }
+ 
+-- 
+2.45.1
+

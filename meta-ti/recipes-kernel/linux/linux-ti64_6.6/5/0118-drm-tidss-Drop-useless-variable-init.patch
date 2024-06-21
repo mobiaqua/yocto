@@ -1,0 +1,34 @@
+From 51ab853d0f863fde436b86d00e6299d9734f62db Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Date: Thu, 16 May 2024 21:13:36 +0530
+Subject: [PATCH 118/465] drm/tidss: Drop useless variable init
+
+commit c2746e4d278be8f71ef0dbcd00fcc8ba46c678ef upstream
+
+No need to initialize the ret to 0 in dispc_softreset().
+
+Reviewed-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Reviewed-by: Aradhya Bhatia <a-bhatia1@ti.com>
+Link: https://lore.kernel.org/r/20231109-tidss-probe-v2-3-ac91b5ea35c0@ideasonboard.com
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Signed-off-by: Aradhya Bhatia <a-bhatia1@ti.com>
+---
+ drivers/gpu/drm/tidss/tidss_dispc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/tidss/tidss_dispc.c b/drivers/gpu/drm/tidss/tidss_dispc.c
+index f17ea6990fb0..d2cc53b880a2 100644
+--- a/drivers/gpu/drm/tidss/tidss_dispc.c
++++ b/drivers/gpu/drm/tidss/tidss_dispc.c
+@@ -2764,7 +2764,7 @@ static void dispc_init_errata(struct dispc_device *dispc)
+ static int dispc_softreset(struct dispc_device *dispc)
+ {
+ 	u32 val;
+-	int ret = 0;
++	int ret;
+ 
+ 	/* K2G display controller does not support soft reset */
+ 	if (dispc->feat->subrev == DISPC_K2G)
+-- 
+2.45.1
+

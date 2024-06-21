@@ -1,0 +1,31 @@
+From 6f89de7b1e5e56106c992581ea501ee1e64441dd Mon Sep 17 00:00:00 2001
+From: Dhruva Gole <d-gole@ti.com>
+Date: Wed, 24 Apr 2024 12:08:50 -0500
+Subject: [PATCH 032/465] firmware: ti_sci: Change the lpm context address to
+ be 32-bit addressable
+
+The LPM_CTX_MEM_SIZE needs to be in a region that is 32-bit addressable
+so change the DMA_BIT_MASK from 64 to 32
+
+Signed-off-by: Dhruva Gole <d-gole@ti.com>
+Acked-by: Vishal Mahaveer <vishalm@ti.com>
+---
+ drivers/firmware/ti_sci.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/firmware/ti_sci.c b/drivers/firmware/ti_sci.c
+index 37c79ddb19e6..cf810b33aa9e 100644
+--- a/drivers/firmware/ti_sci.c
++++ b/drivers/firmware/ti_sci.c
+@@ -3583,7 +3583,7 @@ static int ti_sci_init_suspend(struct platform_device *pdev,
+ {
+ 	struct device *dev = &pdev->dev;
+ 
+-	dma_set_mask_and_coherent(dev, DMA_BIT_MASK(64));
++	dma_set_mask_and_coherent(dev, DMA_BIT_MASK(32));
+ 	info->ctx_mem_buf = dma_alloc_attrs(info->dev, LPM_CTX_MEM_SIZE,
+ 					    &info->ctx_mem_addr,
+ 					    GFP_KERNEL,
+-- 
+2.45.1
+

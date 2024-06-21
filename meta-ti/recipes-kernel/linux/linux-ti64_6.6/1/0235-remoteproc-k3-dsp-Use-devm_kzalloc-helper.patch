@@ -1,0 +1,61 @@
+From 442bdfd8fede6879c6185999337c3cba3b666a3f Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Tue, 23 Jan 2024 12:49:10 -0600
+Subject: [PATCH 235/330] remoteproc: k3-dsp: Use devm_kzalloc() helper
+
+commit 585fc027a7f4fc38b6862eeb614c7446f2d5db4a upstream.
+
+Use device lifecycle managed devm_kzalloc() helper function. This helps
+prevent mistakes like freeing out of order in cleanup functions and
+forgetting to free on all error paths.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Link: https://lore.kernel.org/r/20240123184913.725435-5-afd@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index 0240340a83e9..2aac25d01398 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -659,7 +659,7 @@ struct ti_sci_proc *k3_dsp_rproc_of_get_tsp(struct device *dev,
+ 	if (ret < 0)
+ 		return ERR_PTR(ret);
+ 
+-	tsp = kzalloc(sizeof(*tsp), GFP_KERNEL);
++	tsp = devm_kzalloc(dev, sizeof(*tsp), GFP_KERNEL);
+ 	if (!tsp)
+ 		return ERR_PTR(-ENOMEM);
+ 
+@@ -729,7 +729,7 @@ static int k3_dsp_rproc_probe(struct platform_device *pdev)
+ 	ret = ti_sci_proc_request(kproc->tsp);
+ 	if (ret < 0) {
+ 		dev_err_probe(dev, ret, "ti_sci_proc_request failed\n");
+-		goto free_tsp;
++		return ret;
+ 	}
+ 
+ 	ret = k3_dsp_rproc_of_get_memories(pdev, kproc);
+@@ -796,8 +796,6 @@ static int k3_dsp_rproc_probe(struct platform_device *pdev)
+ 	ret1 = ti_sci_proc_release(kproc->tsp);
+ 	if (ret1)
+ 		dev_err(dev, "failed to release proc (%pe)\n", ERR_PTR(ret1));
+-free_tsp:
+-	kfree(kproc->tsp);
+ 	return ret;
+ }
+ 
+@@ -823,8 +821,6 @@ static void k3_dsp_rproc_remove(struct platform_device *pdev)
+ 	if (ret)
+ 		dev_err(dev, "failed to release proc (%pe)\n", ERR_PTR(ret));
+ 
+-	kfree(kproc->tsp);
+-
+ 	k3_dsp_reserved_mem_exit(kproc);
+ }
+ 
+-- 
+2.43.1
+

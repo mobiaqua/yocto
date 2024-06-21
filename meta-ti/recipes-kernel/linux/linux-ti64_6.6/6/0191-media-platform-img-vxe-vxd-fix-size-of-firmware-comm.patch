@@ -1,0 +1,44 @@
+From 6fb589fe3cf7f66fab4ae4b1be82ef26b50f48db Mon Sep 17 00:00:00 2001
+From: Darren Etheridge <detheridge@ti.com>
+Date: Sun, 16 Jun 2024 21:45:36 -0500
+Subject: [PATCH 191/222] media: platform: img: vxe-vxd: fix size of firmware
+ comms structure
+
+Originally the driver was built as if MVC was disabled in the firmware.
+
+MVC here refers to Multiview Video Coding as defined in the H.264 spec.
+
+However MVC is actually enabled so we need the firmware communication
+structures to be bigger to contain the MVC data.  It wasn't causing any
+obvious problems previously, but it makes sense to make sure the
+structure sizes all match between the host and the firmware so that all
+memory is initialized and mapped correctly.
+
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+---
+ .../platform/imagination/vxe-vxd/decoder/h264fw_data_shared.h      | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/platform/imagination/vxe-vxd/decoder/h264fw_data_shared.h b/drivers/media/platform/imagination/vxe-vxd/decoder/h264fw_data_shared.h
+index b8efd5f4c2f5..3898abb02861 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/decoder/h264fw_data_shared.h
++++ b/drivers/media/platform/imagination/vxe-vxd/decoder/h264fw_data_shared.h
+@@ -39,9 +39,10 @@
+  * MaxDpbFrames: 16, 16, 32, 48, 64
+  */
+ 
+-#define H264FW_MAX_NUM_VIEWS 1
+-#define H264FW_MAX_DPB_SIZE 16
+-#define H264FW_MAX_NUM_MVC_REFS 1
++/* firmware supports MVC - so need 16 refs */
++#define H264FW_MAX_NUM_VIEWS       4
++#define H264FW_MAX_DPB_SIZE        32
++#define H264FW_MAX_NUM_MVC_REFS    16
+ 
+ /* Number of H264 VLC table configuration registers */
+ #define H264FW_NUM_VLC_REG 22
+-- 
+2.45.2
+

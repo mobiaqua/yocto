@@ -1,0 +1,32 @@
+From 4065fab087a5903f726a62ba7ed13cbcf0543cc2 Mon Sep 17 00:00:00 2001
+From: Vignesh Raghavendra <vigneshr@ti.com>
+Date: Thu, 30 May 2024 17:00:57 +0530
+Subject: [PATCH 264/465] dmaengine: ti: k3-udma: Fix BCHAN count with UHC and
+ HC channels
+
+Unlike other channel counts in CAPx registers, BCDMA BCHAN CNT doesn't
+include UHC and HC BC channels. So include them explicitly to arrive at
+total BC channel in the instance.
+
+Fixes: 017794739702 ("dmaengine: ti: k3-udma: Initial support for K3 BCDMA")
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+---
+ drivers/dma/ti/k3-udma.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/dma/ti/k3-udma.c b/drivers/dma/ti/k3-udma.c
+index 6400d06588a2..710296dfd0ae 100644
+--- a/drivers/dma/ti/k3-udma.c
++++ b/drivers/dma/ti/k3-udma.c
+@@ -4473,6 +4473,7 @@ static int udma_get_mmrs(struct platform_device *pdev, struct udma_dev *ud)
+ 		break;
+ 	case DMA_TYPE_BCDMA:
+ 		ud->bchan_cnt = BCDMA_CAP2_BCHAN_CNT(cap2);
++		ud->bchan_cnt += BCDMA_CAP3_HBCHAN_CNT(cap3) + BCDMA_CAP3_UBCHAN_CNT(cap3);
+ 		ud->tchan_cnt = BCDMA_CAP2_TCHAN_CNT(cap2);
+ 		ud->rchan_cnt = BCDMA_CAP2_RCHAN_CNT(cap2);
+ 		ud->rflow_cnt = ud->rchan_cnt;
+-- 
+2.45.1
+

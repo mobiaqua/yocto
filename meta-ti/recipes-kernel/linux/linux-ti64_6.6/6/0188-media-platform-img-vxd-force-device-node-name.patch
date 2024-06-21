@@ -1,0 +1,33 @@
+From 7279e1b94252f219421110423811b6fdf3994696 Mon Sep 17 00:00:00 2001
+From: Darren Etheridge <detheridge@ti.com>
+Date: Sun, 16 Jun 2024 21:45:33 -0500
+Subject: [PATCH 188/222] media: platform: img: vxd: force device node name
+
+Force the encoder to always be /dev/video1 (assuming it is available).
+
+This makes it easier to write simple test scripts because assuming that
+video0 is decode and video1 is encode makes life much simpler.
+
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+---
+ drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c b/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
+index 4ce97fdf2b5b..9c3608e85359 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
+@@ -1846,7 +1846,7 @@ static int vxe_enc_probe(struct platform_device *pdev)
+ 		goto out_vid_dev;
+ 	}
+ 
+-	ret = video_register_device(vfd, VFL_TYPE_VIDEO, 0);
++	ret = video_register_device(vfd, VFL_TYPE_VIDEO, 1);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "Failed to register video device\n");
+ 		goto out_vid_reg;
+-- 
+2.45.2
+

@@ -1,0 +1,74 @@
+From 2d9c6288ac3bd7addc9b164800bdb66ece715a31 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
+Date: Thu, 23 Nov 2023 22:17:01 +0100
+Subject: [PATCH 120/330] remoteproc: k3-dsp: Convert to platform remove
+ callback returning void
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+commit 3f978d9889a2531e48d97cef7f5126f4104ee69c upstream.
+
+The .remove() callback for a platform driver returns an int which makes
+many driver authors wrongly assume it's possible to do error handling by
+returning an error code. However the value returned is ignored (apart
+from emitting a warning) and this typically results in resource leaks.
+
+To improve here there is a quest to make the remove callback return
+void. In the first step of this quest all drivers are converted to
+.remove_new(), which already returns void. Eventually after all drivers
+are converted, .remove_new() will be renamed to .remove().
+
+There is no change in behaviour as .remove() already returned zero
+unconditionally.
+
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Link: https://lore.kernel.org/r/20231123211657.518181-8-u.kleine-koenig@pengutronix.de
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index f048ec1bb00f..ab882e3b7130 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -815,7 +815,7 @@ static int k3_dsp_rproc_probe(struct platform_device *pdev)
+ 	return ret;
+ }
+ 
+-static int k3_dsp_rproc_remove(struct platform_device *pdev)
++static void k3_dsp_rproc_remove(struct platform_device *pdev)
+ {
+ 	struct k3_dsp_rproc *kproc = platform_get_drvdata(pdev);
+ 	struct rproc *rproc = kproc->rproc;
+@@ -827,7 +827,7 @@ static int k3_dsp_rproc_remove(struct platform_device *pdev)
+ 		if (ret) {
+ 			/* Note this error path leaks resources */
+ 			dev_err(dev, "failed to detach proc (%pe)\n", ERR_PTR(ret));
+-			return 0;
++			return;
+ 		}
+ 	}
+ 
+@@ -845,8 +845,6 @@ static int k3_dsp_rproc_remove(struct platform_device *pdev)
+ 
+ 	k3_dsp_reserved_mem_exit(kproc);
+ 	rproc_free(kproc->rproc);
+-
+-	return 0;
+ }
+ 
+ static const struct k3_dsp_mem_data c66_mems[] = {
+@@ -897,7 +895,7 @@ MODULE_DEVICE_TABLE(of, k3_dsp_of_match);
+ 
+ static struct platform_driver k3_dsp_rproc_driver = {
+ 	.probe	= k3_dsp_rproc_probe,
+-	.remove	= k3_dsp_rproc_remove,
++	.remove_new = k3_dsp_rproc_remove,
+ 	.driver	= {
+ 		.name = "k3-dsp-rproc",
+ 		.of_match_table = k3_dsp_of_match,
+-- 
+2.43.1
+

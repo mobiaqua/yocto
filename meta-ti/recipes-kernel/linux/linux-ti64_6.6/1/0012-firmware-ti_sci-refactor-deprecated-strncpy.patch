@@ -1,0 +1,46 @@
+From e233ceefc4c5f5c8035a6d85c8702b18e8f8f224 Mon Sep 17 00:00:00 2001
+From: Justin Stitt <justinstitt@google.com>
+Date: Wed, 13 Sep 2023 20:23:02 +0000
+Subject: [PATCH 012/330] firmware: ti_sci: refactor deprecated strncpy
+
+commit d8cce0d5ba4a3157a7a549b9623d1ffc5820ef92 upstream.
+
+`strncpy` is deprecated for use on NUL-terminated destination strings [1].
+
+We should prefer more robust and less ambiguous string interfaces.
+
+A suitable replacement is `strscpy` [2] due to the fact that it guarantees
+NUL-termination on the destination buffer.
+
+It does not seem like `ver->firmware_description` requires NUL-padding
+(which is a behavior that strncpy provides) but if it does let's opt for
+`strscpy_pad()`.
+
+Link: https://www.kernel.org/doc/html/latest/process/deprecated.html#strncpy-on-nul-terminated-strings [1]
+Link: https://manpages.debian.org/testing/linux-manual-4.8/strscpy.9.en.html [2]
+Link: https://github.com/KSPP/linux/issues/90
+Cc: linux-hardening@vger.kernel.org
+Signed-off-by: Justin Stitt <justinstitt@google.com>
+Reviewed-by: Kees Cook <keescook@chromium.org>
+Link: https://lore.kernel.org/r/20230913-strncpy-drivers-firmware-ti_sci-c-v1-1-740db471110d@google.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/firmware/ti_sci.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/firmware/ti_sci.c b/drivers/firmware/ti_sci.c
+index 7bde7b4977ab..d1727a1db26e 100644
+--- a/drivers/firmware/ti_sci.c
++++ b/drivers/firmware/ti_sci.c
+@@ -472,7 +472,7 @@ static int ti_sci_cmd_get_revision(struct ti_sci_info *info)
+ 	ver->abi_major = rev_info->abi_major;
+ 	ver->abi_minor = rev_info->abi_minor;
+ 	ver->firmware_revision = rev_info->firmware_revision;
+-	strncpy(ver->firmware_description, rev_info->firmware_description,
++	strscpy(ver->firmware_description, rev_info->firmware_description,
+ 		sizeof(ver->firmware_description));
+ 
+ fail:
+-- 
+2.43.1
+

@@ -1,0 +1,46 @@
+From ece71dd217aefbedc94165f7aea1be9c16a9121e Mon Sep 17 00:00:00 2001
+From: Neha Malcom Francis <n-francis@ti.com>
+Date: Tue, 26 Sep 2023 19:58:10 +0530
+Subject: [PATCH 027/330] arm64: dts: ti: k3-j721e-mcu-wakeup: Add MCU domain
+ ESM instance
+
+commit 0997638a7580fc53e2162a480c8be521196f1319 upstream.
+
+Currently J721E defines only the main_esm in DTS. Add node for mcu_esm
+as well.
+
+According to J721E TRM (12.11.2.2 ESM Environment) [1], we see that the
+interrupt line from ESMi (main_esm) is routed to MCU_ESM (mcu_esm). This
+is MCU_ESM0_LVL_IN_95 with interrupt ID 95. Configure mcu_esm
+accordingly so that errors from main_esm are routed to mcu_esm and
+handled.
+
+[1] https://www.ti.com/lit/zip/spruil1
+
+Signed-off-by: Neha Malcom Francis <n-francis@ti.com>
+Reviewed-by: Udit Kumar <u-kumar1@ti.com>
+Link: https://lore.kernel.org/r/20230926142810.602384-1-n-francis@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+index 05d6ef127ba7..fa8af20c7818 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+@@ -671,4 +671,11 @@ wkup_vtm0: temperature-sensor@42040000 {
+ 		power-domains = <&k3_pds 154 TI_SCI_PD_EXCLUSIVE>;
+ 		#thermal-sensor-cells = <1>;
+ 	};
++
++	mcu_esm: esm@40800000 {
++		compatible = "ti,j721e-esm";
++		reg = <0x00 0x40800000 0x00 0x1000>;
++		ti,esm-pins = <95>;
++		bootph-pre-ram;
++	};
+ };
+-- 
+2.43.1
+

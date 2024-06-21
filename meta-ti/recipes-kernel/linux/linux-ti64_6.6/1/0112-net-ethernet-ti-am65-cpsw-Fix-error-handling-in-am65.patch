@@ -1,0 +1,110 @@
+From 7ece583ccf651e3abc542f6f0e0b97e4ea188401 Mon Sep 17 00:00:00 2001
+From: Roger Quadros <rogerq@kernel.org>
+Date: Fri, 17 Nov 2023 14:17:55 +0200
+Subject: [PATCH 112/330] net: ethernet: ti: am65-cpsw: Fix error handling in
+ am65_cpsw_nuss_common_open()
+
+commit ebd7bf60e21c567a7fbe0e2a7bc4be8406ff8093 upstream.
+
+k3_udma_glue_enable_rx/tx_chn returns error code on failure.
+Bail out on error while enabling TX/RX channel.
+
+In the error path, clean up the RX descriptors and SKBs.
+Get rid of kmemleak_not_leak() as it seems unnecessary now.
+
+Fixes: 93a76530316a ("net: ethernet: ti: introduce am65x/j721e gigabit eth subsystem driver")
+Signed-off-by: Roger Quadros <rogerq@kernel.org>
+Link: https://lore.kernel.org/r/20231117121755.104547-5-rogerq@kernel.org
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/net/ethernet/ti/am65-cpsw-nuss.c | 48 +++++++++++++++++++-----
+ 1 file changed, 39 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/net/ethernet/ti/am65-cpsw-nuss.c b/drivers/net/ethernet/ti/am65-cpsw-nuss.c
+index de68afb4a2e2..3c7854537cb5 100644
+--- a/drivers/net/ethernet/ti/am65-cpsw-nuss.c
++++ b/drivers/net/ethernet/ti/am65-cpsw-nuss.c
+@@ -443,7 +443,7 @@ static void am65_cpsw_nuss_tx_cleanup(void *data, dma_addr_t desc_dma)
+ static int am65_cpsw_nuss_common_open(struct am65_cpsw_common *common)
+ {
+ 	struct am65_cpsw_host *host_p = am65_common_get_host(common);
+-	int port_idx, i, ret;
++	int port_idx, i, ret, tx;
+ 	struct sk_buff *skb;
+ 	u32 val, port_mask;
+ 
+@@ -510,8 +510,12 @@ static int am65_cpsw_nuss_common_open(struct am65_cpsw_common *common)
+ 						  AM65_CPSW_MAX_PACKET_SIZE,
+ 						  GFP_KERNEL);
+ 		if (!skb) {
++			ret = -ENOMEM;
+ 			dev_err(common->dev, "cannot allocate skb\n");
+-			return -ENOMEM;
++			if (i)
++				goto fail_rx;
++
++			return ret;
+ 		}
+ 
+ 		ret = am65_cpsw_nuss_rx_push(common, skb);
+@@ -520,17 +524,28 @@ static int am65_cpsw_nuss_common_open(struct am65_cpsw_common *common)
+ 				"cannot submit skb to channel rx, error %d\n",
+ 				ret);
+ 			kfree_skb(skb);
++			if (i)
++				goto fail_rx;
++
+ 			return ret;
+ 		}
+-		kmemleak_not_leak(skb);
+ 	}
+-	k3_udma_glue_enable_rx_chn(common->rx_chns.rx_chn);
+ 
+-	for (i = 0; i < common->tx_ch_num; i++) {
+-		ret = k3_udma_glue_enable_tx_chn(common->tx_chns[i].tx_chn);
+-		if (ret)
+-			return ret;
+-		napi_enable(&common->tx_chns[i].napi_tx);
++	ret = k3_udma_glue_enable_rx_chn(common->rx_chns.rx_chn);
++	if (ret) {
++		dev_err(common->dev, "couldn't enable rx chn: %d\n", ret);
++		goto fail_rx;
++	}
++
++	for (tx = 0; tx < common->tx_ch_num; tx++) {
++		ret = k3_udma_glue_enable_tx_chn(common->tx_chns[tx].tx_chn);
++		if (ret) {
++			dev_err(common->dev, "couldn't enable tx chn %d: %d\n",
++				tx, ret);
++			tx--;
++			goto fail_tx;
++		}
++		napi_enable(&common->tx_chns[tx].napi_tx);
+ 	}
+ 
+ 	napi_enable(&common->napi_rx);
+@@ -541,6 +556,21 @@ static int am65_cpsw_nuss_common_open(struct am65_cpsw_common *common)
+ 
+ 	dev_dbg(common->dev, "cpsw_nuss started\n");
+ 	return 0;
++
++fail_tx:
++	while (tx >= 0) {
++		napi_disable(&common->tx_chns[tx].napi_tx);
++		k3_udma_glue_disable_tx_chn(common->tx_chns[tx].tx_chn);
++		tx--;
++	}
++
++	k3_udma_glue_disable_rx_chn(common->rx_chns.rx_chn);
++
++fail_rx:
++	k3_udma_glue_reset_rx_chn(common->rx_chns.rx_chn, 0,
++				  &common->rx_chns,
++				  am65_cpsw_nuss_rx_cleanup, 0);
++	return ret;
+ }
+ 
+ static int am65_cpsw_nuss_common_stop(struct am65_cpsw_common *common)
+-- 
+2.43.1
+

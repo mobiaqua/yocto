@@ -1,0 +1,31 @@
+From da6d8eaff951bf17b78025281fd1704f008b84e1 Mon Sep 17 00:00:00 2001
+From: Aradhya Bhatia <a-bhatia1@ti.com>
+Date: Thu, 16 May 2024 21:13:53 +0530
+Subject: [PATCH 135/465] drm/bridge: cdns-dsi: Fix the phy_initialized
+ variable
+
+Update the Phy initialized state to "not initialized" when the driver
+(and the hardware by extension) gets suspended. This will allow the Phy
+to get initialized again after resume.
+
+Fixes: e19233955d9e ("drm/bridge: Add Cadence DSI driver")
+Signed-off-by: Aradhya Bhatia <a-bhatia1@ti.com>
+---
+ drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
+index b016f2ba06bb..42565e253b2d 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
++++ b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
+@@ -1153,6 +1153,7 @@ static int __maybe_unused cdns_dsi_suspend(struct device *dev)
+ 	clk_disable_unprepare(dsi->dsi_p_clk);
+ 	reset_control_assert(dsi->dsi_p_rst);
+ 	dsi->link_initialized = false;
++	dsi->phy_initialized = false;
+ 	return 0;
+ }
+ 
+-- 
+2.45.1
+

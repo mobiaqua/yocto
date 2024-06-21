@@ -1,0 +1,34 @@
+From e5b1df6194ad80f32fbb757c893c080e94537a29 Mon Sep 17 00:00:00 2001
+From: Aradhya Bhatia <a-bhatia1@ti.com>
+Date: Thu, 16 May 2024 21:13:57 +0530
+Subject: [PATCH 139/465] drm/bridge: cdns-dsi: Reset the DCS write FIFO
+
+Allow the DCS Write FIFO in the cdns-dsi controller to reset before any
+DCS packet is transmitted to the DSI sink device.
+
+The DCS FIFO reset is optional. Not all panels require it. But (at
+least) one of the DSI based panel that uses Ilitek ILI9881C DSI to DPI
+bridge) doesn't work with without this reset.
+
+Signed-off-by: Aradhya Bhatia <a-bhatia1@ti.com>
+---
+ drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
+index 05d2f4cc50da..87fdd07ca0bc 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
++++ b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
+@@ -1037,6 +1037,9 @@ static ssize_t cdns_dsi_transfer(struct mipi_dsi_host *host,
+ 
+ 	cdns_dsi_init_link(dsi);
+ 
++	/* Reset the DCS Write FIFO */
++	writel(0x00, dsi->regs + DIRECT_CMD_FIFO_RST);
++
+ 	ret = mipi_dsi_create_packet(&packet, msg);
+ 	if (ret)
+ 		goto out;
+-- 
+2.45.1
+

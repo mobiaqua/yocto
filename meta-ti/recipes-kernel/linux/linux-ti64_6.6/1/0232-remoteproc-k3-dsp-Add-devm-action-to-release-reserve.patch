@@ -1,0 +1,77 @@
+From 5db865e0042262a9b4c55dae9f7ffabe9a6ec5ae Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Tue, 23 Jan 2024 12:49:07 -0600
+Subject: [PATCH 232/330] remoteproc: k3-dsp: Add devm action to release
+ reserved memory
+
+commit 961a919a6dbd24b670766ae0613085d63e9c79e3 upstream.
+
+Use a device lifecycle managed action to release reserved memory. This
+helps prevent mistakes like releasing out of order in cleanup functions
+and forgetting to release on error paths.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Link: https://lore.kernel.org/r/20240123184913.725435-2-afd@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 20 ++++++++++++--------
+ 1 file changed, 12 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index 93fbc89307d6..0cb00146fe97 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -550,6 +550,13 @@ static int k3_dsp_rproc_of_get_memories(struct platform_device *pdev,
+ 	return 0;
+ }
+ 
++static void k3_dsp_mem_release(void *data)
++{
++	struct device *dev = data;
++
++	of_reserved_mem_device_release(dev);
++}
++
+ static int k3_dsp_reserved_mem_init(struct k3_dsp_rproc *kproc)
+ {
+ 	struct device *dev = kproc->dev;
+@@ -579,13 +586,14 @@ static int k3_dsp_reserved_mem_init(struct k3_dsp_rproc *kproc)
+ 			ERR_PTR(ret));
+ 		return ret;
+ 	}
++	ret = devm_add_action_or_reset(dev, k3_dsp_mem_release, dev);
++	if (ret)
++		return ret;
+ 
+ 	num_rmems--;
+ 	kproc->rmem = kcalloc(num_rmems, sizeof(*kproc->rmem), GFP_KERNEL);
+-	if (!kproc->rmem) {
+-		ret = -ENOMEM;
+-		goto release_rmem;
+-	}
++	if (!kproc->rmem)
++		return -ENOMEM;
+ 
+ 	/* use remaining reserved memory regions for static carveouts */
+ 	for (i = 0; i < num_rmems; i++) {
+@@ -628,8 +636,6 @@ static int k3_dsp_reserved_mem_init(struct k3_dsp_rproc *kproc)
+ 	for (i--; i >= 0; i--)
+ 		iounmap(kproc->rmem[i].cpu_addr);
+ 	kfree(kproc->rmem);
+-release_rmem:
+-	of_reserved_mem_device_release(kproc->dev);
+ 	return ret;
+ }
+ 
+@@ -640,8 +646,6 @@ static void k3_dsp_reserved_mem_exit(struct k3_dsp_rproc *kproc)
+ 	for (i = 0; i < kproc->num_rmems; i++)
+ 		iounmap(kproc->rmem[i].cpu_addr);
+ 	kfree(kproc->rmem);
+-
+-	of_reserved_mem_device_release(kproc->dev);
+ }
+ 
+ static
+-- 
+2.43.1
+

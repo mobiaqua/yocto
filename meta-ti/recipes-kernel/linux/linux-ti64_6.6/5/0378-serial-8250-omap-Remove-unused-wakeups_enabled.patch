@@ -1,0 +1,27 @@
+From bd5837166b7ed88f9da8d53864e4fc69061e0d6c Mon Sep 17 00:00:00 2001
+From: Markus Schneider-Pargmann <msp@baylibre.com>
+Date: Thu, 23 May 2024 14:20:54 +0200
+Subject: [PATCH 378/465] serial: 8250: omap: Remove unused wakeups_enabled
+
+This field seems to be unused for quite some time already. Remove it.
+
+Signed-off-by: Markus Schneider-Pargmann <msp@baylibre.com>
+---
+ drivers/tty/serial/8250/8250_omap.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/tty/serial/8250/8250_omap.c b/drivers/tty/serial/8250/8250_omap.c
+index 92a5ca6f5a44..e5880841d62b 100644
+--- a/drivers/tty/serial/8250/8250_omap.c
++++ b/drivers/tty/serial/8250/8250_omap.c
+@@ -139,7 +139,6 @@ struct omap8250_priv {
+ 	u8 rx_trigger;
+ 	bool is_suspending;
+ 	int wakeirq;
+-	int wakeups_enabled;
+ 	u32 latency;
+ 	u32 calc_latency;
+ 	struct pm_qos_request pm_qos_request;
+-- 
+2.45.1
+

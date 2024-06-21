@@ -1,0 +1,41 @@
+From 9dba895d8f20c1e232631edbafbd635c1649ee75 Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Wed, 24 Jan 2024 12:47:17 -0600
+Subject: [PATCH 280/330] arm64: dts: ti: k3-j721e: Convert usb_serdes_mux node
+ into reg-mux
+
+commit 62b19a64e121e9ce081d18a77436a846585b9c7e upstream.
+
+This removes a dependency on the parent node being a syscon node.
+Convert from mmio-mux to reg-mux adjusting node name and properties
+as needed.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Link: https://lore.kernel.org/r/20240124184722.150615-6-afd@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index c168bfbd303d..db3855ae798a 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -70,10 +70,11 @@ cpsw0_phy_gmii_sel: phy@4044 {
+ 		};
+ 
+ 		usb_serdes_mux: mux-controller@4000 {
+-			compatible = "mmio-mux";
++			compatible = "reg-mux";
++			reg = <0x4000 0x20>;
+ 			#mux-control-cells = <1>;
+-			mux-reg-masks = <0x4000 0x8000000>, /* USB0 to SERDES0/3 mux */
+-					<0x4010 0x8000000>; /* USB1 to SERDES1/2 mux */
++			mux-reg-masks = <0x0 0x8000000>, /* USB0 to SERDES0/3 mux */
++					<0x10 0x8000000>; /* USB1 to SERDES1/2 mux */
+ 		};
+ 
+ 		ehrpwm_tbclk: clock-controller@4140 {
+-- 
+2.43.1
+

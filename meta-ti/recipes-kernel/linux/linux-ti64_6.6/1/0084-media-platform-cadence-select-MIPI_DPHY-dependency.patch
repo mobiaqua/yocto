@@ -1,0 +1,35 @@
+From 7149fb6fface964718d99db0070c5cc5a2bae81a Mon Sep 17 00:00:00 2001
+From: Jai Luthra <j-luthra@ti.com>
+Date: Tue, 17 Oct 2023 13:07:24 +0530
+Subject: [PATCH 084/330] media: platform: cadence: select MIPI_DPHY dependency
+
+commit 48016737a9af47328dd321df4dd3479ed5e2041d upstream.
+
+The driver uses MIPI DPHY helper routines from the PHY core. Make sure
+we select the relevant config for compilation.
+
+Fixes: a91d06f46bf7 ("media: cadence: csi2rx: Configure DPHY using link freq")
+Reported-by: kernel test robot <lkp@intel.com>
+Closes: https://lore.kernel.org/oe-kbuild-all/202310170258.UzSN4RUB-lkp@intel.com/
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Link: https://lore.kernel.org/r/20231017-cdns_phy_config-v1-1-583243d1c187@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/media/platform/cadence/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/media/platform/cadence/Kconfig b/drivers/media/platform/cadence/Kconfig
+index 480325d053de..317bd9e2e728 100644
+--- a/drivers/media/platform/cadence/Kconfig
++++ b/drivers/media/platform/cadence/Kconfig
+@@ -8,6 +8,7 @@ config VIDEO_CADENCE_CSI2RX
+ 	select MEDIA_CONTROLLER
+ 	select VIDEO_V4L2_SUBDEV_API
+ 	select V4L2_FWNODE
++	select GENERIC_PHY_MIPI_DPHY
+ 	help
+ 	  Support for the Cadence MIPI CSI2 Receiver controller.
+ 
+-- 
+2.43.1
+

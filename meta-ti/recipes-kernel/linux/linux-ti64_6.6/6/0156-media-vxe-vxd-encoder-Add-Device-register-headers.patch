@@ -1,0 +1,711 @@
+From b7d24ac52f951d3ed1ca7f3bbc9577b6654f0ab7 Mon Sep 17 00:00:00 2001
+From: Sidraya <sidraya.bj@pathpartnertech.com>
+Date: Sun, 16 Jun 2024 21:45:01 -0500
+Subject: [PATCH 156/222] media: vxe-vxd: encoder: Add Device register headers
+
+Add Device register headers.
+
+Signed-off-by: Sunita Nadampalli <sunitan@ti.com>
+Signed-off-by: Sidraya <sidraya.bj@pathpartnertech.com>
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+---
+ .../encoder/reg_headers/img_soc_dmac_regs.h   |  61 +++++
+ .../vxe-vxd/encoder/reg_headers/mtx_regs.h    |  72 ++++++
+ .../encoder/reg_headers/topaz_coreext_regs.h  | 183 ++++++++++++++
+ .../encoder/reg_headers/topaz_db_regs.h       |  22 ++
+ .../encoder/reg_headers/topaz_vlc_regs.h      |  46 ++++
+ .../encoder/reg_headers/topazhp_core_regs.h   | 232 ++++++++++++++++++
+ .../reg_headers/topazhp_multicore_regs_old.h  |  22 ++
+ 7 files changed, 638 insertions(+)
+ create mode 100644 drivers/media/platform/vxe-vxd/encoder/reg_headers/img_soc_dmac_regs.h
+ create mode 100644 drivers/media/platform/vxe-vxd/encoder/reg_headers/mtx_regs.h
+ create mode 100644 drivers/media/platform/vxe-vxd/encoder/reg_headers/topaz_coreext_regs.h
+ create mode 100644 drivers/media/platform/vxe-vxd/encoder/reg_headers/topaz_db_regs.h
+ create mode 100644 drivers/media/platform/vxe-vxd/encoder/reg_headers/topaz_vlc_regs.h
+ create mode 100644 drivers/media/platform/vxe-vxd/encoder/reg_headers/topazhp_core_regs.h
+ create mode 100644 drivers/media/platform/vxe-vxd/encoder/reg_headers/topazhp_multicore_regs_old.h
+
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/img_soc_dmac_regs.h b/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/img_soc_dmac_regs.h
+new file mode 100644
+index 000000000000..237e2c0a48e1
+--- /dev/null
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/img_soc_dmac_regs.h
+@@ -0,0 +1,61 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * firmware header
++ *
++ * Copyright (c) Imagination Technologies Ltd.
++ * Copyright (c) 2021 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * Authors:
++ *	Sunita Nadampalli <sunitan@ti.com>
++ *
++ * Re-written for upstreming
++ *	Sidraya Jayagond <sidraya.bj@pathpartnertech.com>
++ */
++
++#ifndef _REGCONV_H_img_soc_dmac_regs_h
++#define _REGCONV_H_img_soc_dmac_regs_h
++
++/* Register DMAC_COUNT */
++#define IMG_SOC_DMAC_COUNT(X)       (0x0004 + (32 * (X)))
++#define MASK_IMG_SOC_BSWAP          0x40000000
++#define SHIFT_IMG_SOC_BSWAP         30
++#define SHIFT_IMG_SOC_PW            27
++#define MASK_IMG_SOC_PW             0x18000000
++#define MASK_IMG_SOC_DIR            0x04000000
++#define SHIFT_IMG_SOC_DIR           26
++
++/* Register DMAC_COUNT */
++#define MASK_IMG_SOC_EN             0x00010000
++#define MASK_IMG_SOC_LIST_EN        0x00040000
++
++/* Register DMAC_COUNT */
++#define MASK_IMG_SOC_PI             0x03000000
++#define SHIFT_IMG_SOC_PI            24
++#define MASK_IMG_SOC_CNT            0x0000FFFF
++#define SHIFT_IMG_SOC_CNT           0
++#define MASK_IMG_SOC_TRANSFER_IEN   0x20000000
++
++/* Register DMAC_IRQ_STAT */
++#define IMG_SOC_DMAC_IRQ_STAT(X)    (0x000C + (32 * (X)))
++#define MASK_IMG_SOC_TRANSFER_FIN   0x00020000
++#define SHIFT_IMG_SOC_TRANSFER_FIN  17
++
++/* Register DMAC_PER_HOLD */
++#define IMG_SOC_DMAC_PER_HOLD(X)    (0x0018 + (32 * (X)))
++
++/* Register DMAC_SETUP */
++#define IMG_SOC_DMAC_SETUP(X)       (0x0000 + (32 * (X)))
++
++/* Register DMAC_PERIPH */
++#define IMG_SOC_DMAC_PERIPH(X)      (0x0008 + (32 * (X)))
++#define MASK_IMG_SOC_ACC_DEL        0xE0000000
++#define SHIFT_IMG_SOC_ACC_DEL       29
++#define MASK_IMG_SOC_INCR           0x08000000
++#define SHIFT_IMG_SOC_INCR          27
++#define MASK_IMG_SOC_BURST          0x07000000
++#define SHIFT_IMG_SOC_BURST         24
++
++/* Register DMAC_PERIPHERAL_ADDR */
++#define IMG_SOC_DMAC_PERIPHERAL_ADDR(X) (0x0014 + (32 * (X)))
++
++#endif
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/mtx_regs.h b/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/mtx_regs.h
+new file mode 100644
+index 000000000000..27b9445a09e8
+--- /dev/null
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/mtx_regs.h
+@@ -0,0 +1,72 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * firmware header
++ *
++ * Copyright (c) Imagination Technologies Ltd.
++ * Copyright (c) 2021 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * Authors:
++ *	Sunita Nadampalli <sunitan@ti.com>
++ *
++ * Re-written for upstreming
++ *	Sidraya Jayagond <sidraya.bj@pathpartnertech.com>
++ */
++
++#ifndef _REGCONV_H_mtx_regs_h
++#define _REGCONV_H_mtx_regs_h
++
++/* Register CR_MTX_ENABLE */
++#define MTX_CR_MTX_ENABLE           0x0000
++#define MASK_MTX_MTX_ENABLE         0x00000001
++#define MASK_MTX_MTX_TOFF           0x00000002
++
++/* Register CR_MTX_KICK */
++#define MTX_CR_MTX_KICK             0x0080
++
++/* Register CR_MTX_REGISTER_READ_WRITE_DATA */
++#define MTX_CR_MTX_REGISTER_READ_WRITE_DATA 0x00F8
++
++/* Register CR_MTX_REGISTER_READ_WRITE_REQUEST */
++#define MTX_CR_MTX_REGISTER_READ_WRITE_REQUEST 0x00FC
++#define MASK_MTX_MTX_RNW            0x00010000
++#define MASK_MTX_MTX_DREADY         0x80000000
++
++/* Register CR_MTX_RAM_ACCESS_DATA_TRANSFER */
++#define MTX_CR_MTX_RAM_ACCESS_DATA_TRANSFER 0x0104
++
++/* Register CR_MTX_RAM_ACCESS_CONTROL */
++#define MTX_CR_MTX_RAM_ACCESS_CONTROL 0x0108
++#define MASK_MTX_MTX_MCMR           0x00000001
++#define MASK_MTX_MTX_MCMAI          0x00000002
++#define SHIFT_MTX_MTX_MCMAI         1
++#define MASK_MTX_MTX_MCM_ADDR       0x000FFFFC
++#define SHIFT_MTX_MTX_MCM_ADDR      2
++#define MASK_MTX_MTX_MCMID          0x0FF00000
++#define SHIFT_MTX_MTX_MCMID         20
++
++/* Register CR_MTX_RAM_ACCESS_STATUS */
++#define MTX_CR_MTX_RAM_ACCESS_STATUS 0x010C
++#define MASK_MTX_MTX_MTX_MCM_STAT   0x00000001
++
++/* Register CR_MTX_SOFT_RESET */
++#define MTX_CR_MTX_SOFT_RESET       0x0200
++#define MASK_MTX_MTX_RESET          0x00000001
++
++/* Register CR_MTX_SYSC_CDMAC */
++#define MTX_CR_MTX_SYSC_CDMAC       0x0340
++#define MASK_MTX_LENGTH             0x0000FFFF
++#define SHIFT_MTX_LENGTH            0
++#define MASK_MTX_ENABLE             0x00010000
++#define SHIFT_MTX_ENABLE            16
++#define MASK_MTX_RNW                0x00020000
++#define SHIFT_MTX_RNW               17
++#define MASK_MTX_BURSTSIZE          0x07000000
++#define SHIFT_MTX_BURSTSIZE         24
++
++/* Register CR_MTX_SYSC_CDMAA */
++#define MTX_CR_MTX_SYSC_CDMAA       0x0344
++
++/* Register CR_MTX_SYSC_CDMAT */
++#define MTX_CR_MTX_SYSC_CDMAT       0x0350
++
++#endif
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/topaz_coreext_regs.h b/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/topaz_coreext_regs.h
+new file mode 100644
+index 000000000000..d2e8dba801e7
+--- /dev/null
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/topaz_coreext_regs.h
+@@ -0,0 +1,183 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * firmware header
++ *
++ * Copyright (c) Imagination Technologies Ltd.
++ * Copyright (c) 2021 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * Authors:
++ *	Sunita Nadampalli <sunitan@ti.com>
++ *
++ * Re-written for upstreming
++ *	Sidraya Jayagond <sidraya.bj@pathpartnertech.com>
++ */
++
++#ifndef _REGCONV_H_topazhp_coreext_regs_h
++#define _REGCONV_H_topazhp_coreext_regs_h
++
++/* Register CR_SCALER_INPUT_SIZE */
++#define MASK_TOPAZHP_EXT_CR_SCALER_INPUT_WIDTH_MIN1 0x00000FFF
++#define SHIFT_TOPAZHP_EXT_CR_SCALER_INPUT_WIDTH_MIN1 0
++#define MASK_TOPAZHP_EXT_CR_SCALER_INPUT_HEIGHT_MIN1 0x0FFF0000
++#define SHIFT_TOPAZHP_EXT_CR_SCALER_INPUT_HEIGHT_MIN1 16
++
++/* Register CR_SCALER_PITCH */
++#define MASK_TOPAZHP_EXT_CR_SCALER_INPUT_HOR_PITCH 0x00007FFF
++#define SHIFT_TOPAZHP_EXT_CR_SCALER_INPUT_HOR_PITCH 0
++#define MASK_TOPAZHP_EXT_CR_SCALER_HOR_BILINEAR_FILTER 0x00008000
++#define SHIFT_TOPAZHP_EXT_CR_SCALER_HOR_BILINEAR_FILTER 15
++#define MASK_TOPAZHP_EXT_CR_SCALER_INPUT_VER_PITCH 0x7FFF0000
++#define SHIFT_TOPAZHP_EXT_CR_SCALER_INPUT_VER_PITCH 16
++#define MASK_TOPAZHP_EXT_CR_SCALER_VER_BILINEAR_FILTER 0x80000000
++#define SHIFT_TOPAZHP_EXT_CR_SCALER_VER_BILINEAR_FILTER 31
++
++/* Register CR_SCALER_CROP */
++#define MASK_TOPAZHP_EXT_CR_SCALER_INPUT_CROP_VER 0x000000FF
++#define SHIFT_TOPAZHP_EXT_CR_SCALER_INPUT_CROP_VER 0
++#define MASK_TOPAZHP_EXT_CR_SCALER_INPUT_CROP_HOR 0x0000FF00
++#define SHIFT_TOPAZHP_EXT_CR_SCALER_INPUT_CROP_HOR 8
++
++/* Register CR_SCALER_CONTROL */
++#define MASK_TOPAZHP_EXT_CR_SCALER_ENABLE 0x00000001
++#define SHIFT_TOPAZHP_EXT_CR_SCALER_ENABLE 0
++#define MASK_TOPAZHP_EXT_CR_ENABLE_COLOUR_SPACE_CONVERSION 0x00000002
++#define SHIFT_TOPAZHP_EXT_CR_ENABLE_COLOUR_SPACE_CONVERSION 1
++#define MASK_TOPAZHP_EXT_CR_INPUT_FRAME_STORE_FORMAT 0x007F0000
++#define SHIFT_TOPAZHP_EXT_CR_INPUT_FRAME_STORE_FORMAT 16
++
++/* 4:4:4, Any 3 colour space components plus reserved byte (e.g.
++ * RGB), 8-bit components, packed 32-bit per pixel in a single plane, 8 LSBits not used
++ */
++#define TOPAZHP_EXT_CR_INPUT_FRAME_STORE_FORMAT_444IL4XBCA8		0x0000007E
++
++/* 4:4:4, Any 3 colour space components plus reserved byte (e.g.
++ * RGB), 8-bit components, packed 32-bit per pixel in a single plane, 8 MSBits not used
++ */
++#define TOPAZHP_EXT_CR_INPUT_FRAME_STORE_FORMAT_444IL4ABCX8		0x0000007C
++
++/* RGB with 5 bits for R, 6 bits for G and 5 bits for B */
++#define TOPAZHP_EXT_CR_INPUT_FRAME_STORE_FORMAT_444IL3RGB565		0x00000070
++
++/* 4:4:4, Y in 1 plane, CrCb interleaved in 2nd plane, 8-bit components */
++#define TOPAZHP_EXT_CR_INPUT_FRAME_STORE_FORMAT_444PL12YCRCB8		0x0000006A
++
++/* 4:4:4, Y in 1 plane, CbCr interleaved in 2nd plane, 8-bit components */
++#define TOPAZHP_EXT_CR_INPUT_FRAME_STORE_FORMAT_444PL12YCBCR8		0x00000068
++
++/* 4:4:4, Y Cb Cr in 3 separate planes, 8-bit components
++ * (could also be ABC, but colour space conversion is not supported by input scaler
++ */
++#define TOPAZHP_EXT_CR_INPUT_FRAME_STORE_FORMAT_444PL111YCBCR8		0x00000060
++
++/* 4:2:2, CrYCbY interleaved in a single plane, 8-bit components */
++#define TOPAZHP_EXT_CR_INPUT_FRAME_STORE_FORMAT_422IL3CRYCBY8		0x00000056
++
++/* 4:2:2, CbYCrY interleaved in a single plane, 8-bit components */
++#define TOPAZHP_EXT_CR_INPUT_FRAME_STORE_FORMAT_422IL3CBYCRY8		0x00000054
++
++/* 4:2:2, YCrYCb interleaved in a single plane, 8-bit components */
++#define TOPAZHP_EXT_CR_INPUT_FRAME_STORE_FORMAT_422IL3YCRYCB8		0x00000052
++
++/* 4:2:2, YCbYCr interleaved in a single plane, 8-bit components */
++#define TOPAZHP_EXT_CR_INPUT_FRAME_STORE_FORMAT_422IL3YCBYCR8		0x00000050
++
++/* 4:2:2, Y in 1 plane, CrCb interleaved in 2nd plane, 8-bit components */
++#define TOPAZHP_EXT_CR_INPUT_FRAME_STORE_FORMAT_422PL12YCRCB8		0x0000004A
++
++/* 4:2:2, Y in 1 plane, CbCr interleaved in 2nd plane, 8-bit components */
++#define TOPAZHP_EXT_CR_INPUT_FRAME_STORE_FORMAT_422PL12YCBCR8		0x00000048
++
++/* 4:2:2, Y Cb Cr in 3 separate planes, 8-bit components */
++#define TOPAZHP_EXT_CR_INPUT_FRAME_STORE_FORMAT_422PL111YCBCR8		0x00000040
++
++/* 4:2:0, Y in 1 plane, CrCb interleaved in 2nd plane, 8-bit components */
++#define TOPAZHP_EXT_CR_INPUT_FRAME_STORE_FORMAT_420PL12YCRCB8		0x0000002A
++
++/* 4:2:0, Y in 1 plane, CbCr interleaved in 2nd plane, 8-bit components */
++#define TOPAZHP_EXT_CR_INPUT_FRAME_STORE_FORMAT_420PL12YCBCR8		0x00000028
++
++/* 4:2:0, Y Cb Cr in 3 separate planes, 8-bit components */
++#define TOPAZHP_EXT_CR_INPUT_FRAME_STORE_FORMAT_420PL111YCBCR8		0x00000020
++
++/* Register CR_CSC_SOURCE_MOD_Y_0 */
++#define MASK_TOPAZHP_EXT_CR_CSC_SOURCE_MOD_00 0x00000003
++#define SHIFT_TOPAZHP_EXT_CR_CSC_SOURCE_MOD_00 0
++
++/* Subtract 1/2 maximum value from unsigned pixel component */
++#define TOPAZHP_EXT_CR_CSC_SOURCE_MOD_00_MINUS_1_2		0x00000003
++
++/* Subtract 1/16th maximum value from unsigned pixel component */
++#define TOPAZHP_EXT_CR_CSC_SOURCE_MOD_00_MINUS_1_16		0x00000002
++
++/* Source pixel component is unsigned */
++#define TOPAZHP_EXT_CR_CSC_SOURCE_MOD_00_UNSIGNED		0x00000000
++
++/* Register CR_CSC_SOURCE_MOD_Y_1 */
++#define MASK_TOPAZHP_EXT_CR_CSC_SOURCE_MOD_01 0x00000003
++#define SHIFT_TOPAZHP_EXT_CR_CSC_SOURCE_MOD_01 0
++
++/* Subtract 1/2 maximum value from unsigned pixel component */
++#define TOPAZHP_EXT_CR_CSC_SOURCE_MOD_01_MINUS_1_2		0x00000003
++
++/* Subtract 1/16th maximum value from unsigned pixel component */
++#define TOPAZHP_EXT_CR_CSC_SOURCE_MOD_01_MINUS_1_16		0x00000002
++
++/* Source pixel component is unsigned */
++#define TOPAZHP_EXT_CR_CSC_SOURCE_MOD_01_UNSIGNED		0x00000000
++
++/* Register CR_CSC_SOURCE_CB_CR_1 */
++#define MASK_TOPAZHP_EXT_CR_CSC_SOURCE_SRC_TO_CB_01 0x00000FFF
++#define SHIFT_TOPAZHP_EXT_CR_CSC_SOURCE_SRC_TO_CB_01 0
++#define SHIFT_TOPAZHP_EXT_CR_CSC_SOURCE_SRC_TO_CR_01 16
++
++/* Register CR_CSC_SOURCE_MOD_Y_2 */
++#define MASK_TOPAZHP_EXT_CR_CSC_SOURCE_MOD_02 0x00000003
++#define SHIFT_TOPAZHP_EXT_CR_CSC_SOURCE_MOD_02 0
++
++/* Subtract 1/2 maximum value from unsigned pixel component */
++#define TOPAZHP_EXT_CR_CSC_SOURCE_MOD_02_MINUS_1_2		0x00000003
++
++/* Subtract 1/16th maximum value from unsigned pixel component */
++#define TOPAZHP_EXT_CR_CSC_SOURCE_MOD_02_MINUS_1_16		0x00000002
++
++/* Source pixel component is unsigned */
++#define TOPAZHP_EXT_CR_CSC_SOURCE_MOD_02_UNSIGNED		0x00000000
++
++/* Register CR_CSC_SOURCE_CB_CR_2 */
++#define MASK_TOPAZHP_EXT_CR_CSC_SOURCE_SRC_TO_CB_02 0x00000FFF
++#define SHIFT_TOPAZHP_EXT_CR_CSC_SOURCE_SRC_TO_CR_02 16
++
++/* Register CR_CSC_OUTPUT_COEFF_0 */
++#define SHIFT_TOPAZHP_EXT_CR_CSC_OUTPUT_MIN_CLIP_00 0
++#define SHIFT_TOPAZHP_EXT_CR_CSC_OUTPUT_MAX_CLIP_00 16
++#define MASK_TOPAZHP_EXT_CR_CSC_OUTPUT_MOD_00 0x30000000
++#define SHIFT_TOPAZHP_EXT_CR_CSC_OUTPUT_MOD_00 28
++
++/* Add 1/16th maximum value prior to applying unsigned clamping */
++#define TOPAZHP_EXT_CR_CSC_OUTPUT_MOD_00_ADD_1_16		0x00000002
++
++/* Register CR_CSC_OUTPUT_COEFF_1 */
++#define MASK_TOPAZHP_EXT_CR_CSC_OUTPUT_MIN_CLIP_01 0x000003FF
++#define SHIFT_TOPAZHP_EXT_CR_CSC_OUTPUT_MIN_CLIP_01 0
++#define SHIFT_TOPAZHP_EXT_CR_CSC_OUTPUT_MAX_CLIP_01 16
++#define MASK_TOPAZHP_EXT_CR_CSC_OUTPUT_MOD_01 0x30000000
++#define SHIFT_TOPAZHP_EXT_CR_CSC_OUTPUT_MOD_01 28
++
++/* Add 1/2 maximum value prior to applying unsigned clamping */
++#define TOPAZHP_EXT_CR_CSC_OUTPUT_MOD_01_ADD_1_2		0x00000003
++#define MASK_TOPAZHP_EXT_CR_CSC_SOURCE_SRC_TO_Y 0x0FFF0000
++#define SHIFT_TOPAZHP_EXT_CR_CSC_SOURCE_SRC_TO_Y 16
++
++/* Register CR_CSC_SOURCE_CB_CR */
++#define MASK_TOPAZHP_EXT_CR_CSC_SOURCE_SRC_TO_CB 0x00000FFF
++#define SHIFT_TOPAZHP_EXT_CR_CSC_SOURCE_SRC_TO_CB 0
++#define MASK_TOPAZHP_EXT_CR_CSC_SOURCE_SRC_TO_CR 0x0FFF0000
++#define SHIFT_TOPAZHP_EXT_CR_CSC_SOURCE_SRC_TO_CR 16
++
++/* Register CR_CSC_OUTPUT_COEFF */
++#define MASK_TOPAZHP_EXT_CR_CSC_OUTPUT_MIN_CLIP 0x000003FF
++#define SHIFT_TOPAZHP_EXT_CR_CSC_OUTPUT_MIN_CLIP 0
++#define MASK_TOPAZHP_EXT_CR_CSC_OUTPUT_MAX_CLIP 0x03FF0000
++#define SHIFT_TOPAZHP_EXT_CR_CSC_OUTPUT_MAX_CLIP 16
++
++#endif
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/topaz_db_regs.h b/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/topaz_db_regs.h
+new file mode 100644
+index 000000000000..29c974e86b92
+--- /dev/null
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/topaz_db_regs.h
+@@ -0,0 +1,22 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * firmware header
++ *
++ * Copyright (c) Imagination Technologies Ltd.
++ * Copyright (c) 2021 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * Authors:
++ *	Sunita Nadampalli <sunitan@ti.com>
++ *
++ * Re-written for upstreming
++ *	Sidraya Jayagond <sidraya.bj@pathpartnertech.com>
++ */
++
++#ifndef _REGCONV_H_topaz_db_regs_h
++#define _REGCONV_H_topaz_db_regs_h
++
++/* Register CR_DB_DISABLE_DEBLOCK_IDC */
++#define MASK_TOPAZ_DB_CR_DISABLE_DEBLOCK_IDC 0x00000003
++#define SHIFT_TOPAZ_DB_CR_DISABLE_DEBLOCK_IDC 0
++
++#endif
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/topaz_vlc_regs.h b/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/topaz_vlc_regs.h
+new file mode 100644
+index 000000000000..0a3d6c588a13
+--- /dev/null
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/topaz_vlc_regs.h
+@@ -0,0 +1,46 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * firmware header
++ *
++ * Copyright (c) Imagination Technologies Ltd.
++ * Copyright (c) 2021 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * Authors:
++ *	Sunita Nadampalli <sunitan@ti.com>
++ *
++ * Re-written for upstreming
++ *	Sidraya Jayagond <sidraya.bj@pathpartnertech.com>
++ */
++
++#ifndef _REGCONV_H_topaz_vlc_regs_h
++#define _REGCONV_H_topaz_vlc_regs_h
++
++///* Register CR_VLC_CONTROL */
++#define MASK_TOPAZ_VLC_CR_CODEC     0x00000003
++#define SHIFT_TOPAZ_VLC_CR_CODEC    0
++#define MASK_TOPAZ_VLC_CR_CABAC_ENABLE		0x00000100
++#define SHIFT_TOPAZ_VLC_CR_CABAC_ENABLE		8
++#define MASK_TOPAZ_VLC_CR_VLC_FIELD_CODED	0x00000200
++#define SHIFT_TOPAZ_VLC_CR_VLC_FIELD_CODED	9
++#define MASK_TOPAZ_VLC_CR_VLC_8X8_TRANSFORM	0x00000400
++#define SHIFT_TOPAZ_VLC_CR_VLC_8X8_TRANSFORM	10
++#define MASK_TOPAZ_VLC_CR_VLC_CONSTRAINED_INTRA	0x00000800
++#define SHIFT_TOPAZ_VLC_CR_VLC_CONSTRAINED_INTRA	11
++#define MASK_TOPAZ_VLC_CR_CODEC_EXTEND	0x10000000
++#define SHIFT_TOPAZ_VLC_CR_CODEC_EXTEND	28
++
++///* Register CR_VLC_IPCM_0 */
++#define MASK_TOPAZ_VLC_CR_CABAC_DB_MARGIN	0x03FF0000
++#define SHIFT_TOPAZ_VLC_CR_CABAC_DB_MARGIN	16
++#define MASK_TOPAZ_VLC_CR_CABAC_BIN_FLEX	0x00001FFF
++#define SHIFT_TOPAZ_VLC_CR_CABAC_BIN_FLEX	0
++#define MASK_TOPAZ_VLC_CR_IPCM_THRESHOLD	0x00000FFF
++#define SHIFT_TOPAZ_VLC_CR_IPCM_THRESHOLD	0
++#define MASK_TOPAZ_VLC_CR_CABAC_BIN_LIMIT	0x1FFF0000
++#define SHIFT_TOPAZ_VLC_CR_CABAC_BIN_LIMIT	16
++#define MASK_TOPAZ_VLC_CR_SLICE_SIZE_LIMIT	0x00FFFFFF
++#define SHIFT_TOPAZ_VLC_CR_SLICE_SIZE_LIMIT	0
++#define MASK_TOPAZ_VLC_CR_SLICE_MBS_LIMIT	0x00003FFF
++#define SHIFT_TOPAZ_VLC_CR_SLICE_MBS_LIMIT	0
++
++#endif
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/topazhp_core_regs.h b/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/topazhp_core_regs.h
+new file mode 100644
+index 000000000000..b355c94d4e72
+--- /dev/null
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/topazhp_core_regs.h
+@@ -0,0 +1,232 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * firmware header
++ *
++ * Copyright (c) Imagination Technologies Ltd.
++ * Copyright (c) 2021 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * Authors:
++ *	Sunita Nadampalli <sunitan@ti.com>
++ *
++ * Re-written for upstreming
++ *	Sidraya Jayagond <sidraya.bj@pathpartnertech.com>
++ */
++
++#ifndef _REGCONV_H_topazhp_core_regs_h
++#define _REGCONV_H_topazhp_core_regs_h
++
++/* Register CR_LRITC_CACHE_CHUNK_CONFIG */
++#define MASK_TOPAZHP_CR_CACHE_CHUNKS_PRIORITY 0x000000FF
++#define SHIFT_TOPAZHP_CR_CACHE_CHUNKS_PRIORITY 0
++#define MASK_TOPAZHP_CR_CACHE_CHUNKS_MAX 0x0000FF00
++#define SHIFT_TOPAZHP_CR_CACHE_CHUNKS_MAX 8
++#define MASK_TOPAZHP_CR_CACHE_CHUNKS_PER_MB 0x00FF0000
++#define SHIFT_TOPAZHP_CR_CACHE_CHUNKS_PER_MB 16
++
++/* Register CR_SEQ_CUR_PIC_ROW_STRIDE */
++#define MASK_TOPAZHP_CR_CUR_PIC_LUMA_STRIDE 0x0000FFC0
++#define SHIFT_TOPAZHP_CR_CUR_PIC_LUMA_STRIDE 6
++#define MASK_TOPAZHP_CR_CUR_PIC_CHROMA_STRIDE 0xFFC00000
++#define SHIFT_TOPAZHP_CR_CUR_PIC_CHROMA_STRIDE 22
++
++/* Register CR_SEQUENCER_CONFIG */
++#define MASK_TOPAZHP_CR_ENCODER_STANDARD 0x00000007
++#define SHIFT_TOPAZHP_CR_ENCODER_STANDARD 0
++#define TOPAZHP_CR_ENCODER_STANDARD_H264		0x00000002		/* H264 encode */
++#define MASK_TOPAZHP_CR_FRAME_STORE_FORMAT 0x00000030
++#define SHIFT_TOPAZHP_CR_FRAME_STORE_FORMAT 4
++
++/* 4:2:0 frame, with Luma, Cb and Cr all in separate planes (if the frame
++ * store actually contains 4:2:2 chroma, the chroma stride can be doubled
++ * so that it is read as 4:2:0)
++ */
++#define MASK_TOPAZHP_CR_FRAME_STORE_CHROMA_SWAP 0x00000040
++#define SHIFT_TOPAZHP_CR_FRAME_STORE_CHROMA_SWAP 6
++#define MASK_TOPAZHP_CR_FIELD_MODE  0x00000080
++#define SHIFT_TOPAZHP_CR_FIELD_MODE 7
++#define MASK_TOPAZHP_CR_REF_PIC0_VALID 0x00000100
++#define SHIFT_TOPAZHP_CR_REF_PIC0_VALID 8
++#define MASK_TOPAZHP_CR_REF_PIC1_VALID 0x00000200
++#define SHIFT_TOPAZHP_CR_REF_PIC1_VALID 9
++#define MASK_TOPAZHP_CR_REF_PIC1_EQUAL_PIC0 0x00000400
++#define SHIFT_TOPAZHP_CR_REF_PIC1_EQUAL_PIC0 10
++#define MASK_TOPAZHP_CR_ABOVE_OUT_OF_SLICE_VALID 0x00000800
++#define SHIFT_TOPAZHP_CR_ABOVE_OUT_OF_SLICE_VALID 11
++#define MASK_TOPAZHP_CR_TEMPORAL_COL_IN_VALID 0x00001000
++#define SHIFT_TOPAZHP_CR_TEMPORAL_COL_IN_VALID 12
++#define MASK_TOPAZHP_CR_TEMPORAL_PIC0_BELOW_IN_VALID 0x00002000
++#define SHIFT_TOPAZHP_CR_TEMPORAL_PIC0_BELOW_IN_VALID 13
++#define MASK_TOPAZHP_CR_TEMPORAL_PIC1_BELOW_IN_VALID 0x00004000
++#define SHIFT_TOPAZHP_CR_TEMPORAL_PIC1_BELOW_IN_VALID 14
++#define MASK_TOPAZHP_CR_DEBLOCK_ENABLE 0x00008000
++#define SHIFT_TOPAZHP_CR_DEBLOCK_ENABLE 15
++#define MASK_TOPAZHP_CR_WRITE_TEMPORAL_COL_VALID 0x00010000
++#define SHIFT_TOPAZHP_CR_WRITE_TEMPORAL_COL_VALID 16
++#define MASK_TOPAZHP_CR_WRITE_TEMPORAL_PIC0_BELOW_VALID 0x00020000
++#define SHIFT_TOPAZHP_CR_WRITE_TEMPORAL_PIC0_BELOW_VALID 17
++#define MASK_TOPAZHP_CR_WRITE_TEMPORAL_PIC1_BELOW_VALID 0x00040000
++#define SHIFT_TOPAZHP_CR_WRITE_TEMPORAL_PIC1_BELOW_VALID 18
++#define MASK_TOPAZHP_CR_WRITE_MB_FIRST_STAGE_VALID 0x00200000
++#define SHIFT_TOPAZHP_CR_WRITE_MB_FIRST_STAGE_VALID 21
++#define MASK_TOPAZHP_CR_MB_CONTROL_IN_VALID 0x00800000
++#define SHIFT_TOPAZHP_CR_MB_CONTROL_IN_VALID 23
++#define MASK_TOPAZHP_CR_BEST_MULTIPASS_OUT_VALID 0x10000000
++#define SHIFT_TOPAZHP_CR_BEST_MULTIPASS_OUT_VALID 28
++#define MASK_TOPAZHP_CR_BEST_MVS_OUT_DISABLE 0x40000000
++#define SHIFT_TOPAZHP_CR_BEST_MVS_OUT_DISABLE 30
++#define MASK_TOPAZHP_CR_SLICE_TYPE  0x00030000
++#define SHIFT_TOPAZHP_CR_SLICE_TYPE 16
++#define TOPAZHP_CR_SLICE_TYPE_B_SLICE		0x00000002		/* B-slice */
++#define TOPAZHP_CR_SLICE_TYPE_P_SLICE		0x00000001		/* P-slice */
++#define TOPAZHP_CR_SLICE_TYPE_I_SLICE		0x00000000		/* I-slice */
++#define MASK_TOPAZHP_CR_MVCALC_RESTRICT_PICTURE 0x00010000
++#define SHIFT_TOPAZHP_CR_MVCALC_RESTRICT_PICTURE 16
++
++/* Register CR_MVCALC_CONFIG */
++#define MASK_TOPAZHP_CR_MVCALC_GRID_MB_X_STEP 0x0000000F
++#define SHIFT_TOPAZHP_CR_MVCALC_GRID_MB_X_STEP 0
++#define MASK_TOPAZHP_CR_MVCALC_GRID_MB_Y_STEP 0x00000F00
++#define SHIFT_TOPAZHP_CR_MVCALC_GRID_MB_Y_STEP 8
++#define MASK_TOPAZHP_CR_MVCALC_GRID_SUB_STEP 0x000F0000
++#define SHIFT_TOPAZHP_CR_MVCALC_GRID_SUB_STEP 16
++#define MASK_TOPAZHP_CR_MVCALC_GRID_DISABLE 0x00800000
++#define SHIFT_TOPAZHP_CR_MVCALC_GRID_DISABLE 23
++#define MASK_TOPAZHP_CR_MVCALC_IPE0_JITTER_FACTOR 0x03000000
++#define SHIFT_TOPAZHP_CR_MVCALC_IPE0_JITTER_FACTOR 24
++#define MASK_TOPAZHP_CR_MVCALC_IPE1_JITTER_FACTOR 0x0C000000
++#define SHIFT_TOPAZHP_CR_MVCALC_IPE1_JITTER_FACTOR 26
++#define MASK_TOPAZHP_CR_MVCALC_JITTER_POINTER_RST 0x10000000
++#define MASK_TOPAZHP_CR_MVCALC_NO_PSEUDO_DUPLICATES 0x20000000
++#define SHIFT_TOPAZHP_CR_MVCALC_NO_PSEUDO_DUPLICATES 29
++#define MASK_TOPAZHP_CR_MVCALC_DUP_VEC_MARGIN 0xC0000000
++#define SHIFT_TOPAZHP_CR_MVCALC_DUP_VEC_MARGIN 30
++
++/* Register CR_MVCALC_COLOCATED */
++#define MASK_TOPAZHP_CR_COL_DIST_SCALE_FACT 0x000007FF
++#define SHIFT_TOPAZHP_CR_COL_DIST_SCALE_FACT 0
++
++/* Register CR_MVCALC_BELOW */
++#define MASK_TOPAZHP_CR_PIC0_DIST_SCALE_FACTOR 0x000007FF
++#define SHIFT_TOPAZHP_CR_PIC0_DIST_SCALE_FACTOR 0
++#define MASK_TOPAZHP_CR_PIC1_DIST_SCALE_FACTOR 0x07FF0000
++#define SHIFT_TOPAZHP_CR_PIC1_DIST_SCALE_FACTOR 16
++
++/* Register CR_PREFETCH_QP */
++#define MASK_TOPAZHP_CR_SKIPPED_CODED_SCALE_IDX 0x00007000
++#define SHIFT_TOPAZHP_CR_SKIPPED_CODED_SCALE_IDX 12
++#define MASK_TOPAZHP_CR_INTER_INTRA_SCALE_IDX 0x00000700
++#define SHIFT_TOPAZHP_CR_INTER_INTRA_SCALE_IDX 8
++
++/* Register CR_MB_HOST_CONTROL */
++#define MASK_TOPAZHP_CR_MB_HOST_QP  0x00000001
++#define SHIFT_TOPAZHP_CR_MB_HOST_QP 0
++#define MASK_TOPAZHP_CR_MB_HOST_SKIPPED_CODED_SCALE 0x00000002
++#define SHIFT_TOPAZHP_CR_MB_HOST_SKIPPED_CODED_SCALE 1
++#define MASK_TOPAZHP_CR_MB_HOST_INTER_INTRA_SCALE 0x00000004
++#define SHIFT_TOPAZHP_CR_MB_HOST_INTER_INTRA_SCALE 2
++#define MASK_TOPAZHP_CR_H264COMP_8X8_TRANSFORM 0x00000001
++#define SHIFT_TOPAZHP_CR_H264COMP_8X8_TRANSFORM 0
++#define MASK_TOPAZHP_CR_H264COMP_CONSTRAINED_INTRA 0x00000002
++#define SHIFT_TOPAZHP_CR_H264COMP_CONSTRAINED_INTRA 1
++#define MASK_TOPAZHP_CR_H264COMP_8X8_CAVLC 0x00000004
++#define SHIFT_TOPAZHP_CR_H264COMP_8X8_CAVLC 2
++#define MASK_TOPAZHP_CR_H264COMP_DEFAULT_SCALING_LIST 0x00000008
++#define SHIFT_TOPAZHP_CR_H264COMP_DEFAULT_SCALING_LIST 3
++#define MASK_TOPAZHP_CR_H264COMP_ADAPT_ROUND_ENABLE 0x00000010
++#define SHIFT_TOPAZHP_CR_H264COMP_ADAPT_ROUND_ENABLE 4
++#define MASK_TOPAZHP_CR_H264COMP_VIDEO_CONF_ENABLE 0x00000020
++#define SHIFT_TOPAZHP_CR_H264COMP_VIDEO_CONF_ENABLE 5
++#define MASK_TOPAZHP_CR_H264COMP_CUSTOM_QUANT_8X8_INTER_LUMA_ENABLE 0x00000080
++#define SHIFT_TOPAZHP_CR_H264COMP_CUSTOM_QUANT_8X8_INTER_LUMA_ENABLE 7
++#define MASK_TOPAZHP_CR_H264COMP_CUSTOM_QUANT_4X4_INTER_CR_ENABLE 0x00000100
++#define SHIFT_TOPAZHP_CR_H264COMP_CUSTOM_QUANT_4X4_INTER_CR_ENABLE 8
++#define MASK_TOPAZHP_CR_H264COMP_CUSTOM_QUANT_4X4_INTER_CB_ENABLE 0x00000200
++#define SHIFT_TOPAZHP_CR_H264COMP_CUSTOM_QUANT_4X4_INTER_CB_ENABLE 9
++#define MASK_TOPAZHP_CR_H264COMP_CUSTOM_QUANT_4X4_INTER_LUMA_ENABLE 0x00000400
++#define SHIFT_TOPAZHP_CR_H264COMP_CUSTOM_QUANT_4X4_INTER_LUMA_ENABLE 10
++#define MASK_TOPAZHP_CR_H264COMP_CUSTOM_QUANT_8X8_INTRA_LUMA_ENABLE 0x00000800
++#define SHIFT_TOPAZHP_CR_H264COMP_CUSTOM_QUANT_8X8_INTRA_LUMA_ENABLE 11
++#define MASK_TOPAZHP_CR_H264COMP_CUSTOM_QUANT_4X4_INTRA_CR_ENABLE 0x00001000
++#define SHIFT_TOPAZHP_CR_H264COMP_CUSTOM_QUANT_4X4_INTRA_CR_ENABLE 12
++#define MASK_TOPAZHP_CR_H264COMP_CUSTOM_QUANT_4X4_INTRA_CB_ENABLE 0x00002000
++#define SHIFT_TOPAZHP_CR_H264COMP_CUSTOM_QUANT_4X4_INTRA_CB_ENABLE 13
++#define MASK_TOPAZHP_CR_H264COMP_CUSTOM_QUANT_4X4_INTRA_LUMA_ENABLE 0x00004000
++#define SHIFT_TOPAZHP_CR_H264COMP_CUSTOM_QUANT_4X4_INTRA_LUMA_ENABLE 14
++#define MASK_TOPAZHP_CR_H264COMP_LOSSLESS 0x00010000
++#define SHIFT_TOPAZHP_CR_H264COMP_LOSSLESS 16
++#define MASK_TOPAZHP_CR_H264COMP_LOSSLESS_8X8_PREFILTER 0x00020000
++#define SHIFT_TOPAZHP_CR_H264COMP_LOSSLESS_8X8_PREFILTER 17
++
++/* The Intra8x8 Pre-filter is performed in Lossless Mode. H.264 standard lossless. */
++#define TOPAZHP_CR_H264COMP_LOSSLESS_8X8_PREFILTER_FILTER		0x00000001
++
++/* The Intra8x8 Pre-filter is bypassed in Lossless Mode. x264  compatibility mode for lossless. */
++#define TOPAZHP_CR_H264COMP_LOSSLESS_8X8_PREFILTER_BYPASS		0x00000000
++
++/* Register CR_IPE_CONTROL */
++#define MASK_TOPAZHP_CR_IPE_BLOCKSIZE 0x00000003
++#define SHIFT_TOPAZHP_CR_IPE_BLOCKSIZE 0
++#define MASK_TOPAZHP_CR_IPE_16X8_ENABLE 0x00000004
++#define SHIFT_TOPAZHP_CR_IPE_16X8_ENABLE 2
++#define MASK_TOPAZHP_CR_IPE_8X16_ENABLE 0x00000008
++#define SHIFT_TOPAZHP_CR_IPE_8X16_ENABLE 3
++#define MASK_TOPAZHP_CR_IPE_Y_FINE_SEARCH 0x00000030
++#define SHIFT_TOPAZHP_CR_IPE_Y_FINE_SEARCH 4
++#define MASK_TOPAZHP_CR_IPE_4X4_SEARCH 0x00000040
++#define SHIFT_TOPAZHP_CR_IPE_4X4_SEARCH 6
++#define MASK_TOPAZHP_CR_IPE_LRITC_BOUNDARY 0x00000300
++#define SHIFT_TOPAZHP_CR_IPE_LRITC_BOUNDARY 8
++#define MASK_TOPAZHP_CR_IPE_HIGH_LATENCY 0x00001000
++#define SHIFT_TOPAZHP_CR_IPE_HIGH_LATENCY 12
++#define MASK_TOPAZHP_CR_IPE_MV_NUMBER_RESTRICTION 0x00004000
++#define SHIFT_TOPAZHP_CR_IPE_MV_NUMBER_RESTRICTION 14
++
++/* Register CR_IPE_VECTOR_CLIPPING */
++#define MASK_TOPAZHP_CR_IPE_VECTOR_CLIPPING_X 0x000000FF
++#define SHIFT_TOPAZHP_CR_IPE_VECTOR_CLIPPING_X 0
++#define MASK_TOPAZHP_CR_IPE_VECTOR_CLIPPING_Y 0x0000FF00
++#define SHIFT_TOPAZHP_CR_IPE_VECTOR_CLIPPING_Y 8
++#define MASK_TOPAZHP_CR_IPE_VECTOR_CLIPPING_ENABLED 0x00010000
++#define SHIFT_TOPAZHP_CR_IPE_VECTOR_CLIPPING_ENABLED 16
++
++/* Register CR_JMCOMP_CARC_CONTROL_0 */
++#define MASK_TOPAZHP_CR_CARC_NEG_SCALE 0x3F000000
++#define SHIFT_TOPAZHP_CR_CARC_NEG_SCALE 24
++#define MASK_TOPAZHP_CR_CARC_NEG_RANGE 0x001F0000
++#define SHIFT_TOPAZHP_CR_CARC_NEG_RANGE 16
++#define MASK_TOPAZHP_CR_CARC_POS_SCALE 0x00003F00
++#define SHIFT_TOPAZHP_CR_CARC_POS_SCALE 8
++#define MASK_TOPAZHP_CR_CARC_POS_RANGE 0x0000001F
++#define SHIFT_TOPAZHP_CR_CARC_POS_RANGE 0
++
++/* Register CR_JMCOMP_CARC_CONTROL_1 */
++#define MASK_TOPAZHP_CR_CARC_SHIFT  0x03000000
++#define SHIFT_TOPAZHP_CR_CARC_SHIFT 24
++#define MASK_TOPAZHP_CR_CARC_CUTOFF 0x00F00000
++#define SHIFT_TOPAZHP_CR_CARC_CUTOFF 20
++#define MASK_TOPAZHP_CR_CARC_THRESHOLD 0x0007FF00
++#define SHIFT_TOPAZHP_CR_CARC_THRESHOLD 8
++#define MASK_TOPAZHP_CR_SPE_MVD_CLIP_ENABLE 0x80000000
++#define SHIFT_TOPAZHP_CR_SPE_MVD_CLIP_ENABLE 31
++
++/* Register CR_PRED_COMB_CONTROL */
++#define MASK_TOPAZHP_CR_INTRA4X4_DISABLE 0x00000001
++#define SHIFT_TOPAZHP_CR_INTRA4X4_DISABLE 0
++#define MASK_TOPAZHP_CR_INTRA8X8_DISABLE 0x00000002
++#define SHIFT_TOPAZHP_CR_INTRA8X8_DISABLE 1
++#define MASK_TOPAZHP_CR_INTRA16X16_DISABLE 0x00000004
++#define SHIFT_TOPAZHP_CR_INTRA16X16_DISABLE 2
++#define MASK_TOPAZHP_CR_INTER8X8_DISABLE 0x00000010
++#define SHIFT_TOPAZHP_CR_INTER8X8_DISABLE 4
++#define MASK_TOPAZHP_CR_B_PIC0_DISABLE 0x00000100
++#define SHIFT_TOPAZHP_CR_B_PIC0_DISABLE 8
++#define MASK_TOPAZHP_CR_B_PIC1_DISABLE 0x00000200
++#define SHIFT_TOPAZHP_CR_B_PIC1_DISABLE 9
++#define MASK_TOPAZHP_CR_INTER_INTRA_SCALE_ENABLE 0x00001000
++#define SHIFT_TOPAZHP_CR_INTER_INTRA_SCALE_ENABLE 12
++#define MASK_TOPAZHP_CR_CUMULATIVE_BIASES_ENABLE 0x00000800
++#define SHIFT_TOPAZHP_CR_CUMULATIVE_BIASES_ENABLE 11
++#define MASK_TOPAZHP_CR_SKIPPED_CODED_SCALE_ENABLE 0x00002000
++#define SHIFT_TOPAZHP_CR_SKIPPED_CODED_SCALE_ENABLE 13
++
++#endif
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/topazhp_multicore_regs_old.h b/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/topazhp_multicore_regs_old.h
+new file mode 100644
+index 000000000000..d5f8b32605c5
+--- /dev/null
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/reg_headers/topazhp_multicore_regs_old.h
+@@ -0,0 +1,22 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++/*
++ * firmware header
++ *
++ * Copyright (c) Imagination Technologies Ltd.
++ * Copyright (c) 2021 Texas Instruments Incorporated - http://www.ti.com/
++ *
++ * Authors:
++ *	Sunita Nadampalli <sunitan@ti.com>
++ *
++ * Re-written for upstreming
++ *	Sidraya Jayagond <sidraya.bj@pathpartnertech.com>
++ */
++
++#ifndef _REGCONV_H_topazhp_multicore_regs_old_h
++#define _REGCONV_H_topazhp_multicore_regs_old_h
++
++///* Register CR_LAMBDA_DC_TABLE */
++#define MASK_TOPAZHP_CR_TEMPORAL_BLEND 0x001F0000
++#define SHIFT_TOPAZHP_CR_TEMPORAL_BLEND 16
++
++#endif
+-- 
+2.45.2
+

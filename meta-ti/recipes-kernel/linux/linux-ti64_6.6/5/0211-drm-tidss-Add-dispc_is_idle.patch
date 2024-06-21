@@ -1,0 +1,53 @@
+From 8e76a266feee641ade27877f476a0c6266668aa3 Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Date: Tue, 28 May 2024 13:47:35 +0530
+Subject: [PATCH 211/465] drm/tidss: Add dispc_is_idle()
+
+Add a helper function, dispc_is_idle(), which returns whether the DSS is
+idle (i.e. is any video port enabled).
+
+For now we add a call to it in the suspend and resume callbacks, and
+print a warning if in either place the DSS is not idle.
+
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Signed-off-by: Jayesh Choudhary <j-choudhary@ti.com>
+---
+ drivers/gpu/drm/tidss/tidss_dispc.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/drivers/gpu/drm/tidss/tidss_dispc.c b/drivers/gpu/drm/tidss/tidss_dispc.c
+index 4961da3989c0..59ebf8edd23a 100644
+--- a/drivers/gpu/drm/tidss/tidss_dispc.c
++++ b/drivers/gpu/drm/tidss/tidss_dispc.c
+@@ -2671,10 +2671,18 @@ void dispc_vp_setup(struct dispc_device *dispc, u32 hw_videoport,
+ 	dispc_vp_set_color_mgmt(dispc, hw_videoport, state, newmodeset);
+ }
+ 
++static bool dispc_is_idle(struct dispc_device *dispc)
++{
++	return REG_GET(dispc, DSS_SYSSTATUS, 9, 9);
++}
++
+ int dispc_runtime_suspend(struct dispc_device *dispc)
+ {
+ 	dev_dbg(dispc->dev, "suspend\n");
+ 
++	if (!dispc_is_idle(dispc))
++		dev_warn(dispc->dev, "Bad HW state: DSS not idle when suspending");
++
+ 	dispc->is_enabled = false;
+ 
+ 	clk_disable_unprepare(dispc->fclk);
+@@ -2688,6 +2696,9 @@ int dispc_runtime_resume(struct dispc_device *dispc)
+ 
+ 	clk_prepare_enable(dispc->fclk);
+ 
++	if (!dispc_is_idle(dispc))
++		dev_warn(dispc->dev, "Bad HW state: DSS not idle when resuming");
++
+ 	if (REG_GET(dispc, DSS_SYSSTATUS, 0, 0) == 0)
+ 		dev_warn(dispc->dev, "DSS FUNC RESET not done!\n");
+ 
+-- 
+2.45.1
+

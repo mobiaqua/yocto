@@ -1,0 +1,29 @@
+From a4d0002456c61071aa6972cc409a6405756642be Mon Sep 17 00:00:00 2001
+From: Jai Luthra <j-luthra@ti.com>
+Date: Fri, 31 May 2024 14:00:48 +0530
+Subject: [PATCH 279/465] media: v4l2-core: Enable multi-stream support
+
+As the APIs are not yet stable, multiple stream support is by default
+disabled in V4L2 framework, and needs to be explicitly enabled.
+
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+---
+ drivers/media/v4l2-core/v4l2-subdev.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/v4l2-core/v4l2-subdev.c b/drivers/media/v4l2-core/v4l2-subdev.c
+index 31752c06d1f0..2cb86979efb8 100644
+--- a/drivers/media/v4l2-core/v4l2-subdev.c
++++ b/drivers/media/v4l2-core/v4l2-subdev.c
+@@ -31,7 +31,7 @@
+  * 'v4l2_subdev_enable_streams_api' to 1 below.
+  */
+ 
+-static bool v4l2_subdev_enable_streams_api;
++static bool v4l2_subdev_enable_streams_api = 1;
+ #endif
+ 
+ /*
+-- 
+2.45.1
+

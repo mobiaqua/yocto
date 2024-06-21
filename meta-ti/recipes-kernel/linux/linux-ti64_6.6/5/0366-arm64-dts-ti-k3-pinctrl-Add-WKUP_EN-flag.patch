@@ -1,0 +1,37 @@
+From 983297edf0e40d1009f6a4a833b600455c98154b Mon Sep 17 00:00:00 2001
+From: Markus Schneider-Pargmann <msp@baylibre.com>
+Date: Thu, 23 May 2024 14:19:28 +0200
+Subject: [PATCH 366/465] arm64: dts: ti: k3-pinctrl: Add WKUP_EN flag
+
+WKUP_EN is a flag to enable pin wakeup. Any activity will wakeup the SoC
+in that case.
+
+Signed-off-by: Markus Schneider-Pargmann <msp@baylibre.com>
+---
+ arch/arm64/boot/dts/ti/k3-pinctrl.h | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-pinctrl.h b/arch/arm64/boot/dts/ti/k3-pinctrl.h
+index 591be4489f37..de3f75697398 100644
+--- a/arch/arm64/boot/dts/ti/k3-pinctrl.h
++++ b/arch/arm64/boot/dts/ti/k3-pinctrl.h
+@@ -12,6 +12,7 @@
+ #define PULLTYPESEL_SHIFT	(17)
+ #define RXACTIVE_SHIFT		(18)
+ #define DEBOUNCE_SHIFT		(11)
++#define WKUP_EN_SHIFT		(29)
+ 
+ #define PULL_DISABLE		(1 << PULLUDEN_SHIFT)
+ #define PULL_ENABLE		(0 << PULLUDEN_SHIFT)
+@@ -38,6 +39,8 @@
+ #define PIN_DEBOUNCE_CONF5	(5 << DEBOUNCE_SHIFT)
+ #define PIN_DEBOUNCE_CONF6	(6 << DEBOUNCE_SHIFT)
+ 
++#define WKUP_EN			(1 << WKUP_EN_SHIFT)
++
+ #define AM62AX_IOPAD(pa, val, muxmode)		(((pa) & 0x1fff)) ((val) | (muxmode))
+ #define AM62AX_MCU_IOPAD(pa, val, muxmode)	(((pa) & 0x1fff)) ((val) | (muxmode))
+ 
+-- 
+2.45.1
+

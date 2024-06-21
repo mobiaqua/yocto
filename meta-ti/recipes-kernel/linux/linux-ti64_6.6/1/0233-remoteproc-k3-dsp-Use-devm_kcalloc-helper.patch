@@ -1,0 +1,50 @@
+From e45b3d3b630c93d13d7c65b76be933fbef6765f7 Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Tue, 23 Jan 2024 12:49:08 -0600
+Subject: [PATCH 233/330] remoteproc: k3-dsp: Use devm_kcalloc() helper
+
+commit 92a0915ac3eb571fc014c249c66db802be7fdac9 upstream.
+
+Use a device lifecycle managed action to free memory. This helps prevent
+mistakes like freeing out of order in cleanup functions and forgetting to
+free on error paths.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Link: https://lore.kernel.org/r/20240123184913.725435-3-afd@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index 0cb00146fe97..a13552c71f44 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -591,7 +591,7 @@ static int k3_dsp_reserved_mem_init(struct k3_dsp_rproc *kproc)
+ 		return ret;
+ 
+ 	num_rmems--;
+-	kproc->rmem = kcalloc(num_rmems, sizeof(*kproc->rmem), GFP_KERNEL);
++	kproc->rmem = devm_kcalloc(dev, num_rmems, sizeof(*kproc->rmem), GFP_KERNEL);
+ 	if (!kproc->rmem)
+ 		return -ENOMEM;
+ 
+@@ -635,7 +635,6 @@ static int k3_dsp_reserved_mem_init(struct k3_dsp_rproc *kproc)
+ unmap_rmem:
+ 	for (i--; i >= 0; i--)
+ 		iounmap(kproc->rmem[i].cpu_addr);
+-	kfree(kproc->rmem);
+ 	return ret;
+ }
+ 
+@@ -645,7 +644,6 @@ static void k3_dsp_reserved_mem_exit(struct k3_dsp_rproc *kproc)
+ 
+ 	for (i = 0; i < kproc->num_rmems; i++)
+ 		iounmap(kproc->rmem[i].cpu_addr);
+-	kfree(kproc->rmem);
+ }
+ 
+ static
+-- 
+2.43.1
+

@@ -1,0 +1,53 @@
+From 53d91e21b6aa9b0e10974e4405bad0ea4e0d6125 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Th=C3=83=C2=A9o=20Lebrun?= <theo.lebrun@bootlin.com>
+Date: Thu, 13 Jun 2024 10:26:11 +0200
+Subject: [PATCH 43/51] mux: mmio: add resume support
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+No need to save something during the suspend stage, as the mux core has an
+internal cache to store the state of muxes.
+
+This cache is used by mux_chip_resume() to restore all muxes.
+
+Signed-off-by: ThÃ©o Lebrun <theo.lebrun@bootlin.com>
+Link: https://lore.kernel.org/all/20240102-j7200-pcie-s2r-v6-5-4656ef6e6d66@bootlin.com/
+Signed-off-by: Thomas Richard <thomas.richard@bootlin.com>
+---
+ drivers/mux/mmio.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/drivers/mux/mmio.c b/drivers/mux/mmio.c
+index 30a952c34365..00405abe3ce3 100644
+--- a/drivers/mux/mmio.c
++++ b/drivers/mux/mmio.c
+@@ -130,13 +130,25 @@ static int mux_mmio_probe(struct platform_device *pdev)
+ 
+ 	mux_chip->ops = &mux_mmio_ops;
+ 
++	dev_set_drvdata(dev, mux_chip);
++
+ 	return devm_mux_chip_register(dev, mux_chip);
+ }
+ 
++static int mux_mmio_resume_noirq(struct device *dev)
++{
++	struct mux_chip *mux_chip = dev_get_drvdata(dev);
++
++	return mux_chip_resume(mux_chip);
++}
++
++static DEFINE_NOIRQ_DEV_PM_OPS(mux_mmio_pm_ops, NULL, mux_mmio_resume_noirq);
++
+ static struct platform_driver mux_mmio_driver = {
+ 	.driver = {
+ 		.name = "mmio-mux",
+ 		.of_match_table	= mux_mmio_dt_ids,
++		.pm = pm_sleep_ptr(&mux_mmio_pm_ops),
+ 	},
+ 	.probe = mux_mmio_probe,
+ };
+-- 
+2.45.1
+

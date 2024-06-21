@@ -1,0 +1,78 @@
+From 9d63dd23b8c12a2ebce22ef3aa1c1e64cc38e6af Mon Sep 17 00:00:00 2001
+From: Siddharth Vadapalli <s-vadapalli@ti.com>
+Date: Wed, 19 Jun 2024 17:25:31 +0530
+Subject: [PATCH 295/310] PCI: j721e: Add support for enabling ACSPCIE PAD IO
+ Buffer output
+
+The ACSPCIE module is capable of driving the reference clock required by
+the PCIe Endpoint device. It is an alternative to on-board and external
+reference clock generators. Enabling the output from the ACSPCIE module's
+PAD IO Buffers requires clearing the "PAD IO disable" bits of the
+ACSPCIE_PROXY_CTRL register in the CTRL_MMR register space.
+
+Signed-off-by: Siddharth Vadapalli <s-vadapalli@ti.com>
+---
+ drivers/pci/controller/cadence/pci-j721e.c | 33 ++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+
+diff --git a/drivers/pci/controller/cadence/pci-j721e.c b/drivers/pci/controller/cadence/pci-j721e.c
+index 77b34973874a..34730c75f6fe 100644
+--- a/drivers/pci/controller/cadence/pci-j721e.c
++++ b/drivers/pci/controller/cadence/pci-j721e.c
+@@ -48,6 +48,7 @@ enum link_status {
+ #define J721E_MODE_RC			BIT(7)
+ #define LANE_COUNT(n)			((n) << 8)
+ 
++#define ACSPCIE_PAD_ENABLE_MASK		GENMASK(1, 0)
+ #define GENERATION_SEL_MASK		GENMASK(1, 0)
+ 
+ struct j721e_pcie {
+@@ -225,6 +226,30 @@ static int j721e_pcie_set_lane_count(struct j721e_pcie *pcie,
+ 	return ret;
+ }
+ 
++static int j721e_acspcie_pad_enable(struct j721e_pcie *pcie, struct regmap *syscon)
++{
++	struct device *dev = pcie->cdns_pcie->dev;
++	struct device_node *node = dev->of_node;
++	u32 mask = ACSPCIE_PAD_ENABLE_MASK;
++	struct of_phandle_args args;
++	u32 val;
++	int ret;
++
++	ret = of_parse_phandle_with_fixed_args(node, "ti,syscon-acspcie-proxy-ctrl",
++					       1, 0, &args);
++	if (!ret) {
++		/* PAD Enable Bits have to be cleared to in order to enable output */
++		val = ~(args.args[0]);
++		ret = regmap_update_bits(syscon, 0, mask, val);
++		if (ret)
++			dev_err(dev, "Enabling ACSPCIE PAD output failed: %d\n", ret);
++	} else {
++		dev_err(dev, "ti,syscon-acspcie-proxy-ctrl has invalid parameters\n");
++	}
++
++	return ret;
++}
++
+ static int j721e_pcie_ctrl_init(struct j721e_pcie *pcie)
+ {
+ 	struct device *dev = pcie->cdns_pcie->dev;
+@@ -264,6 +289,14 @@ static int j721e_pcie_ctrl_init(struct j721e_pcie *pcie)
+ 		return ret;
+ 	}
+ 
++	/* Enable ACSPCIe PAD IO Buffers if the optional property exists */
++	syscon = syscon_regmap_lookup_by_phandle_optional(node, "ti,syscon-acspcie-proxy-ctrl");
++	if (syscon) {
++		ret = j721e_acspcie_pad_enable(pcie, syscon);
++		if (ret)
++			return ret;
++	}
++
+ 	return 0;
+ }
+ 
+-- 
+2.45.2
+

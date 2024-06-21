@@ -1,0 +1,43 @@
+From 8fd161e27608c72bc14ea15129f632681dfd1352 Mon Sep 17 00:00:00 2001
+From: Suman Anna <s-anna@ti.com>
+Date: Mon, 10 Jun 2024 15:32:23 +0530
+Subject: [PATCH 403/465] arm64: dts: ti: k3-j721e-main: Switch MAIN R5F
+ clusters to Split-mode
+
+J721E SoCs have two R5F clusters in the MAIN domain, and both of these
+are configured for LockStep mode at the moment. Switch both of these R5F
+clusters to Split mode by default to maximize the number of R5F cores.
+
+Signed-off-by: Suman Anna <s-anna@ti.com>
+Signed-off-by: Apurva Nandan <a-nandan@ti.com>
+[ Commit message cleanup ]
+Signed-off-by: Beleswar Padhi <b-padhi@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index 5c58c23b06b3..89ce1f0305fb 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -2177,7 +2177,7 @@ watchdog1: watchdog@2210000 {
+ 
+ 	main_r5fss0: r5fss@5c00000 {
+ 		compatible = "ti,j721e-r5fss";
+-		ti,cluster-mode = <1>;
++		ti,cluster-mode = <0>;
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
+ 		ranges = <0x5c00000 0x00 0x5c00000 0x20000>,
+@@ -2217,7 +2217,7 @@ main_r5fss0_core1: r5f@5d00000 {
+ 
+ 	main_r5fss1: r5fss@5e00000 {
+ 		compatible = "ti,j721e-r5fss";
+-		ti,cluster-mode = <1>;
++		ti,cluster-mode = <0>;
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
+ 		ranges = <0x5e00000 0x00 0x5e00000 0x20000>,
+-- 
+2.45.1
+

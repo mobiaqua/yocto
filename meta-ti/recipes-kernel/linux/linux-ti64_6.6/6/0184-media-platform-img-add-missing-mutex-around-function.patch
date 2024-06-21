@@ -1,0 +1,33 @@
+From 20b151374a80183172c51b76498f6003bd81726d Mon Sep 17 00:00:00 2001
+From: Darren Etheridge <detheridge@ti.com>
+Date: Sun, 16 Jun 2024 21:45:29 -0500
+Subject: [PATCH 184/222] media: platform: img: add missing mutex around
+ function
+
+This mutex is necessary add it in, otherwise random kernel panics have
+been reported when decoding multiple streams in parallel.
+
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+---
+ drivers/media/platform/imagination/vxe-vxd/decoder/vxd_core.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_core.c b/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_core.c
+index ce33decddff7..3875ed478f11 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_core.c
++++ b/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_core.c
+@@ -1502,7 +1502,9 @@ int vxd_send_msg(struct vxd_dec_ctx *ctx, struct vxd_fw_msg *msg)
+ 		__func__, item, stream->ptd, stream->id, item->msg.out_flags);
+ #endif
+ 
++	mutex_lock(vxd->mutex);
+ 	vxd_schedule_locked(vxd);
++	mutex_unlock(vxd->mutex);
+ 
+ out_unlock:
+ 	mutex_unlock(ctx->mutex);
+-- 
+2.45.2
+

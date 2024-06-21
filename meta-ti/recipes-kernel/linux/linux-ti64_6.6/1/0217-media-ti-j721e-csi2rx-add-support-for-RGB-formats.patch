@@ -1,0 +1,62 @@
+From f9e27b2809d96a36569e0de2e0e623fa3dd5b7c8 Mon Sep 17 00:00:00 2001
+From: Jai Luthra <j-luthra@ti.com>
+Date: Fri, 5 Jan 2024 10:00:25 +0100
+Subject: [PATCH 217/330] media: ti: j721e-csi2rx: add support for RGB formats
+
+commit 5eb0ad467cb0cf8f9a6621d079a1f7ecd804153f upstream.
+
+Add support for RGB565, RGB888 and BGR888 media bus formats.
+
+The pixel formats for these have a different byte-order than the MIPI
+bus formats, given the SHIM IP [1] unpacks them into memory as follows:
+
+MIPI RGB888 unpacks to:
+BYTE3		BYTE2		BYTE1		BYTE0
+00000000	RRRRRRRR	GGGGGGGG	BBBBBBBB
+
+MIPI RGB565 unpacks to:
+BIT 15-11	BIT 10-5	BIT 4-0
+RRRRR		GGGGGG		BBBBB
+
+[1]: AM62x TRM: 12.6.1.4.5 "CSI_RX_IF Data Memory Organization Details"
+
+Link: https://www.ti.com/lit/pdf/spruiv7
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Link: https://lore.kernel.org/r/20240105090025.1245112-6-julien.massot@collabora.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ .../platform/ti/j721e-csi2rx/j721e-csi2rx.c    | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+index 46d37401512b..f8563c717c53 100644
+--- a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
++++ b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+@@ -188,6 +188,24 @@ static const struct ti_csi2rx_fmt ti_csi2rx_formats[] = {
+ 		.csi_dt			= MIPI_CSI2_DT_RAW10,
+ 		.bpp			= 16,
+ 		.size			= SHIM_DMACNTX_SIZE_16,
++	}, {
++		.fourcc			= V4L2_PIX_FMT_RGB565X,
++		.code			= MEDIA_BUS_FMT_RGB565_1X16,
++		.csi_dt			= MIPI_CSI2_DT_RGB565,
++		.bpp			= 16,
++		.size			= SHIM_DMACNTX_SIZE_16,
++	}, {
++		.fourcc			= V4L2_PIX_FMT_XBGR32,
++		.code			= MEDIA_BUS_FMT_RGB888_1X24,
++		.csi_dt			= MIPI_CSI2_DT_RGB888,
++		.bpp			= 32,
++		.size			= SHIM_DMACNTX_SIZE_32,
++	}, {
++		.fourcc			= V4L2_PIX_FMT_RGBX32,
++		.code			= MEDIA_BUS_FMT_BGR888_1X24,
++		.csi_dt			= MIPI_CSI2_DT_RGB888,
++		.bpp			= 32,
++		.size			= SHIM_DMACNTX_SIZE_32,
+ 	},
+ 
+ 	/* More formats can be supported but they are not listed for now. */
+-- 
+2.43.1
+

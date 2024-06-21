@@ -1,0 +1,65 @@
+From cc14fe42942435674d489f63a08a82d6910013c2 Mon Sep 17 00:00:00 2001
+From: Pratyush Yadav <p.yadav@ti.com>
+Date: Fri, 31 May 2024 14:00:58 +0530
+Subject: [PATCH 289/465] media: cadence: csi2rx: add get_frame_desc wrapper
+
+J721E wrapper CSI2RX driver needs to get the frame descriptor from the
+source to find out info about virtual channel. This driver itself does
+not touch the routing or virtual channels in any way. So simply pass the
+descriptor through from the source.
+
+Signed-off-by: Pratyush Yadav <p.yadav@ti.com>
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+---
+ drivers/media/platform/cadence/cdns-csi2rx.c | 24 ++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+
+diff --git a/drivers/media/platform/cadence/cdns-csi2rx.c b/drivers/media/platform/cadence/cdns-csi2rx.c
+index 55299d077f50..7f35e5534130 100644
+--- a/drivers/media/platform/cadence/cdns-csi2rx.c
++++ b/drivers/media/platform/cadence/cdns-csi2rx.c
+@@ -135,6 +135,21 @@ static const struct csi2rx_fmt *csi2rx_get_fmt_by_code(u32 code)
+ 	return NULL;
+ }
+ 
++static int csi2rx_get_frame_desc_from_source(struct csi2rx_priv *csi2rx,
++					     struct v4l2_mbus_frame_desc *fd)
++{
++	struct media_pad *remote_pad;
++
++	remote_pad = media_entity_remote_source_pad_unique(&csi2rx->subdev.entity);
++	if (!remote_pad) {
++		dev_err(csi2rx->dev, "No remote pad found for sink\n");
++		return -ENODEV;
++	}
++
++	return v4l2_subdev_call(csi2rx->source_subdev, pad, get_frame_desc,
++				remote_pad->index, fd);
++}
++
+ static inline
+ struct csi2rx_priv *v4l2_subdev_to_csi2rx(struct v4l2_subdev *subdev)
+ {
+@@ -454,10 +469,19 @@ static int csi2rx_init_cfg(struct v4l2_subdev *subdev,
+ 	return csi2rx_set_fmt(subdev, state, &format);
+ }
+ 
++static int csi2rx_get_frame_desc(struct v4l2_subdev *subdev, unsigned int pad,
++				 struct v4l2_mbus_frame_desc *fd)
++{
++	struct csi2rx_priv *csi2rx = v4l2_subdev_to_csi2rx(subdev);
++
++	return csi2rx_get_frame_desc_from_source(csi2rx, fd);
++}
++
+ static const struct v4l2_subdev_pad_ops csi2rx_pad_ops = {
+ 	.get_fmt	= v4l2_subdev_get_fmt,
+ 	.set_fmt	= csi2rx_set_fmt,
+ 	.init_cfg	= csi2rx_init_cfg,
++	.get_frame_desc = csi2rx_get_frame_desc,
+ };
+ 
+ static const struct v4l2_subdev_video_ops csi2rx_video_ops = {
+-- 
+2.45.1
+

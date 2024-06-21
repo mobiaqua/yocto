@@ -1,0 +1,78 @@
+From aa10134363cd015dd453e15f84646e14a1593872 Mon Sep 17 00:00:00 2001
+From: Darren Etheridge <detheridge@ti.com>
+Date: Sun, 16 Jun 2024 21:45:37 -0500
+Subject: [PATCH 192/222] media: platform: img: vxd fix the mapping problem
+ with dmabuf import
+
+If a position seek is performed within GStreamer, the MMU mappings are
+destroyed.  However the flag to indicate that the buffers are mapped is
+still set.  Therefore the driver blindly assumes that the mapping is
+still valid when it tries to pickup the playback from the next position.
+Whereas it should be remapping the buffers into the MMU.  This only
+happens during seek, because the buffers get reused instead of
+completely torn down as is the case with a full stream shutdown.
+
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+---
+ .../media/platform/imagination/vxe-vxd/decoder/vxd_dec.h  | 15 ++++++++-------
+ .../media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c |  2 ++
+ 2 files changed, 10 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_dec.h b/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_dec.h
+index ed3da238ff7b..a702285c0c25 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_dec.h
++++ b/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_dec.h
+@@ -322,13 +322,6 @@ struct vxd_stream {
+ };
+ 
+ 
+-struct vxd_mapping {
+-	struct list_head list;
+-	unsigned int buf_map_id;
+-	unsigned char reuse;
+-	unsigned long dma_addr;
+-};
+-
+ /*
+  * struct vxd_buffer - holds per buffer info.
+  * @buffer: the vb2_v4l2_buffer
+@@ -357,6 +350,14 @@ struct vxd_buffer {
+ 	struct bspp_preparsed_data preparsed_data;
+ };
+ 
++struct vxd_mapping {
++	struct list_head list;
++	unsigned int buf_map_id;
++	unsigned char reuse;
++	unsigned long dma_addr;
++	struct vxd_buffer *buf; /* point to the mapped buffer */
++};
++
+ typedef void (*decode_cb)(int res_str_id, unsigned int *msg, unsigned int msg_size,
+ 			  unsigned int msg_flags);
+ 
+diff --git a/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c b/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c
+index 49ac6087fec5..89efd6871167 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c
++++ b/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c
+@@ -945,6 +945,7 @@ static int vxd_dec_buf_prepare(struct vb2_buffer *vb)
+ 		mapping->buf_map_id = buf->buf_map_id;
+ 		list_add_tail(&mapping->list, &ctx->cap_mappings);
+ 		buf->mapping = mapping;
++		mapping->buf = buf;
+ 	}
+ 	buf->mapped = TRUE;
+ 
+@@ -1085,6 +1086,7 @@ static void vxd_dec_stop_streaming(struct vb2_queue *vq)
+ 		list_for_each(list, &ctx->cap_mappings) {
+ 			mapping = list_entry(list, struct vxd_mapping, list);
+ 			core_stream_unmap_buf_sg(mapping->buf_map_id);
++			mapping->buf->mapped = FALSE;
+ 			__list_del_entry(&mapping->list);
+ 		}
+ 	}
+-- 
+2.45.2
+

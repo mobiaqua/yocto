@@ -1,0 +1,59 @@
+From 22a8434daa92a0fdf02ba52309db9c632ecc14d7 Mon Sep 17 00:00:00 2001
+From: Manorit Chawdhry <m-chawdhry@ti.com>
+Date: Wed, 13 Dec 2023 19:21:37 +0530
+Subject: [PATCH 180/330] arm64: dts: ti: k3-j7*: Add additional regs for DMA
+ components
+
+commit 1b62a3cfddbb5664bc4360b3cb0d76b9b99abdc5 upstream.
+
+Add additional reg properties for UDMA and RingAcc nodes which are
+mostly used by bootloader components before Device Manager firmware
+services are available, in order to setup DMA transfers.
+
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+Reviewed-by: Jai Luthra <j-luthra@ti.com>
+Link: https://lore.kernel.org/r/20231213135138.929517-3-vigneshr@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi        | 8 ++++++--
+ arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi  | 8 ++++++--
+ 8 files changed, 48 insertions(+), 16 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index 746b9f8b1c64..2569b4c08ffb 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -382,8 +382,12 @@ main_udmap: dma-controller@31150000 {
+ 			compatible = "ti,j721e-navss-main-udmap";
+ 			reg = <0x0 0x31150000 0x0 0x100>,
+ 			      <0x0 0x34000000 0x0 0x100000>,
+-			      <0x0 0x35000000 0x0 0x100000>;
+-			reg-names = "gcfg", "rchanrt", "tchanrt";
++			      <0x0 0x35000000 0x0 0x100000>,
++			      <0x0 0x30b00000 0x0 0x20000>,
++			      <0x0 0x30c00000 0x0 0x10000>,
++			      <0x0 0x30d00000 0x0 0x8000>;
++			reg-names = "gcfg", "rchanrt", "tchanrt",
++				    "tchan", "rchan", "rflow";
+ 			msi-parent = <&main_udmass_inta>;
+ 			#dma-cells = <1>;
+ 
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+index 8f259efe3af9..a74912d9e4da 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+@@ -475,8 +475,12 @@ mcu_udmap: dma-controller@285c0000 {
+ 			compatible = "ti,j721e-navss-mcu-udmap";
+ 			reg = <0x0 0x285c0000 0x0 0x100>,
+ 			      <0x0 0x2a800000 0x0 0x40000>,
+-			      <0x0 0x2aa00000 0x0 0x40000>;
+-			reg-names = "gcfg", "rchanrt", "tchanrt";
++			      <0x0 0x2aa00000 0x0 0x40000>,
++			      <0x0 0x284a0000 0x0 0x4000>,
++			      <0x0 0x284c0000 0x0 0x4000>,
++			      <0x0 0x28400000 0x0 0x2000>;
++			reg-names = "gcfg", "rchanrt", "tchanrt",
++				    "tchan", "rchan", "rflow";
+ 			msi-parent = <&main_udmass_inta>;
+ 			#dma-cells = <1>;
+ 

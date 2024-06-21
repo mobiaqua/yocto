@@ -1,0 +1,94 @@
+From 5b3e3b30d05e7ee0beb2b4485fecc0d2c16cefa3 Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Tue, 23 Jan 2024 16:25:33 -0600
+Subject: [PATCH 252/330] arm64: dts: ti: k3-j721e-beagleboneai64: Do not split
+ single items
+
+commit 3ff119bb1cb1e3a81bf620125a3bd74821464804 upstream.
+
+Each "mboxes" item is composed of two cells. It seems these got split
+as they appeared to be two items in an array, but are actually a single
+two-cell item. Rejoin these cells.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Link: https://lore.kernel.org/r/20240123222536.875797-8-afd@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ .../boot/dts/ti/k3-j721e-beagleboneai64.dts    | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts b/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
+index 2f954729f353..effc605382de 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
++++ b/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
+@@ -936,58 +936,58 @@ mbox_c71_0: mbox-c71-0 {
+ };
+ 
+ &mcu_r5fss0_core0 {
+-	mboxes = <&mailbox0_cluster0>, <&mbox_mcu_r5fss0_core0>;
++	mboxes = <&mailbox0_cluster0 &mbox_mcu_r5fss0_core0>;
+ 	memory-region = <&mcu_r5fss0_core0_dma_memory_region>,
+ 			<&mcu_r5fss0_core0_memory_region>;
+ };
+ 
+ &mcu_r5fss0_core1 {
+-	mboxes = <&mailbox0_cluster0>, <&mbox_mcu_r5fss0_core1>;
++	mboxes = <&mailbox0_cluster0 &mbox_mcu_r5fss0_core1>;
+ 	memory-region = <&mcu_r5fss0_core1_dma_memory_region>,
+ 			<&mcu_r5fss0_core1_memory_region>;
+ };
+ 
+ &main_r5fss0_core0 {
+-	mboxes = <&mailbox0_cluster1>, <&mbox_main_r5fss0_core0>;
++	mboxes = <&mailbox0_cluster1 &mbox_main_r5fss0_core0>;
+ 	memory-region = <&main_r5fss0_core0_dma_memory_region>,
+ 			<&main_r5fss0_core0_memory_region>;
+ };
+ 
+ &main_r5fss0_core1 {
+-	mboxes = <&mailbox0_cluster1>, <&mbox_main_r5fss0_core1>;
++	mboxes = <&mailbox0_cluster1 &mbox_main_r5fss0_core1>;
+ 	memory-region = <&main_r5fss0_core1_dma_memory_region>,
+ 			<&main_r5fss0_core1_memory_region>;
+ };
+ 
+ &main_r5fss1_core0 {
+-	mboxes = <&mailbox0_cluster2>, <&mbox_main_r5fss1_core0>;
++	mboxes = <&mailbox0_cluster2 &mbox_main_r5fss1_core0>;
+ 	memory-region = <&main_r5fss1_core0_dma_memory_region>,
+ 			<&main_r5fss1_core0_memory_region>;
+ };
+ 
+ &main_r5fss1_core1 {
+-	mboxes = <&mailbox0_cluster2>, <&mbox_main_r5fss1_core1>;
++	mboxes = <&mailbox0_cluster2 &mbox_main_r5fss1_core1>;
+ 	memory-region = <&main_r5fss1_core1_dma_memory_region>,
+ 			<&main_r5fss1_core1_memory_region>;
+ };
+ 
+ &c66_0 {
+ 	status = "okay";
+-	mboxes = <&mailbox0_cluster3>, <&mbox_c66_0>;
++	mboxes = <&mailbox0_cluster3 &mbox_c66_0>;
+ 	memory-region = <&c66_0_dma_memory_region>,
+ 			<&c66_0_memory_region>;
+ };
+ 
+ &c66_1 {
+ 	status = "okay";
+-	mboxes = <&mailbox0_cluster3>, <&mbox_c66_1>;
++	mboxes = <&mailbox0_cluster3 &mbox_c66_1>;
+ 	memory-region = <&c66_1_dma_memory_region>,
+ 			<&c66_1_memory_region>;
+ };
+ 
+ &c71_0 {
+ 	status = "okay";
+-	mboxes = <&mailbox0_cluster4>, <&mbox_c71_0>;
++	mboxes = <&mailbox0_cluster4 &mbox_c71_0>;
+ 	memory-region = <&c71_0_dma_memory_region>,
+ 			<&c71_0_memory_region>;
+ };
+-- 
+2.43.1
+

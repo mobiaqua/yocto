@@ -1,0 +1,77 @@
+From b69060d2fa825e6dad8d0be86b6b76c6c7eb0643 Mon Sep 17 00:00:00 2001
+From: Roger Quadros <rogerq@kernel.org>
+Date: Tue, 19 Dec 2023 12:57:59 +0200
+Subject: [PATCH 191/330] net: ethernet: am65-cpsw: Rename TI_AM65_CPSW_TAS to
+ TI_AM65_CPSW_QOS
+
+commit d0f9535b3182d4a918f5db01ea61b43c736463a7 upstream.
+
+We will use this Kconfig option to not only enable TAS/EST offload
+but also other QoS features like Multiqueue priority descriptors
+and MAC-Merge/Frame Preemption. TI_AM65_CPSW_QOS seems a more
+appropriate Kconfig option name than TI_AM65_CPSW_TAS.
+
+Signed-off-by: Roger Quadros <rogerq@kernel.org>
+Reviewed-by: Vladimir Oltean <vladimir.oltean@nxp.com>
+Link: https://lore.kernel.org/r/20231219105805.80617-5-rogerq@kernel.org
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/net/ethernet/ti/Kconfig         | 12 ++++++------
+ drivers/net/ethernet/ti/Makefile        |  2 +-
+ drivers/net/ethernet/ti/am65-cpsw-qos.h |  2 +-
+ 3 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/net/ethernet/ti/Kconfig b/drivers/net/ethernet/ti/Kconfig
+index cac61f5d3fd4..e6ed0888a5a5 100644
+--- a/drivers/net/ethernet/ti/Kconfig
++++ b/drivers/net/ethernet/ti/Kconfig
+@@ -134,14 +134,14 @@ config TI_K3_AM65_CPTS
+ 	  protocol, Ethernet Enhanced Scheduled Traffic Operations (CPTS_ESTFn)
+ 	  and PCIe Subsystem Precision Time Measurement (PTM).
+ 
+-config TI_AM65_CPSW_TAS
+-	bool "Enable TAS offload in AM65 CPSW"
++config TI_AM65_CPSW_QOS
++	bool "Enable QoS offload features in AM65 CPSW"
+ 	depends on TI_K3_AM65_CPSW_NUSS && NET_SCH_TAPRIO && TI_K3_AM65_CPTS
+ 	help
+-	  Say y here to support Time Aware Shaper(TAS) offload in AM65 CPSW.
+-	  AM65 CPSW hardware supports Enhanced Scheduled Traffic (EST)
+-	  defined in IEEE 802.1Q 2018. The EST scheduler runs on CPTS and the
+-	  TAS/EST schedule is updated in the Fetch RAM memory of the CPSW.
++	  This option enables QoS offload features in AM65 CPSW like
++	  Time Aware Shaper (TAS) / Enhanced Scheduled Traffic (EST).
++	  The EST scheduler runs on CPTS and the TAS/EST schedule is
++	  updated in the Fetch RAM memory of the CPSW.
+ 
+ config TI_KEYSTONE_NETCP
+ 	tristate "TI Keystone NETCP Core Support"
+diff --git a/drivers/net/ethernet/ti/Makefile b/drivers/net/ethernet/ti/Makefile
+index 9d4b98d535a7..bca3ae3a6f38 100644
+--- a/drivers/net/ethernet/ti/Makefile
++++ b/drivers/net/ethernet/ti/Makefile
+@@ -28,7 +28,7 @@ obj-$(CONFIG_TI_K3_CPPI_DESC_POOL) += k3-cppi-desc-pool.o
+ 
+ obj-$(CONFIG_TI_K3_AM65_CPSW_NUSS) += ti-am65-cpsw-nuss.o
+ ti-am65-cpsw-nuss-y := am65-cpsw-nuss.o cpsw_sl.o am65-cpsw-ethtool.o cpsw_ale.o
+-ti-am65-cpsw-nuss-$(CONFIG_TI_AM65_CPSW_TAS) += am65-cpsw-qos.o
++ti-am65-cpsw-nuss-$(CONFIG_TI_AM65_CPSW_QOS) += am65-cpsw-qos.o
+ ti-am65-cpsw-nuss-$(CONFIG_TI_K3_AM65_CPSW_SWITCHDEV) += am65-cpsw-switchdev.o
+ obj-$(CONFIG_TI_K3_AM65_CPTS) += am65-cpts.o
+ 
+diff --git a/drivers/net/ethernet/ti/am65-cpsw-qos.h b/drivers/net/ethernet/ti/am65-cpsw-qos.h
+index 898f13a4a112..be4987eb8c51 100644
+--- a/drivers/net/ethernet/ti/am65-cpsw-qos.h
++++ b/drivers/net/ethernet/ti/am65-cpsw-qos.h
+@@ -31,7 +31,7 @@ struct am65_cpsw_qos {
+ 	struct am65_cpsw_ale_ratelimit ale_mc_ratelimit;
+ };
+ 
+-#if IS_ENABLED(CONFIG_TI_AM65_CPSW_TAS)
++#if IS_ENABLED(CONFIG_TI_AM65_CPSW_QOS)
+ int am65_cpsw_qos_ndo_setup_tc(struct net_device *ndev, enum tc_setup_type type,
+ 			       void *type_data);
+ void am65_cpsw_qos_link_up(struct net_device *ndev, int link_speed);
+-- 
+2.43.1
+

@@ -1,0 +1,34 @@
+From 7990e2826e5d3147e14977ffc379e71012494499 Mon Sep 17 00:00:00 2001
+From: Brandon Brnich <b-brnich@ti.com>
+Date: Sun, 16 Jun 2024 21:45:42 -0500
+Subject: [PATCH 197/222] media: img: vxe-vxd: encoder: Update RGB Format
+
+V4L2_PIX_FMT_RBG32 has been deprecated. Replace this old format with a
+supported V4L2 RGB format and match with corresponding IMG pixel format.
+
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+Acked-by: Darren Etheridge <detheridge@ti.com>
+---
+ drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c b/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
+index 6f5833b36828..59657168fd37 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
+@@ -63,10 +63,10 @@ static struct vxe_enc_fmt vxe_enc_formats[] = {
+ 		.csc_preset = IMG_CSC_NONE,
+ 	},
+ 	{
+-		.fourcc = V4L2_PIX_FMT_RGB32,
++		.fourcc = V4L2_PIX_FMT_ARGB32,
+ 		.num_planes = 1,
+ 		.type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
+-		.fmt = IMG_CODEC_ABCX,
++		.fmt = IMG_CODEC_XBCA,
+ 		.min_bufs = 2,
+ 		.size_num[0] = 1,
+ 		.size_den[0] = 1,
+-- 
+2.45.2
+

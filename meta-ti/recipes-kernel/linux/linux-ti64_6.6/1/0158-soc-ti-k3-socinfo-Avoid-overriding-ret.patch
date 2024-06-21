@@ -1,0 +1,44 @@
+From d2d654f61ff76a403f7dda3a3a4142d10be7c0b6 Mon Sep 17 00:00:00 2001
+From: Neha Malcom Francis <n-francis@ti.com>
+Date: Mon, 16 Oct 2023 15:46:07 +0530
+Subject: [PATCH 158/330] soc: ti: k3-socinfo: Avoid overriding ret
+
+commit 3aeb0d3694e16b5066db82aa1152884f2e6aace0 upstream.
+
+Avoid overriding the return value and make sure the right error code is
+reflected. Here, if the partno is none of the identified partnos present
+in k3_soc_ids[], return -ENODEV.
+
+Signed-off-by: Neha Malcom Francis <n-francis@ti.com>
+Link: https://lore.kernel.org/r/20231016101608.993921-3-n-francis@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/soc/ti/k3-socinfo.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/soc/ti/k3-socinfo.c b/drivers/soc/ti/k3-socinfo.c
+index d45f5cb955a6..7fc3548e084c 100644
+--- a/drivers/soc/ti/k3-socinfo.c
++++ b/drivers/soc/ti/k3-socinfo.c
+@@ -60,7 +60,7 @@ k3_chipinfo_partno_to_names(unsigned int partno,
+ 			return 0;
+ 		}
+ 
+-	return -EINVAL;
++	return -ENODEV;
+ }
+ 
+ static int k3_chipinfo_probe(struct platform_device *pdev)
+@@ -111,8 +111,7 @@ static int k3_chipinfo_probe(struct platform_device *pdev)
+ 
+ 	ret = k3_chipinfo_partno_to_names(partno_id, soc_dev_attr);
+ 	if (ret) {
+-		dev_err(dev, "Unknown SoC JTAGID[0x%08X]\n", jtag_id);
+-		ret = -ENODEV;
++		dev_err(dev, "Unknown SoC JTAGID[0x%08X]: %d\n", jtag_id, ret);
+ 		goto err_free_rev;
+ 	}
+ 
+-- 
+2.43.1
+

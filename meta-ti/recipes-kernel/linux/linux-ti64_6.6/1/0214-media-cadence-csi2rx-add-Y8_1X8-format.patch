@@ -1,0 +1,32 @@
+From 8c78b814d9a5607065b7b0dac76bd0d8c91100fe Mon Sep 17 00:00:00 2001
+From: Julien Massot <julien.massot@collabora.com>
+Date: Fri, 5 Jan 2024 10:00:22 +0100
+Subject: [PATCH 214/330] media: cadence: csi2rx: add Y8_1X8 format
+
+commit 5b2a3687e440af6c237d5c8b9131d28f5a9550c0 upstream.
+
+Add support for MEDIA_BUS_FMT_Y8_1X8 format.
+
+Signed-off-by: Julien Massot <julien.massot@collabora.com>
+Acked-by: Jai Luthra <j-luthra@ti.com>
+Link: https://lore.kernel.org/r/20240105090025.1245112-3-julien.massot@collabora.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/media/platform/cadence/cdns-csi2rx.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/media/platform/cadence/cdns-csi2rx.c b/drivers/media/platform/cadence/cdns-csi2rx.c
+index 100d8f26171d..13ee0be2479d 100644
+--- a/drivers/media/platform/cadence/cdns-csi2rx.c
++++ b/drivers/media/platform/cadence/cdns-csi2rx.c
+@@ -114,6 +114,7 @@ static const struct csi2rx_fmt formats[] = {
+ 	{ .code	= MEDIA_BUS_FMT_SGBRG8_1X8, .bpp = 8, },
+ 	{ .code	= MEDIA_BUS_FMT_SGRBG8_1X8, .bpp = 8, },
+ 	{ .code	= MEDIA_BUS_FMT_SRGGB8_1X8, .bpp = 8, },
++	{ .code	= MEDIA_BUS_FMT_Y8_1X8,     .bpp = 8, },
+ 	{ .code	= MEDIA_BUS_FMT_SBGGR10_1X10, .bpp = 10, },
+ 	{ .code	= MEDIA_BUS_FMT_SGBRG10_1X10, .bpp = 10, },
+ 	{ .code	= MEDIA_BUS_FMT_SGRBG10_1X10, .bpp = 10, },
+-- 
+2.43.1
+

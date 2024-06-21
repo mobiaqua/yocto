@@ -1,0 +1,31 @@
+From 378c86628d8b19382510808ddd4277ccd541c076 Mon Sep 17 00:00:00 2001
+From: Devarsh Thakkar <devarsht@ti.com>
+Date: Mon, 29 Apr 2024 11:07:51 -0500
+Subject: [PATCH 351/465] rpmsg: char: Add "rpmsg_chrdev" rpmsg device entry in
+ device table
+
+Add rpmsg device name used by TI IPC firmware in device table
+to facilitate driver auto probe when firmware name service
+announces rpmsg device with service name "rpmsg_chrdev".
+
+Signed-off-by: Devarsh Thakkar <devarsht@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/rpmsg/rpmsg_char.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/rpmsg/rpmsg_char.c b/drivers/rpmsg/rpmsg_char.c
+index 1bda719f4039..48b667608494 100644
+--- a/drivers/rpmsg/rpmsg_char.c
++++ b/drivers/rpmsg/rpmsg_char.c
+@@ -525,6 +525,7 @@ static void rpmsg_chrdev_remove(struct rpmsg_device *rpdev)
+ 
+ static struct rpmsg_device_id rpmsg_chrdev_id_table[] = {
+ 	{ .name	= "rpmsg-raw" },
++	{ .name	= "rpmsg_chrdev" },
+ 	{ },
+ };
+ 
+-- 
+2.45.1
+

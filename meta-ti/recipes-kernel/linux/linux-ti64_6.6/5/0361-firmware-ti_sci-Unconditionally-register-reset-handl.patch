@@ -1,0 +1,66 @@
+From e9c08bfdf21e5d3e9c9a4f71e2b5ff4d4a7c762a Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Thu, 23 May 2024 14:19:23 +0200
+Subject: [PATCH 361/465] firmware: ti_sci: Unconditionally register reset
+ handler
+
+There was once a limitation that there could only be one system
+reset handler. Due to that we only would register this handler
+when a non-standard device tree property was found, else we left
+the default handler in place (usually PSCI). Now that we can
+have multiple handlers, and TI-SCI reset is always available
+in the firmware, register this handler unconditionally.
+
+This priority is left at the default so higher priority handlers
+(like PSCI) are still attempted first.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Reviewed-by: Markus Schneider-Pargmann <msp@baylibre.com>
+Link: https://lore.kernel.org/r/20240326223730.54639-3-afd@ti.com
+---
+ drivers/firmware/ti_sci.c | 15 ++++-----------
+ 1 file changed, 4 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/firmware/ti_sci.c b/drivers/firmware/ti_sci.c
+index 55a523305025..c767828d9289 100644
+--- a/drivers/firmware/ti_sci.c
++++ b/drivers/firmware/ti_sci.c
+@@ -3630,7 +3630,6 @@ static int ti_sci_probe(struct platform_device *pdev)
+ 	struct mbox_client *cl;
+ 	int ret = -EINVAL;
+ 	int i;
+-	int reboot = 0;
+ 	u32 h_id;
+ 
+ 	desc = device_get_match_data(dev);
+@@ -3654,8 +3653,6 @@ static int ti_sci_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-	reboot = of_property_read_bool(dev->of_node,
+-				       "ti,system-reboot-controller");
+ 	INIT_LIST_HEAD(&info->node);
+ 	minfo = &info->minfo;
+ 
+@@ -3726,14 +3723,10 @@ static int ti_sci_probe(struct platform_device *pdev)
+ 
+ 	ti_sci_setup_ops(info);
+ 
+-	if (reboot) {
+-		ret = devm_register_restart_handler(dev,
+-						    tisci_reboot_handler,
+-						    info);
+-		if (ret) {
+-			dev_err(dev, "reboot registration fail(%d)\n", ret);
+-			goto out;
+-		}
++	ret = devm_register_restart_handler(dev, tisci_reboot_handler, info);
++	if (ret) {
++		dev_err(dev, "reboot registration fail(%d)\n", ret);
++		goto out;
+ 	}
+ 
+ 	/*
+-- 
+2.45.1
+

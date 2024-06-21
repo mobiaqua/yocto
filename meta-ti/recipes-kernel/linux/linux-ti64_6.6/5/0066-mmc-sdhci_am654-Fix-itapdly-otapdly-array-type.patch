@@ -1,0 +1,36 @@
+From 309b34b3b4c7ba4773bc7a279d7d859bf99cd0a8 Mon Sep 17 00:00:00 2001
+From: Judith Mendez <jm@ti.com>
+Date: Mon, 13 May 2024 13:31:01 -0500
+Subject: [PATCH 066/465] mmc: sdhci_am654: Fix itapdly/otapdly array type
+
+commit a66db8167ad913efe3d925afe96fcdf2283de796 upstream.
+
+While integer type works, the otap_del_sel and itap_del_sel
+arrays are manipulated as u32, so change array types to u32.
+
+Acked-by: Adrian Hunter <adrian.hunter@intel.com>
+Link: https://lore.kernel.org/r/20240320223837.959900-5-jm@ti.com
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Judith Mendez <jm@ti.com>
+---
+ drivers/mmc/host/sdhci_am654.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mmc/host/sdhci_am654.c b/drivers/mmc/host/sdhci_am654.c
+index 562034af653e..2dd32373e071 100644
+--- a/drivers/mmc/host/sdhci_am654.c
++++ b/drivers/mmc/host/sdhci_am654.c
+@@ -141,8 +141,8 @@ static const struct timing_data td[] = {
+ 
+ struct sdhci_am654_data {
+ 	struct regmap *base;
+-	int otap_del_sel[ARRAY_SIZE(td)];
+-	int itap_del_sel[ARRAY_SIZE(td)];
++	u32 otap_del_sel[ARRAY_SIZE(td)];
++	u32 itap_del_sel[ARRAY_SIZE(td)];
+ 	u32 itap_del_ena[ARRAY_SIZE(td)];
+ 	int clkbuf_sel;
+ 	int trm_icp;
+-- 
+2.45.1
+

@@ -1,0 +1,32 @@
+From be17990bc3f56be3017c625b71062a56449b4691 Mon Sep 17 00:00:00 2001
+From: Neha Malcom Francis <n-francis@ti.com>
+Date: Mon, 16 Oct 2023 15:46:06 +0530
+Subject: [PATCH 157/330] soc: ti k3-socinfo: Fix typo
+
+commit 8dec342ead710dace27dc82096144bf7a1011827 upstream.
+
+Fix typo in driver that comments out wrong bit.
+
+Signed-off-by: Neha Malcom Francis <n-francis@ti.com>
+Link: https://lore.kernel.org/r/20231016101608.993921-2-n-francis@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/soc/ti/k3-socinfo.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/soc/ti/k3-socinfo.c b/drivers/soc/ti/k3-socinfo.c
+index 6ea9b8c7d335..d45f5cb955a6 100644
+--- a/drivers/soc/ti/k3-socinfo.c
++++ b/drivers/soc/ti/k3-socinfo.c
+@@ -20,7 +20,7 @@
+  *  31-28 VARIANT	Device variant
+  *  27-12 PARTNO	Part number
+  *  11-1  MFG		Indicates TI as manufacturer (0x17)
+- *  1			Always 1
++ *  0			Always 1
+  */
+ #define CTRLMMR_WKUP_JTAGID_VARIANT_SHIFT	(28)
+ #define CTRLMMR_WKUP_JTAGID_VARIANT_MASK	GENMASK(31, 28)
+-- 
+2.43.1
+

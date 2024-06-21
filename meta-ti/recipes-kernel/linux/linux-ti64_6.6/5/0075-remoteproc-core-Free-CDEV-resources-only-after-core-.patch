@@ -1,0 +1,54 @@
+From f393c9947accff12e658199e1e7b3b2d819d4c27 Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Tue, 7 May 2024 09:51:36 -0500
+Subject: [PATCH 075/465] remoteproc: core: Free CDEV resources only after core
+ shutdown
+
+The core should be powered off before we free the core's info to
+remove a use-after-free issue.
+
+Reported-by: kernel test robot <lkp@intel.com>
+Reported-by: Julia Lawall <julia.lawall@inria.fr>
+Closes: https://lore.kernel.org/r/202404150107.gJtdbKtX-lkp@intel.com/
+Signed-off-by: Andrew Davis <afd@ti.com>
+Reviewed-by: Kamlesh Gurudasani <kamlesh@ti.com>
+---
+ drivers/remoteproc/remoteproc_cdev.c | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/remoteproc/remoteproc_cdev.c b/drivers/remoteproc/remoteproc_cdev.c
+index 0b178744f013..4c0b0f9319b5 100644
+--- a/drivers/remoteproc/remoteproc_cdev.c
++++ b/drivers/remoteproc/remoteproc_cdev.c
+@@ -154,6 +154,13 @@ static int rproc_cdev_release(struct inode *inode, struct file *filp)
+ 	struct rproc *rproc = rproc_cdev->rproc;
+ 	int ret = 0;
+ 
++	if (rproc_cdev->cdev_put_on_release) {
++		if (rproc->state == RPROC_RUNNING)
++			rproc_shutdown(rproc);
++		else if (rproc->state == RPROC_ATTACHED)
++			ret = rproc_detach(rproc);
++	}
++
+ 	/* Release all buffers attached with this file */
+ 	struct rproc_cdev_attach *attach, *atmp;
+ 	list_for_each_entry_safe(attach, atmp, &rproc_cdev->attachments, node) {
+@@ -164,14 +171,6 @@ static int rproc_cdev_release(struct inode *inode, struct file *filp)
+ 	mutex_destroy(&rproc_cdev->mutex);
+ 	kfree(rproc_cdev);
+ 
+-	if (!rproc_cdev->cdev_put_on_release)
+-		return 0;
+-
+-	if (rproc->state == RPROC_RUNNING)
+-		rproc_shutdown(rproc);
+-	else if (rproc->state == RPROC_ATTACHED)
+-		ret = rproc_detach(rproc);
+-
+ 	return ret;
+ }
+ 
+-- 
+2.45.1
+

@@ -1,0 +1,38 @@
+From 6e3d3b577e2db60c865b7f8af518c789317efcd1 Mon Sep 17 00:00:00 2001
+From: Suman Anna <s-anna@ti.com>
+Date: Mon, 29 Apr 2024 11:07:50 -0500
+Subject: [PATCH 350/465] rpmsg: char: Update local endpt address for
+ virtio-rpmsg backend
+
+The rpmsg char driver creates a local end-point when the actual
+endpt device is opened. The virtio-rpmsg backend can dynamically allocate
+the local end-point address if the endpt creation is done using the
+address RPMSG_ADDR_ANY. This is not reflected in the sysfs src file, so
+update the stored address with the allocated address in such a case. This
+allows the userspace to be able to retrieve the local end-point
+address through sysfs.
+
+Signed-off-by: Suman Anna <s-anna@ti.com>
+Signed-off-by: Devarsh Thakkar <devarsht@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/rpmsg/rpmsg_char.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/rpmsg/rpmsg_char.c b/drivers/rpmsg/rpmsg_char.c
+index 09833ad05da7..1bda719f4039 100644
+--- a/drivers/rpmsg/rpmsg_char.c
++++ b/drivers/rpmsg/rpmsg_char.c
+@@ -170,6 +170,9 @@ static int rpmsg_eptdev_open(struct inode *inode, struct file *filp)
+ 
+ 	ept->flow_cb = rpmsg_ept_flow_cb;
+ 	eptdev->ept = ept;
++	if (eptdev->chinfo.src == RPMSG_ADDR_ANY)
++		eptdev->chinfo.src = ept->addr;
++
+ 	filp->private_data = eptdev;
+ 	mutex_unlock(&eptdev->ept_lock);
+ 
+-- 
+2.45.1
+

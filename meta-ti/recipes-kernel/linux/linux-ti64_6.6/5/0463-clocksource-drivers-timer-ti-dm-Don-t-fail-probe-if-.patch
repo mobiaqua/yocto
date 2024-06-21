@@ -1,0 +1,38 @@
+From 5107b6920ad380f11e905022a42169cf916e4c54 Mon Sep 17 00:00:00 2001
+From: Judith Mendez <jm@ti.com>
+Date: Tue, 11 Jun 2024 09:49:22 -0500
+Subject: [PATCH 463/465] clocksource/drivers/timer-ti-dm: Don't fail probe if
+ int not found
+
+MCU domain timers do not have a int routed to the A53
+GIC, but the timer PWM functionality can still be used
+by Linux kernel. Therefore, do not fail probe if int
+is not found and ti,timer-pwm exists.
+
+Signed-off-by: Judith Mendez <jm@ti.com>
+---
+ drivers/clocksource/timer-ti-dm.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/clocksource/timer-ti-dm.c b/drivers/clocksource/timer-ti-dm.c
+index 56acf2617262..9ac4fac179f3 100644
+--- a/drivers/clocksource/timer-ti-dm.c
++++ b/drivers/clocksource/timer-ti-dm.c
+@@ -1105,8 +1105,12 @@ static int omap_dm_timer_probe(struct platform_device *pdev)
+ 		return  -ENOMEM;
+ 
+ 	timer->irq = platform_get_irq(pdev, 0);
+-	if (timer->irq < 0)
+-		return timer->irq;
++	if (timer->irq < 0) {
++		if (of_property_read_bool(dev->of_node, "ti,timer-pwm"))
++			dev_err(dev, "Did not find timer interrupt, timer usable in PWM mode only\n");
++		else
++			return timer->irq;
++	}
+ 
+ 	timer->io_base = devm_platform_ioremap_resource(pdev, 0);
+ 	if (IS_ERR(timer->io_base))
+-- 
+2.45.1
+

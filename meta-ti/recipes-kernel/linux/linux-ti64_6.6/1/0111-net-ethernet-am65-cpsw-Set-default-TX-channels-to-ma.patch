@@ -1,0 +1,51 @@
+From f272a33b979eefb62f2526f565d1fc3c5374e2d2 Mon Sep 17 00:00:00 2001
+From: Roger Quadros <rogerq@kernel.org>
+Date: Fri, 17 Nov 2023 14:17:54 +0200
+Subject: [PATCH 111/330] net: ethernet: am65-cpsw: Set default TX channels to
+ maximum
+
+commit be397ea3473d24ce596f3aaa22a55af9b004fed8 upstream.
+
+am65-cpsw supports 8 TX hardware queues. Set this as default.
+
+The rationale is that some am65-cpsw devices can have up to 4 ethernet
+ports. If the number of TX channels have to be changed then all
+interfaces have to be brought down and up as the old default of 1
+TX channel is too restrictive for any mqprio/taprio usage.
+
+Another reason for this change is to allow testing using
+kselftest:net/forwarding:ethtool_mm.sh out of the box.
+
+Signed-off-by: Roger Quadros <rogerq@kernel.org>
+Reviewed-by: Andrew Lunn <andrew@lunn.ch>
+Link: https://lore.kernel.org/r/20231117121755.104547-4-rogerq@kernel.org
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/net/ethernet/ti/am65-cpsw-nuss.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/ti/am65-cpsw-nuss.c b/drivers/net/ethernet/ti/am65-cpsw-nuss.c
+index 5dd56b0f635a..de68afb4a2e2 100644
+--- a/drivers/net/ethernet/ti/am65-cpsw-nuss.c
++++ b/drivers/net/ethernet/ti/am65-cpsw-nuss.c
+@@ -136,6 +136,8 @@
+ 			 NETIF_MSG_IFUP	| NETIF_MSG_PROBE | NETIF_MSG_IFDOWN | \
+ 			 NETIF_MSG_RX_ERR | NETIF_MSG_TX_ERR)
+ 
++#define AM65_CPSW_DEFAULT_TX_CHNS	8
++
+ static void am65_cpsw_port_set_sl_mac(struct am65_cpsw_port *slave,
+ 				      const u8 *dev_addr)
+ {
+@@ -2895,7 +2897,7 @@ static int am65_cpsw_nuss_probe(struct platform_device *pdev)
+ 
+ 	common->rx_flow_id_base = -1;
+ 	init_completion(&common->tdown_complete);
+-	common->tx_ch_num = 1;
++	common->tx_ch_num = AM65_CPSW_DEFAULT_TX_CHNS;
+ 	common->pf_p0_rx_ptype_rrobin = false;
+ 	common->default_vlan = 1;
+ 
+-- 
+2.43.1
+

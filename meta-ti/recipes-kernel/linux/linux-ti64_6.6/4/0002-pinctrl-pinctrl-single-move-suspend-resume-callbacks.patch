@@ -1,0 +1,103 @@
+From e20b930515ab082579c34a2307ce1bd95a8656ed Mon Sep 17 00:00:00 2001
+From: Thomas Richard <thomas.richard@bootlin.com>
+Date: Fri, 5 Apr 2024 17:06:56 +0200
+Subject: [PATCH 2/3] pinctrl: pinctrl-single: move suspend()/resume()
+ callbacks to noirq
+
+[ Upstream 85dfe458376c01282261bb3555f623f2afb1b203 ]
+
+The goal is to extend the active period of pinctrl.
+Some devices may need active pinctrl after suspend() and/or before
+resume().
+So move suspend()/resume() to suspend_noirq()/resume_noirq() in order to
+have active pinctrl until suspend_noirq() (included), and from
+resume_noirq() (included).
+
+The deprecated API has been removed to use the new one (dev_pm_ops struct).
+
+No need to check the pointer returned by dev_get_drvdata(), as
+platform_set_drvdata() is called during the probe.
+
+Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
+Reviewed-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+Signed-off-by: Thomas Richard <thomas.richard@bootlin.com>
+Reviewed-by: Tony Lindgren <tony@atomide.com>
+Reviewed-by: Dhruva Gole <d-gole@ti.com>
+Message-ID: <20240102-j7200-pcie-s2r-v4-2-6f1f53390c85@bootlin.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/pinctrl/pinctrl-single.c | 28 +++++++++-------------------
+ 1 file changed, 9 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/pinctrl/pinctrl-single.c b/drivers/pinctrl/pinctrl-single.c
+index 14b5c027249f..220c577f81ce 100644
+--- a/drivers/pinctrl/pinctrl-single.c
++++ b/drivers/pinctrl/pinctrl-single.c
+@@ -1625,7 +1625,6 @@ static int pcs_irq_init_chained_handler(struct pcs_device *pcs,
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_PM
+ static int pcs_save_context(struct pcs_device *pcs)
+ {
+ 	int i, mux_bytes;
+@@ -1690,14 +1689,9 @@ static void pcs_restore_context(struct pcs_device *pcs)
+ 	}
+ }
+ 
+-static int pinctrl_single_suspend(struct platform_device *pdev,
+-					pm_message_t state)
++static int pinctrl_single_suspend_noirq(struct device *dev)
+ {
+-	struct pcs_device *pcs;
+-
+-	pcs = platform_get_drvdata(pdev);
+-	if (!pcs)
+-		return -EINVAL;
++	struct pcs_device *pcs = dev_get_drvdata(dev);
+ 
+ 	if (pcs->flags & PCS_CONTEXT_LOSS_OFF) {
+ 		int ret;
+@@ -1710,20 +1704,19 @@ static int pinctrl_single_suspend(struct platform_device *pdev,
+ 	return pinctrl_force_sleep(pcs->pctl);
+ }
+ 
+-static int pinctrl_single_resume(struct platform_device *pdev)
++static int pinctrl_single_resume_noirq(struct device *dev)
+ {
+-	struct pcs_device *pcs;
+-
+-	pcs = platform_get_drvdata(pdev);
+-	if (!pcs)
+-		return -EINVAL;
++	struct pcs_device *pcs = dev_get_drvdata(dev);
+ 
+ 	if (pcs->flags & PCS_CONTEXT_LOSS_OFF)
+ 		pcs_restore_context(pcs);
+ 
+ 	return pinctrl_force_default(pcs->pctl);
+ }
+-#endif
++
++static DEFINE_NOIRQ_DEV_PM_OPS(pinctrl_single_pm_ops,
++			       pinctrl_single_suspend_noirq,
++			       pinctrl_single_resume_noirq);
+ 
+ /**
+  * pcs_quirk_missing_pinctrl_cells - handle legacy binding
+@@ -1991,11 +1984,8 @@ static struct platform_driver pcs_driver = {
+ 	.driver = {
+ 		.name		= DRIVER_NAME,
+ 		.of_match_table	= pcs_of_match,
++		.pm = pm_sleep_ptr(&pinctrl_single_pm_ops),
+ 	},
+-#ifdef CONFIG_PM
+-	.suspend = pinctrl_single_suspend,
+-	.resume = pinctrl_single_resume,
+-#endif
+ };
+ 
+ module_platform_driver(pcs_driver);
+-- 
+2.44.0
+

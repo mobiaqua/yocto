@@ -1,0 +1,45 @@
+From 18965c655c80249e9bb3bde64a8533db20b54cac Mon Sep 17 00:00:00 2001
+From: Vignesh Raghavendra <vigneshr@ti.com>
+Date: Thu, 5 Oct 2023 20:43:02 +0530
+Subject: [PATCH 072/330] arm64: dts: ti: k3-*: Convert NAVSS to simple-bus
+
+commit 6507bfa7e0cde01c5feecdbc163b392021d15cbb upstream.
+
+"simple-mfd" as standalone compatible is frowned upon, so model main and
+MCU NAVSS (Navigator SubSystem) nodes as simple-bus as there is really
+no need for these nodes to be MFD.
+
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+Link: https://lore.kernel.org/r/20231005151302.1290363-3-vigneshr@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi        | 2 +-
+ arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi  | 2 +-
+ 8 files changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index f6c7e1614521..746b9f8b1c64 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -181,7 +181,7 @@ main_gpio_intr: interrupt-controller@a00000 {
+ 	};
+ 
+ 	main_navss: bus@30000000 {
+-		compatible = "simple-mfd";
++		compatible = "simple-bus";
+ 		#address-cells = <2>;
+ 		#size-cells = <2>;
+ 		ranges = <0x00 0x30000000 0x00 0x30000000 0x00 0x0c400000>;
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+index fa8af20c7818..f7ab7719fc07 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+@@ -440,7 +440,7 @@ adc {
+ 	};
+ 
+ 	mcu_navss: bus@28380000 {
+-		compatible = "simple-mfd";
++		compatible = "simple-bus";
+ 		#address-cells = <2>;
+ 		#size-cells = <2>;
+ 		ranges = <0x00 0x28380000 0x00 0x28380000 0x00 0x03880000>;

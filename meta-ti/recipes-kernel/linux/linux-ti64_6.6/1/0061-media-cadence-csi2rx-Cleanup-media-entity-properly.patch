@@ -1,0 +1,46 @@
+From d3fa1eb6b2177173f12d4ae96a2d45b9fa18f144 Mon Sep 17 00:00:00 2001
+From: Pratyush Yadav <p.yadav@ti.com>
+Date: Mon, 9 Oct 2023 18:39:30 +0530
+Subject: [PATCH 061/330] media: cadence: csi2rx: Cleanup media entity properly
+
+commit aee5b415c95aa913aa9222bbe13c817c7e67ec85 upstream.
+
+Call media_entity_cleanup() in probe error path and remove to make sure
+the media entity is cleaned up properly.
+
+Suggested-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Pratyush Yadav <p.yadav@ti.com>
+Tested-by: Julien Massot <julien.massot@collabora.com>
+Reviewed-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Reviewed-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Reviewed-by: Maxime Ripard <mripard@kernel.org>
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Link: https://lore.kernel.org/r/20231009-upstream_csi-v10-4-330aaed24c5d@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/media/platform/cadence/cdns-csi2rx.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/media/platform/cadence/cdns-csi2rx.c b/drivers/media/platform/cadence/cdns-csi2rx.c
+index 9231ee7e9b3a..9de3240e261c 100644
+--- a/drivers/media/platform/cadence/cdns-csi2rx.c
++++ b/drivers/media/platform/cadence/cdns-csi2rx.c
+@@ -547,6 +547,7 @@ static int csi2rx_probe(struct platform_device *pdev)
+ err_cleanup:
+ 	v4l2_async_nf_unregister(&csi2rx->notifier);
+ 	v4l2_async_nf_cleanup(&csi2rx->notifier);
++	media_entity_cleanup(&csi2rx->subdev.entity);
+ err_free_priv:
+ 	kfree(csi2rx);
+ 	return ret;
+@@ -559,6 +560,7 @@ static void csi2rx_remove(struct platform_device *pdev)
+ 	v4l2_async_nf_unregister(&csi2rx->notifier);
+ 	v4l2_async_nf_cleanup(&csi2rx->notifier);
+ 	v4l2_async_unregister_subdev(&csi2rx->subdev);
++	media_entity_cleanup(&csi2rx->subdev.entity);
+ 	kfree(csi2rx);
+ }
+ 
+-- 
+2.43.1
+

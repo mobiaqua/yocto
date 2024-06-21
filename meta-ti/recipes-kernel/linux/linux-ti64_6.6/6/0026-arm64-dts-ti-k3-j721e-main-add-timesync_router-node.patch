@@ -1,0 +1,50 @@
+From 9b65e4338f099cf7dfab2386fa10c584b805c89d Mon Sep 17 00:00:00 2001
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+Date: Thu, 13 Jun 2024 12:13:45 +0530
+Subject: [PATCH 26/51] arm64: dts: ti: k3-j721e-main: add timesync_router node
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The Time Sync Event Router (TIMESYNC_INTRTR0) implements a set of
+multiplexers to provide selection of active CPTS time sync events for
+routing to CPTS capable modules.
+The TIMESYNC_INTRTR0 module has the following configuration:
+â¢ Number of input events: 55
+â¢ Number of output events: 40
+â¢ Event input type: Pulse
+
+This patch adds DT node TIMESYNC_INTRTR0 using "pinctrl-single" bindings.
+
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Siddharth Vadapalli <s-vadapalli@ti.com>
+Signed-off-by: Chintan Vankar <c-vankar@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index c454f0e63632..971fe42fee69 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -2303,6 +2303,17 @@ c71_0: dsp@64800000 {
+ 		status = "disabled";
+ 	};
+ 
++	timesync_router: pinctrl@a40000 {
++		compatible = "pinctrl-single";
++		reg = <0x0 0xa40000 0x0 0x800>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		#pinctrl-cells = <1>;
++		pinctrl-single,register-width = <32>;
++		pinctrl-single,function-mask = <0x000107ff>;
++		status = "disabled";
++	};
++
+ 	icssg0: icssg@b000000 {
+ 		compatible = "ti,j721e-icssg";
+ 		reg = <0x00 0xb000000 0x00 0x80000>;
+-- 
+2.45.1
+

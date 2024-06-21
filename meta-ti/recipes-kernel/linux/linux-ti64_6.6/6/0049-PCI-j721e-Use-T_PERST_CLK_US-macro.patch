@@ -1,0 +1,30 @@
+From 204b79b80dc56cd13357497f1caa0cb13f44dab1 Mon Sep 17 00:00:00 2001
+From: Thomas Richard <thomas.richard@bootlin.com>
+Date: Thu, 13 Jun 2024 10:26:17 +0200
+Subject: [PATCH 49/51] PCI: j721e: Use T_PERST_CLK_US macro
+
+Use the T_PERST_CLK_US macro, and the fsleep() function instead of
+usleep_range().
+
+Link: https://lore.kernel.org/all/20240102-j7200-pcie-s2r-v6-11-4656ef6e6d66@bootlin.com/
+Signed-off-by: Thomas Richard <thomas.richard@bootlin.com>
+---
+ drivers/pci/controller/cadence/pci-j721e.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/pci/controller/cadence/pci-j721e.c b/drivers/pci/controller/cadence/pci-j721e.c
+index 0159c5100e94..ebbb8b8293f9 100644
+--- a/drivers/pci/controller/cadence/pci-j721e.c
++++ b/drivers/pci/controller/cadence/pci-j721e.c
+@@ -550,7 +550,7 @@ static int j721e_pcie_probe(struct platform_device *pdev)
+ 		 * after 100 us.
+ 		 */
+ 		if (gpiod) {
+-			usleep_range(100, 200);
++			fsleep(PCIE_T_PERST_CLK_US);
+ 			gpiod_set_value_cansleep(gpiod, 1);
+ 		}
+ 
+-- 
+2.45.1
+

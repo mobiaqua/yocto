@@ -1,0 +1,61 @@
+From b2a05120339a85852dbd6acd2bfe00633001a94d Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Thu, 4 Jan 2024 09:45:52 -0600
+Subject: [PATCH 203/330] mux: mmio: use reg property when parent device is not
+ a syscon
+
+commit 2765149273f4b52beb07256c3e4686c065a5f8a8 upstream.
+
+The DT binding for the reg-mux compatible states it can be used when the
+"parent device of mux controller is not syscon device". It also allows
+for a reg property. When the reg property is provided, use that to
+identify the address space for this mux. If not provided fallback to
+using the parent device as a regmap provider.
+
+While here use dev_err_probe() in the error path to prevent printing
+a message on probe defer which now can happen in extra ways.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Reviewed-by: Nishanth Menon <nm@ti.com>
+Acked-by: Peter Rosin <peda@axentia.se>
+Link: https://lore.kernel.org/r/20240104154552.17852-1-afd@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/mux/mmio.c | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/mux/mmio.c b/drivers/mux/mmio.c
+index fd1d121a584b..30a952c34365 100644
+--- a/drivers/mux/mmio.c
++++ b/drivers/mux/mmio.c
+@@ -44,15 +44,20 @@ static int mux_mmio_probe(struct platform_device *pdev)
+ 	int ret;
+ 	int i;
+ 
+-	if (of_device_is_compatible(np, "mmio-mux"))
++	if (of_device_is_compatible(np, "mmio-mux")) {
+ 		regmap = syscon_node_to_regmap(np->parent);
+-	else
+-		regmap = dev_get_regmap(dev->parent, NULL) ?: ERR_PTR(-ENODEV);
+-	if (IS_ERR(regmap)) {
+-		ret = PTR_ERR(regmap);
+-		dev_err(dev, "failed to get regmap: %d\n", ret);
+-		return ret;
++	} else {
++		regmap = device_node_to_regmap(np);
++		/* Fallback to checking the parent node on "real" errors. */
++		if (IS_ERR(regmap) && regmap != ERR_PTR(-EPROBE_DEFER)) {
++			regmap = dev_get_regmap(dev->parent, NULL);
++			if (!regmap)
++				regmap = ERR_PTR(-ENODEV);
++		}
+ 	}
++	if (IS_ERR(regmap))
++		return dev_err_probe(dev, PTR_ERR(regmap),
++				     "failed to get regmap\n");
+ 
+ 	ret = of_property_count_u32_elems(np, "mux-reg-masks");
+ 	if (ret == 0 || ret % 2)
+-- 
+2.43.1
+

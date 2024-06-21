@@ -1,0 +1,40 @@
+From a81df9c0a7b05734c9bd29ec271bc55d7b651d04 Mon Sep 17 00:00:00 2001
+From: Ronald Wahl <ronald.wahl@raritan.com>
+Date: Tue, 31 Oct 2023 13:20:05 +0100
+Subject: [PATCH 101/330] net: ethernet: ti: am65-cpsw: rx_pause/tx_pause
+ controls wrong direction
+
+commit 153a58c6d8976f289b52e6652932c1cb28a2eacd upstream.
+
+The rx_pause flag says that whether we support receiving Pause frames.
+When a Pause frame is received TX is delayed for some time. This is TX
+flow control. In the same manner tx_pause is actually RX flow control.
+
+Signed-off-by: Ronald Wahl <ronald.wahl@raritan.com>
+Fixes: e8609e69470f ("net: ethernet: ti: am65-cpsw: Convert to PHYLINK")
+Link: https://lore.kernel.org/r/20231031122005.13368-1-rwahl@gmx.de
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/net/ethernet/ti/am65-cpsw-nuss.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/ethernet/ti/am65-cpsw-nuss.c b/drivers/net/ethernet/ti/am65-cpsw-nuss.c
+index 583d837e7bd3..b1991a9f10e2 100644
+--- a/drivers/net/ethernet/ti/am65-cpsw-nuss.c
++++ b/drivers/net/ethernet/ti/am65-cpsw-nuss.c
+@@ -1588,10 +1588,10 @@ static void am65_cpsw_nuss_mac_link_up(struct phylink_config *config, struct phy
+ 
+ 	/* rx_pause/tx_pause */
+ 	if (rx_pause)
+-		mac_control |= CPSW_SL_CTL_RX_FLOW_EN;
++		mac_control |= CPSW_SL_CTL_TX_FLOW_EN;
+ 
+ 	if (tx_pause)
+-		mac_control |= CPSW_SL_CTL_TX_FLOW_EN;
++		mac_control |= CPSW_SL_CTL_RX_FLOW_EN;
+ 
+ 	cpsw_sl_ctl_set(port->slave.mac_sl, mac_control);
+ 
+-- 
+2.43.1
+

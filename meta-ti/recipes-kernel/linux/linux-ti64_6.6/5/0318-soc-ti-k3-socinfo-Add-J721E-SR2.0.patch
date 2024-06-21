@@ -1,0 +1,28 @@
+From a605202bea7c64fb6f682d7151af100900457d94 Mon Sep 17 00:00:00 2001
+From: Neha Malcom Francis <n-francis@ti.com>
+Date: Fri, 31 May 2024 17:10:33 +0530
+Subject: [PATCH 318/465] soc: ti: k3-socinfo: Add J721E SR2.0
+
+Add support to detect J721E SR2.0
+
+Signed-off-by: Neha Malcom Francis <n-francis@ti.com>
+---
+ drivers/soc/ti/k3-socinfo.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/soc/ti/k3-socinfo.c b/drivers/soc/ti/k3-socinfo.c
+index 59101bf7cf23..4fb0f0a24828 100644
+--- a/drivers/soc/ti/k3-socinfo.c
++++ b/drivers/soc/ti/k3-socinfo.c
+@@ -61,7 +61,7 @@ static const struct k3_soc_id {
+ };
+ 
+ static const char * const j721e_rev_string_map[] = {
+-	"1.0", "1.1",
++	"1.0", "1.1", "2.0",
+ };
+ 
+ static int
+-- 
+2.45.1
+

@@ -1,0 +1,42 @@
+From 295a634abb71fe115018c06e10c0e93c7bc8eabc Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
+Date: Thu, 23 Nov 2023 22:16:59 +0100
+Subject: [PATCH 118/330] remoteproc: k3-dsp: Suppress duplicate error message
+ in .remove()
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+commit bddae3e7ae70586b3805fdbce193760f13b4d73e upstream.
+
+When the remove callback returns non-zero, the driver core emits an
+error message about the error value being ignored. As the driver already
+emits an error message already, return zero. This has no effect apart
+from suppressing the core's message. The platform device gets unbound
+irrespective of the return value.
+
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Link: https://lore.kernel.org/r/20231123211657.518181-6-u.kleine-koenig@pengutronix.de
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index ef8415a7cd54..40a5fd8763fa 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -835,8 +835,9 @@ static int k3_dsp_rproc_remove(struct platform_device *pdev)
+ 	if (rproc->state == RPROC_ATTACHED) {
+ 		ret = rproc_detach(rproc);
+ 		if (ret) {
++			/* Note this error path leaks resources */
+ 			dev_err(dev, "failed to detach proc, ret = %d\n", ret);
+-			return ret;
++			return 0;
+ 		}
+ 	}
+ 
+-- 
+2.43.1
+

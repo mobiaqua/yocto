@@ -1,0 +1,205 @@
+From e0daf9e95f3b4787a15a7f5a1222d84db2dd97f7 Mon Sep 17 00:00:00 2001
+From: Prasanth Babu Mantena <p-mantena@ti.com>
+Date: Sun, 16 Jun 2024 21:45:15 -0500
+Subject: [PATCH 170/222] media: vxe-vxd: decoder: Error handling of fatal
+ condition
+
+Handling of the fatal error response from the IP, setting
+the state of frame to discard and resetting the IP. The error
+recovery function is executed in the error simulation condition,
+when emergency flag is not set, only in a non fatal condition.
+When the emergency flag is set, the IP reset is handled in the
+schedule_work() api of Interrupt handling.
+
+Signed-off-by: Prasanth Babu Mantena <p-mantena@ti.com>
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+---
+ drivers/media/platform/vxe-vxd/decoder/core.c |  2 +-
+ .../media/platform/vxe-vxd/decoder/decoder.c  |  3 +-
+ .../platform/vxe-vxd/decoder/hw_control.c     | 29 ++++++++++++++++---
+ .../media/platform/vxe-vxd/decoder/vxd_v4l2.c |  5 ++++
+ 4 files changed, 32 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/media/platform/imagination/vxe-vxd/decoder/core.c b/drivers/media/platform/imagination/vxe-vxd/decoder/core.c
+index 9d1b560610df..e6887ee93abc 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/decoder/core.c
++++ b/drivers/media/platform/imagination/vxe-vxd/decoder/core.c
+@@ -423,7 +423,7 @@ static void core_fw_response_cb(int res_str_id, unsigned int *msg, unsigned int
+ 
+ 	ret = decoder_service_firmware_response(core_str_ctx->dd_str_ctx->dec_ctx,
+ 						msg, msg_size, msg_flags);
+-	VDEC_ASSERT(ret == IMG_SUCCESS);
++	VDEC_ASSERT((ret == IMG_SUCCESS) | (ret == IMG_ERROR_FATAL));
+ 	if (ret != IMG_SUCCESS)
+ 		pr_err("decoder_service_firmware_response failed\n");
+ }
+diff --git a/drivers/media/platform/imagination/vxe-vxd/decoder/decoder.c b/drivers/media/platform/imagination/vxe-vxd/decoder/decoder.c
+index f695cf9c4433..4791d12f8fd2 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/decoder/decoder.c
++++ b/drivers/media/platform/imagination/vxe-vxd/decoder/decoder.c
+@@ -4330,7 +4330,6 @@ static int decoder_picture_decoded(struct dec_str_ctx *dec_str_ctx,
+ #ifdef DEBUG_DECODER_DRIVER
+ 		pr_info("EOS reached\n");
+ #endif
+-
+ 		ret = dec_str_ctx->str_processed_cb((void *)dec_str_ctx->usr_int_data,
+ 				VXD_CB_STR_END, NULL);
+ 		VDEC_ASSERT(ret == IMG_SUCCESS);
+@@ -4375,7 +4374,7 @@ int decoder_service_firmware_response(void *dec_str_ctx_arg, unsigned int *msg,
+ 
+ 	pr_debug("%s : process firmware response\n", __func__);
+ 	ret = hwctrl_process_msg(dec_core_ctx->hw_ctx, msg_flags, msg, &dec_pict);
+-	VDEC_ASSERT(ret == IMG_SUCCESS);
++	VDEC_ASSERT((ret == IMG_SUCCESS) | (ret == IMG_ERROR_FATAL));
+ 	if (ret != IMG_SUCCESS)
+ 		return ret;
+ 
+diff --git a/drivers/media/platform/imagination/vxe-vxd/decoder/hw_control.c b/drivers/media/platform/imagination/vxe-vxd/decoder/hw_control.c
+index 049d9bbcd52c..7a57b763ec54 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/decoder/hw_control.c
++++ b/drivers/media/platform/imagination/vxe-vxd/decoder/hw_control.c
+@@ -168,6 +168,7 @@ static int vdeckm_handle_mtxtohost_msg(unsigned int *msg, struct lst_t *pend_pic
+ {
+ 	struct dec_decpict *pdec_pict;
+ 
++	int ret = 0;
+ 	switch (msg_type) {
+ 	case FW_DEVA_COMPLETED:
+ 	{
+@@ -263,6 +264,7 @@ static int vdeckm_handle_mtxtohost_msg(unsigned int *msg, struct lst_t *pend_pic
+ 			pr_err("TID=0x%08X [FIRMWARE PANIC %s]\n", trans_id, panic_reason);
+ 		else
+ 			pr_err("TID=NULL [GENERAL FIRMWARE PANIC %s]\n", panic_reason);
++		ret = IMG_ERROR_FATAL;
+ 
+ 		break;
+ 	}
+@@ -274,6 +276,7 @@ static int vdeckm_handle_mtxtohost_msg(unsigned int *msg, struct lst_t *pend_pic
+ 
+ 		pr_err("ASSERT file name hash:0x%08X line number:%d\n",
+ 		       fwfile_namehash, fwfile_line);
++		ret = IMG_ERROR_FATAL;
+ 		break;
+ 	}
+ 
+@@ -305,7 +308,7 @@ static int vdeckm_handle_mtxtohost_msg(unsigned int *msg, struct lst_t *pend_pic
+ 		break;
+ 	}
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static int vdeckm_handle_hosttomtx_msg(unsigned int *msg, struct lst_t *pend_pict_list,
+@@ -402,6 +405,7 @@ static int vdeckm_process_msg(const void *hndl_vxd, unsigned int *msg,
+ 	unsigned char msg_type;
+ 	unsigned char msg_group;
+ 	unsigned int trans_id = 0;
++	int ret = 0;
+ 	struct vdec_pict_hwcrc *pict_hwcrc = NULL;
+ 	struct dec_decpict *pdec_pict;
+ 
+@@ -417,7 +421,7 @@ static int vdeckm_process_msg(const void *hndl_vxd, unsigned int *msg,
+ 
+ 	switch (msg_group) {
+ 	case MSG_TYPE_START_PSR_MTXHOST_MSG:
+-		vdeckm_handle_mtxtohost_msg(msg, pend_pict_list, msg_attr,
++		ret = vdeckm_handle_mtxtohost_msg(msg, pend_pict_list, msg_attr,
+ 					    decpict, msg_type, trans_id);
+ 		break;
+ 	/*
+@@ -426,7 +430,7 @@ static int vdeckm_process_msg(const void *hndl_vxd, unsigned int *msg,
+ 	 * it as decoded with errors.
+ 	 */
+ 	case MSG_TYPE_START_PSR_HOSTMTX_MSG:
+-		vdeckm_handle_hosttomtx_msg(msg, pend_pict_list, msg_attr,
++		ret = vdeckm_handle_hosttomtx_msg(msg, pend_pict_list, msg_attr,
+ 					    decpict, msg_type, trans_id,
+ 					    msg_flags);
+ 		break;
+@@ -519,7 +523,7 @@ static int vdeckm_process_msg(const void *hndl_vxd, unsigned int *msg,
+ 	}
+ 	}
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static void vdeckm_vlr_copy(void *dst, void *src, unsigned int size)
+@@ -895,6 +899,8 @@ int hwctrl_process_msg(void *hndl_hwctx, unsigned int msg_flags, unsigned int *m
+ 	pr_debug("[HWCTRL] : process message\n");
+ 	result = vdeckm_process_msg(hwctx->hndl_vxd, msg, &hwctx->pend_pict_list, msg_flags,
+ 				    &msg_attr, &pdecpict);
++	if (result != IMG_SUCCESS)
++		return result;
+ 
+ 	/* validate pointers before using them */
+ 	if (!pdecpict || !pdecpict->first_fld_fwmsg || !pdecpict->second_fld_fwmsg) {
+@@ -929,10 +935,13 @@ int hwctrl_process_msg(void *hndl_hwctx, unsigned int msg_flags, unsigned int *m
+ 
+ 			for (pipe_minus1 = 0; pipe_minus1 < hwctx->num_pipes;
+ 				pipe_minus1++) {
++#ifdef DEBUG_DECODER_DRIVER
+ 				hwctrl_dump_state(&state.core_state, &state.core_state,
+ 						  pipe_minus1);
++#endif
+ 			}
+ 		}
++		pdecpict->state = DECODER_PICTURE_STATE_TO_DISCARD;
+ 	}
+ 	*decpict = pdecpict;
+ 
+@@ -1080,6 +1089,8 @@ static int pvdec_create(struct vxd_dev *vxd, struct vxd_coreprops *core_props,
+ 	struct vdeckm_context  *corectx;
+ 	struct vxd_core_props hndl_core_props;
+ 	int result;
++	int iMapSize, pageSize;
++	void *phy_addr;
+ 
+ 	if (!hndl_vdeckm_context || !core_props)
+ 		return IMG_ERROR_INVALID_PARAMETERS;
+@@ -1101,6 +1112,16 @@ static int pvdec_create(struct vxd_dev *vxd, struct vxd_coreprops *core_props,
+ 
+ 	memcpy(core_props, &corectx->props, sizeof(*core_props));
+ 
++	pageSize = PAGE_SIZE;
++	/* end aligned to page (ceiling), in pages */
++	iMapSize = (PVDEC_COMMS_RAM_OFFSET + PVDEC_COMMS_RAM_SIZE + pageSize - 1) / pageSize;
++	/* subtract start aligned to page (floor), in pages */
++	iMapSize -= PVDEC_COMMS_RAM_OFFSET / pageSize;
++	/* convert to bytes */
++	iMapSize *= pageSize;
++	phy_addr = (void *)(0x4300000);
++	phy_addr += (PVDEC_COMMS_RAM_OFFSET);
++	corectx->comms_ram_addr = ioremap((phys_addr_t)phy_addr, iMapSize);
+ 	*hndl_vdeckm_context = corectx;
+ 
+ 	return 0;
+diff --git a/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c b/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c
+index 9b9645416fbc..3f7626669f74 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c
++++ b/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c
+@@ -517,14 +517,19 @@ static void vxd_return_resource(void *ctx_handle, enum vxd_cb_type type,
+ 		/*
+ 		 * There has been FW error, so we need to reload the firmware.
+ 		 */
++#ifdef ERROR_RECOVERY_SIMULATION
+ 		vxd_error_recovery(ctx);
++#endif
+ 
++		if (ctx->dev->emergency)
++			ctx->eos = TRUE;
+ 		/*
+ 		 * Just send zero size buffer to v4l2 application,
+ 		 * informing the error condition.
+ 		 */
+ 		if (v4l2_m2m_num_dst_bufs_ready(ctx->fh.m2m_ctx) > 0) {
+ 			vb = v4l2_m2m_dst_buf_remove(ctx->fh.m2m_ctx);
++			vb->flags |= V4L2_BUF_FLAG_LAST;
+ 
+ 			q_data = get_q_data(ctx, V4L2_BUF_TYPE_VIDEO_CAPTURE);
+ 			if (!q_data)
+-- 
+2.45.2
+

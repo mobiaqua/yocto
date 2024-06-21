@@ -1,0 +1,70 @@
+From 6f02c61d5885eedae2572424fcf3790891f118f9 Mon Sep 17 00:00:00 2001
+From: Thomas Richard <thomas.richard@bootlin.com>
+Date: Thu, 13 Jun 2024 10:26:10 +0200
+Subject: [PATCH 42/51] mux: add mux_chip_resume() function
+
+The mux_chip_resume() function restores a mux_chip using the cached state
+of each mux.
+
+Link: https://lore.kernel.org/all/20240102-j7200-pcie-s2r-v6-4-4656ef6e6d66@bootlin.com/
+Signed-off-by: Thomas Richard <thomas.richard@bootlin.com>
+---
+ drivers/mux/core.c         | 29 +++++++++++++++++++++++++++++
+ include/linux/mux/driver.h |  1 +
+ 2 files changed, 30 insertions(+)
+
+diff --git a/drivers/mux/core.c b/drivers/mux/core.c
+index 775816112932..0742aa2a7c73 100644
+--- a/drivers/mux/core.c
++++ b/drivers/mux/core.c
+@@ -215,6 +215,35 @@ void mux_chip_free(struct mux_chip *mux_chip)
+ }
+ EXPORT_SYMBOL_GPL(mux_chip_free);
+ 
++/**
++ * mux_chip_resume() - restores the mux-chip state
++ * @mux_chip: The mux-chip to resume.
++ *
++ * Restores the mux-chip state.
++ *
++ * Return: Zero on success or a negative errno on error.
++ */
++int mux_chip_resume(struct mux_chip *mux_chip)
++{
++	int ret, i;
++
++	for (i = 0; i < mux_chip->controllers; ++i) {
++		struct mux_control *mux = &mux_chip->mux[i];
++
++		if (mux->cached_state == MUX_CACHE_UNKNOWN)
++			continue;
++
++		ret = mux_control_set(mux, mux->cached_state);
++		if (ret < 0) {
++			dev_err(&mux_chip->dev, "unable to restore state\n");
++			return ret;
++		}
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(mux_chip_resume);
++
+ static void devm_mux_chip_release(struct device *dev, void *res)
+ {
+ 	struct mux_chip *mux_chip = *(struct mux_chip **)res;
+diff --git a/include/linux/mux/driver.h b/include/linux/mux/driver.h
+index 18824064f8c0..2a7e5ec5d540 100644
+--- a/include/linux/mux/driver.h
++++ b/include/linux/mux/driver.h
+@@ -88,6 +88,7 @@ struct mux_chip *mux_chip_alloc(struct device *dev,
+ int mux_chip_register(struct mux_chip *mux_chip);
+ void mux_chip_unregister(struct mux_chip *mux_chip);
+ void mux_chip_free(struct mux_chip *mux_chip);
++int mux_chip_resume(struct mux_chip *mux_chip);
+ 
+ struct mux_chip *devm_mux_chip_alloc(struct device *dev,
+ 				     unsigned int controllers,
+-- 
+2.45.1
+

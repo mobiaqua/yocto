@@ -1,0 +1,82 @@
+From 448809ccdc0578093bbf625763549c78f2f4823a Mon Sep 17 00:00:00 2001
+From: Beleswar Padhi <b-padhi@ti.com>
+Date: Mon, 10 Jun 2024 13:56:27 +0530
+Subject: [PATCH 406/465] arm64: dts: ti: k3-j7xx: Change timer nodes status to
+ reserved
+
+The remoteproc firmware like of R5F and DSPs in the MAIN voltage domain
+use timers[0]. Therefore, change the status of the timer nodes to
+"reserved" to avoid any clash.
+
+This change is already incorporated for timer nodes in the MCU voltage
+domain.
+
+[0]: https://software-dl.ti.com/jacinto7/esd/processor-sdk-rtos-jacinto7/09_02_00_05/exports/docs/pdk_jacinto_09_02_00_30/docs/userguide/jacinto/modules/osal.html#rtos-tick-timer-allocation
+
+Fixes: 7f209dd1267c ("arm64: dts: ti: k3-j721e: Add general purpose timers")
+
+Signed-off-by: Beleswar Padhi <b-padhi@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi  |  7 +++++++
+ 4 files changed, 25 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index 89ce1f0305fb..c454f0e63632 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -1102,6 +1102,7 @@ main_timer0: timer@2400000 {
+ 		assigned-clock-parents = <&k3_clks 49 2>;
+ 		power-domains = <&k3_pds 49 TI_SCI_PD_EXCLUSIVE>;
+ 		ti,timer-pwm;
++		status = "reserved";
+ 	};
+ 
+ 	main_timer1: timer@2410000 {
+@@ -1114,6 +1115,7 @@ main_timer1: timer@2410000 {
+ 		assigned-clock-parents = <&k3_clks 50 2>, <&k3_clks 327 1>;
+ 		power-domains = <&k3_pds 50 TI_SCI_PD_EXCLUSIVE>;
+ 		ti,timer-pwm;
++		status = "reserved";
+ 	};
+ 
+ 	main_timer2: timer@2420000 {
+@@ -1126,6 +1128,7 @@ main_timer2: timer@2420000 {
+ 		assigned-clock-parents = <&k3_clks 51 2>;
+ 		power-domains = <&k3_pds 51 TI_SCI_PD_EXCLUSIVE>;
+ 		ti,timer-pwm;
++		status = "reserved";
+ 	};
+ 
+ 	main_timer3: timer@2430000 {
+@@ -1246,6 +1249,7 @@ main_timer12: timer@24c0000 {
+ 		assigned-clock-parents = <&k3_clks 63 2>;
+ 		power-domains = <&k3_pds 63 TI_SCI_PD_EXCLUSIVE>;
+ 		ti,timer-pwm;
++		status = "reserved";
+ 	};
+ 
+ 	main_timer13: timer@24d0000 {
+@@ -1258,6 +1262,7 @@ main_timer13: timer@24d0000 {
+ 		assigned-clock-parents = <&k3_clks 64 2>, <&k3_clks 333 1>;
+ 		power-domains = <&k3_pds 64 TI_SCI_PD_EXCLUSIVE>;
+ 		ti,timer-pwm;
++		status = "reserved";
+ 	};
+ 
+ 	main_timer14: timer@24e0000 {
+@@ -1270,6 +1275,7 @@ main_timer14: timer@24e0000 {
+ 		assigned-clock-parents = <&k3_clks 65 2>;
+ 		power-domains = <&k3_pds 65 TI_SCI_PD_EXCLUSIVE>;
+ 		ti,timer-pwm;
++		status = "reserved";
+ 	};
+ 
+ 	main_timer15: timer@24f0000 {
+@@ -1282,6 +1288,7 @@ main_timer15: timer@24f0000 {
+ 		assigned-clock-parents = <&k3_clks 66 2>, <&k3_clks 334 1>;
+ 		power-domains = <&k3_pds 66 TI_SCI_PD_EXCLUSIVE>;
+ 		ti,timer-pwm;
++		status = "reserved";
+ 	};
+ 
+ 	main_timer16: timer@2500000 {

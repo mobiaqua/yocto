@@ -1,0 +1,53 @@
+From ba98e8debe6d1d81ad6fe5363368b0114c83c846 Mon Sep 17 00:00:00 2001
+From: Julien Panis <jpanis@baylibre.com>
+Date: Mon, 15 Apr 2024 10:41:40 +0200
+Subject: [PATCH 033/465] net: ethernet: ti: Add accessors for struct
+ k3_cppi_desc_pool members
+
+This patch adds accessors for desc_size and cpumem members. They may be
+used, for instance, to compute a descriptor index.
+
+Reviewed-by: Jacob Keller <jacob.e.keller@intel.com>
+Signed-off-by: Julien Panis <jpanis@baylibre.com>
+---
+ drivers/net/ethernet/ti/k3-cppi-desc-pool.c | 12 ++++++++++++
+ drivers/net/ethernet/ti/k3-cppi-desc-pool.h |  2 ++
+ 2 files changed, 14 insertions(+)
+
+diff --git a/drivers/net/ethernet/ti/k3-cppi-desc-pool.c b/drivers/net/ethernet/ti/k3-cppi-desc-pool.c
+index 05cc7aab1ec8..414bcac9dcc6 100644
+--- a/drivers/net/ethernet/ti/k3-cppi-desc-pool.c
++++ b/drivers/net/ethernet/ti/k3-cppi-desc-pool.c
+@@ -132,5 +132,17 @@ size_t k3_cppi_desc_pool_avail(struct k3_cppi_desc_pool *pool)
+ }
+ EXPORT_SYMBOL_GPL(k3_cppi_desc_pool_avail);
+ 
++size_t k3_cppi_desc_pool_desc_size(const struct k3_cppi_desc_pool *pool)
++{
++	return pool->desc_size;
++}
++EXPORT_SYMBOL_GPL(k3_cppi_desc_pool_desc_size);
++
++void *k3_cppi_desc_pool_cpuaddr(const struct k3_cppi_desc_pool *pool)
++{
++	return pool->cpumem;
++}
++EXPORT_SYMBOL_GPL(k3_cppi_desc_pool_cpuaddr);
++
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("TI K3 CPPI5 descriptors pool API");
+diff --git a/drivers/net/ethernet/ti/k3-cppi-desc-pool.h b/drivers/net/ethernet/ti/k3-cppi-desc-pool.h
+index a7e3fa5e7b62..3c6aed0bed71 100644
+--- a/drivers/net/ethernet/ti/k3-cppi-desc-pool.h
++++ b/drivers/net/ethernet/ti/k3-cppi-desc-pool.h
+@@ -26,5 +26,7 @@ k3_cppi_desc_pool_dma2virt(struct k3_cppi_desc_pool *pool, dma_addr_t dma);
+ void *k3_cppi_desc_pool_alloc(struct k3_cppi_desc_pool *pool);
+ void k3_cppi_desc_pool_free(struct k3_cppi_desc_pool *pool, void *addr);
+ size_t k3_cppi_desc_pool_avail(struct k3_cppi_desc_pool *pool);
++size_t k3_cppi_desc_pool_desc_size(const struct k3_cppi_desc_pool *pool);
++void *k3_cppi_desc_pool_cpuaddr(const struct k3_cppi_desc_pool *pool);
+ 
+ #endif /* K3_CPPI_DESC_POOL_H_ */
+-- 
+2.45.1
+

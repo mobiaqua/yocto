@@ -1,0 +1,102 @@
+From 504c87f7f0af17421d2bb08aa33fc8f0f3191a8f Mon Sep 17 00:00:00 2001
+From: Thomas Richard <thomas.richard@bootlin.com>
+Date: Thu, 6 Jun 2024 10:06:00 +0200
+Subject: [PATCH 389/465] phy: cadence-torrent: add suspend and resume support
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+[ Upstream commit 0da27ed080b2c25680fb42105f3d85c0ebe38b0c ]
+
+Add suspend and resume support.
+
+The already_configured flag is cleared during the suspend stage to force
+the PHY initialization during the resume stage.
+
+Co-developed-by: ThÃ©o Lebrun <theo.lebrun@bootlin.com>
+Signed-off-by: ThÃ©o Lebrun <theo.lebrun@bootlin.com>
+Signed-off-by: Thomas Richard <thomas.richard@bootlin.com>
+Link: https://lore.kernel.org/r/20240412-j7200-phy-s2r-v1-8-f15815833974@bootlin.com
+Signed-off-by: Vinod Koul <vkoul@kernel.org>
+---
+ drivers/phy/cadence/phy-cadence-torrent.c | 57 +++++++++++++++++++++++
+ 1 file changed, 57 insertions(+)
+
+diff --git a/drivers/phy/cadence/phy-cadence-torrent.c b/drivers/phy/cadence/phy-cadence-torrent.c
+index d471a47b4323..81bb10d39e77 100644
+--- a/drivers/phy/cadence/phy-cadence-torrent.c
++++ b/drivers/phy/cadence/phy-cadence-torrent.c
+@@ -3075,6 +3075,62 @@ static void cdns_torrent_phy_remove(struct platform_device *pdev)
+ 	cdns_torrent_clk_cleanup(cdns_phy);
+ }
+ 
++static int cdns_torrent_phy_suspend_noirq(struct device *dev)
++{
++	struct cdns_torrent_phy *cdns_phy = dev_get_drvdata(dev);
++	int i;
++
++	reset_control_assert(cdns_phy->phy_rst);
++	reset_control_assert(cdns_phy->apb_rst);
++	for (i = 0; i < cdns_phy->nsubnodes; i++)
++		reset_control_assert(cdns_phy->phys[i].lnk_rst);
++
++	if (cdns_phy->already_configured)
++		cdns_phy->already_configured = 0;
++	else {
++		clk_disable_unprepare(cdns_phy->clk1);
++		clk_disable_unprepare(cdns_phy->clk);
++	}
++
++	return 0;
++}
++
++static int cdns_torrent_phy_resume_noirq(struct device *dev)
++{
++	struct cdns_torrent_phy *cdns_phy = dev_get_drvdata(dev);
++	int node = cdns_phy->nsubnodes;
++	int ret, i;
++
++	ret = cdns_torrent_clk(cdns_phy);
++	if (ret)
++		return ret;
++
++	/* Enable APB */
++	reset_control_deassert(cdns_phy->apb_rst);
++
++	if (cdns_phy->nsubnodes > 1) {
++		ret = cdns_torrent_phy_configure_multilink(cdns_phy);
++		if (ret)
++			goto put_lnk_rst;
++	}
++
++	return 0;
++
++put_lnk_rst:
++	for (i = 0; i < node; i++)
++		reset_control_assert(cdns_phy->phys[i].lnk_rst);
++	reset_control_assert(cdns_phy->apb_rst);
++
++	clk_disable_unprepare(cdns_phy->clk1);
++	clk_disable_unprepare(cdns_phy->clk);
++
++	return ret;
++}
++
++static DEFINE_NOIRQ_DEV_PM_OPS(cdns_torrent_phy_pm_ops,
++			       cdns_torrent_phy_suspend_noirq,
++			       cdns_torrent_phy_resume_noirq);
++
+ /* SGMII and QSGMII link configuration */
+ static struct cdns_reg_pairs sgmii_qsgmii_link_cmn_regs[] = {
+ 	{0x0002, PHY_PLL_CFG}
+@@ -5332,6 +5388,7 @@ static struct platform_driver cdns_torrent_phy_driver = {
+ 	.driver = {
+ 		.name	= "cdns-torrent-phy",
+ 		.of_match_table	= cdns_torrent_phy_of_match,
++		.pm	= pm_sleep_ptr(&cdns_torrent_phy_pm_ops),
+ 	}
+ };
+ module_platform_driver(cdns_torrent_phy_driver);
+-- 
+2.45.1
+

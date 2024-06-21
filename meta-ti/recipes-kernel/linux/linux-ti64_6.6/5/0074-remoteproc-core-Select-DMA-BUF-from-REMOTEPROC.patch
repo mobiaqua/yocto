@@ -1,0 +1,31 @@
+From 0ed4c4e4c2490ae65e450312fdac163808a154c0 Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Tue, 7 May 2024 09:51:35 -0500
+Subject: [PATCH 074/465] remoteproc: core: Select DMA-BUF from REMOTEPROC
+
+As we can now attach DMA-BUFs to Remote processors, enable the
+DMA-BUF config with REMOTEPROC to prevent missing symbols if DMA-BUF
+was not enabled.
+
+Reported-by: kernel test robot <lkp@intel.com>
+Closes: https://lore.kernel.org/oe-kbuild-all/202404141126.zfjPm4ps-lkp@intel.com/
+Signed-off-by: Andrew Davis <afd@ti.com>
+---
+ drivers/remoteproc/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/remoteproc/Kconfig b/drivers/remoteproc/Kconfig
+index 48845dc8fa85..44fb22c76499 100644
+--- a/drivers/remoteproc/Kconfig
++++ b/drivers/remoteproc/Kconfig
+@@ -8,6 +8,7 @@ config REMOTEPROC
+ 	select FW_LOADER
+ 	select VIRTIO
+ 	select WANT_DEV_COREDUMP
++	select DMA_SHARED_BUFFER
+ 	help
+ 	  Support for remote processors (such as DSP coprocessors). These
+ 	  are mainly used on embedded systems.
+-- 
+2.45.1
+

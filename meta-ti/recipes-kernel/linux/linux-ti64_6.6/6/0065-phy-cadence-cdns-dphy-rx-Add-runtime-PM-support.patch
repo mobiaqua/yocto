@@ -1,0 +1,44 @@
+From 1093049df3ab13cbb8c990499563d6fc178069e4 Mon Sep 17 00:00:00 2001
+From: Jai Luthra <j-luthra@ti.com>
+Date: Fri, 14 Jun 2024 15:19:50 +0530
+Subject: [PATCH 065/222] phy: cadence: cdns-dphy-rx: Add runtime PM support
+
+Enable runtime power management for the device. The PHY framework
+handles calling all other relevant functions when powering on/off the
+DPHY.
+
+Tested-by: Dhruva Gole <d-gole@ti.com>
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Reviewed-by: Devarsh Thakkar <devarsht@ti.com>
+---
+ drivers/phy/cadence/cdns-dphy-rx.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/drivers/phy/cadence/cdns-dphy-rx.c b/drivers/phy/cadence/cdns-dphy-rx.c
+index 7729cf80a9bd..21b8e6722de1 100644
+--- a/drivers/phy/cadence/cdns-dphy-rx.c
++++ b/drivers/phy/cadence/cdns-dphy-rx.c
+@@ -12,6 +12,7 @@
+ #include <linux/phy/phy.h>
+ #include <linux/phy/phy-mipi-dphy.h>
+ #include <linux/platform_device.h>
++#include <linux/pm_runtime.h>
+ #include <linux/sys_soc.h>
+ 
+ #define DPHY_PMA_CMN(reg)		(reg)
+@@ -265,6 +266,12 @@ static int cdns_dphy_rx_probe(struct platform_device *pdev)
+ 		return PTR_ERR(provider);
+ 	}
+ 
++	/*
++	 * PHY framework handles calls to pm_runtime_(get|put) when
++	 * phy_power_(on|off) hooks are called
++	 */
++	devm_pm_runtime_enable(dev);
++
+ 	return 0;
+ }
+ 
+-- 
+2.45.2
+

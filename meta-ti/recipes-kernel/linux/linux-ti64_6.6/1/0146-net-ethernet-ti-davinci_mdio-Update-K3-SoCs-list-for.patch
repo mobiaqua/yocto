@@ -1,0 +1,61 @@
+From de6e7a5b4aa127e233b15c27bf6731036303b888 Mon Sep 17 00:00:00 2001
+From: Ravi Gunasekaran <r-gunasekaran@ti.com>
+Date: Fri, 1 Dec 2023 18:50:33 +0530
+Subject: [PATCH 146/330] net: ethernet: ti: davinci_mdio: Update K3 SoCs list
+ for errata i2329
+
+commit be5fc78a0084472dcc392cbea75f86202467437c upstream.
+
+The errata i2329 affects all the currently available silicon revisions of
+AM62x, AM64x, AM65x, J7200, J721E and J721S2. So remove the revision
+string from the SoC list.
+
+The silicon revisions affected by the errata i2329 can be found under
+the MDIO module in the "Advisories by Modules" section of each
+SoC errata document listed below
+
+AM62x: https://www.ti.com/lit/er/sprz487c/sprz487c.pdf
+AM64X: https://www.ti.com/lit/er/sprz457g/sprz457g.pdf
+AM65X: https://www.ti.com/lit/er/sprz452i/sprz452i.pdf
+J7200: https://www.ti.com/lit/er/sprz491d/sprz491d.pdf
+J721E: https://www.ti.com/lit/er/sprz455d/sprz455d.pdf
+J721S2: https://www.ti.com/lit/er/sprz530b/sprz530b.pdf
+
+Signed-off-by: Ravi Gunasekaran <r-gunasekaran@ti.com>
+Reviewed-by: Nishanth Menon <nm@ti.com>
+Link: https://lore.kernel.org/r/20231201132033.29576-1-r-gunasekaran@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/net/ethernet/ti/davinci_mdio.c | 16 ++++++----------
+ 1 file changed, 6 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/ethernet/ti/davinci_mdio.c b/drivers/net/ethernet/ti/davinci_mdio.c
+index 89b6d23e9937..52704255fd74 100644
+--- a/drivers/net/ethernet/ti/davinci_mdio.c
++++ b/drivers/net/ethernet/ti/davinci_mdio.c
+@@ -511,16 +511,12 @@ static const struct k3_mdio_soc_data am65_mdio_soc_data = {
+ };
+ 
+ static const struct soc_device_attribute k3_mdio_socinfo[] = {
+-	{ .family = "AM62X", .revision = "SR1.0", .data = &am65_mdio_soc_data },
+-	{ .family = "AM64X", .revision = "SR1.0", .data = &am65_mdio_soc_data },
+-	{ .family = "AM64X", .revision = "SR2.0", .data = &am65_mdio_soc_data },
+-	{ .family = "AM65X", .revision = "SR1.0", .data = &am65_mdio_soc_data },
+-	{ .family = "AM65X", .revision = "SR2.0", .data = &am65_mdio_soc_data },
+-	{ .family = "J7200", .revision = "SR1.0", .data = &am65_mdio_soc_data },
+-	{ .family = "J7200", .revision = "SR2.0", .data = &am65_mdio_soc_data },
+-	{ .family = "J721E", .revision = "SR1.0", .data = &am65_mdio_soc_data },
+-	{ .family = "J721E", .revision = "SR2.0", .data = &am65_mdio_soc_data },
+-	{ .family = "J721S2", .revision = "SR1.0", .data = &am65_mdio_soc_data},
++	{ .family = "AM62X", .data = &am65_mdio_soc_data },
++	{ .family = "AM64X", .data = &am65_mdio_soc_data },
++	{ .family = "AM65X", .data = &am65_mdio_soc_data },
++	{ .family = "J7200", .data = &am65_mdio_soc_data },
++	{ .family = "J721E", .data = &am65_mdio_soc_data },
++	{ .family = "J721S2", .data = &am65_mdio_soc_data },
+ 	{ /* sentinel */ },
+ };
+ 
+-- 
+2.43.1
+

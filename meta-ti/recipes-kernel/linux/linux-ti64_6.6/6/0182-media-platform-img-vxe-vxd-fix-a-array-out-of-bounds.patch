@@ -1,0 +1,51 @@
+From c558f85808e8fb06e995c11119340514bbe41112 Mon Sep 17 00:00:00 2001
+From: Darren Etheridge <detheridge@ti.com>
+Date: Sun, 16 Jun 2024 21:45:27 -0500
+Subject: [PATCH 182/222] media: platform: img: vxe-vxd: fix a array out of
+ bounds bug
+
+This changed sometime after kernel 4.19.  One reserved field was
+removed, so writing to the v4l2_ext_controls reserved field for
+array index 0 and 1 actually is an array out of bounds write.
+
+I am not entirely sure why we are writing to a reserved field in
+the first place.  But I'll fix this bug for now, and revisit that
+question at a later date.
+
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+---
+ drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c b/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
+index 52ac4ec86d12..1e4767dd7ab4 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
+@@ -1379,7 +1379,6 @@ static int vxe_g_ext_ctrls(struct file *file, void *priv,
+ 	int i;
+ 
+ 	ctrls->reserved[0] = 0;
+-	ctrls->reserved[1] = 0;
+ 
+ 	if (ctrls->which == V4L2_CTRL_WHICH_DEF_VAL) {
+ 		for (i = 0; i < ctrls->count; i++) {
+@@ -1437,7 +1436,6 @@ static int vxe_try_ext_ctrls(struct file *file, void *priv,
+ 	int i;
+ 
+ 	ctrls->reserved[0] = 0;
+-	ctrls->reserved[1] = 0;
+ 
+ 	/* Can't write default values or support requests */
+ 	if (ctrls->which != V4L2_CTRL_WHICH_CUR_VAL)
+@@ -1486,7 +1484,6 @@ static int vxe_s_ext_ctrls(struct file *file, void *priv,
+ 	int ret;
+ 
+ 	ctrls->reserved[0] = 0;
+-	ctrls->reserved[1] = 0;
+ 
+ 	if (ctrls->which != V4L2_CTRL_WHICH_CUR_VAL)
+ 		return -EINVAL;
+-- 
+2.45.2
+

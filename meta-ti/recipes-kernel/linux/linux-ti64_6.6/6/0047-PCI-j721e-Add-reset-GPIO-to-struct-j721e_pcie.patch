@@ -1,0 +1,41 @@
+From 5a241614dacc90b689a8f24fe6e89c4aa8ddb1c3 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Th=C3=83=C2=A9o=20Lebrun?= <theo.lebrun@bootlin.com>
+Date: Thu, 13 Jun 2024 10:26:15 +0200
+Subject: [PATCH 47/51] PCI: j721e: Add reset GPIO to struct j721e_pcie
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add reset GPIO to struct j721e_pcie, so it can be used at suspend and
+resume stages.
+
+Signed-off-by: ThÃ©o Lebrun <theo.lebrun@bootlin.com>
+Link: https://lore.kernel.org/all/20240102-j7200-pcie-s2r-v6-9-4656ef6e6d66@bootlin.com/
+Signed-off-by: Thomas Richard <thomas.richard@bootlin.com>
+---
+ drivers/pci/controller/cadence/pci-j721e.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/pci/controller/cadence/pci-j721e.c b/drivers/pci/controller/cadence/pci-j721e.c
+index 2e5193a71089..0159c5100e94 100644
+--- a/drivers/pci/controller/cadence/pci-j721e.c
++++ b/drivers/pci/controller/cadence/pci-j721e.c
+@@ -52,6 +52,7 @@ struct j721e_pcie {
+ 	u32			mode;
+ 	u32			num_lanes;
+ 	u32			max_lanes;
++	struct gpio_desc	*reset_gpio;
+ 	void __iomem		*user_cfg_base;
+ 	void __iomem		*intd_cfg_base;
+ 	u32			linkdown_irq_regfield;
+@@ -519,6 +520,7 @@ static int j721e_pcie_probe(struct platform_device *pdev)
+ 			ret = dev_err_probe(dev, PTR_ERR(gpiod), "Failed to get reset GPIO\n");
+ 			goto err_get_sync;
+ 		}
++		pcie->reset_gpio = gpiod;
+ 
+ 		ret = cdns_pcie_init_phy(dev, cdns_pcie);
+ 		if (ret) {
+-- 
+2.45.1
+

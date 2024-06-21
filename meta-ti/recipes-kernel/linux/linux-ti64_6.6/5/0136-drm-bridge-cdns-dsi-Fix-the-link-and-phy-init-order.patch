@@ -1,0 +1,39 @@
+From 8fb0c7e1990b20c4dd40da97690cefc6b2c3029e Mon Sep 17 00:00:00 2001
+From: Aradhya Bhatia <a-bhatia1@ti.com>
+Date: Thu, 16 May 2024 21:13:54 +0530
+Subject: [PATCH 136/465] drm/bridge: cdns-dsi: Fix the link and phy init order
+
+The order of init of DSI link and DSI phy is wrong. The DSI link needs
+to be configured before the DSI phy is getting configured. Otherwise,
+the DPHY is unable to lock in on the incoming PLL Reference clock.
+
+Refer J721E TRM[0] section 12.6.5.7.3 "Start-up Procedure" for more
+details.
+
+See J721E Technical Reference Manual: section 12.6.5.7.3 "Start-up Procedure"
+for further details: http://www.ti.com/lit/pdf/spruil1
+
+Fix the order of inits.
+
+Signed-off-by: Aradhya Bhatia <a-bhatia1@ti.com>
+---
+ drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
+index 42565e253b2d..371a3453970c 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
++++ b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
+@@ -775,8 +775,8 @@ static void cdns_dsi_bridge_enable(struct drm_bridge *bridge)
+ 
+ 	WARN_ON_ONCE(cdns_dsi_check_conf(dsi, mode, &dsi_cfg, false));
+ 
+-	cdns_dsi_hs_init(dsi);
+ 	cdns_dsi_init_link(dsi);
++	cdns_dsi_hs_init(dsi);
+ 
+ 	writel(HBP_LEN(dsi_cfg.hbp) | HSA_LEN(dsi_cfg.hsa),
+ 	       dsi->regs + VID_HSIZE1);
+-- 
+2.45.1
+

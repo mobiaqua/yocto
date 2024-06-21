@@ -1,0 +1,35 @@
+From c7e9bf4c02d5a2f47dc1157dfac55b56931aa0b7 Mon Sep 17 00:00:00 2001
+From: Jai Luthra <j-luthra@ti.com>
+Date: Fri, 31 May 2024 14:01:18 +0530
+Subject: [PATCH 309/465] media: cadence: csi2rx: Add RAW10 RGBIr formats
+
+Add 10-bit RGBIr formats to the table to allow capturing them. Tested
+with OV2312 sensor.
+
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+---
+ drivers/media/platform/cadence/cdns-csi2rx.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/media/platform/cadence/cdns-csi2rx.c b/drivers/media/platform/cadence/cdns-csi2rx.c
+index 10591443c14e..3138a7d3ac68 100644
+--- a/drivers/media/platform/cadence/cdns-csi2rx.c
++++ b/drivers/media/platform/cadence/cdns-csi2rx.c
+@@ -120,6 +120,14 @@ static const struct csi2rx_fmt formats[] = {
+ 	{ .code	= MEDIA_BUS_FMT_SGBRG10_1X10, .bpp = 10, },
+ 	{ .code	= MEDIA_BUS_FMT_SGRBG10_1X10, .bpp = 10, },
+ 	{ .code	= MEDIA_BUS_FMT_SRGGB10_1X10, .bpp = 10, },
++	{ .code	= MEDIA_BUS_FMT_SRGGI10_1X10, .bpp = 10, },
++	{ .code	= MEDIA_BUS_FMT_SGRIG10_1X10, .bpp = 10, },
++	{ .code	= MEDIA_BUS_FMT_SBGGI10_1X10, .bpp = 10, },
++	{ .code	= MEDIA_BUS_FMT_SGBIG10_1X10, .bpp = 10, },
++	{ .code	= MEDIA_BUS_FMT_SGIRG10_1X10, .bpp = 10, },
++	{ .code	= MEDIA_BUS_FMT_SIGGR10_1X10, .bpp = 10, },
++	{ .code	= MEDIA_BUS_FMT_SGIBG10_1X10, .bpp = 10, },
++	{ .code	= MEDIA_BUS_FMT_SIGGB10_1X10, .bpp = 10, },
+ 	{ .code	= MEDIA_BUS_FMT_SBGGR12_1X12, .bpp = 12, },
+ 	{ .code	= MEDIA_BUS_FMT_SGBRG12_1X12, .bpp = 12, },
+ 	{ .code	= MEDIA_BUS_FMT_SGRBG12_1X12, .bpp = 12, },
+-- 
+2.45.1
+

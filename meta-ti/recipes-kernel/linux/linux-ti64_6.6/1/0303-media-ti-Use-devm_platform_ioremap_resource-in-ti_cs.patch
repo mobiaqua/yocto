@@ -1,0 +1,51 @@
+From be8a48b15000b3a860e3dccfad680021ca6566ef Mon Sep 17 00:00:00 2001
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Tue, 6 Feb 2024 15:30:13 +0100
+Subject: [PATCH 303/330] media: ti: Use devm_platform_ioremap_resource() in
+ ti_csi2rx_probe()
+
+commit 619200d5fe14f5a6f28e36106ca9d9d5aae8a070 upstream.
+
+A wrapper function is available since the commit 7945f929f1a77a1c8887a97ca07f87626858ff42
+("drivers: provide devm_platform_ioremap_resource()").
+
+* Thus reuse existing functionality instead of keeping duplicate source code.
+
+* Delete a local variable which became unnecessary with this refactoring.
+
+This issue was transformed by using the Coccinelle software.
+
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Reviewed-by: Jai Luthra <j-luthra@ti.com>
+Link: https://lore.kernel.org/r/c110c46b-e7b3-4175-9b14-d4cfc9982bca@web.de
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c | 5 +----
+ 1 file changed, 1 insertion(+), 4 deletions(-)
+
+diff --git a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+index f8563c717c53..d1837fa67535 100644
+--- a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
++++ b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+@@ -1089,7 +1089,6 @@ static void ti_csi2rx_cleanup_vb2q(struct ti_csi2rx_dev *csi)
+ static int ti_csi2rx_probe(struct platform_device *pdev)
+ {
+ 	struct ti_csi2rx_dev *csi;
+-	struct resource *res;
+ 	int ret;
+ 
+ 	csi = devm_kzalloc(&pdev->dev, sizeof(*csi), GFP_KERNEL);
+@@ -1100,9 +1099,7 @@ static int ti_csi2rx_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, csi);
+ 
+ 	mutex_init(&csi->mutex);
+-
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	csi->shim = devm_ioremap_resource(&pdev->dev, res);
++	csi->shim = devm_platform_ioremap_resource(pdev, 0);
+ 	if (IS_ERR(csi->shim)) {
+ 		ret = PTR_ERR(csi->shim);
+ 		goto err_mutex;
+-- 
+2.43.1
+

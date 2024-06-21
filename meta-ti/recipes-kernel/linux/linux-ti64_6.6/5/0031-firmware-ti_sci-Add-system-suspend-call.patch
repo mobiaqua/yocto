@@ -1,0 +1,100 @@
+From aafeacda9c490c44d1fe00379749d277c63607af Mon Sep 17 00:00:00 2001
+From: Dhruva Gole <d-gole@ti.com>
+Date: Wed, 24 Apr 2024 12:08:49 -0500
+Subject: [PATCH 031/465] firmware: ti_sci: Add system suspend call
+
+Introduce system suspend call that enables the ti_sci driver to support
+deep sleep low power mode when the user space issues a suspend to mem.
+
+Also, write a ti_sci_prepare_system_suspend call to be used in the driver
+suspend handler to allow the system to identify the low power mode being
+entered and if necessary, send TISCI_MSG_PREPARE_SLEEP with information
+about the mode is being entered and the address for allocated memory for
+storing the context during Deep Sleep.
+
+We're using "pm_suspend_target_state" to map the kernel's target suspend
+state to SysFW low power mode. Make sure this is available only when
+CONFIG_SUSPEND is enabled.
+
+Co-developed-by: Dave Gerlach <d-gerlach@ti.com>
+Signed-off-by: Dave Gerlach <d-gerlach@ti.com>
+Signed-off-by: Vibhore Vardhan <vibhore@ti.com>
+Signed-off-by: Georgi Vlaev <g-vlaev@ti.com>
+Signed-off-by: Dhruva Gole <d-gole@ti.com>
+---
+ drivers/firmware/ti_sci.c | 45 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 45 insertions(+)
+
+diff --git a/drivers/firmware/ti_sci.c b/drivers/firmware/ti_sci.c
+index 056f5ef7153e..37c79ddb19e6 100644
+--- a/drivers/firmware/ti_sci.c
++++ b/drivers/firmware/ti_sci.c
+@@ -25,6 +25,7 @@
+ #include <linux/slab.h>
+ #include <linux/soc/ti/ti-msgmgr.h>
+ #include <linux/soc/ti/ti_sci_protocol.h>
++#include <linux/suspend.h>
+ #include <linux/sys_soc.h>
+ #include <linux/reboot.h>
+ 
+@@ -3534,6 +3535,49 @@ static int tisci_reboot_handler(struct notifier_block *nb, unsigned long mode,
+ 	return NOTIFY_BAD;
+ }
+ 
++static int ti_sci_prepare_system_suspend(struct ti_sci_info *info)
++{
++#if IS_ENABLED(CONFIG_SUSPEND)
++	u8 mode;
++
++	/* Map and validate the target Linux suspend state to TISCI LPM. */
++	switch (pm_suspend_target_state) {
++	case PM_SUSPEND_MEM:
++		/* S2MEM is not supported by the firmware. */
++		if (!(info->fw_caps & MSG_FLAG_CAPS_LPM_DEEP_SLEEP))
++			return 0;
++		mode = TISCI_MSG_VALUE_SLEEP_MODE_DEEP_SLEEP;
++		break;
++	default:
++		/*
++		 * Do not fail if we don't have action to take for a
++		 * specific suspend mode.
++		 */
++		return 0;
++	}
++
++	return ti_sci_cmd_prepare_sleep(&info->handle, mode,
++					(u32)(info->ctx_mem_addr & 0xffffffff),
++					(u32)((u64)info->ctx_mem_addr >> 32), 0);
++#else
++	return 0;
++#endif
++}
++
++static int ti_sci_suspend(struct device *dev)
++{
++	struct ti_sci_info *info = dev_get_drvdata(dev);
++	int ret;
++
++	ret = ti_sci_prepare_system_suspend(info);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
++static DEFINE_SIMPLE_DEV_PM_OPS(ti_sci_pm_ops, ti_sci_suspend, NULL);
++
+ static int ti_sci_init_suspend(struct platform_device *pdev,
+ 			       struct ti_sci_info *info)
+ {
+@@ -3731,6 +3775,7 @@ static struct platform_driver ti_sci_driver = {
+ 		   .name = "ti-sci",
+ 		   .of_match_table = of_match_ptr(ti_sci_of_match),
+ 		   .suppress_bind_attrs = true,
++		   .pm = &ti_sci_pm_ops,
+ 	},
+ };
+ module_platform_driver(ti_sci_driver);
+-- 
+2.45.1
+

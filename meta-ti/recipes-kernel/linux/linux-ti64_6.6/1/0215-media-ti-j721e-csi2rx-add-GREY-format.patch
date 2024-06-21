@@ -1,0 +1,39 @@
+From 9a3185beebbf03b117928d30bfc39ad354bdfa21 Mon Sep 17 00:00:00 2001
+From: Julien Massot <julien.massot@collabora.com>
+Date: Fri, 5 Jan 2024 10:00:23 +0100
+Subject: [PATCH 215/330] media: ti: j721e-csi2rx: add GREY format
+
+commit 24a4e4025d1a3d9b502d20b147a8baec8900eb24 upstream.
+
+Add Grey format to properly select RAW8 data type.
+
+Tested with a ST VG5661 sensor.
+
+Signed-off-by: Julien Massot <julien.massot@collabora.com>
+Acked-by: Jai Luthra <j-luthra@ti.com>
+Link: https://lore.kernel.org/r/20240105090025.1245112-4-julien.massot@collabora.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+index ada61391c8d2..46d37401512b 100644
+--- a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
++++ b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+@@ -158,6 +158,12 @@ static const struct ti_csi2rx_fmt ti_csi2rx_formats[] = {
+ 		.csi_dt			= MIPI_CSI2_DT_RAW8,
+ 		.bpp			= 8,
+ 		.size			= SHIM_DMACNTX_SIZE_8,
++	}, {
++		.fourcc			= V4L2_PIX_FMT_GREY,
++		.code			= MEDIA_BUS_FMT_Y8_1X8,
++		.csi_dt			= MIPI_CSI2_DT_RAW8,
++		.bpp			= 8,
++		.size			= SHIM_DMACNTX_SIZE_8,
+ 	}, {
+ 		.fourcc			= V4L2_PIX_FMT_SBGGR10,
+ 		.code			= MEDIA_BUS_FMT_SBGGR10_1X10,
+-- 
+2.43.1
+

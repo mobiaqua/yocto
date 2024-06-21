@@ -1,0 +1,93 @@
+From 59fdd4e0ec638117315bd52df3a91c4816231bfa Mon Sep 17 00:00:00 2001
+From: Markus Schneider-Pargmann <msp@baylibre.com>
+Date: Thu, 23 May 2024 14:20:56 +0200
+Subject: [PATCH 380/465] serial: 8250: omap: Support wakeup pinctrl state
+
+UART can be used as a wakeup source for am62 from a powered-off SoC
+state. To enable wakeup from UART am62 requires a wakeup flag being set
+in the pinctrl.
+
+If the device is marked as wakeup enabled, select the 'wakeup' pinctrl
+state on sys_off.
+
+Signed-off-by: Markus Schneider-Pargmann <msp@baylibre.com>
+---
+ drivers/tty/serial/8250/8250_omap.c | 39 +++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
+
+diff --git a/drivers/tty/serial/8250/8250_omap.c b/drivers/tty/serial/8250/8250_omap.c
+index fcb0253c8e0f..44a8c1ce6085 100644
+--- a/drivers/tty/serial/8250/8250_omap.c
++++ b/drivers/tty/serial/8250/8250_omap.c
+@@ -26,8 +26,10 @@
+ #include <linux/pm_qos.h>
+ #include <linux/pm_wakeirq.h>
+ #include <linux/dma-mapping.h>
++#include <linux/reboot.h>
+ #include <linux/sys_soc.h>
+ #include <linux/pm_domain.h>
++#include <linux/pinctrl/consumer.h>
+ 
+ #include "8250.h"
+ 
+@@ -147,6 +149,9 @@ struct omap8250_priv {
+ 	spinlock_t rx_dma_lock;
+ 	bool rx_dma_broken;
+ 	bool throttled;
++
++	struct pinctrl *pinctrl;
++	struct pinctrl_state *pinctrl_wakeup;
+ };
+ 
+ struct omap8250_dma_params {
+@@ -1337,6 +1342,30 @@ static int omap8250_no_handle_irq(struct uart_port *port)
+ 	return 0;
+ }
+ 
++static int omap8250_select_wakeup_pinctrl(struct device *dev,
++					  struct omap8250_priv *priv)
++{
++	if (IS_ERR_OR_NULL(priv->pinctrl_wakeup))
++		return 0;
++
++	if (!device_may_wakeup(dev))
++		return 0;
++
++	return pinctrl_select_state(priv->pinctrl, priv->pinctrl_wakeup);
++}
++
++static int omap8250_sysoff_handler(struct sys_off_data *data)
++{
++	struct omap8250_priv *priv = dev_get_drvdata(data->dev);
++	int ret;
++
++	ret = omap8250_select_wakeup_pinctrl(data->dev, priv);
++	if (ret)
++		dev_err(data->dev, "Failed to select pinctrl state 'wakeup', continuing poweroff\n");
++
++	return NOTIFY_DONE;
++}
++
+ static struct omap8250_dma_params am654_dma = {
+ 	.rx_size = SZ_2K,
+ 	.rx_trigger = 1,
+@@ -1569,6 +1598,16 @@ static int omap8250_probe(struct platform_device *pdev)
+ 	priv->line = ret;
+ 	pm_runtime_mark_last_busy(&pdev->dev);
+ 	pm_runtime_put_autosuspend(&pdev->dev);
++
++	priv->pinctrl = devm_pinctrl_get(&pdev->dev);
++	if (!IS_ERR_OR_NULL(priv->pinctrl))
++		priv->pinctrl_wakeup = pinctrl_lookup_state(priv->pinctrl, "wakeup");
++
++	devm_register_sys_off_handler(&pdev->dev,
++				      SYS_OFF_MODE_POWER_OFF_PREPARE,
++				      SYS_OFF_PRIO_DEFAULT,
++				      omap8250_sysoff_handler, NULL);
++
+ 	return 0;
+ err:
+ 	pm_runtime_dont_use_autosuspend(&pdev->dev);
+-- 
+2.45.1
+

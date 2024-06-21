@@ -1,0 +1,60 @@
+From 4ae5f2d2c850428b10b335c216cdaa2c568c1cc2 Mon Sep 17 00:00:00 2001
+From: Darren Etheridge <detheridge@ti.com>
+Date: Sun, 16 Jun 2024 21:45:34 -0500
+Subject: [PATCH 189/222] media: platform: img: vxe-vxd: fix encoder buffer
+ size
+
+Buffers that were not 16 byte aligned on the width, would fail
+with videotestsrc (and other source elements).
+
+This pipeline would fail:
+gst-launch-1.0 videotestsrc do-timestamp=true num-buffers=100 ! \
+video/x-raw, format="NV12", width=1920, height=1080, framerate=30/1 ! \
+ v4l2h264enc ! filesink location=./encoded.264
+
+An error was introduced in:
+commit f67fb42793bd ("vxe-vxd: encoder: Buffer Alignment fix with 4k page size")
+
+This patch  makes sure the actual size of the encode is correctly reported
+back up stream without the alignment padding included.
+
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+---
+ drivers/media/platform/imagination/vxe-vxd/encoder/vxe_enc.h  | 2 +-
+ drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c | 4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_enc.h b/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_enc.h
+index b3b9409b8f98..603cf6150e3d 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_enc.h
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_enc.h
+@@ -143,7 +143,7 @@ struct vxe_dev {
+ 
+ #define VXE_ENCODER_MAX_WIDTH 1920
+ #define VXE_ENCODER_MIN_WIDTH 64
+-#define VXE_ENCODER_MAX_HEIGHT 1080
++#define VXE_ENCODER_MAX_HEIGHT 1088
+ #define VXE_ENCODER_MIN_HEIGHT 64
+ 
+ #define VXE_ENCODER_DEFAULT_HEIGHT 240
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c b/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
+index 9c3608e85359..02f54b6738da 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
+@@ -1328,9 +1328,9 @@ static int vxe_s_fmt(struct file *file, void *priv, struct v4l2_format *f)
+ 			return -EINVAL;
+ 		}
+ 		if (V4L2_TYPE_IS_OUTPUT(f->type)) {
+-			ctx->sh_params.width_in_mbs_minus1 = ((queue->width +
++			ctx->sh_params.width_in_mbs_minus1 = ((ALIGN_16(queue->width) +
+ 				(MB_SIZE - 1))/MB_SIZE)-1;
+-			ctx->sh_params.height_in_maps_units_minus1 = ((queue->height +
++			ctx->sh_params.height_in_maps_units_minus1 = ((ALIGN_16(queue->height) +
+ 					(MB_SIZE - 1))/MB_SIZE) - 1;
+ 			pr_debug("h264_sequence_header_params: width_in_mbs_minus1=%d\n",
+ 				 ctx->sh_params.width_in_mbs_minus1);
+-- 
+2.45.2
+

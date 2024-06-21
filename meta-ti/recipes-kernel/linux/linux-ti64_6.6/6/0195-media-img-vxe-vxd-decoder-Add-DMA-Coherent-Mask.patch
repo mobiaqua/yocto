@@ -1,0 +1,36 @@
+From 4405a5759f96ce7dc16ef5c998b4d4b13b6699d5 Mon Sep 17 00:00:00 2001
+From: Brandon Brnich <b-brnich@ti.com>
+Date: Sun, 16 Jun 2024 21:45:40 -0500
+Subject: [PATCH 195/222] media: img: vxe-vxd: decoder: Add DMA Coherent Mask
+
+IMG video decoder has capility to access 40 bits of addressable physical
+memory. Not setting coherent mask leads to the DMA region resetting to the
+default 32 bits. Only using 32 bits causes allocation errors in higher
+resolution videos.
+
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+Acked-by: Darren Etheridge <detheridge@ti.com>
+---
+ drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c b/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c
+index 6f9cc0fd4595..e34425b4b8e0 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c
++++ b/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c
+@@ -2118,7 +2118,11 @@ static int vxd_dec_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
+-	dma_set_mask(&pdev->dev, DMA_BIT_MASK(40));
++	ret = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(40));
++	if (ret) {
++		dev_err(&pdev->dev, "%s: Failed to Set DMA Mask\n", __func__);
++		return ret;
++	}
+ 
+ 	vxd = devm_kzalloc(&pdev->dev, sizeof(*vxd), GFP_KERNEL);
+ 	if (!vxd)
+-- 
+2.45.2
+

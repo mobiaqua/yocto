@@ -1,0 +1,68 @@
+From 0aed869166486bcd71af69f37f922c90401f80e2 Mon Sep 17 00:00:00 2001
+From: Thomas Richard <thomas.richard@bootlin.com>
+Date: Thu, 13 Jun 2024 10:26:08 +0200
+Subject: [PATCH 40/51] i2c: omap: switch to NOIRQ_SYSTEM_SLEEP_PM_OPS() and
+ RUNTIME_PM_OPS()
+
+Replace SET_NOIRQ_SYSTEM_SLEEP_PM_OPS() and SET_RUNTIME_PM_OPS() by
+NOIRQ_SYSTEM_SLEEP_PM_OPS() and RUNTIME_PM_OPS().
+The usage of pm_ptr() and these more recent macros allows the compiler to
+see and drop the dead code.
+The unnecessary '__maybe_unused' annotations on PM functions can be
+removed.
+
+Link: https://lore.kernel.org/all/20240102-j7200-pcie-s2r-v6-2-4656ef6e6d66@bootlin.com/
+Signed-off-by: Thomas Richard <thomas.richard@bootlin.com>
+---
+ drivers/i2c/busses/i2c-omap.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
+index 58fd6fa3edf1..289fd3c7d221 100644
+--- a/drivers/i2c/busses/i2c-omap.c
++++ b/drivers/i2c/busses/i2c-omap.c
+@@ -1537,7 +1537,7 @@ static void omap_i2c_remove(struct platform_device *pdev)
+ 	pm_runtime_disable(&pdev->dev);
+ }
+ 
+-static int __maybe_unused omap_i2c_runtime_suspend(struct device *dev)
++static int omap_i2c_runtime_suspend(struct device *dev)
+ {
+ 	struct omap_i2c_dev *omap = dev_get_drvdata(dev);
+ 
+@@ -1563,7 +1563,7 @@ static int __maybe_unused omap_i2c_runtime_suspend(struct device *dev)
+ 	return 0;
+ }
+ 
+-static int __maybe_unused omap_i2c_runtime_resume(struct device *dev)
++static int omap_i2c_runtime_resume(struct device *dev)
+ {
+ 	struct omap_i2c_dev *omap = dev_get_drvdata(dev);
+ 
+@@ -1578,10 +1578,10 @@ static int __maybe_unused omap_i2c_runtime_resume(struct device *dev)
+ }
+ 
+ static const struct dev_pm_ops omap_i2c_pm_ops = {
+-	SET_NOIRQ_SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend,
+-				      pm_runtime_force_resume)
+-	SET_RUNTIME_PM_OPS(omap_i2c_runtime_suspend,
+-			   omap_i2c_runtime_resume, NULL)
++	NOIRQ_SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend,
++				  pm_runtime_force_resume)
++	RUNTIME_PM_OPS(omap_i2c_runtime_suspend,
++		       omap_i2c_runtime_resume, NULL)
+ };
+ 
+ static struct platform_driver omap_i2c_driver = {
+@@ -1589,7 +1589,7 @@ static struct platform_driver omap_i2c_driver = {
+ 	.remove_new	= omap_i2c_remove,
+ 	.driver		= {
+ 		.name	= "omap_i2c",
+-		.pm	= &omap_i2c_pm_ops,
++		.pm	= pm_ptr(&omap_i2c_pm_ops),
+ 		.of_match_table = of_match_ptr(omap_i2c_of_match),
+ 	},
+ };
+-- 
+2.45.1
+

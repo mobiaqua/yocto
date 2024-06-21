@@ -1,0 +1,50 @@
+From bb95cdeefcf10534754de7cc73ac21b6f12ef584 Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Tue, 23 Jan 2024 12:49:13 -0600
+Subject: [PATCH 238/330] remoteproc: k3-dsp: Use devm_rproc_add() helper
+
+commit 456a75ab51967c4c594519795a9f49c40662c291 upstream.
+
+Use device lifecycle managed devm_rproc_add() helper function. This helps
+prevent mistakes like deleting out of order in cleanup functions and
+forgetting to delete on all error paths.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Link: https://lore.kernel.org/r/20240123184913.725435-8-afd@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index f799f74734b4..3555b535b168 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -768,7 +768,7 @@ static int k3_dsp_rproc_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-	ret = rproc_add(rproc);
++	ret = devm_rproc_add(dev, rproc);
+ 	if (ret)
+ 		return dev_err_probe(dev, ret, "failed to add register device with remoteproc core\n");
+ 
+@@ -786,14 +786,9 @@ static void k3_dsp_rproc_remove(struct platform_device *pdev)
+ 
+ 	if (rproc->state == RPROC_ATTACHED) {
+ 		ret = rproc_detach(rproc);
+-		if (ret) {
+-			/* Note this error path leaks resources */
++		if (ret)
+ 			dev_err(dev, "failed to detach proc (%pe)\n", ERR_PTR(ret));
+-			return;
+-		}
+ 	}
+-
+-	rproc_del(kproc->rproc);
+ }
+ 
+ static const struct k3_dsp_mem_data c66_mems[] = {
+-- 
+2.43.1
+

@@ -1,0 +1,96 @@
+From b47762af37109e2f585dbcb62d4a4c89ef07fde4 Mon Sep 17 00:00:00 2001
+From: Aradhya Bhatia <a-bhatia1@ti.com>
+Date: Thu, 16 May 2024 21:14:00 +0530
+Subject: [PATCH 142/465] drm/bridge: cdns-dsi: Implement early_enable and
+ late_disable
+
+The cdsn-dsi controller requires that it be turned on completely before
+the input DPI's source has begun streaming.
+
+Since tidss's videoport starts streaming via crtc enable hooks, we need
+cdns-dsi to be up and running before that. Hence, use the early_enable
+and late_disable hooks to get pass the color issues.
+
+Signed-off-by: Aradhya Bhatia <a-bhatia1@ti.com>
+---
+ .../gpu/drm/bridge/cadence/cdns-dsi-core.c    | 36 ++++---------------
+ 1 file changed, 6 insertions(+), 30 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
+index c7519d18e94f..53fa20720089 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
++++ b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
+@@ -656,8 +656,8 @@ cdns_dsi_bridge_mode_valid(struct drm_bridge *bridge,
+ 	return MODE_OK;
+ }
+ 
+-static void cdns_dsi_bridge_atomic_disable(struct drm_bridge *bridge,
+-					   struct drm_bridge_state *old_bridge_state)
++static void cdns_dsi_bridge_atomic_late_disable(struct drm_bridge *bridge,
++						struct drm_bridge_state *old_bridge_state)
+ {
+ 	struct cdns_dsi_input *input = bridge_to_cdns_dsi_input(bridge);
+ 	struct cdns_dsi *dsi = input_to_dsi(input);
+@@ -677,15 +677,6 @@ static void cdns_dsi_bridge_atomic_disable(struct drm_bridge *bridge,
+ 	pm_runtime_put(dsi->base.dev);
+ }
+ 
+-static void cdns_dsi_bridge_post_disable(struct drm_bridge *bridge,
+-					 struct drm_bridge_state *old_bridge_state)
+-{
+-	struct cdns_dsi_input *input = bridge_to_cdns_dsi_input(bridge);
+-	struct cdns_dsi *dsi = input_to_dsi(input);
+-
+-	pm_runtime_put(dsi->base.dev);
+-}
+-
+ static void cdns_dsi_hs_init(struct cdns_dsi *dsi)
+ {
+ 	struct cdns_dsi_output *output = &dsi->output;
+@@ -755,8 +746,8 @@ static void cdns_dsi_init_link(struct cdns_dsi *dsi)
+ 	dsi->link_initialized = true;
+ }
+ 
+-static void cdns_dsi_bridge_atomic_enable(struct drm_bridge *bridge,
+-					  struct drm_bridge_state *old_bridge_state)
++static void cdns_dsi_bridge_atomic_early_enable(struct drm_bridge *bridge,
++						struct drm_bridge_state *old_bridge_state)
+ {
+ 	struct cdns_dsi_input *input = bridge_to_cdns_dsi_input(bridge);
+ 	struct cdns_dsi *dsi = input_to_dsi(input);
+@@ -907,19 +898,6 @@ static void cdns_dsi_bridge_atomic_enable(struct drm_bridge *bridge,
+ 	writel(tmp, dsi->regs + MCTL_MAIN_EN);
+ }
+ 
+-static void cdns_dsi_bridge_pre_enable(struct drm_bridge *bridge,
+-				       struct drm_bridge_state *old_bridge_state)
+-{
+-	struct cdns_dsi_input *input = bridge_to_cdns_dsi_input(bridge);
+-	struct cdns_dsi *dsi = input_to_dsi(input);
+-
+-	if (WARN_ON(pm_runtime_get_sync(dsi->base.dev) < 0))
+-		return;
+-
+-	cdns_dsi_init_link(dsi);
+-	cdns_dsi_hs_init(dsi);
+-}
+-
+ static u32 *cdns_dsi_bridge_get_input_bus_fmts(struct drm_bridge *bridge,
+ 					       struct drm_bridge_state *bridge_state,
+ 					       struct drm_crtc_state *crtc_state,
+@@ -968,10 +946,8 @@ static u32 *cdns_dsi_bridge_get_input_bus_fmts(struct drm_bridge *bridge,
+ static const struct drm_bridge_funcs cdns_dsi_bridge_funcs = {
+ 	.attach = cdns_dsi_bridge_attach,
+ 	.mode_valid = cdns_dsi_bridge_mode_valid,
+-	.atomic_disable = cdns_dsi_bridge_atomic_disable,
+-	.atomic_pre_enable = cdns_dsi_bridge_atomic_pre_enable,
+-	.atomic_enable = cdns_dsi_bridge_atomic_enable,
+-	.atomic_post_disable = cdns_dsi_bridge_atomic_post_disable,
++	.atomic_early_enable = cdns_dsi_bridge_atomic_early_enable,
++	.atomic_late_disable = cdns_dsi_bridge_atomic_late_disable,
+ 	.atomic_duplicate_state = drm_atomic_helper_bridge_duplicate_state,
+ 	.atomic_destroy_state = drm_atomic_helper_bridge_destroy_state,
+ 	.atomic_reset = drm_atomic_helper_bridge_reset,
+-- 
+2.45.1
+

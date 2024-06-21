@@ -1,0 +1,50 @@
+From 05cbc220aa99152ad80a750e73f08c0d96ec4ded Mon Sep 17 00:00:00 2001
+From: Julien Panis <jpanis@baylibre.com>
+Date: Thu, 18 Apr 2024 19:03:07 +0200
+Subject: [PATCH 036/465] net: ethernet: ti: am65-cpsw: Fix xdp_rxq error for
+ disabled port
+
+When an ethX port is disabled in the device tree, an error is returned
+by xdp_rxq_info_reg() function while transitioning the CPSW device to
+the up state. The message 'Missing net_device from driver' is output.
+
+This patch fixes the issue by registering xdp_rxq info only if ethX
+port is enabled (i.e. ndev pointer is not NULL).
+
+Fixes: 8acacc40f733 ("net: ethernet: ti: am65-cpsw: Add minimal XDP support")
+Link: https://lore.kernel.org/all/260d258f-87a1-4aac-8883-aab4746b32d8@ti.com/
+Reported-by: Siddharth Vadapalli <s-vadapalli@ti.com>
+Closes: https://gist.github.com/Siddharth-Vadapalli-at-TI/5ed0e436606001c247a7da664f75edee
+Signed-off-by: Julien Panis <jpanis@baylibre.com>
+Acked-by: Siddharth Vadapalli <s-vadapalli@ti.com>
+---
+ drivers/net/ethernet/ti/am65-cpsw-nuss.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/net/ethernet/ti/am65-cpsw-nuss.c b/drivers/net/ethernet/ti/am65-cpsw-nuss.c
+index 3c8134006061..309553e88277 100644
+--- a/drivers/net/ethernet/ti/am65-cpsw-nuss.c
++++ b/drivers/net/ethernet/ti/am65-cpsw-nuss.c
+@@ -391,6 +391,9 @@ static void am65_cpsw_destroy_xdp_rxqs(struct am65_cpsw_common *common)
+ 	int i;
+ 
+ 	for (i = 0; i < common->port_num; i++) {
++		if (!common->ports[i].ndev)
++			continue;
++
+ 		rxq = &common->ports[i].xdp_rxq;
+ 
+ 		if (xdp_rxq_info_is_reg(rxq))
+@@ -426,6 +429,9 @@ static int am65_cpsw_create_xdp_rxqs(struct am65_cpsw_common *common)
+ 	rx_chn->page_pool = pool;
+ 
+ 	for (i = 0; i < common->port_num; i++) {
++		if (!common->ports[i].ndev)
++			continue;
++
+ 		rxq = &common->ports[i].xdp_rxq;
+ 
+ 		ret = xdp_rxq_info_reg(rxq, common->ports[i].ndev, i, 0);
+-- 
+2.45.1
+

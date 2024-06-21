@@ -1,0 +1,35 @@
+From 90a6adc7e7d86bcfade8f08d2f6917784ff1ac56 Mon Sep 17 00:00:00 2001
+From: Randolph Sapp <rs@ti.com>
+Date: Tue, 23 Apr 2024 18:17:49 -0500
+Subject: [PATCH 015/465] arm64: dts: ti: k3-j721e-main: add gpu node
+
+Add the IMG 8XE-GE8430 GPU device node. This cannot be upstreamed as
+this device currently uses an out-of-tree kernel module.
+
+Signed-off-by: Randolph Sapp <rs@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index c51904584f4e..02d4cdfd54fb 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -2562,6 +2562,14 @@ icssg1_mdio: mdio@32400 {
+ 		};
+ 	};
+ 
++	gpu: gpu@4e20000000 {
++		compatible = "ti,j721e-pvr", "img,pvr-ge8430";
++		reg = <0x4e 0x20000000 0x00 0x80000>;
++		interrupts = <GIC_SPI 24 IRQ_TYPE_LEVEL_HIGH>;
++		power-domains = <&k3_pds 126 TI_SCI_PD_EXCLUSIVE>;
++		clocks = <&k3_clks 125 0>;
++	};
++
+ 	main_mcan0: can@2701000 {
+ 		compatible = "bosch,m_can";
+ 		reg = <0x00 0x02701000 0x00 0x200>,
+-- 
+2.45.1
+

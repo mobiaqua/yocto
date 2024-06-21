@@ -1,0 +1,53 @@
+From 332fb2b6f775078454e5f9754cf9cf9d6844e8b0 Mon Sep 17 00:00:00 2001
+From: Dhruva Gole <d-gole@ti.com>
+Date: Fri, 7 Jun 2024 12:23:12 -0500
+Subject: [PATCH 424/465] firmware: ti_sci: re-assign suspend-resume functions
+ as _noirq callbacks
+
+According to the [0] pm driver-api documentation, when the system goes
+into the freeze, standby or memory sleep state, the phases are: prepare,
+suspend, suspend_late, suspend_noirq. Since the TI_SCI driver is
+responsible for issuing a prepare_system_suspend where we map and
+validate the target Linux suspend state to TISCI LPM, it's suspend
+resume calls should be among the last one's to be made.
+
+This callback method will also ensure that all necessary wake-up
+enabling
+is done beforehand such that the SOC is now ready to finally enter the
+appropriate low-power state.
+
+[0] https://www.kernel.org/doc/html/latest/driver-api/pm/devices.html
+
+Signed-off-by: Dhruva Gole <d-gole@ti.com>
+---
+ drivers/firmware/ti_sci.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/firmware/ti_sci.c b/drivers/firmware/ti_sci.c
+index 381d696f9346..a953e8004902 100644
+--- a/drivers/firmware/ti_sci.c
++++ b/drivers/firmware/ti_sci.c
+@@ -3602,8 +3602,6 @@ static int ti_sci_suspend(struct device *dev)
+ 	return 0;
+ }
+ 
+-static DEFINE_SIMPLE_DEV_PM_OPS(ti_sci_pm_ops, ti_sci_suspend, NULL);
+-
+ static int ti_sci_resume(struct device *dev)
+ {
+ 	struct ti_sci_info *info = dev_get_drvdata(dev);
+@@ -3622,6 +3620,11 @@ static int ti_sci_resume(struct device *dev)
+ 	return 0;
+ }
+ 
++static const struct dev_pm_ops ti_sci_pm_ops = {
++	.suspend_noirq = ti_sci_suspend,
++	.resume_noirq = ti_sci_resume,
++};
++
+ static int ti_sci_init_suspend(struct platform_device *pdev,
+ 			       struct ti_sci_info *info)
+ {
+-- 
+2.45.1
+

@@ -1,0 +1,46 @@
+From ea1e0e6a9644ec7b8c23536433cd94869432d387 Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Fri, 17 Nov 2023 08:09:10 -0600
+Subject: [PATCH 138/330] arm64: dts: ti: k3-j721e: Add chipid node to
+ wkup_conf bus
+
+commit 27e5b7330fe31d0aae196f26cf251254f2b923bb upstream.
+
+Like in other K3 SoCs the chipid register is inside the wakeup
+configuration space. Move the chipid node under a new bus to
+better represent this topology and match other similar SoCs.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Link: https://lore.kernel.org/r/20231117140910.8747-5-afd@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+index f7ab7719fc07..8f259efe3af9 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+@@ -48,9 +48,16 @@ phy_gmii_sel: phy@4040 {
+ 		};
+ 	};
+ 
+-	chipid@43000014 {
+-		compatible = "ti,am654-chipid";
+-		reg = <0x0 0x43000014 0x0 0x4>;
++	wkup_conf: bus@43000000 {
++		compatible = "simple-bus";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges = <0x0 0x00 0x43000000 0x20000>;
++
++		chipid: chipid@14 {
++			compatible = "ti,am654-chipid";
++			reg = <0x14 0x4>;
++		};
+ 	};
+ 
+ 	wkup_pmx0: pinctrl@4301c000 {
+-- 
+2.43.1
+

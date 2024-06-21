@@ -1,0 +1,84 @@
+From f7a6ee4f46d40f8229c32999995f00ff3d16242a Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Tue, 23 Jan 2024 12:49:11 -0600
+Subject: [PATCH 236/330] remoteproc: k3-dsp: Add devm action to release tsp
+
+commit 57ec3c126889604f1323acfadf768c113d9858d8 upstream.
+
+Use a device lifecycle managed action to release tps ti_sci_proc handle.
+This helps prevent mistakes like releasing out of order in cleanup
+functions and forgetting to release on error paths.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Link: https://lore.kernel.org/r/20240123184913.725435-6-afd@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 26 +++++++++++------------
+ 1 file changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index 2aac25d01398..800c8c676708 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -646,6 +646,13 @@ static void k3_dsp_reserved_mem_exit(struct k3_dsp_rproc *kproc)
+ 		iounmap(kproc->rmem[i].cpu_addr);
+ }
+ 
++static void k3_dsp_release_tsp(void *data)
++{
++	struct ti_sci_proc *tsp = data;
++
++	ti_sci_proc_release(tsp);
++}
++
+ static
+ struct ti_sci_proc *k3_dsp_rproc_of_get_tsp(struct device *dev,
+ 					    const struct ti_sci_handle *sci)
+@@ -731,16 +738,17 @@ static int k3_dsp_rproc_probe(struct platform_device *pdev)
+ 		dev_err_probe(dev, ret, "ti_sci_proc_request failed\n");
+ 		return ret;
+ 	}
++	ret = devm_add_action_or_reset(dev, k3_dsp_release_tsp, kproc->tsp);
++	if (ret)
++		return ret;
+ 
+ 	ret = k3_dsp_rproc_of_get_memories(pdev, kproc);
+ 	if (ret)
+-		goto release_tsp;
++		return ret;
+ 
+ 	ret = k3_dsp_reserved_mem_init(kproc);
+-	if (ret) {
+-		dev_err_probe(dev, ret, "reserved memory init failed\n");
+-		goto release_tsp;
+-	}
++	if (ret)
++		return dev_err_probe(dev, ret, "reserved memory init failed\n");
+ 
+ 	ret = kproc->ti_sci->ops.dev_ops.is_on(kproc->ti_sci, kproc->ti_sci_id,
+ 					       NULL, &p_state);
+@@ -792,10 +800,6 @@ static int k3_dsp_rproc_probe(struct platform_device *pdev)
+ 
+ release_mem:
+ 	k3_dsp_reserved_mem_exit(kproc);
+-release_tsp:
+-	ret1 = ti_sci_proc_release(kproc->tsp);
+-	if (ret1)
+-		dev_err(dev, "failed to release proc (%pe)\n", ERR_PTR(ret1));
+ 	return ret;
+ }
+ 
+@@ -817,10 +821,6 @@ static void k3_dsp_rproc_remove(struct platform_device *pdev)
+ 
+ 	rproc_del(kproc->rproc);
+ 
+-	ret = ti_sci_proc_release(kproc->tsp);
+-	if (ret)
+-		dev_err(dev, "failed to release proc (%pe)\n", ERR_PTR(ret));
+-
+ 	k3_dsp_reserved_mem_exit(kproc);
+ }
+ 
+-- 
+2.43.1
+

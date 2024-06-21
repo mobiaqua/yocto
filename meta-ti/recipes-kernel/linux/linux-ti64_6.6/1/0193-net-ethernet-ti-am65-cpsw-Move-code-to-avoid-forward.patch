@@ -1,0 +1,130 @@
+From c9d7bdc437f1692f7851964bbd4414bd043b8c14 Mon Sep 17 00:00:00 2001
+From: Roger Quadros <rogerq@kernel.org>
+Date: Tue, 19 Dec 2023 12:58:01 +0200
+Subject: [PATCH 193/330] net: ethernet: ti: am65-cpsw: Move code to avoid
+ forward declaration
+
+commit 1374841ad47724217f6e36510f7455602bd4bc90 upstream.
+
+Move this code around to avoid forward declaration.
+No functional change.
+
+Signed-off-by: Roger Quadros <rogerq@kernel.org>
+Reviewed-by: Vladimir Oltean <vladimir.oltean@nxp.com>
+Link: https://lore.kernel.org/r/20231219105805.80617-7-rogerq@kernel.org
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/net/ethernet/ti/am65-cpsw-qos.c | 86 ++++++++++++-------------
+ 1 file changed, 43 insertions(+), 43 deletions(-)
+
+diff --git a/drivers/net/ethernet/ti/am65-cpsw-qos.c b/drivers/net/ethernet/ti/am65-cpsw-qos.c
+index 2c97fa05a852..862a98211caa 100644
+--- a/drivers/net/ethernet/ti/am65-cpsw-qos.c
++++ b/drivers/net/ethernet/ti/am65-cpsw-qos.c
+@@ -56,6 +56,16 @@ enum timer_act {
+ 	TACT_SKIP_PROG,		/* just buffer can be updated */
+ };
+ 
++static u32
++am65_cpsw_qos_tx_rate_calc(u32 rate_mbps, unsigned long bus_freq)
++{
++	u32 ir;
++
++	bus_freq /= 1000000;
++	ir = DIV_ROUND_UP(((u64)rate_mbps * 32768),  bus_freq);
++	return ir;
++}
++
+ static int am65_cpsw_port_est_enabled(struct am65_cpsw_port *port)
+ {
+ 	return port->qos.est_oper || port->qos.est_admin;
+@@ -772,49 +782,6 @@ static int am65_cpsw_qos_setup_tc_block(struct net_device *ndev, struct flow_blo
+ 					  port, port, true);
+ }
+ 
+-int am65_cpsw_qos_ndo_setup_tc(struct net_device *ndev, enum tc_setup_type type,
+-			       void *type_data)
+-{
+-	switch (type) {
+-	case TC_QUERY_CAPS:
+-		return am65_cpsw_tc_query_caps(ndev, type_data);
+-	case TC_SETUP_QDISC_TAPRIO:
+-		return am65_cpsw_setup_taprio(ndev, type_data);
+-	case TC_SETUP_BLOCK:
+-		return am65_cpsw_qos_setup_tc_block(ndev, type_data);
+-	default:
+-		return -EOPNOTSUPP;
+-	}
+-}
+-
+-void am65_cpsw_qos_link_up(struct net_device *ndev, int link_speed)
+-{
+-	struct am65_cpsw_port *port = am65_ndev_to_port(ndev);
+-
+-	am65_cpsw_est_link_up(ndev, link_speed);
+-	port->qos.link_down_time = 0;
+-}
+-
+-void am65_cpsw_qos_link_down(struct net_device *ndev)
+-{
+-	struct am65_cpsw_port *port = am65_ndev_to_port(ndev);
+-
+-	if (!port->qos.link_down_time)
+-		port->qos.link_down_time = ktime_get();
+-
+-	port->qos.link_speed = SPEED_UNKNOWN;
+-}
+-
+-static u32
+-am65_cpsw_qos_tx_rate_calc(u32 rate_mbps, unsigned long bus_freq)
+-{
+-	u32 ir;
+-
+-	bus_freq /= 1000000;
+-	ir = DIV_ROUND_UP(((u64)rate_mbps * 32768),  bus_freq);
+-	return ir;
+-}
+-
+ static void
+ am65_cpsw_qos_tx_p0_rate_apply(struct am65_cpsw_common *common,
+ 			       int tx_ch, u32 rate_mbps)
+@@ -916,3 +883,36 @@ void am65_cpsw_qos_tx_p0_rate_init(struct am65_cpsw_common *common)
+ 		       host->port_base + AM65_CPSW_PN_REG_PRI_CIR(tx_ch));
+ 	}
+ }
++
++int am65_cpsw_qos_ndo_setup_tc(struct net_device *ndev, enum tc_setup_type type,
++			       void *type_data)
++{
++	switch (type) {
++	case TC_QUERY_CAPS:
++		return am65_cpsw_tc_query_caps(ndev, type_data);
++	case TC_SETUP_QDISC_TAPRIO:
++		return am65_cpsw_setup_taprio(ndev, type_data);
++	case TC_SETUP_BLOCK:
++		return am65_cpsw_qos_setup_tc_block(ndev, type_data);
++	default:
++		return -EOPNOTSUPP;
++	}
++}
++
++void am65_cpsw_qos_link_up(struct net_device *ndev, int link_speed)
++{
++	struct am65_cpsw_port *port = am65_ndev_to_port(ndev);
++
++	am65_cpsw_est_link_up(ndev, link_speed);
++	port->qos.link_down_time = 0;
++}
++
++void am65_cpsw_qos_link_down(struct net_device *ndev)
++{
++	struct am65_cpsw_port *port = am65_ndev_to_port(ndev);
++
++	if (!port->qos.link_down_time)
++		port->qos.link_down_time = ktime_get();
++
++	port->qos.link_speed = SPEED_UNKNOWN;
++}
+-- 
+2.43.1
+

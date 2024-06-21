@@ -1,0 +1,61 @@
+From 7c64801f7f073d1b13971f7a2426862a0d08f5e1 Mon Sep 17 00:00:00 2001
+From: Jinjie Ruan <ruanjinjie@huawei.com>
+Date: Wed, 30 Aug 2023 17:03:44 +0800
+Subject: [PATCH 011/330] firmware: ti_sci: Use list_for_each_entry() helper
+
+commit be6d43efb12455dbf85c96ff67582a463d34a0fc upstream.
+
+Convert list_for_each() to list_for_each_entry() so that the p
+list_head pointer and list_entry() call are no longer needed, which
+can reduce a few lines of code. No functional changed.
+
+Signed-off-by: Jinjie Ruan <ruanjinjie@huawei.com>
+Link: https://lore.kernel.org/r/20230830090344.528818-1-ruanjinjie@huawei.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/firmware/ti_sci.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/firmware/ti_sci.c b/drivers/firmware/ti_sci.c
+index 3b4c9355cb60..7bde7b4977ab 100644
+--- a/drivers/firmware/ti_sci.c
++++ b/drivers/firmware/ti_sci.c
+@@ -2873,7 +2873,6 @@ static void ti_sci_setup_ops(struct ti_sci_info *info)
+ const struct ti_sci_handle *ti_sci_get_handle(struct device *dev)
+ {
+ 	struct device_node *ti_sci_np;
+-	struct list_head *p;
+ 	struct ti_sci_handle *handle = NULL;
+ 	struct ti_sci_info *info;
+ 
+@@ -2888,8 +2887,7 @@ const struct ti_sci_handle *ti_sci_get_handle(struct device *dev)
+ 	}
+ 
+ 	mutex_lock(&ti_sci_list_mutex);
+-	list_for_each(p, &ti_sci_list) {
+-		info = list_entry(p, struct ti_sci_info, node);
++	list_for_each_entry(info, &ti_sci_list, node) {
+ 		if (ti_sci_np == info->dev->of_node) {
+ 			handle = &info->handle;
+ 			info->users++;
+@@ -2999,7 +2997,6 @@ const struct ti_sci_handle *ti_sci_get_by_phandle(struct device_node *np,
+ 	struct ti_sci_handle *handle = NULL;
+ 	struct device_node *ti_sci_np;
+ 	struct ti_sci_info *info;
+-	struct list_head *p;
+ 
+ 	if (!np) {
+ 		pr_err("I need a device pointer\n");
+@@ -3011,8 +3008,7 @@ const struct ti_sci_handle *ti_sci_get_by_phandle(struct device_node *np,
+ 		return ERR_PTR(-ENODEV);
+ 
+ 	mutex_lock(&ti_sci_list_mutex);
+-	list_for_each(p, &ti_sci_list) {
+-		info = list_entry(p, struct ti_sci_info, node);
++	list_for_each_entry(info, &ti_sci_list, node) {
+ 		if (ti_sci_np == info->dev->of_node) {
+ 			handle = &info->handle;
+ 			info->users++;
+-- 
+2.43.1
+

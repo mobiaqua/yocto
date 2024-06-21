@@ -1,0 +1,94 @@
+From 7b40fc6f4d0c177a48bb49c369e92b54ced24fa9 Mon Sep 17 00:00:00 2001
+From: Thomas Richard <thomas.richard@bootlin.com>
+Date: Thu, 6 Jun 2024 10:05:56 +0200
+Subject: [PATCH 385/465] phy: cadence-torrent: extract calls to clk_get from
+ cdns_torrent_clk
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+[ Upstream commit c2286092424bf5f889f302669580fd6862967a49 ]
+
+Extract calls to clk_get from cdns_torrent_clk into a separate function.
+It needs to call cdns_torrent_clk at resume without looking up the clock.
+
+Co-developed-by: ThÃ©o Lebrun <theo.lebrun@bootlin.com>
+Signed-off-by: ThÃ©o Lebrun <theo.lebrun@bootlin.com>
+Signed-off-by: Thomas Richard <thomas.richard@bootlin.com>
+Link: https://lore.kernel.org/r/20240412-j7200-phy-s2r-v1-4-f15815833974@bootlin.com
+Signed-off-by: Vinod Koul <vkoul@kernel.org>
+---
+ drivers/phy/cadence/phy-cadence-torrent.c | 37 +++++++++++++----------
+ 1 file changed, 21 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/phy/cadence/phy-cadence-torrent.c b/drivers/phy/cadence/phy-cadence-torrent.c
+index 651f8fc969d8..bf1923919d7b 100644
+--- a/drivers/phy/cadence/phy-cadence-torrent.c
++++ b/drivers/phy/cadence/phy-cadence-torrent.c
+@@ -2699,20 +2699,29 @@ static int cdns_torrent_reset(struct cdns_torrent_phy *cdns_phy)
+ 	return 0;
+ }
+ 
++static int cdns_torrent_of_get_clk(struct cdns_torrent_phy *cdns_phy)
++{
++	/* refclk: Input reference clock for PLL0 */
++	cdns_phy->clk = devm_clk_get(cdns_phy->dev, "refclk");
++	if (IS_ERR(cdns_phy->clk))
++		return dev_err_probe(cdns_phy->dev, PTR_ERR(cdns_phy->clk),
++				     "phy ref clock not found\n");
++
++	/* refclk1: Input reference clock for PLL1 */
++	cdns_phy->clk1 = devm_clk_get_optional(cdns_phy->dev, "pll1_refclk");
++	if (IS_ERR(cdns_phy->clk1))
++		return dev_err_probe(cdns_phy->dev, PTR_ERR(cdns_phy->clk1),
++				     "phy PLL1 ref clock not found\n");
++
++	return 0;
++}
++
+ static int cdns_torrent_clk(struct cdns_torrent_phy *cdns_phy)
+ {
+-	struct device *dev = cdns_phy->dev;
+ 	unsigned long ref_clk1_rate;
+ 	unsigned long ref_clk_rate;
+ 	int ret;
+ 
+-	/* refclk: Input reference clock for PLL0 */
+-	cdns_phy->clk = devm_clk_get(dev, "refclk");
+-	if (IS_ERR(cdns_phy->clk)) {
+-		dev_err(dev, "phy ref clock not found\n");
+-		return PTR_ERR(cdns_phy->clk);
+-	}
+-
+ 	ret = clk_prepare_enable(cdns_phy->clk);
+ 	if (ret) {
+ 		dev_err(cdns_phy->dev, "Failed to prepare ref clock: %d\n", ret);
+@@ -2745,14 +2754,6 @@ static int cdns_torrent_clk(struct cdns_torrent_phy *cdns_phy)
+ 		goto disable_clk;
+ 	}
+ 
+-	/* refclk1: Input reference clock for PLL1 */
+-	cdns_phy->clk1 = devm_clk_get_optional(dev, "pll1_refclk");
+-	if (IS_ERR(cdns_phy->clk1)) {
+-		dev_err(dev, "phy PLL1 ref clock not found\n");
+-		ret = PTR_ERR(cdns_phy->clk1);
+-		goto disable_clk;
+-	}
+-
+ 	if (cdns_phy->clk1) {
+ 		ret = clk_prepare_enable(cdns_phy->clk1);
+ 		if (ret) {
+@@ -2846,6 +2847,10 @@ static int cdns_torrent_phy_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		return ret;
+ 
++	ret = cdns_torrent_of_get_clk(cdns_phy);
++	if (ret)
++		goto clk_cleanup;
++
+ 	regmap_field_read(cdns_phy->phy_pma_cmn_ctrl_1, &already_configured);
+ 
+ 	if (!already_configured) {
+-- 
+2.45.1
+

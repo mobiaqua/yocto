@@ -1,0 +1,44 @@
+From 7e6bf66cf3ac87adb6bb9b7a6f993c49c2af9d65 Mon Sep 17 00:00:00 2001
+From: Prasanth Babu Mantena <p-mantena@ti.com>
+Date: Sun, 16 Jun 2024 21:45:17 -0500
+Subject: [PATCH 172/222] media: vxe-vxd: encoder: Two pipe implementation for
+ consecutive instances
+
+There are two hardware pipes that can be used. Only one pipe
+was used irrespective of no of channels. Two pipes are being
+used efficiently by assigning different pipes for consecutive
+instances running in a multichannel usecase.
+
+Signed-off-by: Prasanth Babu Mantena <p-mantena@ti.com>
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+---
+ drivers/media/platform/vxe-vxd/encoder/vxe_v4l2.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c b/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
+index e2b6df29ba8c..a6583606ee6d 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
+@@ -928,6 +928,7 @@ static int vxe_s_fmt(struct file *file, void *priv, struct v4l2_format *f)
+ 	struct vxe_enc_q_data *queue;
+ 	int i, ret = 0;
+ 	unsigned int level_h264;
++	static int base_pipe;
+ 
+ 	ret = vxe_try_fmt(file, priv, f);
+ 	if (ret)
+@@ -1200,8 +1201,8 @@ static int vxe_s_fmt(struct file *file, void *priv, struct v4l2_format *f)
+ 	if ((ctx->s_fmt_flags & S_FMT_FLAG_OUT_RECV) &&
+ 	    (ctx->s_fmt_flags & S_FMT_FLAG_CAP_RECV)) {
+ 		pr_debug("Calling topaz_stream_create()\n");
+-		topaz_stream_create(ctx, &ctx->vparams, 0, 2, &ctx->rc,
+-				    &ctx->topaz_str_context);
++		topaz_stream_create(ctx, &ctx->vparams, ((base_pipe++ % 2) ? 0 : 1), 2,
++				&ctx->rc, &ctx->topaz_str_context);
+ 
+ 		topaz_h264_prepare_sequence_header(ctx->topaz_str_context,
+ 						   ctx->sh_params.width_in_mbs_minus1 + 1,
+-- 
+2.45.2
+

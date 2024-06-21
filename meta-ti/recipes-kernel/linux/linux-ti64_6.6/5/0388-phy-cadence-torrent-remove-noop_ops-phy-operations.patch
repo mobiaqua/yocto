@@ -1,0 +1,92 @@
+From 37e15a2810c95a269c19adf6dcbb287f262b3691 Mon Sep 17 00:00:00 2001
+From: Thomas Richard <thomas.richard@bootlin.com>
+Date: Thu, 6 Jun 2024 10:05:59 +0200
+Subject: [PATCH 388/465] phy: cadence-torrent: remove noop_ops phy operations
+
+[ Upstream commit 81472a55edce473cfc22b340c1026c6d5219ccfe ]
+
+Even if a PHY is already configured, the PHY operations are needed during
+resume stage, as the PHY is in reset state.
+The noop_ops PHY operations is removed to always have PHY operations.
+The already_configured flag is checked at the begening of init, configure
+and poweron operations to keep the already_configured behaviour.
+
+Signed-off-by: Thomas Richard <thomas.richard@bootlin.com>
+Link: https://lore.kernel.org/r/20240412-j7200-phy-s2r-v1-7-f15815833974@bootlin.com
+Signed-off-by: Vinod Koul <vkoul@kernel.org>
+---
+ drivers/phy/cadence/phy-cadence-torrent.c | 30 ++++++++++-------------
+ 1 file changed, 13 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/phy/cadence/phy-cadence-torrent.c b/drivers/phy/cadence/phy-cadence-torrent.c
+index a63cbfb2c4b5..d471a47b4323 100644
+--- a/drivers/phy/cadence/phy-cadence-torrent.c
++++ b/drivers/phy/cadence/phy-cadence-torrent.c
+@@ -1595,6 +1595,9 @@ static int cdns_torrent_dp_configure(struct phy *phy,
+ 	struct cdns_torrent_phy *cdns_phy = dev_get_drvdata(phy->dev.parent);
+ 	int ret;
+ 
++	if (cdns_phy->already_configured)
++		return 0;
++
+ 	ret = cdns_torrent_dp_verify_config(inst, &opts->dp);
+ 	if (ret) {
+ 		dev_err(&phy->dev, "invalid params for phy configure\n");
+@@ -1630,6 +1633,12 @@ static int cdns_torrent_phy_on(struct phy *phy)
+ 	u32 read_val;
+ 	int ret;
+ 
++	if (cdns_phy->already_configured) {
++		/* Give 5ms to 10ms delay for the PIPE clock to be stable */
++		usleep_range(5000, 10000);
++		return 0;
++	}
++
+ 	if (cdns_phy->nsubnodes == 1) {
+ 		/* Take the PHY lane group out of reset */
+ 		reset_control_deassert(inst->lnk_rst);
+@@ -2308,6 +2317,9 @@ static int cdns_torrent_phy_init(struct phy *phy)
+ 	u32 num_regs;
+ 	int i, j;
+ 
++	if (cdns_phy->already_configured)
++		return 0;
++
+ 	if (cdns_phy->nsubnodes > 1) {
+ 		if (phy_type == TYPE_DP)
+ 			return cdns_torrent_dp_multilink_init(cdns_phy, inst, phy);
+@@ -2445,19 +2457,6 @@ static const struct phy_ops cdns_torrent_phy_ops = {
+ 	.owner		= THIS_MODULE,
+ };
+ 
+-static int cdns_torrent_noop_phy_on(struct phy *phy)
+-{
+-	/* Give 5ms to 10ms delay for the PIPE clock to be stable */
+-	usleep_range(5000, 10000);
+-
+-	return 0;
+-}
+-
+-static const struct phy_ops noop_ops = {
+-	.power_on	= cdns_torrent_noop_phy_on,
+-	.owner		= THIS_MODULE,
+-};
+-
+ static
+ int cdns_torrent_phy_configure_multilink(struct cdns_torrent_phy *cdns_phy)
+ {
+@@ -2937,10 +2936,7 @@ static int cdns_torrent_phy_probe(struct platform_device *pdev)
+ 		of_property_read_u32(child, "cdns,ssc-mode",
+ 				     &cdns_phy->phys[node].ssc_mode);
+ 
+-		if (!cdns_phy->already_configured)
+-			gphy = devm_phy_create(dev, child, &cdns_torrent_phy_ops);
+-		else
+-			gphy = devm_phy_create(dev, child, &noop_ops);
++		gphy = devm_phy_create(dev, child, &cdns_torrent_phy_ops);
+ 		if (IS_ERR(gphy)) {
+ 			ret = PTR_ERR(gphy);
+ 			goto put_child;
+-- 
+2.45.1
+

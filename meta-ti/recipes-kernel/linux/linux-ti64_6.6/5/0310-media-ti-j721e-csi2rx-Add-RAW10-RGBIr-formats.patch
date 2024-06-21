@@ -1,0 +1,75 @@
+From d8ce7c7f8c4cbf865ead5684c2f97ea0e4db7190 Mon Sep 17 00:00:00 2001
+From: Jai Luthra <j-luthra@ti.com>
+Date: Fri, 31 May 2024 14:01:19 +0530
+Subject: [PATCH 310/465] media: ti: j721e-csi2rx: Add RAW10 RGBIr formats
+
+Add 10-bit RGBIr formats to the table to allow capturing them. Tested
+with OV2312 sensor.
+
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+---
+ .../platform/ti/j721e-csi2rx/j721e-csi2rx.c   | 48 +++++++++++++++++++
+ 1 file changed, 48 insertions(+)
+
+diff --git a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+index 73f46850e515..cea0360a9d42 100644
+--- a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
++++ b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+@@ -211,6 +211,54 @@ static const struct ti_csi2rx_fmt ti_csi2rx_formats[] = {
+ 		.csi_dt			= MIPI_CSI2_DT_RAW10,
+ 		.bpp			= 16,
+ 		.size			= SHIM_DMACNTX_SIZE_16,
++	}, {
++		.fourcc			= V4L2_PIX_FMT_SRGGI10,
++		.code			= MEDIA_BUS_FMT_SRGGI10_1X10,
++		.csi_dt			= MIPI_CSI2_DT_RAW10,
++		.bpp			= 16,
++		.size			= SHIM_DMACNTX_SIZE_16,
++	}, {
++		.fourcc			= V4L2_PIX_FMT_SGRIG10,
++		.code			= MEDIA_BUS_FMT_SGRIG10_1X10,
++		.csi_dt			= MIPI_CSI2_DT_RAW10,
++		.bpp			= 16,
++		.size			= SHIM_DMACNTX_SIZE_16,
++	}, {
++		.fourcc			= V4L2_PIX_FMT_SBGGI10,
++		.code			= MEDIA_BUS_FMT_SBGGI10_1X10,
++		.csi_dt			= MIPI_CSI2_DT_RAW10,
++		.bpp			= 16,
++		.size			= SHIM_DMACNTX_SIZE_16,
++	}, {
++		.fourcc			= V4L2_PIX_FMT_SGBIG10,
++		.code			= MEDIA_BUS_FMT_SGBIG10_1X10,
++		.csi_dt			= MIPI_CSI2_DT_RAW10,
++		.bpp			= 16,
++		.size			= SHIM_DMACNTX_SIZE_16,
++	}, {
++		.fourcc			= V4L2_PIX_FMT_SGIRG10,
++		.code			= MEDIA_BUS_FMT_SGIRG10_1X10,
++		.csi_dt			= MIPI_CSI2_DT_RAW10,
++		.bpp			= 16,
++		.size			= SHIM_DMACNTX_SIZE_16,
++	}, {
++		.fourcc			= V4L2_PIX_FMT_SIGGR10,
++		.code			= MEDIA_BUS_FMT_SIGGR10_1X10,
++		.csi_dt			= MIPI_CSI2_DT_RAW10,
++		.bpp			= 16,
++		.size			= SHIM_DMACNTX_SIZE_16,
++	}, {
++		.fourcc			= V4L2_PIX_FMT_SGIBG10,
++		.code			= MEDIA_BUS_FMT_SGIBG10_1X10,
++		.csi_dt			= MIPI_CSI2_DT_RAW10,
++		.bpp			= 16,
++		.size			= SHIM_DMACNTX_SIZE_16,
++	}, {
++		.fourcc			= V4L2_PIX_FMT_SIGGB10,
++		.code			= MEDIA_BUS_FMT_SIGGB10_1X10,
++		.csi_dt			= MIPI_CSI2_DT_RAW10,
++		.bpp			= 16,
++		.size			= SHIM_DMACNTX_SIZE_16,
+ 	}, {
+ 		.fourcc			= V4L2_PIX_FMT_SBGGR12,
+ 		.code			= MEDIA_BUS_FMT_SBGGR12_1X12,
+-- 
+2.45.1
+

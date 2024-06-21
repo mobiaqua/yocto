@@ -1,0 +1,197 @@
+From c38c2b0edc2df312cf7a9967af950a743ca9167f Mon Sep 17 00:00:00 2001
+From: Vignesh Raghavendra <vigneshr@ti.com>
+Date: Wed, 5 Jun 2024 13:54:41 +0530
+Subject: [PATCH 327/465] Revert "drm/tidss: Add some support for
+ splash-screen"
+
+This reverts commit 98ad189ebfbf69570c02b18f47e5f441f89ba05a.
+
+Commit causes random hangs on RT kernel especially with NFS. Revert this
+until root caused.
+
+Bisected-by: Randolph Sapp <rs@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/gpu/drm/tidss/tidss_dispc.c | 105 +++-------------------------
+ drivers/gpu/drm/tidss/tidss_dispc.h |   2 -
+ drivers/gpu/drm/tidss/tidss_drv.c   |  18 +----
+ drivers/gpu/drm/tidss/tidss_drv.h   |   2 -
+ 4 files changed, 10 insertions(+), 117 deletions(-)
+
+diff --git a/drivers/gpu/drm/tidss/tidss_dispc.c b/drivers/gpu/drm/tidss/tidss_dispc.c
+index 58e928dfe917..59ebf8edd23a 100644
+--- a/drivers/gpu/drm/tidss/tidss_dispc.c
++++ b/drivers/gpu/drm/tidss/tidss_dispc.c
+@@ -2834,69 +2834,15 @@ static int dispc_init_hw(struct dispc_device *dispc)
+ 		goto err_runtime_suspend;
+ 	}
+ 
+-	dispc->tidss->boot_enabled_vp_mask = 0;
+-
+-	if (dispc_is_idle(dispc)) {
+-		ret = dispc_softreset(dispc);
+-		if (ret)
+-			goto err_clk_disable;
+-	} else {
+-		for (u32 vp_idx = 0; vp_idx < dispc->feat->num_vps; vp_idx++) {
+-			bool enabled = VP_REG_GET(dispc, vp_idx,
+-						  DISPC_VP_CONTROL, 0, 0);
+-
+-			if (!enabled)
+-				continue;
+-
+-			dispc->tidss->boot_enabled_vp_mask |= BIT(vp_idx);
+-
+-			/* Keep the VP clk enabled */
+-			ret = clk_prepare_enable(dispc->vp_clk[vp_idx]);
+-			if (ret) {
+-				while (vp_idx--) {
+-					if (!(dispc->tidss->boot_enabled_vp_mask &
+-					      BIT(vp_idx)))
+-						continue;
+-
+-					clk_disable_unprepare(dispc->vp_clk[vp_idx]);
+-				}
+-
+-				goto err_clk_disable;
+-			}
+-		}
+-
+-		if (!dispc->tidss->boot_enabled_vp_mask) {
+-			dev_warn(dev,
+-				 "Bad HW state: DSS not idle but no VPs are enabled. Resetting.\n");
+-			ret = dispc_softreset(dispc);
+-			if (ret)
+-				goto err_clk_disable;
+-		} else {
+-			/*
+-			 * Do basic HW init here, which won't interrupt the
+-			 * splash-screen.
+-			 */
+-
+-			/* Ensure we won't get interrupts */
+-			dispc_set_irqenable(dispc, 0);
+-			dispc_read_and_clear_irqstatus(dispc);
+-		}
+-	}
++	ret = dispc_softreset(dispc);
++	if (ret)
++		goto err_clk_disable;
+ 
+-	if (dispc->tidss->boot_enabled_vp_mask) {
+-		dev_dbg(dev,
+-			"Bootloader splash-screen detected, leaving DSS active.\n");
+-		pm_runtime_get_noresume(dev);
+-	} else {
+-		/*
+-		 * No splash-screen. Disable the clock and set DSS back to suspended.
+-		 */
+-		clk_disable_unprepare(dispc->fclk);
+-		ret = pm_runtime_set_suspended(dev);
+-		if (ret) {
+-			dev_err(dev, "Failed to set DSS PM to suspended\n");
+-			return ret;
+-		}
++	clk_disable_unprepare(dispc->fclk);
++	ret = pm_runtime_set_suspended(dev);
++	if (ret) {
++		dev_err(dev, "Failed to set DSS PM to suspended\n");
++		return ret;
+ 	}
+ 
+ 	return 0;
+@@ -3031,38 +2977,3 @@ int dispc_init(struct tidss_device *tidss)
+ 
+ 	return 0;
+ }
+-
+-void dispc_splash_fini(struct dispc_device *dispc)
+-{
+-	if (WARN_ON(!dispc->tidss->boot_enabled_vp_mask))
+-		return;
+-
+-	/*
+-	 * Do a reset now, to clean up the bootloader setup, as we're about to
+-	 * do a modeset.
+-	 */
+-	dispc_softreset(dispc);
+-
+-	/*
+-	 * Call resume manually. This will clk_prepare_enable() the fclk, and do
+-	 * the common basic HW configuration.
+-	 */
+-	dispc_runtime_resume(dispc);
+-
+-	/*
+-	 * Call clk_disable_unprepare() to counter the clk_prepare_enable() we
+-	 * did in the dispc_check_hw_state(). The fclk will still be enabled,
+-	 * as the dispc_runtime_resume() above does a clk_prepare_enable().
+-	 */
+-	clk_disable_unprepare(dispc->fclk);
+-
+-	for (u32 vp_idx = 0; vp_idx < dispc->feat->num_vps; vp_idx++) {
+-		if (dispc->tidss->boot_enabled_vp_mask & BIT(vp_idx))
+-			clk_disable_unprepare(dispc->vp_clk[vp_idx]);
+-	}
+-
+-	/* counter the pm_runtime_get_noresume() */
+-	pm_runtime_put_noidle(dispc->dev);
+-
+-	dispc->tidss->boot_enabled_vp_mask = 0;
+-}
+diff --git a/drivers/gpu/drm/tidss/tidss_dispc.h b/drivers/gpu/drm/tidss/tidss_dispc.h
+index af3a37bcba0a..800a73457aff 100644
+--- a/drivers/gpu/drm/tidss/tidss_dispc.h
++++ b/drivers/gpu/drm/tidss/tidss_dispc.h
+@@ -141,6 +141,4 @@ const u32 *dispc_plane_formats(struct dispc_device *dispc, unsigned int *len);
+ int dispc_init(struct tidss_device *tidss);
+ void dispc_remove(struct tidss_device *tidss);
+ 
+-void dispc_splash_fini(struct dispc_device *dispc);
+-
+ #endif
+diff --git a/drivers/gpu/drm/tidss/tidss_drv.c b/drivers/gpu/drm/tidss/tidss_drv.c
+index c0ab2e3b4dd0..c8a2e078e47a 100644
+--- a/drivers/gpu/drm/tidss/tidss_drv.c
++++ b/drivers/gpu/drm/tidss/tidss_drv.c
+@@ -34,22 +34,8 @@ int tidss_runtime_get(struct tidss_device *tidss)
+ 	dev_dbg(tidss->dev, "%s\n", __func__);
+ 
+ 	r = pm_runtime_resume_and_get(tidss->dev);
+-	if (WARN_ON(r < 0))
+-		return r;
+-
+-	if (tidss->boot_enabled_vp_mask) {
+-		/*
+-		 * If 'boot_enabled_vp_mask' is set, it means that the DSS is
+-		 * enabled and bootloader splash-screen is still on the screen,
+-		 * using bootloader's DSS HW config.
+-		 *
+-		 * This is the first time the driver is about to use the HW, and
+-		 * we need to do some cleanup and initial setup.
+-		 */
+-		dispc_splash_fini(tidss->dispc);
+-	}
+-
+-	return 0;
++	WARN_ON(r < 0);
++	return r;
+ }
+ 
+ void tidss_runtime_put(struct tidss_device *tidss)
+diff --git a/drivers/gpu/drm/tidss/tidss_drv.h b/drivers/gpu/drm/tidss/tidss_drv.h
+index db6ed4318617..4ccdc177d171 100644
+--- a/drivers/gpu/drm/tidss/tidss_drv.h
++++ b/drivers/gpu/drm/tidss/tidss_drv.h
+@@ -35,8 +35,6 @@ struct tidss_device {
+ 
+ 	spinlock_t wait_lock;	/* protects the irq masks */
+ 	dispc_irq_t irq_mask;	/* enabled irqs in addition to wait_list */
+-
+-	u32 boot_enabled_vp_mask;
+ };
+ 
+ #define to_tidss(__dev) container_of(__dev, struct tidss_device, ddev)
+-- 
+2.45.1
+

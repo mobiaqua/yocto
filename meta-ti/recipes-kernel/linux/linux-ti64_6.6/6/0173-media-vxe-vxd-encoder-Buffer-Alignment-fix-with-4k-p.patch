@@ -1,0 +1,36 @@
+From bda0a7822c6f23ab26753153c6e646a0542b8ed6 Mon Sep 17 00:00:00 2001
+From: Prasanth Babu Mantena <p-mantena@ti.com>
+Date: Sun, 16 Jun 2024 21:45:18 -0500
+Subject: [PATCH 173/222] media: vxe-vxd: encoder: Buffer Alignment fix with 4k
+ page size
+
+The patch fixes the buffer size allocation for resolution non multiple of
+16. This issue was not seen with 64k pagesize because, while aligning
+the buffersize to 64k pages, it was sufficient for buffer of next
+multiple of 16(Eg: for 1080, buffersize allocated is good for 1088).
+IMG IP can only access the 16B aligned buffers.
+
+Signed-off-by: Prasanth Babu Mantena <p-mantena@ti.com>
+Verified-by: Brandon Brnich <b-brnich@ti.com>
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+---
+ drivers/media/platform/vxe-vxd/encoder/vxe_enc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_enc.c b/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_enc.c
+index eacfece82c79..0c338bd1c37b 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_enc.c
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_enc.c
+@@ -463,7 +463,7 @@ void vxe_fill_default_params(struct vxe_enc_ctx *ctx)
+ 
+ unsigned int vxe_get_sizeimage(int w, int h, struct vxe_enc_fmt *fmt, unsigned char plane_id)
+ {
+-	return (w * h * fmt->size_num[plane_id] / fmt->size_den[plane_id]);
++	return (ALIGN_16(w) * ALIGN_16(h) * fmt->size_num[plane_id] / fmt->size_den[plane_id]);
+ }
+ 
+ unsigned int vxe_get_stride(int w, struct vxe_enc_fmt *fmt)
+-- 
+2.45.2
+

@@ -1,0 +1,29 @@
+From 561c3937ad250472d73beee8b777883aeebd7f3f Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Wed, 21 Feb 2024 09:30:50 -0600
+Subject: [PATCH 01/14] dma-buf: heaps: Initialize during core instead of
+ subsys
+
+Some clients of DMA-Heaps probe earlier than subsys_initcall(), this
+can cause issues when these clients call dma_heap_add() before the
+core DMA-Heaps framework has initialized. DMA-Heaps should initialize
+during core startup to get ahead of all users.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+---
+ drivers/dma-buf/dma-heap.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/dma-buf/dma-heap.c b/drivers/dma-buf/dma-heap.c
+index 84ae708fafe7..899369ce0b82 100644
+--- a/drivers/dma-buf/dma-heap.c
++++ b/drivers/dma-buf/dma-heap.c
+@@ -323,4 +323,4 @@ static int dma_heap_init(void)
+ 
+ 	return 0;
+ }
+-subsys_initcall(dma_heap_init);
++core_initcall(dma_heap_init);
+-- 
+2.44.0
+

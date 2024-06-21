@@ -1,0 +1,82 @@
+From 572032da0ddb7672d17c036a3bc43d04f69393f4 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
+Date: Tue, 28 Nov 2023 18:38:26 +0100
+Subject: [PATCH 009/330] net: ethernet: ti: cpsw: Convert to platform remove
+ callback returning void
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+commit 7ac3f867a35833a228b1bd9645a1581c808a5900 upstream.
+
+The .remove() callback for a platform driver returns an int which makes
+many driver authors wrongly assume it's possible to do error handling by
+returning an error code. However the value returned is ignored (apart
+from emitting a warning) and this typically results in resource leaks.
+
+To improve here there is a quest to make the remove callback return
+void. In the first step of this quest all drivers are converted to
+.remove_new(), which already returns void. Eventually after all drivers
+are converted, .remove_new() will be renamed to .remove().
+
+Replace the error path returning a non-zero value by an error message
+and a comment that there is more to do. With that this patch results in
+no change of behaviour in this driver apart from improving the error
+message.
+
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Reviewed-by: Roger Quadros <rogerq@kernel.org>
+Link: https://lore.kernel.org/r/20231128173823.867512-3-u.kleine-koenig@pengutronix.de
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ drivers/net/ethernet/ti/cpsw.c | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/ethernet/ti/cpsw.c b/drivers/net/ethernet/ti/cpsw.c
+index ca4d4548f85e..ea85c6dd5484 100644
+--- a/drivers/net/ethernet/ti/cpsw.c
++++ b/drivers/net/ethernet/ti/cpsw.c
+@@ -1722,14 +1722,20 @@ static int cpsw_probe(struct platform_device *pdev)
+ 	return ret;
+ }
+ 
+-static int cpsw_remove(struct platform_device *pdev)
++static void cpsw_remove(struct platform_device *pdev)
+ {
+ 	struct cpsw_common *cpsw = platform_get_drvdata(pdev);
+ 	int i, ret;
+ 
+ 	ret = pm_runtime_resume_and_get(&pdev->dev);
+-	if (ret < 0)
+-		return ret;
++	if (ret < 0) {
++		/* Note, if this error path is taken, we're leaking some
++		 * resources.
++		 */
++		dev_err(&pdev->dev, "Failed to resume device (%pe)\n",
++			ERR_PTR(ret));
++		return;
++	}
+ 
+ 	for (i = 0; i < cpsw->data.slaves; i++)
+ 		if (cpsw->slaves[i].ndev)
+@@ -1740,7 +1746,6 @@ static int cpsw_remove(struct platform_device *pdev)
+ 	cpsw_remove_dt(pdev);
+ 	pm_runtime_put_sync(&pdev->dev);
+ 	pm_runtime_disable(&pdev->dev);
+-	return 0;
+ }
+ 
+ #ifdef CONFIG_PM_SLEEP
+@@ -1795,7 +1800,7 @@ static struct platform_driver cpsw_driver = {
+ 		.of_match_table = cpsw_of_mtable,
+ 	},
+ 	.probe = cpsw_probe,
+-	.remove = cpsw_remove,
++	.remove_new = cpsw_remove,
+ };
+ 
+ module_platform_driver(cpsw_driver);
+-- 
+2.43.1
+

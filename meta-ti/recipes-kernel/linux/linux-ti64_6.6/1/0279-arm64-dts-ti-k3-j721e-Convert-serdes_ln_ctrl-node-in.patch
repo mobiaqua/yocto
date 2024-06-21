@@ -1,0 +1,50 @@
+From dd225c6aaefd6ceca40c6f07650cfe4e758ae0b8 Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Wed, 24 Jan 2024 12:47:16 -0600
+Subject: [PATCH 279/330] arm64: dts: ti: k3-j721e: Convert serdes_ln_ctrl node
+ into reg-mux
+
+commit 4cd6d56c3c81e31aba3d69a6cf872770e8945dc7 upstream.
+
+This removes a dependency on the parent node being a syscon node.
+Convert from mmio-mux to reg-mux adjusting node name and properties
+as needed.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Link: https://lore.kernel.org/r/20240124184722.150615-5-afd@ti.com
+Signed-off-by: Manorit Chawdhry <m-chawdhry@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index 2569b4c08ffb..c168bfbd303d 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -45,15 +45,15 @@ scm_conf: scm-conf@100000 {
+ 		ranges = <0x0 0x0 0x00100000 0x1c000>;
+ 
+ 		serdes_ln_ctrl: mux-controller@4080 {
+-			compatible = "mmio-mux";
+-			reg = <0x00004080 0x50>;
++			compatible = "reg-mux";
++			reg = <0x4080 0x50>;
+ 			#mux-control-cells = <1>;
+-			mux-reg-masks = <0x4080 0x3>, <0x4084 0x3>, /* SERDES0 lane0/1 select */
+-					<0x4090 0x3>, <0x4094 0x3>, /* SERDES1 lane0/1 select */
+-					<0x40a0 0x3>, <0x40a4 0x3>, /* SERDES2 lane0/1 select */
+-					<0x40b0 0x3>, <0x40b4 0x3>, /* SERDES3 lane0/1 select */
+-					<0x40c0 0x3>, <0x40c4 0x3>, <0x40c8 0x3>, <0x40cc 0x3>;
+-					/* SERDES4 lane0/1/2/3 select */
++			mux-reg-masks = <0x0 0x3>, <0x4 0x3>, /* SERDES0 lane0/1 select */
++					<0x10 0x3>, <0x14 0x3>, /* SERDES1 lane0/1 select */
++					<0x20 0x3>, <0x24 0x3>, /* SERDES2 lane0/1 select */
++					<0x30 0x3>, <0x34 0x3>, /* SERDES3 lane0/1 select */
++					<0x40 0x3>, <0x44 0x3>, /* SERDES4 lane0/1 select */
++					<0x48 0x3>, <0x4c 0x3>; /* SERDES4 lane2/3 select */
+ 			idle-states = <J721E_SERDES0_LANE0_PCIE0_LANE0>, <J721E_SERDES0_LANE1_PCIE0_LANE1>,
+ 				      <J721E_SERDES1_LANE0_PCIE1_LANE0>, <J721E_SERDES1_LANE1_PCIE1_LANE1>,
+ 				      <J721E_SERDES2_LANE0_PCIE2_LANE0>, <J721E_SERDES2_LANE1_PCIE2_LANE1>,
+-- 
+2.43.1
+

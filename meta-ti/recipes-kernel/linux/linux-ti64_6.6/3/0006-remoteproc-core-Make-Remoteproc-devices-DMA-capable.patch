@@ -1,0 +1,61 @@
+From eaf3c2016b75b11179859d990969232b9b95add9 Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Wed, 21 Feb 2024 09:30:55 -0600
+Subject: [PATCH 06/14] remoteproc: core: Make Remoteproc devices DMA capable
+
+Use the parent device's properties to set the new Remoteproc device
+DMA settings. This allows DMA buffer attachments to Remoteproc
+devices.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+---
+ drivers/remoteproc/remoteproc_core.c | 13 +++++++++++++
+ include/linux/remoteproc.h           |  1 +
+ 2 files changed, 14 insertions(+)
+
+diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
+index 695cce218e8c..0458e39c5418 100644
+--- a/drivers/remoteproc/remoteproc_core.c
++++ b/drivers/remoteproc/remoteproc_core.c
+@@ -20,6 +20,7 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/device.h>
++#include <linux/dma-map-ops.h>
+ #include <linux/panic_notifier.h>
+ #include <linux/slab.h>
+ #include <linux/mutex.h>
+@@ -2465,6 +2466,18 @@ struct rproc *rproc_alloc(struct device *dev, const char *name,
+ 	rproc->dev.driver_data = rproc;
+ 	idr_init(&rproc->notifyids);
+ 
++	/* Make device dma capable by inheriting from parent's capabilities */
++	set_dma_ops(&rproc->dev, get_dma_ops(rproc->dev.parent));
++	if (dma_coerce_mask_and_coherent(&rproc->dev, dma_get_mask(rproc->dev.parent)))
++		dev_warn(&rproc->dev, "Failed to set DMA mask. Trying to continue...\n");
++	rproc->dev.dma_parms = &rproc->dma_parms;
++	/*
++	 * We could use dma_get_max_seg_size(rproc->dev.parent) here but the
++	 * parent is not usually setup correctly either, use full 32bit mask
++	 * for now.
++	 */
++	dma_set_max_seg_size(&rproc->dev, DMA_BIT_MASK(32));
++
+ 	rproc->name = kstrdup_const(name, GFP_KERNEL);
+ 	if (!rproc->name)
+ 		goto put_device;
+diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
+index b4795698d8c2..4cc680f34d41 100644
+--- a/include/linux/remoteproc.h
++++ b/include/linux/remoteproc.h
+@@ -585,6 +585,7 @@ struct rproc {
+ 	u16 elf_machine;
+ 	struct cdev cdev;
+ 	bool cdev_put_on_release;
++	struct device_dma_parameters dma_parms;
+ 	DECLARE_BITMAP(features, RPROC_MAX_FEATURES);
+ };
+ 
+-- 
+2.44.0
+
