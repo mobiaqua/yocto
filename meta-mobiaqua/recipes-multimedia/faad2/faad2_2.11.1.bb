@@ -1,7 +1,7 @@
 SUMMARY = "An open source MPEG-4 and MPEG-2 AAC decoding library"
 HOMEPAGE = "http://www.audiocoding.com/faad2.html"
 SECTION = "libs"
-LICENSE = "GPL-2.0-or-later"
+LICENSE = "GPL-2.0-only"
 
 LIC_FILES_CHKSUM = "file://COPYING;md5=381c8cbe277a7bc1ee2ae6083a04c958"
 
@@ -11,18 +11,11 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=381c8cbe277a7bc1ee2ae6083a04c958"
 # MobiAqua: added optimisations
 FULL_OPTIMIZATION:append = " -fexpensive-optimizations -O4 -ffast-math"
 
-# MobiAqua: disabled
-#PV .= "+git${SRCPV}"
+PV .= "+git"
 
 SRC_URI = "git://github.com/knik0/faad2.git;branch=master;protocol=https"
-SRCREV = "3918dee56063500d0aa23d6c3c94b211ac471a8c"
+SRCREV = "216f00e8ddba6f2c64caf481a04f1ddd78b93e78"
 
 S = "${WORKDIR}/git"
 
-inherit autotools lib_package
-
-# MobiAqua: process version in missing header
-do_configure:prepend() {
-    cp ${S}/include/faad.h.in ${S}/include/faad.h
-    sed -i 's|@VERSION@|${PV}|g' ${S}/include/faad.h
-}
+inherit cmake
