@@ -14,6 +14,11 @@ FULL_OPTIMIZATION:append = " -fexpensive-optimizations -O4 -ffast-math"
 # MobiAqua: added "-DCMAKE_SKIP_BUILD_RPATH=TRUE"
 EXTRA_OECMAKE = "-Denable-floats=ON -DLIB_SUFFIX=${@d.getVar('baselib').replace('lib', '')} -DCMAKE_SKIP_BUILD_RPATH=TRUE"
 
+do_install:append() {
+    sed -i -e 's|${STAGING_LIBDIR}|${libdir}|g' ${D}${libdir}/pkgconfig/fluidsynth.pc
+    sed -i -e 's|${STAGING_LIBDIR}|${libdir}|g' ${D}${libdir}/cmake/fluidsynth/FluidSynthTargets.cmake
+}
+
 do_configure:append() {
     make_tables.exe ${B}/
 }
