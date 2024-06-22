@@ -5,15 +5,14 @@ DEPENDS = "libdrm virtual/libgbm virtual/egl virtual/libgles2"
 
 inherit autotools pkgconfig
 
-PV = "0.0.1"
+PV = "1.0"
 PR = "r0"
 PR:append = "+gitr-${SRCREV}"
 
 DEFAULT_PREFERENCE = "10"
 
-SRCREV = "1c8a0d26c5b1918432fd94d2ac9894b3dcdb2814"
-SRC_URI = "git://git.ti.com/glsdk/kmscube.git;protocol=git;branch=master \
-"
+SRCREV = "a9d05233fe7e5129fc8f625443bcf19d4f1c47df"
+SRC_URI = "git://github.com/mobiaqua/kmscube.git;protocol=https;branch=main"
 
 S = "${WORKDIR}/git"
 
