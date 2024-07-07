@@ -9,7 +9,9 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=f835cce8852481e4b2bbbdd23b5e47f3 \
 
 PROVIDES = "virtual/librpc"
 
-SRC_URI = "${SOURCEFORGE_MIRROR}/${BPN}/${BP}.tar.bz2 \
+SRCREV = "d68523a88ba0a60b949c3bbb2c246be3cfeb0eea"
+
+SRC_URI = "git://git.linux-nfs.org/projects/steved/libtirpc.git;protocol=git;branch=master \
 	   file://0001-match-complain-defines-with-linux-defines.patch \
 	   file://0002-added-missing-include-for-memset.patch \
 	   file://0003-define-endian.h-include-for-macos.patch \
@@ -19,7 +21,8 @@ SRC_URI = "${SOURCEFORGE_MIRROR}/${BPN}/${BP}.tar.bz2 \
 	  "
 UPSTREAM_CHECK_URI = "https://sourceforge.net/projects/libtirpc/files/libtirpc/"
 UPSTREAM_CHECK_REGEX = "(?P<pver>\d+(\.\d+)+)/"
-SRC_URI[sha256sum] = "1e0b0c7231c5fa122e06c0609a76723664d068b0dba3b8219b63e6340b347860"
+
+S = "${WORKDIR}/git"
 
 inherit autotools pkgconfig
 
