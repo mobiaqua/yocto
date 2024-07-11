@@ -1,0 +1,55 @@
+From 1dbfefb0eb73bc17bae9bea7fb51ae6297c213a3 Mon Sep 17 00:00:00 2001
+From: Darren Etheridge <detheridge@ti.com>
+Date: Wed, 10 Jul 2024 12:58:32 -0500
+Subject: [PATCH 403/409] media: img: vxe-vxd: fix incorrect allocation sizes
+
+The use of sizeof was wrong and they were allocating the size of a
+pointer rather than the size of a structure.   No idea why this wasn't
+causing problems on earlier kernels, but on 6.6 this (unsurprisingly)
+causes panics.
+
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+Reviewed-by: Brandon Brnich <b-brnich@ti.com>
+---
+ .../media/platform/imagination/vxe-vxd/common/work_queue.c    | 4 ++--
+ drivers/media/platform/imagination/vxe-vxd/decoder/vxd_core.c | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/media/platform/imagination/vxe-vxd/common/work_queue.c b/drivers/media/platform/imagination/vxe-vxd/common/work_queue.c
+index 6bd91a7fdbf4..d31b5c021c57 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/common/work_queue.c
++++ b/drivers/media/platform/imagination/vxe-vxd/common/work_queue.c
+@@ -39,7 +39,7 @@ void init_work(void **work_args, void *work_fn, uint8_t hwa_id)
+ 	//create a link
+ 	struct node *link = kmalloc(sizeof(*link), GFP_KERNEL);
+ 
+-	*work = kzalloc(sizeof(*work), GFP_KERNEL);
++	*work = kzalloc(sizeof(struct work_struct), GFP_KERNEL);
+ 	if (!(*work)) {
+ 		pr_err("Memory allocation failed for work_queue\n");
+ 		return;
+@@ -62,7 +62,7 @@ void init_delayed_work(void **work_args, void *work_fn, uint8_t hwa_id)
+ 	//create a link
+ 	struct node *link = kmalloc(sizeof(*link), GFP_KERNEL);
+ 
+-	*work = kzalloc(sizeof(*work), GFP_KERNEL);
++	*work = kzalloc(sizeof(struct delayed_work), GFP_KERNEL);
+ 	if (!(*work)) {
+ 		pr_err("Memory allocation failed for delayed_work_queue\n");
+ 		return;
+diff --git a/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_core.c b/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_core.c
+index 9c536955cbbb..17705989f228 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_core.c
++++ b/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_core.c
+@@ -1384,7 +1384,7 @@ int vxd_prepare_fw(struct vxd_dev *vxd)
+ 	struct completion **firmware_loading_complete =
+ 		(struct completion **)&vxd->firmware_loading_complete;
+ 
+-	*firmware_loading_complete = kmalloc(sizeof(*firmware_loading_complete), GFP_KERNEL);
++	*firmware_loading_complete = kmalloc(sizeof(struct completion), GFP_KERNEL);
+ 	if (!(*firmware_loading_complete)) {
+ 		pr_err("Memory allocation failed for init_completion\n");
+ 		return -ENOMEM;
+-- 
+2.45.2
+

@@ -1,0 +1,295 @@
+From d7fe52b4d69ef7011aec7ada1b7d77ec419418e0 Mon Sep 17 00:00:00 2001
+From: Vibhore Vardhan <vibhore@ti.com>
+Date: Wed, 3 Jul 2024 11:19:20 +0530
+Subject: [PATCH 369/409] firmware: ti_sci: Introduce LPM Constraint Ops
+
+Introduce the Low Power Mode constraint ops supported by the TISCI Low
+Power Mode API [1].
+
+1) TISCI_MSG_LPM_SET_DEVICE_CONSTRAINT
+Set LPM constraint on behalf of a device. By setting a constraint, the
+device ensures that it will not be powered off or reset in the selected
+mode.
+2) TISCI_MSG_LPM_SET_LATENCY_CONSTRAINT
+Set LPM resume latency constraint. By setting a constraint, the host
+ensures that the resume time from selected mode will be less than the
+constraint value.
+
+These new APIs are only available via pm_ops after checking if the
+DM_MANAGED flag is set in fw_ccaps.
+
+[1] https://software-dl.ti.com/tisci/esd/latest/2_tisci_msgs/pm/lpm.html
+
+Co-developed-by: Akashdeep Kaur <a-kaur@ti.com>
+Signed-off-by: Akashdeep Kaur <a-kaur@ti.com>
+Signed-off-by: Vibhore Vardhan <vibhore@ti.com>
+Signed-off-by: Dhruva Gole <d-gole@ti.com>
+---
+ drivers/firmware/ti_sci.c              | 117 +++++++++++++++++++++++++
+ drivers/firmware/ti_sci.h              |  54 ++++++++++++
+ include/linux/soc/ti/ti_sci_protocol.h |  14 +++
+ 3 files changed, 185 insertions(+)
+
+diff --git a/drivers/firmware/ti_sci.c b/drivers/firmware/ti_sci.c
+index a953e8004902..064b540ab670 100644
+--- a/drivers/firmware/ti_sci.c
++++ b/drivers/firmware/ti_sci.c
+@@ -1940,6 +1940,116 @@ static int ti_sci_msg_cmd_query_fw_caps(const struct ti_sci_handle *handle,
+ 	return ret;
+ }
+ 
++/**
++ * ti_sci_cmd_set_device_constraint() - Set LPM constraint on behalf of a device
++ * @handle:	pointer to TI SCI handle
++ * @id:	Device identifier
++ * @state:	The desired state of device constraint: set or clear
++ *
++ * Return: 0 if all went well, else returns appropriate error value.
++ */
++static int ti_sci_cmd_set_device_constraint(const struct ti_sci_handle *handle,
++					    u32 id, u8 state)
++{
++	struct ti_sci_info *info;
++	struct ti_sci_msg_req_lpm_set_device_constraint *req;
++	struct ti_sci_msg_hdr *resp;
++	struct ti_sci_xfer *xfer;
++	struct device *dev;
++	int ret = 0;
++
++	if (IS_ERR(handle))
++		return PTR_ERR(handle);
++	if (!handle)
++		return -EINVAL;
++
++	info = handle_to_ti_sci_info(handle);
++	dev = info->dev;
++
++	xfer = ti_sci_get_one_xfer(info, TI_SCI_MSG_LPM_SET_DEVICE_CONSTRAINT,
++				   TI_SCI_FLAG_REQ_ACK_ON_PROCESSED,
++				   sizeof(*req), sizeof(*resp));
++	if (IS_ERR(xfer)) {
++		ret = PTR_ERR(xfer);
++		dev_err(dev, "Message alloc failed(%d)\n", ret);
++		return ret;
++	}
++	req = (struct ti_sci_msg_req_lpm_set_device_constraint *)xfer->xfer_buf;
++	req->id = id;
++	req->state = state;
++
++	ret = ti_sci_do_xfer(info, xfer);
++	if (ret) {
++		dev_err(dev, "Mbox send fail %d\n", ret);
++		goto fail;
++	}
++
++	resp = (struct ti_sci_msg_hdr *)xfer->xfer_buf;
++
++	ret = ti_sci_is_response_ack(resp) ? 0 : -ENODEV;
++
++	dev_info(dev, "%s: device: %d: state: %d: ret %d\n", __func__, id, state, ret);
++fail:
++	ti_sci_put_one_xfer(&info->minfo, xfer);
++
++	return ret;
++}
++
++/**
++ * ti_sci_cmd_set_latency_constraint() - Set LPM resume latency constraint
++ * @handle:	pointer to TI SCI handle
++ * @latency:	maximum acceptable latency (in ms) to wake up from LPM
++ * @state:	The desired state of latency constraint: set or clear
++ *
++ * Return: 0 if all went well, else returns appropriate error value.
++ */
++static int ti_sci_cmd_set_latency_constraint(const struct ti_sci_handle *handle,
++					     u16 latency, u8 state)
++{
++	struct ti_sci_info *info;
++	struct ti_sci_msg_req_lpm_set_latency_constraint *req;
++	struct ti_sci_msg_hdr *resp;
++	struct ti_sci_xfer *xfer;
++	struct device *dev;
++	int ret = 0;
++
++	if (IS_ERR(handle))
++		return PTR_ERR(handle);
++	if (!handle)
++		return -EINVAL;
++
++	info = handle_to_ti_sci_info(handle);
++	dev = info->dev;
++
++	xfer = ti_sci_get_one_xfer(info, TI_SCI_MSG_LPM_SET_LATENCY_CONSTRAINT,
++				   TI_SCI_FLAG_REQ_ACK_ON_PROCESSED,
++				   sizeof(*req), sizeof(*resp));
++	if (IS_ERR(xfer)) {
++		ret = PTR_ERR(xfer);
++		dev_err(dev, "Message alloc failed(%d)\n", ret);
++		return ret;
++	}
++	req = (struct ti_sci_msg_req_lpm_set_latency_constraint *)xfer->xfer_buf;
++	req->latency = latency;
++	req->state = state;
++
++	ret = ti_sci_do_xfer(info, xfer);
++	if (ret) {
++		dev_err(dev, "Mbox send fail %d\n", ret);
++		goto fail;
++	}
++
++	resp = (struct ti_sci_msg_hdr *)xfer->xfer_buf;
++
++	ret = ti_sci_is_response_ack(resp) ? 0 : -ENODEV;
++
++	dev_info(dev, "%s: latency: %d: state: %d: ret %d\n", __func__, latency, state, ret);
++fail:
++	ti_sci_put_one_xfer(&info->minfo, xfer);
++
++	return ret;
++}
++
+ static int ti_sci_cmd_core_reboot(const struct ti_sci_handle *handle)
+ {
+ 	struct ti_sci_info *info;
+@@ -3629,6 +3739,7 @@ static int ti_sci_init_suspend(struct platform_device *pdev,
+ 			       struct ti_sci_info *info)
+ {
+ 	struct device *dev = &pdev->dev;
++	struct ti_sci_ops *ops = &info->handle.ops;
+ 
+ 	dma_set_mask_and_coherent(dev, DMA_BIT_MASK(32));
+ 	info->ctx_mem_buf = dma_alloc_attrs(info->dev, LPM_CTX_MEM_SIZE,
+@@ -3641,6 +3752,12 @@ static int ti_sci_init_suspend(struct platform_device *pdev,
+ 		return -ENOMEM;
+ 	}
+ 
++	if (info->fw_caps & MSG_FLAG_CAPS_LPM_DM_MANAGED) {
++		pr_debug("detected DM managed LPM in fw_caps\n");
++		ops->pm_ops.set_device_constraint = ti_sci_cmd_set_device_constraint;
++		ops->pm_ops.set_latency_constraint = ti_sci_cmd_set_latency_constraint;
++	}
++
+ 	return 0;
+ }
+ 
+diff --git a/drivers/firmware/ti_sci.h b/drivers/firmware/ti_sci.h
+index 2062f912c2a6..f639efee53f6 100644
+--- a/drivers/firmware/ti_sci.h
++++ b/drivers/firmware/ti_sci.h
+@@ -40,6 +40,8 @@
+ #define TI_SCI_MSG_PREPARE_SLEEP       0x0300
+ #define TI_SCI_MSG_LPM_WAKE_REASON	0x0306
+ #define TI_SCI_MSG_SET_IO_ISOLATION	0x0307
++#define TI_SCI_MSG_LPM_SET_DEVICE_CONSTRAINT	0x0309
++#define TI_SCI_MSG_LPM_SET_LATENCY_CONSTRAINT	0x030A
+ 
+ /* Resource Management Requests */
+ #define TI_SCI_MSG_GET_RESOURCE_RANGE	0x1500
+@@ -159,6 +161,7 @@ struct ti_sci_msg_resp_query_fw_caps {
+ #define MSG_FLAG_CAPS_LPM_MCU_ONLY	TI_SCI_MSG_FLAG(2)
+ #define MSG_FLAG_CAPS_LPM_STANDBY	TI_SCI_MSG_FLAG(3)
+ #define MSG_FLAG_CAPS_LPM_PARTIAL_IO	TI_SCI_MSG_FLAG(4)
++#define MSG_FLAG_CAPS_LPM_DM_MANAGED	TI_SCI_MSG_FLAG(5)
+ #define MSG_MASK_CAPS_LPM		GENMASK_ULL(4, 1)
+ 	u64 fw_caps;
+ } __packed;
+@@ -634,6 +637,57 @@ struct ti_sci_msg_req_set_io_isolation {
+ 	u8 state;
+ } __packed;
+ 
++/**
++ * struct ti_sci_msg_req_lpm_set_device_constraint - Request for
++ * TISCI_MSG_LPM_SET_DEVICE_CONSTRAINT.
++ *
++ * @hdr:	TISCI header to provide ACK/NAK flags to the host.
++ * @id:	Device ID of device whose constraint has to be modified.
++ * @state:	The desired state of device constraint: set or clear.
++ * @rsvd:	Reserved for future use.
++ *
++ * This message is used by host to set constraint on the device. This can be
++ * sent anytime after boot before prepare sleep message. Any device can set a
++ * constraint on the low power mode that the SoC can enter. It allows
++ * configurable information to be easily shared from the application, as this
++ * is a non-secure message and therefore can be sent by anyone. By setting a
++ * constraint, the device ensures that it will not be powered off or reset in
++ * the selected mode. Note: Access Restriction: Exclusivity flag of Device will
++ * be honored. If some other host already has constraint on this device ID,
++ * NACK will be returned.
++ */
++struct ti_sci_msg_req_lpm_set_device_constraint {
++	struct ti_sci_msg_hdr hdr;
++	u32 id;
++	u8 state;
++	u32 rsvd[2];
++} __packed;
++
++/**
++ * struct ti_sci_msg_req_lpm_set_latency_constraint - Request for
++ * TISCI_MSG_LPM_SET_LATENCY_CONSTRAINT.
++ *
++ * @hdr:	TISCI header to provide ACK/NAK flags to the host.
++ * @wkup_latency:	The maximum acceptable latency to wake up from low power mode
++ *			in milliseconds. The deeper the state, the higher the latency.
++ * @state:	The desired state of wakeup latency constraint: set or clear.
++ * @rsvd:	Reserved for future use.
++ *
++ * This message is used by host to set wakeup latency from low power mode. This can
++ * be sent anytime after boot before prepare sleep message, and can be sent after
++ * current low power mode is exited. Any device can set a constraint on the low power
++ * mode that the SoC can enter. It allows configurable information to be easily shared
++ * from the application, as this is a non-secure message and therefore can be sent by
++ * anyone. By setting a wakeup latency constraint, the host ensures that the resume time
++ * from selected low power mode will be less than the constraint value.
++ */
++struct ti_sci_msg_req_lpm_set_latency_constraint {
++	struct ti_sci_msg_hdr hdr;
++	u16 latency;
++	u8 state;
++	u32 rsvd;
++} __packed;
++
+ #define TI_SCI_IRQ_SECONDARY_HOST_INVALID	0xff
+ 
+ /**
+diff --git a/include/linux/soc/ti/ti_sci_protocol.h b/include/linux/soc/ti/ti_sci_protocol.h
+index f2d1d74ab8fc..f98d0ac47d1d 100644
+--- a/include/linux/soc/ti/ti_sci_protocol.h
++++ b/include/linux/soc/ti/ti_sci_protocol.h
+@@ -215,6 +215,10 @@ struct ti_sci_clk_ops {
+ #define TISCI_MSG_VALUE_IO_ENABLE			1
+ #define TISCI_MSG_VALUE_IO_DISABLE			0
+ 
++/* TISCI LPM constraint state values */
++#define TISCI_MSG_CONSTRAINT_SET			1
++#define TISCI_MSG_CONSTRAINT_CLR			0
++
+ /**
+  * struct ti_sci_pm_ops - Low Power Mode (LPM) control operations
+  * @prepare_sleep: Prepare to enter low power mode
+@@ -228,6 +232,12 @@ struct ti_sci_clk_ops {
+  *		- timestamp: Timestamp at which soc woke.
+  * @set_io_isolation: Enable or disable IO isolation
+  *		- state: The desired state of the IO isolation.
++ * @set_device_constraint: Set LPM constraint on behalf of a device
++ *		- id: Device Identifier
++ *		- state: The desired state of device constraint: set or clear.
++ * @set_latency_constraint: Set LPM resume latency constraint
++ *		- latency: maximum acceptable latency to wake up from low power mode
++ *		- state: The desired state of latency constraint: set or clear.
+  */
+ struct ti_sci_pm_ops {
+ 	int (*prepare_sleep)(const struct ti_sci_handle *handle, u8 mode,
+@@ -236,6 +246,10 @@ struct ti_sci_pm_ops {
+ 			       u32 *source, u64 *timestamp);
+ 	int (*set_io_isolation)(const struct ti_sci_handle *handle,
+ 				u8 state);
++	int (*set_device_constraint)(const struct ti_sci_handle *handle,
++				     u32 id, u8 state);
++	int (*set_latency_constraint)(const struct ti_sci_handle *handle,
++				      u16 latency, u8 state);
+ };
+ 
+ /**
+-- 
+2.45.2
+

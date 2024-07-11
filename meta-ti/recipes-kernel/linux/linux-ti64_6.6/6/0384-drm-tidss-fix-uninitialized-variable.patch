@@ -1,0 +1,35 @@
+From d0d1c85c6a0265054fae482713a8d17d2c5839ef Mon Sep 17 00:00:00 2001
+From: Guillaume La Roque <glaroque@baylibre.com>
+Date: Wed, 3 Jul 2024 20:01:48 +0200
+Subject: [PATCH 384/409] drm/tidss: fix uninitialized variable
+
+When we build with android build fail on :
+ error: variable 'mask' is used uninitialized whenever 'if' condition is
+ false
+
+To fix this initialize mask variable.
+
+Fixes: 93022077f0f5 ("TI: drm/tidss: Add OLDI bridge support")
+Change-Id: If2ae28b61fe6c0e15bb7a27f2098ed1dd6c2c2e4
+Signed-off-by: Guillaume La Roque <glaroque@baylibre.com>
+Reviewed-by: Aradhya Bhatia <a-bhatia1@ti.com>
+---
+ drivers/gpu/drm/tidss/tidss_oldi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/tidss/tidss_oldi.c b/drivers/gpu/drm/tidss/tidss_oldi.c
+index 3a1daf725f1f..9348779e986b 100644
+--- a/drivers/gpu/drm/tidss/tidss_oldi.c
++++ b/drivers/gpu/drm/tidss/tidss_oldi.c
+@@ -108,7 +108,7 @@ oldi_set_serial_clk(struct tidss_oldi *oldi, unsigned long rate)
+ 
+ static void tidss_oldi_tx_power(struct tidss_oldi *oldi, bool power)
+ {
+-	u32 val = 0, mask;
++	u32 val = 0, mask = 0;
+ 
+ 	if (WARN_ON(!oldi->io_ctrl))
+ 		return;
+-- 
+2.45.2
+

@@ -1,0 +1,48 @@
+From 557fd1dfa0e93ccc991aa4a32c2bd891b4486173 Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@baylibre.com>
+Date: Wed, 10 Jul 2024 11:58:27 -0700
+Subject: [PATCH 402/409] pmdomain: ti_sci: handle wake IRQs for IO daisy chain
+ wakeups
+
+When a device supports IO daisy-chain wakeups, it uses a dedicated
+wake IRQ.  Devices with IO daisy-chain wakeups enabled should not set
+wakeup constraints since these can happen even from deep power states,
+so should not prevent the DM from picking deep power states.
+
+Wake IRQs are set with dev_pm_set_wake_irq() or
+dev_pm_set_dedicated_wake_irq().  The latter is used by the serial
+driver used on K3 platforms (drivers/tty/serial/8250/8250_omap.c)
+when the interrupts-extended property is used to describe the
+dedicated wakeup interrupt.
+
+Detect these wake IRQs in the suspend path, and if set, skip sending
+constraint.
+
+Signed-off-by: Kevin Hilman <khilman@baylibre.com>
+---
+ drivers/pmdomain/ti/ti_sci_pm_domains.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/pmdomain/ti/ti_sci_pm_domains.c b/drivers/pmdomain/ti/ti_sci_pm_domains.c
+index fbf0a26bb743..d5b69f289a1e 100644
+--- a/drivers/pmdomain/ti/ti_sci_pm_domains.c
++++ b/drivers/pmdomain/ti/ti_sci_pm_domains.c
+@@ -94,6 +94,15 @@ static inline bool ti_sci_pd_check_wkup_constraint(struct device *dev)
+ 	int ret;
+ 
+ 	if (device_may_wakeup(dev)) {
++		/*
++		 * If device can wakeup using IO daisy chain wakeups,
++		 * we do not want to set a constraint.
++		 */
++		if (dev->power.wakeirq) {
++			dev_info(dev, "%s: has wake IRQ, not setting constraints\n", __func__);
++			return false;
++		}
++
+ 		ret = ti_sci->ops.pm_ops.set_device_constraint(ti_sci, pd->idx,
+ 							       TISCI_MSG_CONSTRAINT_SET);
+ 		if (!ret)
+-- 
+2.45.2
+

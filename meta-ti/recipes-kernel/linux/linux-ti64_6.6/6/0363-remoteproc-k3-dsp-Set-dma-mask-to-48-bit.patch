@@ -1,0 +1,33 @@
+From 3af5ae38303aba619a33e0a6ebdc64fd10c7f2ad Mon Sep 17 00:00:00 2001
+From: Rahul T R <r-ravikumar@ti.com>
+Date: Tue, 2 Jul 2024 13:23:33 +0530
+Subject: [PATCH 363/409] remoteproc: k3-dsp: Set dma mask to 48 bit
+
+c6x DSP can address 48 bit using RAT and c7x has 48 bit address bus
+
+Signed-off-by: Rahul T R <r-ravikumar@ti.com>
+Acked-by: Andrew Davis <afd@ti.com>
+---
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index 3555b535b168..a2a164fbf3df 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -768,6 +768,12 @@ static int k3_dsp_rproc_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
++	ret = dma_coerce_mask_and_coherent(&rproc->dev, DMA_BIT_MASK(48));
++	if (ret) {
++		dev_warn(dev, "Failed to set DMA mask %llx. Trying to continue... (%pe)\n",
++			DMA_BIT_MASK(48), ERR_PTR(ret));
++	}
++
+ 	ret = devm_rproc_add(dev, rproc);
+ 	if (ret)
+ 		return dev_err_probe(dev, ret, "failed to add register device with remoteproc core\n");
+-- 
+2.45.2
+

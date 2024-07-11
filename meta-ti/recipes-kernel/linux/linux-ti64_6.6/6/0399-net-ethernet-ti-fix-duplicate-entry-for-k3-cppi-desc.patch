@@ -1,0 +1,43 @@
+From 6c85f4114e1f4a3fdd81bf04f43764abfa0f2684 Mon Sep 17 00:00:00 2001
+From: Guillaume La Roque <glaroque@baylibre.com>
+Date: Mon, 8 Jul 2024 15:18:14 +0200
+Subject: [PATCH 399/409] net: ethernet: ti: fix duplicate entry for
+ k3-cppi-desc-pool.o
+
+Building the am65-cpsw-nuss.c driver as a module leads to a duplicate
+k3-cppi-desc-pool.ko module causing the following build error:
+  modpost: drivers/net/ethernet/ti/ti-am65-cpsw-nuss:
+  'k3_cppi_desc_pool_destroy' exported twice. Previous export was in
+  drivers/net/ethernet/ti/k3-cppi-desc-pool.ko
+
+Since enabling the TI_K3_AM65_CPSW_NUSS config implicitly enables the
+TI_K3_CPPI_DESC_POOL config as well, the k3-cppi-desc-pool.o module is
+built twice - once for TI_K3_CPPI_DESC_POOL config and a second time
+for TI_K3_AM65_CPSW_NUSS config.
+
+Fix this by removing the duplicate k3-cppi-desc-pool.o associated with
+"ti-am65-cpsw-nuss-y" in the Makefile.
+
+Fixes: 1b5a801db2c0 ("HACK: net: ethernet: ti: am65-cpsw-nuss: add debugfs to cfg cut-thru params")
+Signed-off-by: Guillaume La Roque <glaroque@baylibre.com>
+Reviewed-by: MD Danish Anwar <danishanwar@ti.com>
+---
+ drivers/net/ethernet/ti/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/ti/Makefile b/drivers/net/ethernet/ti/Makefile
+index 32c0edf0325b..07fa37b0d826 100644
+--- a/drivers/net/ethernet/ti/Makefile
++++ b/drivers/net/ethernet/ti/Makefile
+@@ -30,7 +30,7 @@ keystone_netcp_ethss-y := netcp_ethss.o netcp_sgmii.o netcp_xgbepcsr.o cpsw_ale.
+ obj-$(CONFIG_TI_K3_CPPI_DESC_POOL) += k3-cppi-desc-pool.o
+ 
+ obj-$(CONFIG_TI_K3_AM65_CPSW_NUSS) += ti-am65-cpsw-nuss.o
+-ti-am65-cpsw-nuss-y := am65-cpsw-nuss.o cpsw_sl.o am65-cpsw-ethtool.o cpsw_ale.o k3-cppi-desc-pool.o am65-debugfs.o
++ti-am65-cpsw-nuss-y := am65-cpsw-nuss.o cpsw_sl.o am65-cpsw-ethtool.o cpsw_ale.o am65-debugfs.o
+ ti-am65-cpsw-nuss-$(CONFIG_TI_AM65_CPSW_QOS) += am65-cpsw-qos.o
+ ti-am65-cpsw-nuss-$(CONFIG_TI_K3_AM65_CPSW_SWITCHDEV) += am65-cpsw-switchdev.o
+ obj-$(CONFIG_TI_K3_AM65_CPTS) += am65-cpts.o
+-- 
+2.45.2
+

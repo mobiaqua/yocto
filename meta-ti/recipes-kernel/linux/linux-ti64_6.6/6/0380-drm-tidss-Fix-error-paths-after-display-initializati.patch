@@ -1,0 +1,64 @@
+From 58901d8bc9ebb9090a492ee28ac67b2d94eece35 Mon Sep 17 00:00:00 2001
+From: Devarsh Thakkar <devarsht@ti.com>
+Date: Tue, 2 Jul 2024 23:19:46 +0530
+Subject: [PATCH 380/409] drm/tidss: Fix error paths after display
+ initialization
+
+Fix error paths for display initialization to de-initialize the OLDI and
+power off the display related domains for failure scenarios.
+
+Fixes: 554d9d192075 ("drm/tidss: Initialize OLDI after dispc_init")
+Signed-off-by: Devarsh Thakkar <devarsht@ti.com>
+---
+ drivers/gpu/drm/tidss/tidss_drv.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/gpu/drm/tidss/tidss_drv.c b/drivers/gpu/drm/tidss/tidss_drv.c
+index abf96256ed24..47a4f1ba48d6 100644
+--- a/drivers/gpu/drm/tidss/tidss_drv.c
++++ b/drivers/gpu/drm/tidss/tidss_drv.c
+@@ -258,21 +258,21 @@ static int tidss_probe(struct platform_device *pdev)
+ 	if (!tidss->shared_mode) {
+ 		/* powering up associated OLDI domains */
+ 		ret = tidss_attach_pm_domains(tidss);
+-		if (ret < 0) {
+-			dev_err(dev, "failed to attach power domains %d\n", ret);
+-			goto err_oldi_deinit;
+-		}
++		if (ret < 0)
++			return dev_err_probe(dev, ret, "failed to attach power domains %d\n");
+ 	}
+ 
+ 	ret = dispc_init(tidss);
+ 	if (ret) {
+ 		dev_err(dev, "failed to initialize dispc: %d\n", ret);
+-		goto err_oldi_deinit;
++		goto err_detach_pm_domains;
+ 	}
+ 
+ 	ret = tidss_oldi_init(tidss);
+-	if (ret)
+-		return dev_err_probe(dev, ret, "failed to init OLDI\n");
++	if (ret) {
++		dev_err(dev, "failed to init OLDI\n", ret);
++		goto err_detach_pm_domains;
++	}
+ 
+ 	if (!tidss->shared_mode) {
+ 		pm_runtime_enable(dev);
+@@ -331,10 +331,10 @@ static int tidss_probe(struct platform_device *pdev)
+ #endif
+ 	pm_runtime_dont_use_autosuspend(dev);
+ 	pm_runtime_disable(dev);
++	tidss_oldi_deinit(tidss);
+ 
+-err_oldi_deinit:
++err_detach_pm_domains:
+ 	tidss_detach_pm_domains(tidss);
+-	tidss_oldi_deinit(tidss);
+ 
+ 	return ret;
+ }
+-- 
+2.45.2
+

@@ -1,0 +1,55 @@
+From 346bc05aa1c20a00eebce3b5a0a75e1f2fdc4985 Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@baylibre.com>
+Date: Wed, 3 Jul 2024 11:19:25 +0530
+Subject: [PATCH 374/409] remoteproc: k3_r5: add/expose resume latency
+ constraint
+
+Add support for resume latency constraint control.  Default constraint
+is "no constraint", but control of this constraint is exposed to
+userspace via the PM QoS sysfs API.  The sysfs control is named
+pm_qos_resume_latency_us and is under the devices power directory.
+
+For example, for one of the R5 remoteproc cores, doing this:
+
+$ cd /sys/devices/platform/bus@f0000/bus@f0000:bus@4000000/bus@f0000:bus@4000000:r5fss@79000000/power
+$ echo 100 > pm_qos_resume_latency_us
+
+will set a 100 usec resume latency constraint for the R5 MCU.
+
+Signed-off-by: Kevin Hilman <khilman@baylibre.com>
+---
+ drivers/remoteproc/ti_k3_r5_remoteproc.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/remoteproc/ti_k3_r5_remoteproc.c b/drivers/remoteproc/ti_k3_r5_remoteproc.c
+index f902a1d299d6..0b43573195c4 100644
+--- a/drivers/remoteproc/ti_k3_r5_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_r5_remoteproc.c
+@@ -20,6 +20,7 @@
+ #include <linux/of_platform.h>
+ #include <linux/omap-mailbox.h>
+ #include <linux/platform_device.h>
++#include <linux/pm_qos.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/remoteproc.h>
+ #include <linux/reset.h>
+@@ -114,6 +115,7 @@ struct k3_r5_cluster {
+ 	struct list_head cores;
+ 	wait_queue_head_t core_transition;
+ 	const struct k3_r5_soc_data *soc_data;
++	struct dev_pm_qos_request qos_req;
+ };
+ 
+ /**
+@@ -1889,6 +1891,8 @@ static int k3_r5_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		return ret;
+ 
++	dev_pm_qos_expose_latency_limit(dev, PM_QOS_RESUME_LATENCY_NO_CONSTRAINT);
++
+ 	return 0;
+ }
+ 
+-- 
+2.45.2
+

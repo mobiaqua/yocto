@@ -1,0 +1,74 @@
+From 8457ae66a127a7bcfcbd4e5faf2cb938d42aabca Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@baylibre.com>
+Date: Wed, 3 Jul 2024 11:19:22 +0530
+Subject: [PATCH 371/409] firmware: ti_sci: add CPU latency constraint
+ management
+
+During system-wide suspend, check if any of the CPUs have PM QoS
+resume latency constraints set.  If so, set TI SCI constraint.
+
+TI SCI has a single system-wide latency constraint, so use the max of
+any of the CPU latencies as the system-wide value.
+
+Note: DM firmware clears all constraints at resume time, so
+constraints need to be checked/updated/sent at each system suspend.
+
+Co-developed-by: Vibhore Vardhan <vibhore@ti.com>
+Signed-off-by: Vibhore Vardhan <vibhore@ti.com>
+Signed-off-by: Kevin Hilman <khilman@baylibre.com>
+Reviewed-by: Dhruva Gole <d-gole@ti.com>
+Signed-off-by: Dhruva Gole <d-gole@ti.com>
+---
+ drivers/firmware/ti_sci.c | 22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/firmware/ti_sci.c b/drivers/firmware/ti_sci.c
+index bf2f8aa0f7fd..c7dfe1250547 100644
+--- a/drivers/firmware/ti_sci.c
++++ b/drivers/firmware/ti_sci.c
+@@ -9,6 +9,7 @@
+ #define pr_fmt(fmt) "%s: " fmt, __func__
+ 
+ #include <linux/bitmap.h>
++#include <linux/cpu.h>
+ #include <linux/debugfs.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/export.h>
+@@ -20,6 +21,7 @@
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
+ #include <linux/platform_device.h>
++#include <linux/pm_qos.h>
+ #include <linux/property.h>
+ #include <linux/semaphore.h>
+ #include <linux/slab.h>
+@@ -3706,7 +3708,25 @@ static int ti_sci_prepare_system_suspend(struct ti_sci_info *info)
+ static int ti_sci_suspend(struct device *dev)
+ {
+ 	struct ti_sci_info *info = dev_get_drvdata(dev);
+-	int ret;
++	struct device *cpu_dev;
++	s32 val, cpu_lat = 0;
++	int ret, i;
++
++	if (info->fw_caps & MSG_FLAG_CAPS_LPM_DM_MANAGED) {
++		for_each_possible_cpu(i) {
++			cpu_dev = get_cpu_device(i);
++			val = dev_pm_qos_read_value(cpu_dev, DEV_PM_QOS_RESUME_LATENCY);
++			if (val != PM_QOS_RESUME_LATENCY_NO_CONSTRAINT)
++				cpu_lat = max(cpu_lat, val);
++		}
++		if (cpu_lat && (cpu_lat != PM_QOS_RESUME_LATENCY_NO_CONSTRAINT)) {
++			dev_info(cpu_dev, "%s: sending max CPU latency=%u\n", __func__, cpu_lat);
++			ret = ti_sci_cmd_set_latency_constraint(&info->handle,
++								cpu_lat, TISCI_MSG_CONSTRAINT_SET);
++			if (ret)
++				return ret;
++		}
++	}
+ 
+ 	ret = ti_sci_cmd_set_io_isolation(&info->handle, TISCI_MSG_VALUE_IO_ENABLE);
+ 	if (ret)
+-- 
+2.45.2
+

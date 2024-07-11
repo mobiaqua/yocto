@@ -1,0 +1,32 @@
+From 4f2b5c5a9b45cced2d72b94a44f09d3e87921356 Mon Sep 17 00:00:00 2001
+From: Hari Nagalla <hnagalla@ti.com>
+Date: Tue, 2 Jul 2024 21:14:49 -0500
+Subject: [PATCH 365/409] remoteproc: Introduce mailbox messages for graceful
+ shutdown
+
+Two mailbox messages are added to facilitate handshake between the
+remote processors to ensure graceful stop of the remote processors.
+
+Signed-off-by: Hari Nagalla <hnagalla@ti.com>
+---
+ drivers/remoteproc/omap_remoteproc.h | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/remoteproc/omap_remoteproc.h b/drivers/remoteproc/omap_remoteproc.h
+index 828e13256c02..bc943a1fba03 100644
+--- a/drivers/remoteproc/omap_remoteproc.h
++++ b/drivers/remoteproc/omap_remoteproc.h
+@@ -59,7 +59,9 @@ enum omap_rp_mbox_messages {
+ 	RP_MBOX_SUSPEND_SYSTEM	= 0xFFFFFF11,
+ 	RP_MBOX_SUSPEND_ACK	= 0xFFFFFF12,
+ 	RP_MBOX_SUSPEND_CANCEL	= 0xFFFFFF13,
+-	RP_MBOX_END_MSG		= 0xFFFFFF14,
++	RP_MBOX_SHUTDOWN        = 0xFFFFFF14,
++	RP_MBOX_SHUTDOWN_ACK    = 0xFFFFFF15,
++	RP_MBOX_END_MSG		= 0xFFFFFF16,
+ };
+ 
+ #endif /* _OMAP_RPMSG_H */
+-- 
+2.45.2
+

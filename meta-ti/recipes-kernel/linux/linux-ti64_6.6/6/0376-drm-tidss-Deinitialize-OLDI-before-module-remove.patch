@@ -1,0 +1,51 @@
+From 321ce50136f75db9300b9f181ae71fcc8456bb19 Mon Sep 17 00:00:00 2001
+From: Devarsh Thakkar <devarsht@ti.com>
+Date: Tue, 2 Jul 2024 23:19:42 +0530
+Subject: [PATCH 376/409] drm/tidss: Deinitialize OLDI before module remove
+
+De-initialize OLDI before tidss module remove
+as otherwise the OLDI context is not cleaned up
+properly and we see below crash on module reload
+
+[   40.732608] Unable to handle kernel paging request at virtual address
+ffff800079695768
+[1251/99286]
+[   40.971398] Call trace:
+[   40.973835]  drm_bridge_attach+0x70/0x198 [drm]
+[   40.978507]  tidss_bridge_attach+0x20/0x2c [tidss]
+[   40.983306]  drm_bridge_attach+0x80/0x198 [drm]
+[   40.987957]  tidss_encoder_create+0x70/0x154 [tidss]
+[   40.992924]  tidss_dispc_modeset_init.constprop.0+0x220/0x3b4 [tidss]
+[   40.999363]  tidss_modeset_init+0x70/0xa8 [tidss]
+[   41.004070]  tidss_probe+0x1e4/0x3ac [tidss]
+[   41.008343]  platform_probe+0x68/0xc4
+[   41.012001]  really_probe+0x148/0x2ac
+[   41.015653]  __driver_probe_device+0x78/0x12c
+[   41.019998]  driver_probe_device+0xd8/0x15c
+[   41.024169]  __driver_attach+0x94/0x19c
+[   41.027993]  bus_for_each_dev+0x78/0xd4
+[   41.031821]  driver_attach+0x24/0x30
+
+Fixes: f4fe7a54ab5f ("drm/tidss: Add OLDI bridge support")
+Suggested-by: Aradhya Bhatia <a-bhatia1@ti.com>
+Signed-off-by: Devarsh Thakkar <devarsht@ti.com>
+---
+ drivers/gpu/drm/tidss/tidss_drv.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/gpu/drm/tidss/tidss_drv.c b/drivers/gpu/drm/tidss/tidss_drv.c
+index c97690ca51e6..cc149cfb6c3b 100644
+--- a/drivers/gpu/drm/tidss/tidss_drv.c
++++ b/drivers/gpu/drm/tidss/tidss_drv.c
+@@ -352,6 +352,8 @@ static void tidss_remove(struct platform_device *pdev)
+ 	dispc_remove(tidss);
+ 
+ 	tidss_detach_pm_domains(tidss);
++	tidss_oldi_deinit(tidss);
++
+ 	dev_dbg(dev, "%s done\n", __func__);
+ }
+ 
+-- 
+2.45.2
+

@@ -1,0 +1,68 @@
+From 5c852e970e3823547eaeb9c49e0a8ae4a9dd6679 Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@baylibre.com>
+Date: Wed, 3 Jul 2024 11:19:24 +0530
+Subject: [PATCH 373/409] pmdomain: ti_sci: add wakeup constraint management
+
+During system-wide suspend, check all devices connected to PM domain
+to see if they are wakeup-enabled.  If so, set a TI SCI device
+constraint.
+
+Note: DM firmware clears all constraints on resume.
+
+Co-developed-by: Vibhore Vardhan <vibhore@ti.com>
+Signed-off-by: Vibhore Vardhan <vibhore@ti.com>
+Signed-off-by: Kevin Hilman <khilman@baylibre.com>
+Signed-off-by: Dhruva Gole <d-gole@ti.com>
+---
+ drivers/pmdomain/ti/ti_sci_pm_domains.c | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/drivers/pmdomain/ti/ti_sci_pm_domains.c b/drivers/pmdomain/ti/ti_sci_pm_domains.c
+index 6768cef711d6..91c64e4f0de3 100644
+--- a/drivers/pmdomain/ti/ti_sci_pm_domains.c
++++ b/drivers/pmdomain/ti/ti_sci_pm_domains.c
+@@ -51,6 +51,7 @@ struct ti_sci_pm_domain {
+ 	struct ti_sci_genpd_provider *parent;
+ 	s32 lat_constraint;
+ 	bool constraint_sent;
++	bool wkup_constraint;
+ };
+ 
+ #define genpd_to_ti_sci_pd(gpd) container_of(gpd, struct ti_sci_pm_domain, pd)
+@@ -82,6 +83,24 @@ static inline void ti_sci_pd_clear_constraints(struct device *dev)
+ 
+ 	pd->lat_constraint = PM_QOS_RESUME_LATENCY_NO_CONSTRAINT;
+ 	pd->constraint_sent = false;
++	pd->wkup_constraint = false;
++}
++
++static inline bool ti_sci_pd_check_wkup_constraint(struct device *dev)
++{
++	struct generic_pm_domain *genpd = pd_to_genpd(dev->pm_domain);
++	struct ti_sci_pm_domain *pd = genpd_to_ti_sci_pd(genpd);
++	const struct ti_sci_handle *ti_sci = pd->parent->ti_sci;
++	int ret;
++
++	if (device_may_wakeup(dev)) {
++		ret = ti_sci->ops.pm_ops.set_device_constraint(ti_sci, pd->idx,
++							       TISCI_MSG_CONSTRAINT_SET);
++		if (!ret)
++			pd->wkup_constraint = true;
++	}
++
++	return pd->wkup_constraint;
+ }
+ 
+ /*
+@@ -153,6 +172,8 @@ static int ti_sci_pd_suspend(struct device *dev)
+ 	}
+ 	pd->lat_constraint = val;
+ 
++	ti_sci_pd_check_wkup_constraint(dev);
++
+ 	return pm_generic_suspend(dev);
+ }
+ 
+-- 
+2.45.2
+

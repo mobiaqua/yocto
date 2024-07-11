@@ -1,0 +1,135 @@
+From ad1343ca42653d9262860d721cd5186bb456a133 Mon Sep 17 00:00:00 2001
+From: Hari Nagalla <hnagalla@ti.com>
+Date: Tue, 2 Jul 2024 21:14:51 -0500
+Subject: [PATCH 367/409] remoteproc: k3-dsp: support for graceful shutdown of
+ remote cores
+
+Upon a stop request, K3-dsp remote proc driver sends a RP_MBOX_SHUTDOWN
+mailbox message to the remote dsp core.
+
+The remote core is expected to:
+- relinquish all the resources acquired through Device Manager (DM)
+- disable its interrupts
+- send back a mailbox acknowledgment RP_MBOX_SHUDOWN_ACK
+- enter WFI state.
+
+Meanwhile, the K3-dsp remote proc driver does:
+- wait for the RP_MBOX_SHUTDOWN_ACK from the remote core
+- wait for the remote proc to enter WFI state
+- reset the remote core through device manager
+
+Signed-off-by: Hari Nagalla <hnagalla@ti.com>
+---
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 54 +++++++++++++++++++++++
+ 1 file changed, 54 insertions(+)
+
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index a2a164fbf3df..071097a72cb1 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -6,7 +6,9 @@
+  *	Suman Anna <s-anna@ti.com>
+  */
+ 
++#include <linux/delay.h>
+ #include <linux/io.h>
++#include <linux/iopoll.h>
+ #include <linux/mailbox_client.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
+@@ -23,6 +25,10 @@
+ 
+ #define KEYSTONE_RPROC_LOCAL_ADDRESS_MASK	(SZ_16M - 1)
+ 
++/* C7x TI-SCI Processor Status Flags */
++#define PROC_BOOT_STATUS_FLAG_CPU_WFE                   0x00000001
++#define PROC_BOOT_STATUS_FLAG_CPU_WFI                   0x00000002
++
+ /**
+  * struct k3_dsp_mem - internal memory structure
+  * @cpu_addr: MPU virtual address of the memory region
+@@ -91,8 +97,30 @@ struct k3_dsp_rproc {
+ 	u32 ti_sci_id;
+ 	struct mbox_chan *mbox;
+ 	struct mbox_client client;
++	struct completion shut_comp;
+ };
+ 
++/**
++ * is_core_in_wfi - local utility function to check core status
++ * @kproc: remote core pointer used for checking core status
++ *
++ * This utility function is invoked by the shutdown sequence to ensure
++ * the remote core is in wfi, before asserting a reset.
++ */
++static int is_core_in_wfi(struct k3_dsp_rproc *core)
++{
++	int ret;
++	u64 boot_vec;
++	u32 cfg, ctrl, stat;
++
++	ret = ti_sci_proc_get_status(core->tsp, &boot_vec, &cfg, &ctrl, &stat);
++
++	if (ret < 0)
++		return 0;
++
++	return (stat & PROC_BOOT_STATUS_FLAG_CPU_WFI);
++}
++
+ /**
+  * k3_dsp_rproc_mbox_callback() - inbound mailbox message handler
+  * @client: mailbox client pointer used for requesting the mailbox channel
+@@ -128,6 +156,10 @@ static void k3_dsp_rproc_mbox_callback(struct mbox_client *client, void *data)
+ 	case RP_MBOX_ECHO_REPLY:
+ 		dev_info(dev, "received echo reply from %s\n", name);
+ 		break;
++	case RP_MBOX_SHUTDOWN_ACK:
++		dev_dbg(dev, "received shutdown_ack from %s\n", name);
++		complete(&kproc->shut_comp);
++		break;
+ 	default:
+ 		/* silently handle all other valid messages */
+ 		if (msg >= RP_MBOX_READY && msg < RP_MBOX_END_MSG)
+@@ -351,10 +383,31 @@ static int k3_dsp_rproc_start(struct rproc *rproc)
+  */
+ static int k3_dsp_rproc_stop(struct rproc *rproc)
+ {
++	unsigned long to = msecs_to_jiffies(30000);
+ 	struct k3_dsp_rproc *kproc = rproc->priv;
++	struct device *dev = kproc->dev;
++	u32 msg = omap_mbox_message(RP_MBOX_SHUTDOWN);
++	u32 stat = 0;
++	int ret;
++
++	reinit_completion(&kproc->shut_comp);
++	ret = mbox_send_message(kproc->mbox, (void *) (uintptr_t) msg);
++	if (ret < 0) {
++		dev_err(dev, "PM mbox_send_message failed: %d\n", ret);
++			return ret;
++	}
++
++	ret = wait_for_completion_timeout(&kproc->shut_comp, to);
++	if (ret == 0) {
++		dev_err(dev, "%s: timedout waiting for rproc completion event\n", __func__);
++	};
+ 
+ 	mbox_free_channel(kproc->mbox);
+ 
++	ret = readx_poll_timeout(is_core_in_wfi, kproc, stat, stat, 200, 2000);
++	if (ret)
++		return ret;
++
+ 	k3_dsp_rproc_reset(kproc);
+ 
+ 	return 0;
+@@ -780,6 +833,7 @@ static int k3_dsp_rproc_probe(struct platform_device *pdev)
+ 
+ 	platform_set_drvdata(pdev, kproc);
+ 
++	init_completion(&kproc->shut_comp);
+ 	return 0;
+ }
+ 
+-- 
+2.45.2
+

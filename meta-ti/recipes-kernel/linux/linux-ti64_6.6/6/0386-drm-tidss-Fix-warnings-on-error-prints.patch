@@ -1,0 +1,52 @@
+From 4c35124ef278d4167e78ac0d12fe373486c978e3 Mon Sep 17 00:00:00 2001
+From: Devarsh Thakkar <devarsht@ti.com>
+Date: Fri, 5 Jul 2024 15:56:03 +0530
+Subject: [PATCH 386/409] drm/tidss: Fix warnings on error prints
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Fixes below warnings on tidss probe:
+
+drivers/gpu/drm/tidss/tidss_drv.c: In function âtidss_probeâ:
+drivers/gpu/drm/tidss/tidss_drv.c:263:89: warning: format â%dâ expects a
+matching âintâ argument [-Wformat=]
+  263 |                         return dev_err_probe(dev, ret, "failed
+      to attach power domains %d\n");
+drivers/gpu/drm/tidss/tidss_drv.c:274:30: warning: too many arguments
+for format [-Wformat-extra-args]
+  274 |                 dev_err(dev, "failed to init OLDI\n", ret);
+      |                              ^~~~~~~~~~~~~~~~~~~~~~~
+     |                 ^~~~~~~
+
+Fixes: 58901d8bc9eb ("drm/tidss: Fix error paths after display initialization")
+Signed-off-by: Devarsh Thakkar <devarsht@ti.com>
+---
+ drivers/gpu/drm/tidss/tidss_drv.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/tidss/tidss_drv.c b/drivers/gpu/drm/tidss/tidss_drv.c
+index 47a4f1ba48d6..274a3d77517c 100644
+--- a/drivers/gpu/drm/tidss/tidss_drv.c
++++ b/drivers/gpu/drm/tidss/tidss_drv.c
+@@ -259,7 +259,7 @@ static int tidss_probe(struct platform_device *pdev)
+ 		/* powering up associated OLDI domains */
+ 		ret = tidss_attach_pm_domains(tidss);
+ 		if (ret < 0)
+-			return dev_err_probe(dev, ret, "failed to attach power domains %d\n");
++			return dev_err_probe(dev, ret, "failed to attach power domains\n");
+ 	}
+ 
+ 	ret = dispc_init(tidss);
+@@ -270,7 +270,7 @@ static int tidss_probe(struct platform_device *pdev)
+ 
+ 	ret = tidss_oldi_init(tidss);
+ 	if (ret) {
+-		dev_err(dev, "failed to init OLDI\n", ret);
++		dev_err(dev, "failed to init OLDI: %d\n", ret);
+ 		goto err_detach_pm_domains;
+ 	}
+ 
+-- 
+2.45.2
+

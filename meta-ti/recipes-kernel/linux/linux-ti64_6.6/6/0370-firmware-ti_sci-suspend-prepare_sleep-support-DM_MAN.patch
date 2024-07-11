@@ -1,0 +1,66 @@
+From dd638d8d1a093bb627e62241c80dfb0a8e35239d Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@baylibre.com>
+Date: Wed, 3 Jul 2024 11:19:21 +0530
+Subject: [PATCH 370/409] firmware: ti_sci: suspend: prepare_sleep: support
+ DM_MANAGED
+
+DM firmware now manages which low power mode is chosen. Going
+forward, this is the default state supported by Linux. The state chosen
+by DM can be influenced by sending constraints using the new
+constraints APIs.
+
+In case the firmware does not support DM_MANAGED mode, check if any
+Suspend-to-RAM mode is supported? If none, return without taking any
+action.
+
+Suggested-by: Dhruva Gole <d-gole@ti.com>
+Signed-off-by: Vibhore Vardhan <vibhore@ti.com>
+Signed-off-by: Kevin Hilman <khilman@baylibre.com>
+Signed-off-by: Dhruva Gole <d-gole@ti.com>
+---
+ drivers/firmware/ti_sci.c | 16 ++++++++++++----
+ drivers/firmware/ti_sci.h |  1 +
+ 2 files changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/firmware/ti_sci.c b/drivers/firmware/ti_sci.c
+index 064b540ab670..bf2f8aa0f7fd 100644
+--- a/drivers/firmware/ti_sci.c
++++ b/drivers/firmware/ti_sci.c
+@@ -3674,10 +3674,18 @@ static int ti_sci_prepare_system_suspend(struct ti_sci_info *info)
+ 	/* Map and validate the target Linux suspend state to TISCI LPM. */
+ 	switch (pm_suspend_target_state) {
+ 	case PM_SUSPEND_MEM:
+-		/* S2MEM is not supported by the firmware. */
+-		if (!(info->fw_caps & MSG_FLAG_CAPS_LPM_DEEP_SLEEP))
+-			return 0;
+-		mode = TISCI_MSG_VALUE_SLEEP_MODE_DEEP_SLEEP;
++		/* Default is to let LPM be DM managed */
++		mode = TISCI_MSG_VALUE_SLEEP_MODE_DM_MANAGED;
++
++		/* DM Managed is not supported by the firmware. */
++		if (!(info->fw_caps & MSG_FLAG_CAPS_LPM_DM_MANAGED)) {
++			/* Check if Deep Sleep is supported by the firmware. */
++			if ((info->fw_caps & MSG_FLAG_CAPS_LPM_DEEP_SLEEP))
++				mode = TISCI_MSG_VALUE_SLEEP_MODE_DEEP_SLEEP;
++			else
++				/* S2MEM is not supported by the firmware. */
++				return 0;
++		}
+ 		break;
+ 	default:
+ 		/*
+diff --git a/drivers/firmware/ti_sci.h b/drivers/firmware/ti_sci.h
+index f639efee53f6..587292097113 100644
+--- a/drivers/firmware/ti_sci.h
++++ b/drivers/firmware/ti_sci.h
+@@ -583,6 +583,7 @@ struct ti_sci_msg_resp_get_clock_freq {
+ #define TISCI_MSG_VALUE_SLEEP_MODE_MCU_ONLY				0x1
+ #define TISCI_MSG_VALUE_SLEEP_MODE_STANDBY				0x2
+ #define TISCI_MSG_VALUE_SLEEP_MODE_PARTIAL_IO				0x3
++#define TISCI_MSG_VALUE_SLEEP_MODE_DM_MANAGED				0xfd
+ 
+ /**
+  * struct tisci_msg_prepare_sleep_req - Request for TISCI_MSG_PREPARE_SLEEP.
+-- 
+2.45.2
+

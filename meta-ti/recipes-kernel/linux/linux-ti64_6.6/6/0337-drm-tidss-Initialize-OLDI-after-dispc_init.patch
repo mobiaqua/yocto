@@ -1,0 +1,48 @@
+From 554d9d19207543c566291334e30b124cb5b4b45d Mon Sep 17 00:00:00 2001
+From: Devarsh Thakkar <devarsht@ti.com>
+Date: Thu, 27 Jun 2024 19:49:42 +0530
+Subject: [PATCH 337/409] drm/tidss: Initialize OLDI after dispc_init
+
+Parse OLDI related DT properties and populate OLDI
+related structs and add OLDI bridge only after display controller
+is initialized as we also reset the display controller there.
+
+This is to avoid unnecessary probe defer if panel driver is
+not probed yet.
+
+Suggested-by: Aradhya Bhatia <a-bhatia1@ti.com>
+Signed-off-by: Devarsh Thakkar <devarsht@ti.com>
+Reviewed-by: Aradhya Bhatia <a-bhatia1@ti.com>
+---
+ drivers/gpu/drm/tidss/tidss_drv.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpu/drm/tidss/tidss_drv.c b/drivers/gpu/drm/tidss/tidss_drv.c
+index 5cb2e80d3086..c97690ca51e6 100644
+--- a/drivers/gpu/drm/tidss/tidss_drv.c
++++ b/drivers/gpu/drm/tidss/tidss_drv.c
+@@ -247,10 +247,6 @@ static int tidss_probe(struct platform_device *pdev)
+ 
+ 	check_for_simplefb_device(tidss);
+ 
+-	ret = tidss_oldi_init(tidss);
+-	if (ret)
+-		return dev_err_probe(dev, ret, "failed to init OLDI\n");
+-
+ 	/* powering up associated OLDI domains */
+ 	ret = tidss_attach_pm_domains(tidss);
+ 	if (ret < 0) {
+@@ -264,6 +260,10 @@ static int tidss_probe(struct platform_device *pdev)
+ 		goto err_oldi_deinit;
+ 	}
+ 
++	ret = tidss_oldi_init(tidss);
++	if (ret)
++		return dev_err_probe(dev, ret, "failed to init OLDI\n");
++
+ 	pm_runtime_enable(dev);
+ 
+ 	pm_runtime_set_autosuspend_delay(dev, 1000);
+-- 
+2.45.2
+

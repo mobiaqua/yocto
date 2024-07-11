@@ -301,8 +301,38 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://6/0244-net-ethernet-ti-am65-cpsw-nuss-Setup-IRQ-affinity-hi.patch \
             file://6/0252-arm64-dts-ti-k3-j721e-main-Add-CSI2RX-multistream-DM.patch \
             file://6/0295-PCI-j721e-Add-support-for-enabling-ACSPCIE-PAD-IO-Bu.patch \
-            file://6/0308-HACK-misc-Add-dma-buf-to-physical-address-exporter.patch \
             file://6/0310-dmaengine-ti-k3-udma-Prioritize-CSI-RX-traffic-as-RT.patch \
+            file://6/0330-drm-tidss-Add-some-support-for-splash-screen.patch \
+            file://6/0331-HACK-drm-tidss-Soft-reset-dispc-if-simple-framebuffe.patch \
+            file://6/0337-drm-tidss-Initialize-OLDI-after-dispc_init.patch \
+            file://6/0338-remoteproc-pru-Add-support-for-virtio-rpmsg-stack.patch \
+            file://6/0339-rpmsg-pru-add-a-PRU-RPMsg-driver.patch \
+            file://6/0363-remoteproc-k3-dsp-Set-dma-mask-to-48-bit.patch \
+            file://6/0364-remoteproc-k3-r5-Set-dma-mask-to-48-bit.patch \
+            file://6/0365-remoteproc-Introduce-mailbox-messages-for-graceful-s.patch \
+            file://6/0366-remoteproc-k3-r5-support-for-graceful-shutdown-of-re.patch \
+            file://6/0367-remoteproc-k3-dsp-support-for-graceful-shutdown-of-r.patch \
+            file://6/0368-remoteproc-k3-m4-support-for-graceful-shutdown-of-re.patch \
+            file://6/0369-firmware-ti_sci-Introduce-LPM-Constraint-Ops.patch \
+            file://6/0370-firmware-ti_sci-suspend-prepare_sleep-support-DM_MAN.patch \
+            file://6/0371-firmware-ti_sci-add-CPU-latency-constraint-managemen.patch \
+            file://6/0372-pmdomain-ti_sci-add-per-device-latency-constraint-ma.patch \
+            file://6/0373-pmdomain-ti_sci-add-wakeup-constraint-management.patch \
+            file://6/0374-remoteproc-k3_r5-add-expose-resume-latency-constrain.patch \
+            file://6/0376-drm-tidss-Deinitialize-OLDI-before-module-remove.patch \
+            file://6/0379-drm-tidss-Add-support-for-display-sharing.patch \
+            file://6/0380-drm-tidss-Fix-error-paths-after-display-initializati.patch \
+            file://6/0381-fbdev-simplefb-Add-support-to-power-up-multiple-PM-d.patch \
+            file://6/0384-drm-tidss-fix-uninitialized-variable.patch \
+            file://6/0385-pmdomain-ti-ti_sci_pm_domains-Fix-build-error-with-C.patch \
+            file://6/0386-drm-tidss-Fix-warnings-on-error-prints.patch \
+            file://6/0399-net-ethernet-ti-fix-duplicate-entry-for-k3-cppi-desc.patch \
+            file://6/0401-firmware-ti_sci-recover-properly-when-firmware-NAKs.patch \
+            file://6/0402-pmdomain-ti_sci-handle-wake-IRQs-for-IO-daisy-chain-.patch \
+            file://6/0403-media-img-vxe-vxd-fix-incorrect-allocation-sizes.patch \
+            file://6/0405-media-img-vxe-vxd-fix-incomplete-decoder-initializat.patch \
+            file://6/0408-serial-8250_omap-Implementation-of-Errata-i2310.patch \
+            file://6/0409-serial-8250_omap-Fix-Errata-i2310-with-RX-FIFO-level.patch \
             file://0001_fix_nonlinux_compile.patch \
             file://0002-bootup-hacks-move-mmc-early.patch \
             file://0004_wait-for-rootfs.patch \

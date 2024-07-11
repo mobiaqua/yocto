@@ -1,0 +1,41 @@
+From 8f2e7cfcdc7a672dba94ed2713d6763406c74f40 Mon Sep 17 00:00:00 2001
+From: Vibhore Vardhan <vibhore@ti.com>
+Date: Wed, 10 Jul 2024 11:58:26 -0700
+Subject: [PATCH 401/409] firmware: ti_sci: recover properly when firmware NAKs
+
+The DM firmware can NAK the request to suspend in the case where no
+valid states are available based on the constraints set.
+
+If that happens, suspend will be aborted, but the current code
+leaves IO isolation enabled causing the system to hang.
+
+Fix this by disabling IO isolation in the error path.
+
+Fixes: 4b24a44e075f ("firmware: ti_sci: Invoke IO Isolation in LPM")
+Signed-off-by: Vibhore Vardhan <vibhore@ti.com>
+Signed-off-by: Kevin Hilman <khilman@baylibre.com>
+---
+ drivers/firmware/ti_sci.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/firmware/ti_sci.c b/drivers/firmware/ti_sci.c
+index c7dfe1250547..356c95758c06 100644
+--- a/drivers/firmware/ti_sci.c
++++ b/drivers/firmware/ti_sci.c
+@@ -3734,9 +3734,11 @@ static int ti_sci_suspend(struct device *dev)
+ 	dev_dbg(dev, "%s: set isolation: %d\n", __func__, ret);
+ 
+ 	ret = ti_sci_prepare_system_suspend(info);
+-	if (ret)
++	if (ret) {
++		i = ti_sci_cmd_set_io_isolation(&info->handle, TISCI_MSG_VALUE_IO_DISABLE);
++		dev_warn(dev, "%s: prepare failed, disable isolation: %d\n", __func__, i);
+ 		return ret;
+-
++	}
+ 	return 0;
+ }
+ 
+-- 
+2.45.2
+

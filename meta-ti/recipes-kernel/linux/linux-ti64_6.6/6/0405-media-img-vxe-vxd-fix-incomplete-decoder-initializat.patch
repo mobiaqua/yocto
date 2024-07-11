@@ -1,0 +1,54 @@
+From 41ffcd29bb28625e6916415ed748ec3cd6ff4b59 Mon Sep 17 00:00:00 2001
+From: Darren Etheridge <detheridge@ti.com>
+Date: Wed, 10 Jul 2024 12:58:34 -0500
+Subject: [PATCH 405/409] media: img: vxe-vxd: fix incomplete decoder
+ initialization
+
+With Scarthgap Gstreamer, the s_fmt is no longer called on the CAPTURE
+port of the v4l2 device.  The s_fmt needs to be called in this driver to
+set a whole bunch of decoder state information.  If it is not called the
+state information is not configured and the decoder very quickly errors
+out when trying to decode frmaes as it has no idea the pixel format, or
+the dimensions of the CAPTURE buffer.
+
+This fix looks to see if the decoder state matches what we are going to
+report back to the v4l2 framework, and if it doesn't it calls an
+explicit s_fmt to set the correct context information for the decoder.
+
+Signed-off-by: Darren Etheridge <detheridge@ti.com>
+Reviewed-by: Brandon Brnich <b-brnich@ti.com>
+---
+ .../platform/imagination/vxe-vxd/decoder/vxd_v4l2.c    | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c b/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c
+index e34425b4b8e0..5ca8709dd51c 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c
++++ b/drivers/media/platform/imagination/vxe-vxd/decoder/vxd_v4l2.c
+@@ -67,6 +67,8 @@
+ #define V4L2_CID_VXD_SET_IMG_BUFS (V4L2_CID_USER_BASE + 0x1003)
+ #define V4L2_CID_VXD_SET_SPEC_BUFS (V4L2_CID_USER_BASE + 0x1004)
+ 
++static int vxd_dec_s_fmt(struct file *file, void *priv, struct v4l2_format *f);
++
+ #ifdef ERROR_RECOVERY_SIMULATION
+ /* This code should be execute only in debug flag */
+ /*
+@@ -1545,6 +1547,14 @@ static int vxd_dec_g_fmt(struct file *file, void *priv, struct v4l2_format *f)
+ 							(pix_mp->plane_fmt[i].bytesperline,
+ 							 ctx->height, q_data->fmt, i);
+ 		}
++		if (ctx->pict_bufcfg.pixel_fmt != q_data->fmt->pixfmt) {
++			/*
++			 * if the format does not match what the decoder thinks it is using,
++			 * then we had better set it,  there is a whole bunch of context information
++			 * that gets set up in s_fmt, and if it is not present, the decoder panics.
++			 */
++			vxd_dec_s_fmt(file, priv, f);
++		}
+ 	} else {
+ 		dev_err(vxd_dev->v4l2_dev.dev, "Wrong V4L2_format type\n");
+ 		return -EINVAL;
+-- 
+2.45.2
+
