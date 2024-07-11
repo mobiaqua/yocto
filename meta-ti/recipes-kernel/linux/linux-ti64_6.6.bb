@@ -7,7 +7,7 @@ COMPATIBLE_MACHINE = "beagle64"
 KERNEL_VERSION_SANITY_SKIP = "1"
 INSANE_SKIP += "buildpaths"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.6.34"
+LINUX_VERSION = "6.6.39"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -109,8 +109,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://5/0035-net-ethernet-ti-am65-cpsw-Add-minimal-XDP-support.patch \
             file://5/0036-net-ethernet-ti-am65-cpsw-Fix-xdp_rxq-error-for-disa.patch \
             file://5/0039-arm64-dts-ti-k3-j721e-main-add-clock-and-pd-to-gpu.patch \
-            file://5/0043-remoteproc-k3-r5-Wait-for-core0-power-up-before-powe.patch \
-            file://5/0044-remoteproc-k3-r5-Do-not-allow-core1-to-power-up-befo.patch \
             file://5/0066-mmc-sdhci_am654-Fix-itapdly-otapdly-array-type.patch \
             file://5/0067-mmc-sdhci_am654-Update-comments-in-sdhci_am654_set_c.patch \
             file://5/0074-remoteproc-core-Select-DMA-BUF-from-REMOTEPROC.patch \
@@ -146,7 +144,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://5/0215-drm-bridge-cdns-mhdp8546-core-Move-mode_valid-hook-t.patch \
             file://5/0216-drm-bridge-cdns-mhdp8546-Add-support-for-no-hpd.patch \
             file://5/0235-HACK-arm64-dts-ti-k3-j721e-beagleboneai64-Drop-dp_li.patch \
-            file://5/0254-remoteproc-k3-r5-Jump-to-error-handling-labels-in-st.patch \
             file://5/0264-dmaengine-ti-k3-udma-Fix-BCHAN-count-with-UHC-and-HC.patch \
             file://5/0265-dmaengine-ti-k3-udma-Fix-teardown-for-cyclic-PDMA-tr.patch \
             file://5/0274-media-ti-j721e-csi2rx-Fix-races-while-restarting-DMA.patch \
@@ -331,8 +328,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://6/0402-pmdomain-ti_sci-handle-wake-IRQs-for-IO-daisy-chain-.patch \
             file://6/0403-media-img-vxe-vxd-fix-incorrect-allocation-sizes.patch \
             file://6/0405-media-img-vxe-vxd-fix-incomplete-decoder-initializat.patch \
-            file://6/0408-serial-8250_omap-Implementation-of-Errata-i2310.patch \
-            file://6/0409-serial-8250_omap-Fix-Errata-i2310-with-RX-FIFO-level.patch \
             file://0001_fix_nonlinux_compile.patch \
             file://0002-bootup-hacks-move-mmc-early.patch \
             file://0004_wait-for-rootfs.patch \
@@ -342,7 +337,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://ti_config \
 "
 
-SRC_URI[sha256sum] = "c4e0ec8f593aa3717e85abad940466e7d7cbc362989426eb37f499330a461ba0"
+SRC_URI[sha256sum] = "2783d42112095f95c510e1b421f056df8cbfa845f9040c6115080434a77a776b"
 
 S = "${WORKDIR}/linux-${PV}"
 
