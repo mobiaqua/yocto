@@ -63,6 +63,7 @@ python_build() {
 	./configure --prefix=$OE_BASE/python/installation --with-computed-gotos --enable-optimizations --disable-shared --disable-framework && \
 	make -j`sysctl -n hw.ncpu` && \
 	make install && \
+	$OE_BASE/python/installation/bin/python3 -m pip install --upgrade pip
 	$OE_BASE/python/installation/bin/python3 -m pip install setuptools pyelftools cryptography
 	return $?
 }
