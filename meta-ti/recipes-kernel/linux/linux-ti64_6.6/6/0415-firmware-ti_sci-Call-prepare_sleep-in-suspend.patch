@@ -1,0 +1,62 @@
+From 76c85514738ee8b28c4c2a733f13f33e66c17736 Mon Sep 17 00:00:00 2001
+From: Vibhore Vardhan <vibhore@ti.com>
+Date: Thu, 11 Jul 2024 15:16:01 +0200
+Subject: [PATCH 415/419] firmware: ti_sci: Call prepare_sleep in suspend
+
+It is required for other components to call TISCI prepare_sleep as early
+as possible to determine the next system mode. Do the prepare_sleep
+in suspend() and io isolation in suspend_noirq().
+
+Signed-off-by: Vibhore Vardhan <vibhore@ti.com>
+Signed-off-by: Markus Schneider-Pargmann <msp@baylibre.com>
+---
+ drivers/firmware/ti_sci.c | 21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/firmware/ti_sci.c b/drivers/firmware/ti_sci.c
+index 356c95758c06..7323f44bab7e 100644
+--- a/drivers/firmware/ti_sci.c
++++ b/drivers/firmware/ti_sci.c
+@@ -3728,17 +3728,23 @@ static int ti_sci_suspend(struct device *dev)
+ 		}
+ 	}
+ 
++	ret = ti_sci_prepare_system_suspend(info);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
++static int ti_sci_suspend_noirq(struct device *dev)
++{
++	struct ti_sci_info *info = dev_get_drvdata(dev);
++	int ret = 0;
++
+ 	ret = ti_sci_cmd_set_io_isolation(&info->handle, TISCI_MSG_VALUE_IO_ENABLE);
+ 	if (ret)
+ 		return ret;
+ 	dev_dbg(dev, "%s: set isolation: %d\n", __func__, ret);
+ 
+-	ret = ti_sci_prepare_system_suspend(info);
+-	if (ret) {
+-		i = ti_sci_cmd_set_io_isolation(&info->handle, TISCI_MSG_VALUE_IO_DISABLE);
+-		dev_warn(dev, "%s: prepare failed, disable isolation: %d\n", __func__, i);
+-		return ret;
+-	}
+ 	return 0;
+ }
+ 
+@@ -3761,7 +3767,8 @@ static int ti_sci_resume(struct device *dev)
+ }
+ 
+ static const struct dev_pm_ops ti_sci_pm_ops = {
+-	.suspend_noirq = ti_sci_suspend,
++	.suspend = ti_sci_suspend,
++	.suspend_noirq = ti_sci_suspend_noirq,
+ 	.resume_noirq = ti_sci_resume,
+ };
+ 
+-- 
+2.45.2
+

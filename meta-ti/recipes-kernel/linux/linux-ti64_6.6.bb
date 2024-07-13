@@ -328,6 +328,12 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://6/0402-pmdomain-ti_sci-handle-wake-IRQs-for-IO-daisy-chain-.patch \
             file://6/0403-media-img-vxe-vxd-fix-incorrect-allocation-sizes.patch \
             file://6/0405-media-img-vxe-vxd-fix-incomplete-decoder-initializat.patch \
+            file://6/0410-remoteproc-k3-r5-Introduce-PM-suspend-resume-handler.patch \
+            file://6/0411-remoteproc-k3-m4-Introduce-PM-suspend-resume-handler.patch \
+            file://6/0412-mailbox-omap-Move-suspend-to-suspend_late.patch \
+            file://6/0413-remoteproc-k3-r5-Move-suspend-to-suspend_late.patch \
+            file://6/0414-remoteproc-k3-m4-Move-suspend-to-suspend_late.patch \
+            file://6/0415-firmware-ti_sci-Call-prepare_sleep-in-suspend.patch \
             file://0001_fix_nonlinux_compile.patch \
             file://0002-bootup-hacks-move-mmc-early.patch \
             file://0004_wait-for-rootfs.patch \

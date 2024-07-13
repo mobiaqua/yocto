@@ -1,0 +1,31 @@
+From a37eff3b4e3c4f2853b2488d0465bda265b2db32 Mon Sep 17 00:00:00 2001
+From: Vibhore Vardhan <vibhore@ti.com>
+Date: Thu, 11 Jul 2024 15:15:58 +0200
+Subject: [PATCH 412/419] mailbox: omap: Move suspend to suspend_late
+
+mailbox will be used by ti_k3_r5_remoteproc.c in suspend_late, so it
+needs to be active at that point. This patch moves the suspend to
+suspend_late.
+
+Signed-off-by: Vibhore Vardhan <vibhore@ti.com>
+Signed-off-by: Markus Schneider-Pargmann <msp@baylibre.com>
+---
+ drivers/mailbox/omap-mailbox.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/mailbox/omap-mailbox.c b/drivers/mailbox/omap-mailbox.c
+index 792bcaebbc9b..e3d47b2be822 100644
+--- a/drivers/mailbox/omap-mailbox.c
++++ b/drivers/mailbox/omap-mailbox.c
+@@ -626,7 +626,7 @@ static int omap_mbox_resume(struct device *dev)
+ #endif
+ 
+ static const struct dev_pm_ops omap_mbox_pm_ops = {
+-	SET_SYSTEM_SLEEP_PM_OPS(omap_mbox_suspend, omap_mbox_resume)
++	SET_LATE_SYSTEM_SLEEP_PM_OPS(omap_mbox_suspend, omap_mbox_resume)
+ };
+ 
+ static const struct omap_mbox_match_data omap2_data = { MBOX_INTR_CFG_TYPE1 };
+-- 
+2.45.2
+
