@@ -543,7 +543,7 @@ ERROR=0
 
 [ $ERROR != 1 ] && [ -z "$BASH_VERSION" ] && error "Script NOT running in 'bash' shell"
 
-[ $ERROR != 1 ] && [ "x$0" = "x./setup.sh" ] && error "Script must be executed via sourcing: '. setup.sh [<target>] [<machine>] [--debug] [--force]'"
+[ $ERROR != 1 ] && [ "x$0" = "x./setup.sh" ] && error "Script must be executed via sourcing: '. setup.sh [<target>] [<machine>] [--debug]'"
 
 [ $ERROR != 1 ] && { os_check; [ $? != 0 ] && error "Script supported only on macOS"; }
 
