@@ -7,7 +7,7 @@ COMPATIBLE_MACHINE = "beagle64"
 KERNEL_VERSION_SANITY_SKIP = "1"
 INSANE_SKIP += "buildpaths"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.6.39"
+LINUX_VERSION = "6.6.40"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -334,6 +334,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://6/0413-remoteproc-k3-r5-Move-suspend-to-suspend_late.patch \
             file://6/0414-remoteproc-k3-m4-Move-suspend-to-suspend_late.patch \
             file://6/0415-firmware-ti_sci-Call-prepare_sleep-in-suspend.patch \
+            file://6/0422-media-imagination-vxe-vxd-encoder-Fix-kmalloc-Alignm.patch \
             file://0001_fix_nonlinux_compile.patch \
             file://0002-bootup-hacks-move-mmc-early.patch \
             file://0004_wait-for-rootfs.patch \
@@ -343,7 +344,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://ti_config \
 "
 
-SRC_URI[sha256sum] = "2783d42112095f95c510e1b421f056df8cbfa845f9040c6115080434a77a776b"
+SRC_URI[sha256sum] = "5c3a3c03c055b8d601a6d7f80d1465ada6b83a12299f6ace2027b47f0baff538"
 
 S = "${WORKDIR}/linux-${PV}"
 

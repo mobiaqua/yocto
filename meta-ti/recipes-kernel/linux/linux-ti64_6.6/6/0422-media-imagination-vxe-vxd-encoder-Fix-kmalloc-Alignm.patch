@@ -1,0 +1,46 @@
+From 5e485a63a6b9dbaf72e8bfdbea63da421cd47c6e Mon Sep 17 00:00:00 2001
+From: Brandon Brnich <b-brnich@ti.com>
+Date: Sun, 14 Jul 2024 15:56:42 -0500
+Subject: [PATCH 422/423] media: imagination: vxe-vxd: encoder: Fix kmalloc
+ Alignment Issues
+
+IMG Encoder not properly cleaning up memory and is unstable during
+execution as wrong sizes are being allocated for buffers that contain
+encoded data.
+
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+Reviewed-by: Darren Etheridge <detheridge@ti.com>
+---
+ drivers/media/platform/imagination/vxe-vxd/encoder/topaz_api.c  | 2 +-
+ .../media/platform/imagination/vxe-vxd/encoder/topaz_device.c   | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/topaz_api.c b/drivers/media/platform/imagination/vxe-vxd/encoder/topaz_api.c
+index fcc90cb03fd9..e771c999cd37 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/encoder/topaz_api.c
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/topaz_api.c
+@@ -1728,7 +1728,7 @@ static int topaz_allocate_coded_package(struct topaz_stream_context *str_ctx,
+ 	struct coded_package_host *this_package;
+ 	struct img_video_context *video = str_ctx->enc_ctx->video;
+ 
+-	*package = kzalloc(sizeof(*package), GFP_KERNEL);
++	*package = kzalloc(sizeof(struct coded_package_host), GFP_KERNEL);
+ 
+ 	this_package = *package;
+ 
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/topaz_device.c b/drivers/media/platform/imagination/vxe-vxd/encoder/topaz_device.c
+index 6304d1156a7a..bcecfeef179e 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/encoder/topaz_device.c
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/topaz_device.c
+@@ -870,7 +870,7 @@ int topazdd_create_stream_context(struct topaz_dev_ctx *ctx, enum img_codec code
+ 	mutex_init(p_sock->sync_wb_mutex);
+ 
+ 	/* Allocate a Sync structure...*/
+-	p_event = kmalloc(sizeof(struct event *), GFP_KERNEL);
++	p_event = kmalloc(sizeof(*p_event), GFP_KERNEL);
+ 	IMG_DBG_ASSERT(p_event);
+ 	if (!p_event)
+ 		return IMG_ERROR_OUT_OF_MEMORY;
+-- 
+2.45.2
+
