@@ -335,6 +335,8 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://6/0414-remoteproc-k3-m4-Move-suspend-to-suspend_late.patch \
             file://6/0415-firmware-ti_sci-Call-prepare_sleep-in-suspend.patch \
             file://6/0422-media-imagination-vxe-vxd-encoder-Fix-kmalloc-Alignm.patch \
+            file://6/0426-remoteproc-k3-r5-Delay-notification-of-wakeup-event.patch \
+            file://6/0436-remoteproc-core-Make-DMA-BUF-attachment-interface-th.patch \
             file://0001_fix_nonlinux_compile.patch \
             file://0002-bootup-hacks-move-mmc-early.patch \
             file://0004_wait-for-rootfs.patch \
