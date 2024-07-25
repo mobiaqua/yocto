@@ -1,0 +1,13 @@
+diff -ur old/configure.ac new/configure.ac
+--- old/configure.ac	2024-07-23 16:21:56
++++ new/configure.ac	2024-07-23 17:05:24
+@@ -475,7 +475,8 @@
+ #
+ # Introspection support.
+ #
+-GOBJECT_INTROSPECTION_CHECK([0.9.5])
++#GOBJECT_INTROSPECTION_CHECK([0.9.5])
++AM_CONDITIONAL(HAVE_INTROSPECTION, false)
+ 
+ #
+ # Check for libevent 2.0.21

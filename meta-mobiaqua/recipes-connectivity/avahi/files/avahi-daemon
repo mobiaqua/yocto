@@ -1,0 +1,126 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          avahi
+# Required-Start:    $remote_fs dbus
+# Required-Stop:     $remote_fs dbus
+# Should-Start:	     $syslog
+# Should-Stop:       $syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Avahi mDNS/DNS-SD Daemon
+# Description:       Zeroconf daemon for configuring your network 
+#                    automatically
+### END INIT INFO
+#
+# This file is part of avahi.
+#
+# avahi is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as
+# published by the Free Software Foundation; either version 2 of the
+# License, or (at your option) any later version.
+#
+# avahi is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+# or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public
+# License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with avahi; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+# USA.
+
+#
+# avahi     avahi daemon
+#                               Daemon for ZeroConf
+#
+# Authors:      <sebastien.estienne@gmail.com>
+#
+
+#set -e
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+DESC="Avahi mDNS/DNS-SD Daemon"
+NAME="avahi-daemon"
+DAEMON="/usr/sbin/$NAME"
+SCRIPTNAME=/etc/init.d/$NAME
+
+# Gracefully exit if the package has been removed.
+test -x $DAEMON || exit 0
+
+# don't start if /etc/default/avahi-daemon says so.
+AVAHI_DAEMON_START=1
+test -f /etc/default/avahi-daemon && . /etc/default/avahi-daemon
+
+if [ "$AVAHI_DAEMON_START" != "1" -a "$1" != "stop" ]; then
+    exit 0
+fi
+
+#
+#       Function that starts the daemon/service.
+#
+d_start() {
+    $DAEMON -c && return 0
+
+    if [ -s /etc/localtime ]; then
+        if [ ! -d /etc/avahi/etc ]; then
+            mkdir -p /etc/avahi/etc >/dev/null 2>&1
+        fi
+        cp -fp /etc/localtime /etc/avahi/etc >/dev/null 2>&1
+    fi;
+
+    $DAEMON -D
+}
+
+#
+#       Function that stops the daemon/service.
+#
+d_stop() {
+    $DAEMON -c && $DAEMON -k
+}
+
+#
+#       Function that reload the config file for the daemon/service.
+#
+d_reload() {
+    $DAEMON -c && $DAEMON -r
+}
+
+#
+#       Function that check the status of the daemon/service.
+#
+d_status() {
+    $DAEMON -c
+    status=$?
+    if [ $status = 0 ]; then
+        echo "$DESC is running"
+        return 0
+    else
+        echo "$DESC is not running"
+        return 3
+    fi
+}
+
+case "$1" in
+    start)
+        d_start
+        ;;
+    stop)
+        d_stop
+        ;;
+    reload)
+        d_reload
+        ;;
+    restart|force-reload)
+        $DAEMON -c && d_stop
+        d_start
+        ;;
+    status)
+        d_status
+        ;;
+    *)
+        echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload|reload|status}" >&2
+        exit 1
+        ;;
+esac
+
+exit $?
