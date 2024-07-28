@@ -8,10 +8,14 @@ DEPENDS = " \
     zlib \
     ffmpeg \
     libass \
+    freetype \
+    fontconfig \
     alsa-lib \
     lua5.1 \
     libdrm \
 "
+
+RDEPENDS:${PN} = "ttf-dejavu-sans"
 
 PV = "0.36+git"
 PR = "r1"
@@ -19,7 +23,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://LICENSE.GPL;md5=b234ee4d69f5fce4486a80fdaf4a4263"
 
-SRCREV = "efd2abbb13e1865cf31d1f5bff755aa05e3bd46d"
+SRCREV = "c7dc3223eee970a814ae4340ea89a489c8711290"
 SRC_URI = "git://github.com/mobiaqua/mpv-mini.git;protocol=https;branch=main"
 
 S = "${WORKDIR}/git/src"
