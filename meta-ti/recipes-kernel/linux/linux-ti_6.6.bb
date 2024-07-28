@@ -6,7 +6,7 @@ DEPENDS:remove = "util-linux-native elfutils-native"
 COMPATIBLE_MACHINE = "(panda|beagle)"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.6.35"
+LINUX_VERSION = "6.6.43"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -60,7 +60,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
            file://0004_wait-for-rootfs.patch \
            file://0005_smsc95xx-add-macaddr-module-parameter.patch \
            file://0007_omap4-sgx.patch \
-           file://0008_fixed_name_hdmi_audio.patch \
            file://0009_panda-bt-fixes.patch \
            file://0010-omap4-clk32.patch \
            file://0011-iva-timer3-always-on.patch \
@@ -72,7 +71,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
            file://defconfig \
            "
 
-SRC_URI[sha256sum] = "fce3ee728712ed063aa8c14a8756c8ff8c7a46ba3827f61d2b04a73c7cf5dd9e"
+SRC_URI[sha256sum] = "0ad83b1a1a780a1aad948d55aa55ee63c50c626f2d46910b9d2180028d100a5e"
 
 S = "${WORKDIR}/linux-${PV}"
 
