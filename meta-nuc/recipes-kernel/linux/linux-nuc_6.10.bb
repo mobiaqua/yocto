@@ -11,13 +11,13 @@ KERNEL_FEATURES:remove = "cfg/efi.scc"
 KERNEL_VERSION_SANITY_SKIP = "1"
 INSANE_SKIP += "buildpaths"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.9.3"
+LINUX_VERSION = "6.10.2"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
 KMETA = "kernel-meta"
 KCONF_BSP_AUDIT_LEVEL = "1"
-FILESEXTRAPATHS:prepend := "${THISDIR}/linux-nuc_6.9:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/linux-nuc_6.10:"
 KBUILD_DEFCONFIG = "nuc_defconfig"
 
 SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
@@ -30,7 +30,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
            file://nuc_config \
            "
 
-SRC_URI[sha256sum] = "c321c46401368774fc236f57095b205a5da57415f9a6008018902f9fd5eddfae"
+SRC_URI[sha256sum] = "73d8520dd9cba5acfc5e7208e76b35d9740b8aae38210a9224e32ec4c0d29b70"
 
 S = "${WORKDIR}/linux-${PV}"
 
