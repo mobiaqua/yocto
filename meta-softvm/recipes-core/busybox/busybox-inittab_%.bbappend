@@ -8,5 +8,5 @@ do_install() {
 	sed -i 's/^null::restart/#null::restart/' ${D}${sysconfdir}/inittab
 	sed -i 's/^null::respawn/#null::respawn/' ${D}${sysconfdir}/inittab
 	sed -i 's/^null::sysinit:\/sbin\/swapon/#null::sysinit:\/sbin\/swapon/' ${D}${sysconfdir}/inittab
-	sed -i 's/^null::sysinit:\/etc\/init.d\/rcS/null::sysinit:\/etc\/init.d\/rcS > \/dev\/ttyS1 2>\&1/' ${D}${sysconfdir}/inittab
+	sed -i 's/^null::sysinit:\/etc\/init.d\/rcS/null::sysinit:\/etc\/init.d\/rcS > \/dev\/console 2>\&1/' ${D}${sysconfdir}/inittab
 }
