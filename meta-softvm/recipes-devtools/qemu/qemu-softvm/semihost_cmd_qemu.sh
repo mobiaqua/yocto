@@ -2,7 +2,7 @@
 
 CMD=`basename $0`
 
-ORG_NFS_WORKSPACE=$NFS_WORKSPACE
+ORG_SOFTVM_WORKSPACE=$SOFTVM_WORKSPACE
 
 HOME_PATH=~/.softvm
 if [ ! -f $HOME_PATH/config ]; then
@@ -11,7 +11,7 @@ if [ ! -f $HOME_PATH/config ]; then
 fi
 . $HOME_PATH/config
 
-NFS_WORKSPACE=${ORG_NFS_WORKSPACE:=$NFS_WORKSPACE}
+SOFTVM_WORKSPACE=${ORG_SOFTVM_WORKSPACE:=$SOFTVM_WORKSPACE}
 
 # arguments:
 # <this_script_name> <tools path> <vm mode> <cmd> [<cmd args>]
@@ -49,7 +49,7 @@ NFS_EXPORT_ROOTFS=${SOFTVM_INSTALL_PATH}/rootfs
 if [ ! -z "$TOOLS" ]; then
     NFS_EXPORT_TOOLS=${TOOLS}
 fi
-NFS_EXPORT_WORKSPACE=${NFS_WORKSPACE:=$PWD}
+NFS_EXPORT_WORKSPACE=${SOFTVM_WORKSPACE:=$PWD}
 NFS_EXPORT_CURRENT=$PWD
 EXPORTS=${HOME_PATH}/unfs3_exports
 NFSPID=${HOME_PATH}/unfs3.pid

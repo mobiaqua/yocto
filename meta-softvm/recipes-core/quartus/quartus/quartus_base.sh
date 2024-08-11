@@ -29,16 +29,22 @@ fi
 
 
 CMD=`basename $0`
-VMMODE=native
 
-export NFS_WORKSPACE
-export SOFTVM_QEMU_ARGS="-device qemu-xhci,id=usb-controller-0 \
--device usb-host,vendorid=0x09fb,productid=0x6001 \
--device usb-host,vendorid=0x09fb,productid=0x6002 \
--device usb-host,vendorid=0x09fb,productid=0x6003 \
--device usb-host,vendorid=0x09fb,productid=0x6010 \
--device usb-host,vendorid=0x09fb,productid=0x6810"
-export SOFTVM_QEMU_RAM=$((8*1024))
+export SOFTVM_WORKSPACE
+export SOFTVM_CPU=2
+export SOFTVM_RAM=$((8*1024))
 
-${SOFTVM_INSTALL_PATH}/tools/semihost_cmd_qemu.sh ${QUARTUS_ROOT}/tools $VMMODE "/opt/tools/altera/quartus/bin/$CMD $@ --64bit"
+if [ $CMD == "quartus_pgm" ]; then
+    export SOFTVM_QEMU_ARGS="\
+        -device qemu-xhci,id=usb-controller-0 \
+        -device usb-host,vendorid=0x09fb,productid=0x6001 \
+        -device usb-host,vendorid=0x09fb,productid=0x6002 \
+        -device usb-host,vendorid=0x09fb,productid=0x6003 \
+        -device usb-host,vendorid=0x09fb,productid=0x6010 \
+        -device usb-host,vendorid=0x09fb,productid=0x6810"
+    ${SOFTVM_INSTALL_PATH}/tools/semihost_cmd_qemu.sh ${QUARTUS_ROOT}/tools emu "/opt/tools/altera/quartus/bin/$CMD $@ --64bit"
+else
+    ${SOFTVM_INSTALL_PATH}/tools/semihost_cmd_vmtool.sh ${QUARTUS_ROOT}/tools "/opt/tools/altera/quartus/bin/$CMD $@ --64bit"
+fi
+
 exit $?

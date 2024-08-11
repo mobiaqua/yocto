@@ -24,7 +24,7 @@ if [ "$QUARTUS_ROOT" = ".." ]; then
     QUARTUS_ROOT=`dirname \`pwd\``
 fi
 
-export NFS_WORKSPACE=`pwd`
+export SOFTVM_WORKSPACE=`pwd`
 
 CMD="./install-quartus-expect.sh $version prog"
 
