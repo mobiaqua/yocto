@@ -91,7 +91,8 @@ oe_mkext234fs () {
 	bbdebug 1 "Actual Rootfs size:  `du -s ${IMAGE_ROOTFS}`"
 	bbdebug 1 "Actual Partition size: `stat -c '%s' ${IMGDEPLOYDIR}/${IMAGE_NAME}.$fstype`"
 	bbdebug 1 Executing "mkfs.$fstype -F $extra_imagecmd ${IMGDEPLOYDIR}/${IMAGE_NAME}.$fstype -d ${IMAGE_ROOTFS}"
-	mkfs.$fstype -F $extra_imagecmd ${IMGDEPLOYDIR}/${IMAGE_NAME}.$fstype -d ${IMAGE_ROOTFS}
+	# MobiAqua: added '-E root_owner=0:0'. moved '-d ${IMAGE_ROOTFS}' before output argument
+	mkfs.$fstype -F -E root_owner=0:0 $extra_imagecmd -d ${IMAGE_ROOTFS} ${IMGDEPLOYDIR}/${IMAGE_NAME}.$fstype
 	# Error codes 0-3 indicate successfull operation of fsck (no errors or errors corrected)
 	fsck.$fstype -pvfD ${IMGDEPLOYDIR}/${IMAGE_NAME}.$fstype || [ $? -le 3 ]
 }
