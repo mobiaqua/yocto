@@ -20,6 +20,8 @@ RRECOMMENDS += ""
 IMAGE_BASENAME = "rootfs-release"
 IMAGE_INSTALL += "${INSTALL_PKGS} "
 
+IMAGE_FSTYPES = "tar.gz ext4"
+
 inherit mobiaqua-clean-boot
 
 ROOTFS_POSTPROCESS_COMMAND += "mobiaqua_rootfs_clean_boot_dir ; "
