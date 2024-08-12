@@ -1,0 +1,23 @@
+diff -urp old/libuuid/src/uuid_time.c new/libuuid/src/uuid_time.c
+--- old/libuuid/src/uuid_time.c	2024-07-04 09:54:41
++++ new/libuuid/src/uuid_time.c	2024-08-12 20:37:06
+@@ -62,7 +62,11 @@ time_t __uuid_time(const uuid_t uu, struct timeval *re
+ 
+ /* this function could be 32bit time_t and 32bit timeval or 64bit,
+    depending on compiler flags and architecture. */
++#if defined(__APPLE__)
++time_t uuid_time(const uuid_t uu, struct timeval *ret_tv)
++#else
+ time_t __uuid_time(const uuid_t uu, struct timeval *ret_tv)
++#endif
+ {
+ 	struct timeval		tv;
+ 	struct uuid		uuid;
+@@ -85,6 +89,7 @@ extern time_t uuid_time64(const uuid_t uu, struct time
+ }
+ #if defined(__USE_TIME_BITS64) && defined(__GLIBC__)
+ extern time_t uuid_time64(const uuid_t uu, struct timeval *ret_tv) __attribute__((weak, alias("__uuid_time")));
++#elif defined(__APPLE__)
+ #else
+ extern time_t uuid_time(const uuid_t uu, struct timeval *ret_tv) __attribute__((weak, alias("__uuid_time")));
+ #endif
