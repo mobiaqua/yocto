@@ -26,6 +26,7 @@
 #endif
 
 #include <stdlib.h>
+#include <stdint.h>
 
 int main(int argc, char **argv)
 {
@@ -39,6 +40,10 @@ int main(int argc, char **argv)
 #ifdef __x86_64__
     ioperm(0x501, 8, 1);
     outb(error_code, 0x501);
+#elif defined(__aarch64__)
+    register uint64_t r0 asm("x0") = 0x18;
+    register uint64_t r1 asm("x1") = error_code;
+    asm volatile("hlt 0xf000" : : "r"(r0), "r"(r1));
 #else
 #error Missing architecture implementation!
 #endif
