@@ -1,0 +1,33 @@
+#!/bin/sh
+#
+# SPDX-License-Identifier: GPL-2.0-only
+#
+
+### BEGIN INIT INFO
+# Provides:          mpv-gui
+# Required-Start:
+# Required-Stop:
+# Default-Start:     2
+# Default-Stop:      0 6
+# Short-Description: Launch MPV GUI
+# Description:       Launch MPV GUI.
+### END INIT INFO
+
+. /etc/default/rcS
+[ -f /etc/default/mpv-gui ] && . /etc/default/mpv-gui
+
+case "$1" in
+	start|"")
+		printf '\e[3J' > /dev/tty0 >/dev/null 2>&1
+		/usr/bin/mpv-gui $MPV_GUI_ROOT & >/dev/null 2>&1
+		;;
+	stop)
+		killall mpv-gui >/dev/null 2>&1
+		;;
+	*)
+		echo "Usage: mpv-gui {start|stop}" >&2
+		exit 1
+		;;
+esac
+
+exit 0
