@@ -12,7 +12,7 @@ RDEPENDS += ""
 RRECOMMENDS += ""
 
 IMAGE_BASENAME = "rootfs-release"
-IMAGE_INSTALL += "${INSTALL_PKGS} "
+IMAGE_INSTALL += "${INSTALL_PKGS} expect qemu-exit"
 
 inherit mobiaqua-clean-boot
 inherit quartus-dummy-locale
