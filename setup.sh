@@ -18,7 +18,7 @@ print_help() {
 	echo "- media (default)"
 	echo "- dsp"
 	echo "- fpga"
-	echo "- softvm"
+	echo "- emu86"
 	echo
 	[ "x$0" = "x./setup.sh" ] && exit 1
 	ERROR=1
@@ -336,7 +336,7 @@ setup() {
 		elif [ "$1" = "fpga" ]; then
 			TARGET=$1
 			MACHINE=de10nano
-		elif [ "$1" = "softvm" ]; then
+		elif [ "$1" = "emu86" ]; then
 			TARGET=$1
 			MACHINE=emu-x86-64
 			break
@@ -374,7 +374,7 @@ setup() {
 		fi
 		image=fpga-rootfs-devel
 		CROSS=arm-mobiaqua-linux-gnueabi-
-	elif [ "$TARGET" = "softvm" ]; then
+	elif [ "$TARGET" = "emu86" ]; then
 		image=quartus-x86-rootfs
 		CROSS=x86_64-linux-gnueabi-
 		export DISTRO=softvm
@@ -467,7 +467,7 @@ HOSTTOOLS:remove = \"chrpath flock ldd pzstd\"
 BB_NUMBER_THREADS = \"8\"
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/local.conf
 
-	if [ "$TARGET" = "softvm" ]; then
+	if [ "$TARGET" = "emu86" ]; then
 		echo "require conf/multilib.conf
 MULTILIBS = \"multilib:lib32\"
 DEFAULTTUNE:virtclass-multilib-lib32 = \"x86\"

@@ -18,9 +18,9 @@
 
     DE10 Nano (HPS)
 
-  - "softvm"
+  - "emu86"
 
-    Virtual Machine target for running Linux software.
+    Emulated x86 target for running Linux software.
 
   Example usage:
 
