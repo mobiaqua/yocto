@@ -2,7 +2,7 @@ DESCRIPTION = "Trigger exit from VM with specific error code."
 LICENSE = "MIT"
 ERROR_QA:remove = "license-checksum"
 
-COMPATIBLE_MACHINE = "emu*"
+COMPATIBLE_MACHINE = "vm-*"
 
 SRC_URI = "file://vm-exit.c"
 

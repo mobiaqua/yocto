@@ -22,6 +22,10 @@
 
     Emulated x86 target for running Linux software.
 
+  - "vmarm"
+
+    Virtual Machine arm64 target for running Linux software.
+
   Example usage:
 
   Run ". setup.sh media" to setup Yocto environment.

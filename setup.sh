@@ -19,6 +19,7 @@ print_help() {
 	echo "- dsp"
 	echo "- fpga"
 	echo "- emu86"
+	echo "- vmarm"
 	echo
 	[ "x$0" = "x./setup.sh" ] && exit 1
 	ERROR=1
@@ -340,6 +341,10 @@ setup() {
 			TARGET=$1
 			MACHINE=emu-x86-64
 			break
+		elif [ "$1" = "vmarm" ]; then
+			TARGET=$1
+			MACHINE=vm-arm64
+			break
 		else
 			print_help
 			return 1
@@ -377,6 +382,10 @@ setup() {
 	elif [ "$TARGET" = "emu86" ]; then
 		image=quartus-x86-rootfs
 		CROSS=x86_64-linux-gnueabi-
+		export DISTRO=softvm
+	elif [ "$TARGET" = "vmarm" ]; then
+		image=quartus-arm64-rootfs
+		CROSS=aarch64-mobiaqua-linux-
 		export DISTRO=softvm
 	else
 		print_help
