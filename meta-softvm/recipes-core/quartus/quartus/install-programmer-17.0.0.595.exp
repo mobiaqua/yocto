@@ -1,0 +1,29 @@
+#!/usr/bin/expect -f
+
+set installpath [lindex $::argv 0]
+set yesno "\\\[\[Yy\]/\[Nn\]\\\]"
+set q2we "Quartus Prime Programmer and Tools"
+
+log_user 0
+spawn ./QuartusProgrammerSetup-17.0.0.595-linux.run --mode text --installdir $installpath
+while true {
+    expect {
+        -re "Press \\\[Enter\\\] to continue *:" { send "\r" }
+        -re "You already had $::q2we .* installed in this directory, .*, do you want to update that installation\\\? $::yesno:" { send "y\r" }
+        -re "Warning: You don't have enough disk space in .* to install this " {
+            expect {
+                -re "Press \\\[Enter\\\] to continue *:" {
+                    puts ""
+                    exit 1
+                }
+            }
+        }
+        -re "Do you accept this license\\\? $::yesno:" { send "y\r" }
+        -re "Installation \[Dd\]irectory \\\[.*\\\]:" { send "\r" }
+        -re "Launch .* $::yesno:" { send "n\r" }
+        eof { break }
+    }
+}
+
+foreach {pid spawnid os_error_flag value} [wait] break
+exit "$value"

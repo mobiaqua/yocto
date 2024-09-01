@@ -2,14 +2,10 @@
 
 version=$1
 
-case $1 in
-    13.0.1.232)
-        ;;
-    *)
-        echo "Unknown Quartus version!"
-        exit 1
-        ;;
-esac
+if [ "$1" = "" ]; then
+    echo "Unknown Quartus version!"
+    exit 1
+fi
 
 if [ "$2" = "prog" ]; then
     script_base=programmer

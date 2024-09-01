@@ -27,6 +27,8 @@ if [ ! -d ${QUARTUS_ROOT}/tools ]; then
     mkdir -p ${QUARTUS_ROOT}/tools
 fi
 
+grep "13.0" ${QUARTUS_ROOT}/tools/altera/quartus/readme.txt > /dev/null 2>&1
+if [ $? = 0 ]; then MODE="--64bit"; fi
 
 CMD=`basename $0`
 
@@ -42,9 +44,9 @@ if [ $CMD == "quartus_pgm" ]; then
         -device usb-host,vendorid=0x09fb,productid=0x6003 \
         -device usb-host,vendorid=0x09fb,productid=0x6010 \
         -device usb-host,vendorid=0x09fb,productid=0x6810"
-    ${SOFTVM_INSTALL_PATH}/tools/semihost_cmd_qemu.sh ${QUARTUS_ROOT}/tools emu "/opt/tools/altera/quartus/bin/$CMD $@ --64bit"
+    ${SOFTVM_INSTALL_PATH}/tools/semihost_cmd_qemu.sh ${QUARTUS_ROOT}/tools emu "/opt/tools/altera/quartus/bin/$CMD $@ $MODE"
 else
-    ${SOFTVM_INSTALL_PATH}/tools/semihost_cmd_vmtool.sh ${QUARTUS_ROOT}/tools "/opt/tools/altera/quartus/bin/$CMD $@ --64bit"
+    ${SOFTVM_INSTALL_PATH}/tools/semihost_cmd_vmtool.sh ${QUARTUS_ROOT}/tools "/opt/tools/altera/quartus/bin/$CMD $@ $MODE"
 fi
 
 exit $?
