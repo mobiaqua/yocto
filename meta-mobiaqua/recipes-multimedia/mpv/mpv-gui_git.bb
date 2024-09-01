@@ -17,7 +17,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://LICENSE.GPL;md5=b234ee4d69f5fce4486a80fdaf4a4263"
 
-SRCREV = "c0c963035a4b84166fe60210ff7c4571a6f2b60a"
+SRCREV = "27ac985b7854823f2f718862152e2c857e41ec17"
 SRC_URI = "git://github.com/mobiaqua/mpv-gui.git;protocol=https;branch=main \
            file://mpv-gui-default \
            file://mpv-gui-init \
