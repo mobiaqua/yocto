@@ -1,0 +1,174 @@
+From 57cacce211d6decc291041340040d895fe00932c Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Tue, 23 Jul 2024 21:04:33 -0500
+Subject: [PATCH 446/480] mailbox: omap: Remove device class
+
+The driver currently creates a new device class "mbox". Then for each
+mailbox adds a device to that class. This class provides no file
+operations provided for any userspace users of this device class.
+It may have been extended to be functional in our vendor tree at
+some point, but that is not the case anymore, nor does it matter
+for the upstream tree.
+
+Remove this device class and related functions and variables.
+This also allows us to switch to module_platform_driver() as
+there is nothing left to do in module_init().
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Signed-off-by: Jassi Brar <jassisinghbrar@gmail.com>
+---
+ drivers/mailbox/omap-mailbox.c | 89 +---------------------------------
+ 1 file changed, 2 insertions(+), 87 deletions(-)
+
+diff --git a/drivers/mailbox/omap-mailbox.c b/drivers/mailbox/omap-mailbox.c
+index b2f4195896d6..e376c52d4e5e 100644
+--- a/drivers/mailbox/omap-mailbox.c
++++ b/drivers/mailbox/omap-mailbox.c
+@@ -87,7 +87,6 @@ struct omap_mbox_device {
+ 	u32 intr_type;
+ 	struct omap_mbox **mboxes;
+ 	struct mbox_controller controller;
+-	struct list_head elem;
+ };
+ 
+ struct omap_mbox_fifo_info {
+@@ -107,7 +106,6 @@ struct omap_mbox {
+ 	const char		*name;
+ 	int			irq;
+ 	struct omap_mbox_queue	*rxq;
+-	struct device		*dev;
+ 	struct omap_mbox_device *parent;
+ 	struct omap_mbox_fifo	tx_fifo;
+ 	struct omap_mbox_fifo	rx_fifo;
+@@ -116,10 +114,6 @@ struct omap_mbox {
+ 	bool			send_no_irq;
+ };
+ 
+-/* global variables for the mailbox devices */
+-static DEFINE_MUTEX(omap_mbox_devices_lock);
+-static LIST_HEAD(omap_mbox_devices);
+-
+ static unsigned int mbox_kfifo_size = CONFIG_OMAP_MBOX_KFIFO_SIZE;
+ module_param(mbox_kfifo_size, uint, S_IRUGO);
+ MODULE_PARM_DESC(mbox_kfifo_size, "Size of omap's mailbox kfifo (bytes)");
+@@ -395,61 +389,6 @@ static struct omap_mbox *omap_mbox_device_find(struct omap_mbox_device *mdev,
+ 	return mbox;
+ }
+ 
+-static struct class omap_mbox_class = { .name = "mbox", };
+-
+-static int omap_mbox_register(struct omap_mbox_device *mdev)
+-{
+-	int ret;
+-	int i;
+-	struct omap_mbox **mboxes;
+-
+-	if (!mdev || !mdev->mboxes)
+-		return -EINVAL;
+-
+-	mboxes = mdev->mboxes;
+-	for (i = 0; mboxes[i]; i++) {
+-		struct omap_mbox *mbox = mboxes[i];
+-
+-		mbox->dev = device_create(&omap_mbox_class, mdev->dev,
+-					0, mbox, "%s", mbox->name);
+-		if (IS_ERR(mbox->dev)) {
+-			ret = PTR_ERR(mbox->dev);
+-			goto err_out;
+-		}
+-	}
+-
+-	mutex_lock(&omap_mbox_devices_lock);
+-	list_add(&mdev->elem, &omap_mbox_devices);
+-	mutex_unlock(&omap_mbox_devices_lock);
+-
+-	ret = devm_mbox_controller_register(mdev->dev, &mdev->controller);
+-
+-err_out:
+-	if (ret) {
+-		while (i--)
+-			device_unregister(mboxes[i]->dev);
+-	}
+-	return ret;
+-}
+-
+-static int omap_mbox_unregister(struct omap_mbox_device *mdev)
+-{
+-	int i;
+-	struct omap_mbox **mboxes;
+-
+-	if (!mdev || !mdev->mboxes)
+-		return -EINVAL;
+-
+-	mutex_lock(&omap_mbox_devices_lock);
+-	list_del(&mdev->elem);
+-	mutex_unlock(&omap_mbox_devices_lock);
+-
+-	mboxes = mdev->mboxes;
+-	for (i = 0; mboxes[i]; i++)
+-		device_unregister(mboxes[i]->dev);
+-	return 0;
+-}
+-
+ static int omap_mbox_chan_startup(struct mbox_chan *chan)
+ {
+ 	struct omap_mbox *mbox = mbox_chan_to_omap_mbox(chan);
+@@ -782,7 +721,7 @@ static int omap_mbox_probe(struct platform_device *pdev)
+ 	mdev->controller.chans = chnls;
+ 	mdev->controller.num_chans = info_count;
+ 	mdev->controller.of_xlate = omap_mbox_of_xlate;
+-	ret = omap_mbox_register(mdev);
++	ret = devm_mbox_controller_register(mdev->dev, &mdev->controller);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -809,7 +748,6 @@ static int omap_mbox_probe(struct platform_device *pdev)
+ 
+ unregister:
+ 	pm_runtime_disable(mdev->dev);
+-	omap_mbox_unregister(mdev);
+ 	return ret;
+ }
+ 
+@@ -818,7 +756,6 @@ static void omap_mbox_remove(struct platform_device *pdev)
+ 	struct omap_mbox_device *mdev = platform_get_drvdata(pdev);
+ 
+ 	pm_runtime_disable(mdev->dev);
+-	omap_mbox_unregister(mdev);
+ }
+ 
+ static struct platform_driver omap_mbox_driver = {
+@@ -830,29 +767,7 @@ static struct platform_driver omap_mbox_driver = {
+ 		.of_match_table = of_match_ptr(omap_mailbox_of_match),
+ 	},
+ };
+-
+-static int __init omap_mbox_init(void)
+-{
+-	int err;
+-
+-	err = class_register(&omap_mbox_class);
+-	if (err)
+-		return err;
+-
+-	err = platform_driver_register(&omap_mbox_driver);
+-	if (err)
+-		class_unregister(&omap_mbox_class);
+-
+-	return err;
+-}
+-subsys_initcall(omap_mbox_init);
+-
+-static void __exit omap_mbox_exit(void)
+-{
+-	platform_driver_unregister(&omap_mbox_driver);
+-	class_unregister(&omap_mbox_class);
+-}
+-module_exit(omap_mbox_exit);
++module_platform_driver(omap_mbox_driver);
+ 
+ MODULE_LICENSE("GPL v2");
+ MODULE_DESCRIPTION("omap mailbox: interrupt driven messaging");
+-- 
+2.46.0
+

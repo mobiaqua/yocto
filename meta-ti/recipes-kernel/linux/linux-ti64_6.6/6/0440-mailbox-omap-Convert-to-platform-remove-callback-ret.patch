@@ -1,0 +1,58 @@
+From cf1d7fbc5d64d9ef41a0df80efdc2fb0090f602e Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=83=C2=B6nig?=
+ <u.kleine-koenig@pengutronix.de>
+Date: Tue, 23 Jul 2024 21:04:27 -0500
+Subject: [PATCH 440/480] mailbox: omap: Convert to platform remove callback
+ returning void
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The .remove() callback for a platform driver returns an int which makes
+many driver authors wrongly assume it's possible to do error handling by
+returning an error code. However the value returned is ignored (apart
+from emitting a warning) and this typically results in resource leaks.
+
+To improve here there is a quest to make the remove callback return
+void. In the first step of this quest all drivers are converted to
+.remove_new(), which already returns void. Eventually after all drivers
+are converted, .remove_new() will be renamed to .remove().
+
+Trivially convert this driver from always returning zero in the remove
+callback to the void returning variant.
+
+Signed-off-by: Uwe Kleine-KÃ¶nig <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+---
+ drivers/mailbox/omap-mailbox.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/mailbox/omap-mailbox.c b/drivers/mailbox/omap-mailbox.c
+index e3d47b2be822..0d3cdebb5ee1 100644
+--- a/drivers/mailbox/omap-mailbox.c
++++ b/drivers/mailbox/omap-mailbox.c
+@@ -865,19 +865,17 @@ static int omap_mbox_probe(struct platform_device *pdev)
+ 	return ret;
+ }
+ 
+-static int omap_mbox_remove(struct platform_device *pdev)
++static void omap_mbox_remove(struct platform_device *pdev)
+ {
+ 	struct omap_mbox_device *mdev = platform_get_drvdata(pdev);
+ 
+ 	pm_runtime_disable(mdev->dev);
+ 	omap_mbox_unregister(mdev);
+-
+-	return 0;
+ }
+ 
+ static struct platform_driver omap_mbox_driver = {
+ 	.probe	= omap_mbox_probe,
+-	.remove	= omap_mbox_remove,
++	.remove_new = omap_mbox_remove,
+ 	.driver	= {
+ 		.name = "omap-mailbox",
+ 		.pm = &omap_mbox_pm_ops,
+-- 
+2.46.0
+

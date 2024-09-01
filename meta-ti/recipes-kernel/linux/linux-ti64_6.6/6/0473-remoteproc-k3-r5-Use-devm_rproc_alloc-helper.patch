@@ -1,0 +1,83 @@
+From 5bca6da2e1fb2d20b5d451e6a9bbe0c7fda76eae Mon Sep 17 00:00:00 2001
+From: Beleswar Padhi <b-padhi@ti.com>
+Date: Fri, 23 Aug 2024 09:48:08 +0530
+Subject: [PATCH 473/480] remoteproc: k3-r5: Use devm_rproc_alloc() helper
+
+commit c81ef0cb576a3995edf24b63e9639881f19a2122 upstream.
+
+Use the device lifecycle managed allocation function. This helps prevent
+mistakes like freeing out of order in cleanup functions and forgetting
+to free on error paths.
+
+Signed-off-by: Beleswar Padhi <b-padhi@ti.com>
+Reviewed-by: Andrew Davis <afd@ti.com>
+Link: https://lore.kernel.org/r/20240808074127.2688131-2-b-padhi@ti.com
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ drivers/remoteproc/ti_k3_r5_remoteproc.c | 15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_r5_remoteproc.c b/drivers/remoteproc/ti_k3_r5_remoteproc.c
+index db936e29acc3..3ab493c7df82 100644
+--- a/drivers/remoteproc/ti_k3_r5_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_r5_remoteproc.c
+@@ -1499,8 +1499,8 @@ static int k3_r5_cluster_rproc_init(struct platform_device *pdev)
+ 			goto out;
+ 		}
+ 
+-		rproc = rproc_alloc(cdev, dev_name(cdev), &k3_r5_rproc_ops,
+-				    fw_name, sizeof(*kproc));
++		rproc = devm_rproc_alloc(cdev, dev_name(cdev), &k3_r5_rproc_ops,
++					 fw_name, sizeof(*kproc));
+ 		if (!rproc) {
+ 			ret = -ENOMEM;
+ 			goto out;
+@@ -1526,7 +1526,7 @@ static int k3_r5_cluster_rproc_init(struct platform_device *pdev)
+ 
+ 		ret = k3_r5_rproc_configure_mode(kproc);
+ 		if (ret < 0)
+-			goto err_config;
++			goto out;
+ 		if (ret)
+ 			goto init_rmem;
+ 
+@@ -1534,7 +1534,7 @@ static int k3_r5_cluster_rproc_init(struct platform_device *pdev)
+ 		if (ret) {
+ 			dev_err(dev, "initial configure failed, ret = %d\n",
+ 				ret);
+-			goto err_config;
++			goto out;
+ 		}
+ 
+ 		init_completion(&kproc->shut_comp);
+@@ -1546,7 +1546,7 @@ static int k3_r5_cluster_rproc_init(struct platform_device *pdev)
+ 		if (ret) {
+ 			dev_err(dev, "reserved memory init failed, ret = %d\n",
+ 				ret);
+-			goto err_config;
++			goto out;
+ 		}
+ 
+ 		ret = rproc_add(rproc);
+@@ -1599,9 +1599,6 @@ static int k3_r5_cluster_rproc_init(struct platform_device *pdev)
+ 	rproc_del(rproc);
+ err_add:
+ 	k3_r5_reserved_mem_exit(kproc);
+-err_config:
+-	rproc_free(rproc);
+-	core->rproc = NULL;
+ out:
+ 	/* undo core0 upon any failures on core1 in split-mode */
+ 	if (cluster->mode == CLUSTER_MODE_SPLIT && core == core1) {
+@@ -1647,8 +1644,6 @@ static void k3_r5_cluster_rproc_exit(void *data)
+ 
+ 		k3_r5_reserved_mem_exit(kproc);
+ 		unregister_pm_notifier(&kproc->pm_notifier);
+-		rproc_free(rproc);
+-		core->rproc = NULL;
+ 	}
+ }
+ 
+-- 
+2.46.0
+

@@ -1,0 +1,49 @@
+From 7c579657b2302e582f3c8e9bf0545a568cdf5c30 Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Tue, 23 Jul 2024 21:04:30 -0500
+Subject: [PATCH 443/480] mailbox: omap: Move omap_mbox_irq_t into driver
+
+This is only used internal to the driver, move it out of the
+public header and into the driver file. While we are here,
+this is not used as a bitwise, so drop that and make it a
+simple enum type.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Signed-off-by: Jassi Brar <jassisinghbrar@gmail.com>
+---
+ drivers/mailbox/omap-mailbox.c | 5 +++++
+ include/linux/omap-mailbox.h   | 4 ----
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/mailbox/omap-mailbox.c b/drivers/mailbox/omap-mailbox.c
+index 60d61c63c44f..98235b9334b6 100644
+--- a/drivers/mailbox/omap-mailbox.c
++++ b/drivers/mailbox/omap-mailbox.c
+@@ -51,6 +51,11 @@
+ #define MBOX_INTR_CFG_TYPE1		0
+ #define MBOX_INTR_CFG_TYPE2		1
+ 
++typedef enum {
++	IRQ_TX = 1,
++	IRQ_RX = 2,
++} omap_mbox_irq_t;
++
+ struct omap_mbox_fifo {
+ 	unsigned long msg;
+ 	unsigned long fifo_stat;
+diff --git a/include/linux/omap-mailbox.h b/include/linux/omap-mailbox.h
+index f8ddf8e81416..3cc5c4ed7f5a 100644
+--- a/include/linux/omap-mailbox.h
++++ b/include/linux/omap-mailbox.h
+@@ -10,8 +10,4 @@ typedef uintptr_t mbox_msg_t;
+ 
+ #define omap_mbox_message(data) (u32)(mbox_msg_t)(data)
+ 
+-typedef int __bitwise omap_mbox_irq_t;
+-#define IRQ_TX ((__force omap_mbox_irq_t) 1)
+-#define IRQ_RX ((__force omap_mbox_irq_t) 2)
+-
+ #endif /* OMAP_MAILBOX_H */
+-- 
+2.46.0
+

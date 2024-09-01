@@ -1,0 +1,80 @@
+From 2f7dfcb3057990a09bf3eb5dd4c7852e0eae8ae5 Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Tue, 23 Jul 2024 21:04:29 -0500
+Subject: [PATCH 442/480] mailbox: omap: Remove unused
+ omap_mbox_request_channel() function
+
+This function is not used, remove this function.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Signed-off-by: Jassi Brar <jassisinghbrar@gmail.com>
+---
+ drivers/mailbox/omap-mailbox.c | 36 ----------------------------------
+ include/linux/omap-mailbox.h   |  6 ------
+ 2 files changed, 42 deletions(-)
+
+diff --git a/drivers/mailbox/omap-mailbox.c b/drivers/mailbox/omap-mailbox.c
+index 5694df4abeea..60d61c63c44f 100644
+--- a/drivers/mailbox/omap-mailbox.c
++++ b/drivers/mailbox/omap-mailbox.c
+@@ -389,42 +389,6 @@ static struct omap_mbox *omap_mbox_device_find(struct omap_mbox_device *mdev,
+ 	return mbox;
+ }
+ 
+-struct mbox_chan *omap_mbox_request_channel(struct mbox_client *cl,
+-					    const char *chan_name)
+-{
+-	struct device *dev = cl->dev;
+-	struct omap_mbox *mbox = NULL;
+-	struct omap_mbox_device *mdev;
+-	int ret;
+-
+-	if (!dev)
+-		return ERR_PTR(-ENODEV);
+-
+-	if (dev->of_node) {
+-		pr_err("%s: please use mbox_request_channel(), this API is supported only for OMAP non-DT usage\n",
+-		       __func__);
+-		return ERR_PTR(-ENODEV);
+-	}
+-
+-	mutex_lock(&omap_mbox_devices_lock);
+-	list_for_each_entry(mdev, &omap_mbox_devices, elem) {
+-		mbox = omap_mbox_device_find(mdev, chan_name);
+-		if (mbox)
+-			break;
+-	}
+-	mutex_unlock(&omap_mbox_devices_lock);
+-
+-	if (!mbox || !mbox->chan)
+-		return ERR_PTR(-ENOENT);
+-
+-	ret = mbox_bind_client(mbox->chan, cl);
+-	if (ret)
+-		return ERR_PTR(ret);
+-
+-	return mbox->chan;
+-}
+-EXPORT_SYMBOL(omap_mbox_request_channel);
+-
+ static struct class omap_mbox_class = { .name = "mbox", };
+ 
+ static int omap_mbox_register(struct omap_mbox_device *mdev)
+diff --git a/include/linux/omap-mailbox.h b/include/linux/omap-mailbox.h
+index 426a80fb32b5..f8ddf8e81416 100644
+--- a/include/linux/omap-mailbox.h
++++ b/include/linux/omap-mailbox.h
+@@ -14,10 +14,4 @@ typedef int __bitwise omap_mbox_irq_t;
+ #define IRQ_TX ((__force omap_mbox_irq_t) 1)
+ #define IRQ_RX ((__force omap_mbox_irq_t) 2)
+ 
+-struct mbox_chan;
+-struct mbox_client;
+-
+-struct mbox_chan *omap_mbox_request_channel(struct mbox_client *cl,
+-					    const char *chan_name);
+-
+ #endif /* OMAP_MAILBOX_H */
+-- 
+2.46.0
+

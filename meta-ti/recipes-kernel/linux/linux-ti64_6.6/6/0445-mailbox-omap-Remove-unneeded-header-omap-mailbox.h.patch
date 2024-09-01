@@ -1,0 +1,59 @@
+From 6d898076f9dec9241a04cfbc39c910794909e29d Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Tue, 23 Jul 2024 21:04:32 -0500
+Subject: [PATCH 445/480] mailbox: omap: Remove unneeded header omap-mailbox.h
+
+The type of message sent using omap-mailbox is always u32. The definition
+of mbox_msg_t is uintptr_t which is wrong as that type changes based on
+the architecture (32bit vs 64bit). This type should have been defined as
+u32. Instead of making that change here, simply remove the header usage
+and fix the last couple users of the same in this driver.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Signed-off-by: Jassi Brar <jassisinghbrar@gmail.com>
+---
+ drivers/mailbox/omap-mailbox.c | 7 ++-----
+ 1 file changed, 2 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/mailbox/omap-mailbox.c b/drivers/mailbox/omap-mailbox.c
+index b1b7547165a7..b2f4195896d6 100644
+--- a/drivers/mailbox/omap-mailbox.c
++++ b/drivers/mailbox/omap-mailbox.c
+@@ -19,7 +19,6 @@
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm_runtime.h>
+-#include <linux/omap-mailbox.h>
+ #include <linux/mailbox_controller.h>
+ #include <linux/mailbox_client.h>
+ 
+@@ -239,16 +238,14 @@ static void mbox_rx_work(struct work_struct *work)
+ {
+ 	struct omap_mbox_queue *mq =
+ 			container_of(work, struct omap_mbox_queue, work);
+-	mbox_msg_t data;
+ 	u32 msg;
+ 	int len;
+ 
+ 	while (kfifo_len(&mq->fifo) >= sizeof(msg)) {
+ 		len = kfifo_out(&mq->fifo, (unsigned char *)&msg, sizeof(msg));
+ 		WARN_ON(len != sizeof(msg));
+-		data = msg;
+ 
+-		mbox_chan_received_data(mq->mbox->chan, (void *)data);
++		mbox_chan_received_data(mq->mbox->chan, (void *)(uintptr_t)msg);
+ 		spin_lock_irq(&mq->lock);
+ 		if (mq->full) {
+ 			mq->full = false;
+@@ -515,7 +512,7 @@ static int omap_mbox_chan_send_data(struct mbox_chan *chan, void *data)
+ {
+ 	struct omap_mbox *mbox = mbox_chan_to_omap_mbox(chan);
+ 	int ret;
+-	u32 msg = omap_mbox_message(data);
++	u32 msg = (u32)(uintptr_t)(data);
+ 
+ 	if (!mbox)
+ 		return -EINVAL;
+-- 
+2.46.0
+

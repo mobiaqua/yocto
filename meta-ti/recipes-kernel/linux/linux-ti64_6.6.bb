@@ -7,7 +7,7 @@ COMPATIBLE_MACHINE = "beagle64"
 KERNEL_VERSION_SANITY_SKIP = "1"
 INSANE_SKIP += "buildpaths"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.6.40"
+LINUX_VERSION = "6.6.48"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -144,7 +144,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://5/0215-drm-bridge-cdns-mhdp8546-core-Move-mode_valid-hook-t.patch \
             file://5/0216-drm-bridge-cdns-mhdp8546-Add-support-for-no-hpd.patch \
             file://5/0235-HACK-arm64-dts-ti-k3-j721e-beagleboneai64-Drop-dp_li.patch \
-            file://5/0264-dmaengine-ti-k3-udma-Fix-BCHAN-count-with-UHC-and-HC.patch \
             file://5/0265-dmaengine-ti-k3-udma-Fix-teardown-for-cyclic-PDMA-tr.patch \
             file://5/0274-media-ti-j721e-csi2rx-Fix-races-while-restarting-DMA.patch \
             file://5/0279-media-v4l2-core-Enable-multi-stream-support.patch \
@@ -337,6 +336,24 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://6/0422-media-imagination-vxe-vxd-encoder-Fix-kmalloc-Alignm.patch \
             file://6/0426-remoteproc-k3-r5-Delay-notification-of-wakeup-event.patch \
             file://6/0436-remoteproc-core-Make-DMA-BUF-attachment-interface-th.patch \
+            file://6/0440-mailbox-omap-Convert-to-platform-remove-callback-ret.patch \
+            file://6/0441-mailbox-omap-Remove-unused-omap_mbox_-enable-disable.patch \
+            file://6/0442-mailbox-omap-Remove-unused-omap_mbox_request_channel.patch \
+            file://6/0443-mailbox-omap-Move-omap_mbox_irq_t-into-driver.patch \
+            file://6/0444-mailbox-omap-Move-fifo-size-check-to-point-of-use.patch \
+            file://6/0445-mailbox-omap-Remove-unneeded-header-omap-mailbox.h.patch \
+            file://6/0446-mailbox-omap-Remove-device-class.patch \
+            file://6/0447-mailbox-omap-Use-devm_pm_runtime_enable-helper.patch \
+            file://6/0448-mailbox-omap-Merge-mailbox-child-node-setup-loops.patch \
+            file://6/0449-mailbox-omap-Use-function-local-struct-mbox_controll.patch \
+            file://6/0450-mailbox-omap-Use-mbox_controller-channel-list-direct.patch \
+            file://6/0451-mailbox-omap-Remove-mbox_chan_to_omap_mbox.patch \
+            file://6/0452-mailbox-omap-Reverse-FIFO-busy-check-logic.patch \
+            file://6/0453-mailbox-omap-Remove-kernel-FIFO-message-queuing.patch \
+            file://6/0454-mailbox-omap-Fix-mailbox-interrupt-sharing.patch \
+            file://6/0473-remoteproc-k3-r5-Use-devm_rproc_alloc-helper.patch \
+            file://6/0474-remoteproc-k3-r5-Acquire-mailbox-handle-during-probe.patch \
+            file://6/0475-remoteproc-k3-dsp-Acquire-mailbox-handle-during-prob.patch \
             file://0001_fix_nonlinux_compile.patch \
             file://0002-bootup-hacks-move-mmc-early.patch \
             file://0004_wait-for-rootfs.patch \
@@ -346,7 +363,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://ti_config \
 "
 
-SRC_URI[sha256sum] = "5c3a3c03c055b8d601a6d7f80d1465ada6b83a12299f6ace2027b47f0baff538"
+SRC_URI[sha256sum] = "6b16df7b2aba3116b78fdfd8aea0b6cd7abe8f0cb699b04a66d3169141772029"
 
 S = "${WORKDIR}/linux-${PV}"
 

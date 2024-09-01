@@ -1,0 +1,53 @@
+From ed0dda74b272c8dff98717d71111616567ee6499 Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Tue, 23 Jul 2024 21:04:31 -0500
+Subject: [PATCH 444/480] mailbox: omap: Move fifo size check to point of use
+
+The mbox_kfifo_size can be changed at runtime, the sanity
+check on it's value should be done when it is used, not
+only once at init time.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Signed-off-by: Jassi Brar <jassisinghbrar@gmail.com>
+---
+ drivers/mailbox/omap-mailbox.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/mailbox/omap-mailbox.c b/drivers/mailbox/omap-mailbox.c
+index 98235b9334b6..b1b7547165a7 100644
+--- a/drivers/mailbox/omap-mailbox.c
++++ b/drivers/mailbox/omap-mailbox.c
+@@ -310,6 +310,7 @@ static struct omap_mbox_queue *mbox_queue_alloc(struct omap_mbox *mbox,
+ 					void (*work)(struct work_struct *))
+ {
+ 	struct omap_mbox_queue *mq;
++	unsigned int size;
+ 
+ 	if (!work)
+ 		return NULL;
+@@ -320,7 +321,10 @@ static struct omap_mbox_queue *mbox_queue_alloc(struct omap_mbox *mbox,
+ 
+ 	spin_lock_init(&mq->lock);
+ 
+-	if (kfifo_alloc(&mq->fifo, mbox_kfifo_size, GFP_KERNEL))
++	/* kfifo size sanity check: alignment and minimal size */
++	size = ALIGN(mbox_kfifo_size, sizeof(u32));
++	size = max_t(unsigned int, size, sizeof(u32));
++	if (kfifo_alloc(&mq->fifo, size, GFP_KERNEL))
+ 		goto error;
+ 
+ 	INIT_WORK(&mq->work, work);
+@@ -838,10 +842,6 @@ static int __init omap_mbox_init(void)
+ 	if (err)
+ 		return err;
+ 
+-	/* kfifo size sanity check: alignment and minimal size */
+-	mbox_kfifo_size = ALIGN(mbox_kfifo_size, sizeof(u32));
+-	mbox_kfifo_size = max_t(unsigned int, mbox_kfifo_size, sizeof(u32));
+-
+ 	err = platform_driver_register(&omap_mbox_driver);
+ 	if (err)
+ 		class_unregister(&omap_mbox_class);
+-- 
+2.46.0
+

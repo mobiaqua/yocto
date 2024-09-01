@@ -1,0 +1,151 @@
+From 57dd669384d651b8670e5d6015fbf54a9029480f Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Tue, 23 Jul 2024 21:04:28 -0500
+Subject: [PATCH 441/480] mailbox: omap: Remove unused
+ omap_mbox_{enable,disable}_irq() functions
+
+These function are not used, remove these here.
+
+While here, remove the leading _ from the driver internal functions that
+do the same thing as the functions removed.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+Signed-off-by: Jassi Brar <jassisinghbrar@gmail.com>
+---
+ drivers/mailbox/omap-mailbox.c | 42 ++++++++--------------------------
+ include/linux/omap-mailbox.h   |  3 ---
+ 2 files changed, 10 insertions(+), 35 deletions(-)
+
+diff --git a/drivers/mailbox/omap-mailbox.c b/drivers/mailbox/omap-mailbox.c
+index 0d3cdebb5ee1..5694df4abeea 100644
+--- a/drivers/mailbox/omap-mailbox.c
++++ b/drivers/mailbox/omap-mailbox.c
+@@ -197,7 +197,7 @@ static int is_mbox_irq(struct omap_mbox *mbox, omap_mbox_irq_t irq)
+ 	return (int)(enable & status & bit);
+ }
+ 
+-static void _omap_mbox_enable_irq(struct omap_mbox *mbox, omap_mbox_irq_t irq)
++static void omap_mbox_enable_irq(struct omap_mbox *mbox, omap_mbox_irq_t irq)
+ {
+ 	u32 l;
+ 	struct omap_mbox_fifo *fifo = (irq == IRQ_TX) ?
+@@ -210,7 +210,7 @@ static void _omap_mbox_enable_irq(struct omap_mbox *mbox, omap_mbox_irq_t irq)
+ 	mbox_write_reg(mbox->parent, l, irqenable);
+ }
+ 
+-static void _omap_mbox_disable_irq(struct omap_mbox *mbox, omap_mbox_irq_t irq)
++static void omap_mbox_disable_irq(struct omap_mbox *mbox, omap_mbox_irq_t irq)
+ {
+ 	struct omap_mbox_fifo *fifo = (irq == IRQ_TX) ?
+ 				&mbox->tx_fifo : &mbox->rx_fifo;
+@@ -227,28 +227,6 @@ static void _omap_mbox_disable_irq(struct omap_mbox *mbox, omap_mbox_irq_t irq)
+ 	mbox_write_reg(mbox->parent, bit, irqdisable);
+ }
+ 
+-void omap_mbox_enable_irq(struct mbox_chan *chan, omap_mbox_irq_t irq)
+-{
+-	struct omap_mbox *mbox = mbox_chan_to_omap_mbox(chan);
+-
+-	if (WARN_ON(!mbox))
+-		return;
+-
+-	_omap_mbox_enable_irq(mbox, irq);
+-}
+-EXPORT_SYMBOL(omap_mbox_enable_irq);
+-
+-void omap_mbox_disable_irq(struct mbox_chan *chan, omap_mbox_irq_t irq)
+-{
+-	struct omap_mbox *mbox = mbox_chan_to_omap_mbox(chan);
+-
+-	if (WARN_ON(!mbox))
+-		return;
+-
+-	_omap_mbox_disable_irq(mbox, irq);
+-}
+-EXPORT_SYMBOL(omap_mbox_disable_irq);
+-
+ /*
+  * Message receiver(workqueue)
+  */
+@@ -269,7 +247,7 @@ static void mbox_rx_work(struct work_struct *work)
+ 		spin_lock_irq(&mq->lock);
+ 		if (mq->full) {
+ 			mq->full = false;
+-			_omap_mbox_enable_irq(mq->mbox, IRQ_RX);
++			omap_mbox_enable_irq(mq->mbox, IRQ_RX);
+ 		}
+ 		spin_unlock_irq(&mq->lock);
+ 	}
+@@ -280,7 +258,7 @@ static void mbox_rx_work(struct work_struct *work)
+  */
+ static void __mbox_tx_interrupt(struct omap_mbox *mbox)
+ {
+-	_omap_mbox_disable_irq(mbox, IRQ_TX);
++	omap_mbox_disable_irq(mbox, IRQ_TX);
+ 	ack_mbox_irq(mbox, IRQ_TX);
+ 	mbox_chan_txdone(mbox->chan, 0);
+ }
+@@ -293,7 +271,7 @@ static void __mbox_rx_interrupt(struct omap_mbox *mbox)
+ 
+ 	while (!mbox_fifo_empty(mbox)) {
+ 		if (unlikely(kfifo_avail(&mq->fifo) < sizeof(msg))) {
+-			_omap_mbox_disable_irq(mbox, IRQ_RX);
++			omap_mbox_disable_irq(mbox, IRQ_RX);
+ 			mq->full = true;
+ 			goto nomem;
+ 		}
+@@ -375,7 +353,7 @@ static int omap_mbox_startup(struct omap_mbox *mbox)
+ 	if (mbox->send_no_irq)
+ 		mbox->chan->txdone_method = TXDONE_BY_ACK;
+ 
+-	_omap_mbox_enable_irq(mbox, IRQ_RX);
++	omap_mbox_enable_irq(mbox, IRQ_RX);
+ 
+ 	return 0;
+ 
+@@ -386,7 +364,7 @@ static int omap_mbox_startup(struct omap_mbox *mbox)
+ 
+ static void omap_mbox_fini(struct omap_mbox *mbox)
+ {
+-	_omap_mbox_disable_irq(mbox, IRQ_RX);
++	omap_mbox_disable_irq(mbox, IRQ_RX);
+ 	free_irq(mbox->irq, mbox);
+ 	flush_work(&mbox->rxq->work);
+ 	mbox_queue_free(mbox->rxq);
+@@ -533,10 +511,10 @@ static int omap_mbox_chan_send_noirq(struct omap_mbox *mbox, u32 msg)
+ 	int ret = -EBUSY;
+ 
+ 	if (!mbox_fifo_full(mbox)) {
+-		_omap_mbox_enable_irq(mbox, IRQ_RX);
++		omap_mbox_enable_irq(mbox, IRQ_RX);
+ 		mbox_fifo_write(mbox, msg);
+ 		ret = 0;
+-		_omap_mbox_disable_irq(mbox, IRQ_RX);
++		omap_mbox_disable_irq(mbox, IRQ_RX);
+ 
+ 		/* we must read and ack the interrupt directly from here */
+ 		mbox_fifo_read(mbox);
+@@ -556,7 +534,7 @@ static int omap_mbox_chan_send(struct omap_mbox *mbox, u32 msg)
+ 	}
+ 
+ 	/* always enable the interrupt */
+-	_omap_mbox_enable_irq(mbox, IRQ_TX);
++	omap_mbox_enable_irq(mbox, IRQ_TX);
+ 	return ret;
+ }
+ 
+diff --git a/include/linux/omap-mailbox.h b/include/linux/omap-mailbox.h
+index 8aa984ec1f38..426a80fb32b5 100644
+--- a/include/linux/omap-mailbox.h
++++ b/include/linux/omap-mailbox.h
+@@ -20,7 +20,4 @@ struct mbox_client;
+ struct mbox_chan *omap_mbox_request_channel(struct mbox_client *cl,
+ 					    const char *chan_name);
+ 
+-void omap_mbox_enable_irq(struct mbox_chan *chan, omap_mbox_irq_t irq);
+-void omap_mbox_disable_irq(struct mbox_chan *chan, omap_mbox_irq_t irq);
+-
+ #endif /* OMAP_MAILBOX_H */
+-- 
+2.46.0
+
