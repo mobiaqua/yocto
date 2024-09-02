@@ -11,9 +11,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a \
 
 DEPENDS = "flex-native bison-native iptables libcap"
 
-SRC_URI = "${KERNELORG_MIRROR}/linux/utils/net/${BPN}/${BP}.tar.xz \
-           file://0001-libc-compat.h-add-musl-workaround.patch \
-           "
+SRC_URI = "${KERNELORG_MIRROR}/linux/utils/net/${BPN}/${BP}.tar.xz"
 
 SRC_URI[sha256sum] = "ff942dd9828d7d1f867f61fe72ce433078c31e5d8e4a78e20f02cb5892e8841d"
 
@@ -28,6 +26,8 @@ PACKAGECONFIG[selinux] = ",,libselinux"
 
 IPROUTE2_MAKE_SUBDIRS = "lib tc ip bridge misc genl ${@bb.utils.filter('PACKAGECONFIG', 'devlink tipc rdma', d)}"
 
+# This is needed with GCC-14 and musl
+CFLAGS += "-Wno-error=incompatible-pointer-types"
 # CFLAGS are computed in Makefile and reference CCOPTS
 #
 EXTRA_OEMAKE = "\
