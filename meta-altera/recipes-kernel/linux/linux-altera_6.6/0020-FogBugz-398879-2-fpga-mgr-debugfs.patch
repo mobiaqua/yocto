@@ -415,15 +415,15 @@ diff --git a/include/linux/fpga/fpga-mgr.h b/include/linux/fpga/fpga-mgr.h
 index 54f63459efd6..f2575598b17b 100644
 --- a/include/linux/fpga/fpga-mgr.h
 +++ b/include/linux/fpga/fpga-mgr.h
-@@ -211,6 +211,9 @@ struct fpga_manager {
- 	struct fpga_compat_id *compat_id;
- 	const struct fpga_manager_ops *mops;
- 	void *priv;
+@@ -210,6 +207,9 @@ struct fpga_manager {
+ struct fpga_manager {
+ 	const char *name;
+ 	struct device dev;
 +#if IS_ENABLED(CONFIG_FPGA_MGR_DEBUG_FS)
 +	void *debugfs;
 +#endif
- };
- 
- #define to_fpga_manager(d) container_of(d, struct fpga_manager, dev)
+ 	struct mutex ref_mutex;
+ 	enum fpga_mgr_states state;
+ 	struct fpga_compat_id *compat_id;
 -- 
 2.43.0
