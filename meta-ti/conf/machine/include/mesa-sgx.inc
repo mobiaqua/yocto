@@ -1,0 +1,8 @@
+PREFERRED_PROVIDER_virtual/mesa ?= "mesa-sgx"
+PREFERRED_PROVIDER_virtual/egl ?= "mesa-sgx"
+PREFERRED_PROVIDER_virtual/libgles1 ?= "mesa-sgx"
+PREFERRED_PROVIDER_virtual/libgles2 ?= "mesa-sgx"
+PREFERRED_PROVIDER_virtual/libgles3 ?= "mesa-sgx"
+PREFERRED_PROVIDER_virtual/libgbm ?= "mesa-sgx"
+PREFERRED_PROVIDER_virtual/libglx ?= "mesa-sgx"
+PREFERRED_PROVIDER_virtual/libgl ?= "mesa-sgx"

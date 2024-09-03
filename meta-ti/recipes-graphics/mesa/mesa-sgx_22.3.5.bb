@@ -8,29 +8,18 @@ SUMMARY += " (with PowerVR support for TI platforms)"
 
 LIC_FILES_CHKSUM = "file://docs/license.rst;md5=63779ec98d78d823a9dc533a0735ef10"
 
+COMPATIBLE_MACHINE = "igep0030|panda|beagle"
+
 BRANCH = "powervr/kirkstone/${PV}"
 
-SRC_URI = " \
-    git://gitlab.freedesktop.org/StaticRocket/mesa.git;protocol=https;branch=${BRANCH} \
-    file://0001-meson.build-check-for-all-linux-host_os-combinations.patch \
-    file://0001-meson-misdetects-64bit-atomics-on-mips-clang.patch \
-    file://0001-util-format-Check-for-NEON-before-using-it.patch \
-    file://0001-freedreno-pm4-Use-unsigned-instead-of-uint-to-fix-mu.patch \
-    file://0001-gallium-Fix-build-with-llvm-17.patch \
-    file://0001-fix-gallivm-limit-usage-of-LLVMContextSetOpaquePoint.patch \
-"
+SRC_URI = "git://gitlab.freedesktop.org/StaticRocket/mesa.git;protocol=https;branch=${BRANCH}"
 
 S = "${WORKDIR}/git"
 
-PACKAGECONFIG:append:igep0030 = " sgx"
-PACKAGECONFIG:append:panda = " sgx"
-PACKAGECONFIG:append:beagle = " sgx"
-PACKAGECONFIG:append:beagle64 = " pvr"
-
 SRCREV = "1be98ba80452ebe38546a7fca26b5a70f2629083"
-PR = "sgxrgx${SRCPV}"
+PR = "sgx${SRCPV}"
 
-PACKAGECONFIG[pvr] = "-Dgallium-pvr-alias=tidss,"
+PACKAGECONFIG:append = " sgx"
 PACKAGECONFIG[sgx] = "-Dgallium-sgx-alias=omapdrm,"
 
 PACKAGECONFIG:remove = "video-codecs"
@@ -44,10 +33,7 @@ PACKAGECONFIG[xvmc] = ""
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-GALLIUMDRIVERS:igep0030 = "sgx"
-GALLIUMDRIVERS:panda = "sgx"
-GALLIUMDRIVERS:beagle = "sgx"
-GALLIUMDRIVERS:beagle64 = "pvr"
+GALLIUMDRIVERS = "sgx"
 
 do_install:append () {
     # remove pvr custom pkgconfig
