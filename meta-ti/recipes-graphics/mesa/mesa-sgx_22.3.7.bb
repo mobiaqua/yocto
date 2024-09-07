@@ -10,13 +10,13 @@ LIC_FILES_CHKSUM = "file://docs/license.rst;md5=63779ec98d78d823a9dc533a0735ef10
 
 COMPATIBLE_MACHINE = "igep0030|panda|beagle"
 
-BRANCH = "powervr/kirkstone/${PV}"
+BRANCH = "mesa-22.3-sgx"
 
-SRC_URI = "git://gitlab.freedesktop.org/StaticRocket/mesa.git;protocol=https;branch=${BRANCH}"
+SRC_URI = "git://github.com/mobiaqua/mesa-sgx.git;protocol=https;branch=${BRANCH}"
 
 S = "${WORKDIR}/git"
 
-SRCREV = "1be98ba80452ebe38546a7fca26b5a70f2629083"
+SRCREV = "9d86c74493ec194ed01958eca71c5532b626df27"
 PR = "sgx${SRCPV}"
 
 PACKAGECONFIG:append = " sgx"
