@@ -18,7 +18,7 @@
 
 case "$1" in
 	start|"")
-		printf '\e[3J' > /dev/tty0 >/dev/null 2>&1
+		printf '\e[3J' > /dev/tty0
 		/usr/bin/mpv-gui $MPV_GUI_ROOT & >/dev/null 2>&1
 		;;
 	stop)
