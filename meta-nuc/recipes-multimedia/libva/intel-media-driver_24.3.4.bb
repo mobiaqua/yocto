@@ -21,7 +21,7 @@ DEPENDS += "libva gmmlib"
 SRC_URI = "git://github.com/intel/media-driver.git;protocol=https;nobranch=1 \
           "
 
-SRCREV = "f40b45dd7355f5f739c75bfd793fa2f1ead30f02"
+SRCREV = "081fc57f709db16aa22f62c6337753069d7f36fa"
 S = "${WORKDIR}/git"
 
 COMPATIBLE_HOST:x86-x32 = "null"
@@ -37,7 +37,7 @@ EXTRA_OECMAKE += " \
                    -DMEDIA_RUN_TEST_SUITE=OFF \
                    -DARCH=${MEDIA_DRIVER_ARCH} \
                    -DMEDIA_BUILD_FATAL_WARNINGS=OFF \
-		  "
+              "
 
 CXXFLAGS:append:x86 = " -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE"
 
