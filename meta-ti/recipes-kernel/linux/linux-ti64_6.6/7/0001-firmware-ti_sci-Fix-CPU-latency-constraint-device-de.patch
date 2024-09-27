@@ -1,0 +1,55 @@
+From 68695faf58c0c99e448b52a2942a69d8001b9314 Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@baylibre.com>
+Date: Tue, 17 Sep 2024 12:01:25 +0530
+Subject: [PATCH 1/9] firmware: ti_sci: Fix CPU latency constraint device debug
+
+The debug prints during suspend print the wrong CPU device for max latency.
+This is now fixed in the latest series sent upstream.
+
+Fixes: 8457ae66a127a ("firmware: ti_sci: add CPU latency constraint management")
+
+Co-developed-by: Vibhore Vardhan <vibhore@ti.com>
+Signed-off-by: Vibhore Vardhan <vibhore@ti.com>
+Reviewed-by: Dhruva Gole <d-gole@ti.com>
+Signed-off-by: Dhruva Gole <d-gole@ti.com>
+Signed-off-by: Kevin Hilman <khilman@baylibre.com>
+Tested-by: Dhruva Gole <d-gole@ti.com>
+Signed-off-by: Markus Schneider-Pargmann <msp@baylibre.com>
+---
+ drivers/firmware/ti_sci.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/firmware/ti_sci.c b/drivers/firmware/ti_sci.c
+index 7323f44bab7e..9d181a6f9993 100644
+--- a/drivers/firmware/ti_sci.c
++++ b/drivers/firmware/ti_sci.c
+@@ -3708,19 +3708,21 @@ static int ti_sci_prepare_system_suspend(struct ti_sci_info *info)
+ static int ti_sci_suspend(struct device *dev)
+ {
+ 	struct ti_sci_info *info = dev_get_drvdata(dev);
+-	struct device *cpu_dev;
++	struct device *cpu_dev, *cpu_dev_max = NULL;
+ 	s32 val, cpu_lat = 0;
+-	int ret, i;
++	int i, ret;
+ 
+ 	if (info->fw_caps & MSG_FLAG_CAPS_LPM_DM_MANAGED) {
+ 		for_each_possible_cpu(i) {
+ 			cpu_dev = get_cpu_device(i);
+ 			val = dev_pm_qos_read_value(cpu_dev, DEV_PM_QOS_RESUME_LATENCY);
+-			if (val != PM_QOS_RESUME_LATENCY_NO_CONSTRAINT)
++			if (val != PM_QOS_RESUME_LATENCY_NO_CONSTRAINT) {
+ 				cpu_lat = max(cpu_lat, val);
++				cpu_dev_max = cpu_dev;
++			}
+ 		}
+-		if (cpu_lat && (cpu_lat != PM_QOS_RESUME_LATENCY_NO_CONSTRAINT)) {
+-			dev_info(cpu_dev, "%s: sending max CPU latency=%u\n", __func__, cpu_lat);
++		if (cpu_dev_max) {
++			dev_dbg(cpu_dev_max, "%s: sending max CPU latency=%u\n", __func__, cpu_lat);
+ 			ret = ti_sci_cmd_set_latency_constraint(&info->handle,
+ 								cpu_lat, TISCI_MSG_CONSTRAINT_SET);
+ 			if (ret)
+-- 
+2.39.5 (Apple Git-154)
+

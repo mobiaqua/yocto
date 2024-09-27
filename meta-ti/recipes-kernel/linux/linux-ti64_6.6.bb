@@ -7,7 +7,7 @@ COMPATIBLE_MACHINE = "beagle64"
 KERNEL_VERSION_SANITY_SKIP = "1"
 INSANE_SKIP += "buildpaths"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.6.48"
+LINUX_VERSION = "6.6.52"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -354,6 +354,8 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://6/0473-remoteproc-k3-r5-Use-devm_rproc_alloc-helper.patch \
             file://6/0474-remoteproc-k3-r5-Acquire-mailbox-handle-during-probe.patch \
             file://6/0475-remoteproc-k3-dsp-Acquire-mailbox-handle-during-prob.patch \
+            file://7/0001-firmware-ti_sci-Fix-CPU-latency-constraint-device-de.patch \
+            file://7/0002-media-cadence-csi2rx-fix-uninitialized-frame-descrip.patch \
             file://0001_fix_nonlinux_compile.patch \
             file://0002-bootup-hacks-move-mmc-early.patch \
             file://0004_wait-for-rootfs.patch \
@@ -363,7 +365,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://ti_config \
 "
 
-SRC_URI[sha256sum] = "6b16df7b2aba3116b78fdfd8aea0b6cd7abe8f0cb699b04a66d3169141772029"
+SRC_URI[sha256sum] = "1591ab348399d4aa53121158525056a69c8cf0fe0e90935b0095e9a58e37b4b8"
 
 S = "${WORKDIR}/linux-${PV}"
 
