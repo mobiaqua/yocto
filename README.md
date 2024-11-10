@@ -1,6 +1,6 @@
-**This is MobiAqua fork of Yocto "Kirkstone" distribution.**
+**This is MobiAqua fork of Yocto "Scarthgap" distribution.**
 
-**Only macOS 12 and later on Intel CPU host supported.**
+**Only macOS 15 and later on Apple Silicon supported.**
 
 **Only MacPorts with GNU prefix tools supported.**
 
