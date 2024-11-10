@@ -83,7 +83,7 @@ do_configure () {
 		extra_flags=no-shared
 		;;
 	darwin-aarch64*)
-		target=darwin64-aarch64-cc
+		target=darwin64-arm64-cc
 		extra_flags=no-shared
 		;;
 	esac
