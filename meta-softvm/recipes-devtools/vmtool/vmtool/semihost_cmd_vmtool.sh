@@ -40,7 +40,7 @@ shift 1
 
 CMD="$@"
 
-VIRTIOFS_ROOTFS=${SOFTVM_INSTALL_PATH}/rootfs
+VIRTIOFS_ROOTFS=${SOFTVM_INSTALL_PATH}/rootfs-vm
 if [ ! -z "$TOOLS" ]; then
     VIRTIOFS_TOOLS=${TOOLS}
     VM_ARGS_TOOLS="--toolsfs=$VIRTIOFS_TOOLS"
@@ -60,7 +60,7 @@ $VM_BIN \
     $VM_ARGS_TOOLS\
     --workspacefs=$VIRTIOFS_WORKSPACE \
     --currentfs=$VIRTIOFS_CURRENT \
-    --kernel=${SOFTVM_INSTALL_PATH}/kernels/bzImage \
+    --kernel=${SOFTVM_INSTALL_PATH}/kernels/Image \
     --append="console=hvc0 rw quiet cmd=\"$CMD\""
 
 qerr=$?

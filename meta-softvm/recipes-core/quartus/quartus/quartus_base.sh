@@ -44,7 +44,7 @@ if [ $CMD == "quartus_pgm" ]; then
         -device usb-host,vendorid=0x09fb,productid=0x6003 \
         -device usb-host,vendorid=0x09fb,productid=0x6010 \
         -device usb-host,vendorid=0x09fb,productid=0x6810"
-    ${SOFTVM_INSTALL_PATH}/tools/semihost_cmd_qemu.sh ${QUARTUS_ROOT}/tools emu "/opt/tools/altera/quartus/bin/$CMD $@ $MODE"
+    ${SOFTVM_INSTALL_PATH}/tools/semihost_cmd_qemu.sh ${QUARTUS_ROOT}/tools "/opt/tools/altera/quartus/bin/$CMD $@ $MODE"
 else
     ${SOFTVM_INSTALL_PATH}/tools/semihost_cmd_vmtool.sh ${QUARTUS_ROOT}/tools "/opt/tools/altera/quartus/bin/$CMD $@ $MODE"
 fi

@@ -14,9 +14,8 @@ fi
 SOFTVM_WORKSPACE=${ORG_SOFTVM_WORKSPACE:=$SOFTVM_WORKSPACE}
 
 # arguments:
-# <this_script_name> <tools path> <vm mode> <cmd> [<cmd args>]
+# <this_script_name> <tools path> <cmd> [<cmd args>]
 TOOLS="$1"
-VMMODE="$2"
 
 if [ -z "$1" ]; then
     echo "$CMD : Missing tools path argument! Aborting..."
@@ -24,11 +23,6 @@ if [ -z "$1" ]; then
 fi
 
 if [ -z "$2" ]; then
-    echo "$CMD : Missing vm mode argument! Aborting..."
-    exit 1
-fi
-
-if [ -z "$3" ]; then
     echo "$CMD : Missing command argument! Aborting..."
     exit 1
 fi
@@ -42,10 +36,10 @@ if case $PWD in /opt/*) false;; *) true;; esac; then
     exit 1
 fi
 
-shift 2
+shift 1
 
 CMD="$@"
-NFS_EXPORT_ROOTFS=${SOFTVM_INSTALL_PATH}/rootfs
+NFS_EXPORT_ROOTFS=${SOFTVM_INSTALL_PATH}/rootfs-emu
 if [ ! -z "$TOOLS" ]; then
     NFS_EXPORT_TOOLS=${TOOLS}
 fi
@@ -67,24 +61,15 @@ echo "$NFS_EXPORT_CURRENT (rw,all_squash,anonuid=$USER_ID,anongid=$GROUP_ID,inse
 
 ${SOFTVM_INSTALL_PATH}/tools/unfsd -n $NFSD_PORT -m $MOUNTD_PORT -N -p -i $NFSPID -e $EXPORTS
 
-if [ "$VMMODE" = "native" ]; then
-    CPU="host"
-    MACHINE="type=q35,accel=hvf,vmport=off,i8042=off,hpet=off"
-    ACCEL=
-else
-    CPU="qemu64"
-    MACHINE="type=q35,vmport=off,i8042=off,hpet=off"
-    ACCEL="-accel tcg,tb-size=1024,thread=multi"
-fi
 RAM=${SOFTVM_QEMU_RAM:=$((1*1024))}
 QEMU_BIN=${SOFTVM_INSTALL_PATH}/tools/qemu-system-x86_64
 
 $QEMU_BIN \
     -nodefaults \
-    -cpu $CPU \
-    $ACCEL \
+    -cpu qemu64 \
+    -accel tcg,tb-size=1024 \
     -smp cpus=2,sockets=1,cores=2,threads=1 \
-    -machine $MACHINE \
+    -machine type=q35,vmport=off,i8042=off,hpet=off \
     -global ICH9-LPC.disable_s3=1 \
     -device isa-debug-exit \
     -m $RAM \

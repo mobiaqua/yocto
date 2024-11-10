@@ -31,19 +31,13 @@ CMD="./install-quartus-expect.sh $version prog"
 echo
 echo " --- Installing Quartus II Programmer $version ---"
 echo
-if [ `uname -m` = "x86_64" ]; then
-    echo "It will take about minute to complete..."
-    VMMODE=native
-else
-    echo "It will take about 4 minutes to complete..."
-    VMMODE=emu
-fi
+echo "It will take about a minute to complete..."
 
 if [ ! -d ${QUARTUS_ROOT}/tools ]; then
     mkdir -p ${QUARTUS_ROOT}/tools
 fi
 
-${SOFTVM_INSTALL_PATH}/tools/semihost_cmd_qemu.sh ${QUARTUS_ROOT}/tools $VMMODE $CMD
+${SOFTVM_INSTALL_PATH}/tools/semihost_cmd_qemu.sh ${QUARTUS_ROOT}/tools $CMD
 if [ $? -ne 0 ]; then
     echo
     echo " --- Installation failed! ---"
