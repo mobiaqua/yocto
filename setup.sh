@@ -474,7 +474,7 @@ PACKAGE_DEPENDS:remove = \"dwarfsrcfiles-native pseudo-native\"
 BUILD_ARCH = \"aarch64\"
 HOSTTOOLS += \"codesign Rez SetFile lipo otool xz m4 bison flex makeinfo install_name_tool pod2man ggrep unzip tic bc dc dos2unix sw_vers xcrun glib-genmarshal glib-compile-schemas svn meson ninja cmake rsync dtc rustc cargo cc bash xxd truncate\"
 HOSTTOOLS:remove = \"chrpath flock ldd pzstd\"
-BB_NUMBER_THREADS = \"8\"
+BB_NUMBER_THREADS = \"16\"
 " > ${OE_BASE}/build-${DISTRO}-${TARGET}/conf/local.conf
 
 	if [ "$TARGET" = "emu86" ]; then
