@@ -1,0 +1,35 @@
+From ad2ef586c2096da0bbc8d315b8f9d4a41d144aad Mon Sep 17 00:00:00 2001
+From: Pierre Ossman <ossman@cendio.se>
+Date: Thu, 12 May 2022 12:54:48 +0200
+Subject: [PATCH 04/21] Remove prerequisites from install targets
+
+Things should never be built as a side effect of installing things.
+---
+ Makefile.in | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Makefile.in b/Makefile.in
+index d42404b..d58d605 100644
+--- a/Makefile.in
++++ b/Makefile.in
+@@ -42,7 +42,7 @@ $(CONFOBJ): FORCE
+ $(EXTRAOBJ): FORCE
+ 	$(MAKE) -C $(@D)
+ 
+-install: unfsd$(EXEEXT)
++install:
+ 	$(INSTALL) -d $(DESTDIR)$(sbindir)
+ 	$(INSTALL) -d $(DESTDIR)$(mandir)/man7
+ 	$(INSTALL) -d $(DESTDIR)$(mandir)/man8
+@@ -51,7 +51,7 @@ install: unfsd$(EXEEXT)
+ 	$(INSTALL_DATA) $(srcdir)/unfsd.8       $(DESTDIR)$(mandir)/man8/unfsd.8
+ 
+ # Not installed by default, since it installs files outside prefix
+-install-init: unfsd.init
++install-init:
+ 	$(INSTALL) -d $(DESTDIR)/etc/init.d
+ 	$(INSTALL) $(srcdir)/unfsd.init $(DESTDIR)/etc/init.d/unfsd
+ 
+-- 
+2.42.0
+
