@@ -36,6 +36,16 @@ else
     VM_EXIT=qemu-exit
 fi
 
+if [ -z "$NFSROOT" ]; then
+    mount -t virtiofs ROSETTA /rosetta
+    if [ -f /rosetta/rosetta ]; then
+        /usr/sbin/update-binfmts --install rosetta /rosetta/rosetta \
+            --magic "\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x3e\x00" \
+            --mask "\xff\xff\xff\xff\xff\xfe\xfe\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff" \
+            --credentials yes --preserve yes --fix-binary yes
+    fi
+fi
+
 if [ ! -z $NFSROOT ]; then
     NFS_OPTS=$(echo $NFSROOT | sed 's/,/ /g')
     for param in $NFS_OPTS; do

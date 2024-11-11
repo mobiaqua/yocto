@@ -40,9 +40,7 @@ int socket_fd = -1;
 
 @implementation VZVirtioSocketListenerDelegateImpl
 
-- (BOOL)listener:(VZVirtioSocketListener *)listener
-		shouldAcceptNewConnection:(VZVirtioSocketConnection *)connection
-		fromSocketDevice:(VZVirtioSocketDevice *)socketDevice; {
+- (BOOL)listener:(VZVirtioSocketListener *)listener shouldAcceptNewConnection:(VZVirtioSocketConnection *)connection fromSocketDevice:(VZVirtioSocketDevice *)socketDevice; {
 	if (connection.destinationPort == VSOCK_PORT) {
 		socket_fd = dup(connection.fileDescriptor);
 		return YES;
@@ -104,11 +102,49 @@ int main(int argc, char *argv[]) {
 		struct termios terminal;
 		int cpus = 1;
 		int mem = 512;
+		__block bool rosetta_enabled = false;
 
 		uint min_cpu = (uint)VZVirtualMachineConfiguration.minimumAllowedCPUCount;
 		uint max_cpu = (uint)VZVirtualMachineConfiguration.maximumAllowedCPUCount;
 		uint min_mem = (uint)(VZVirtualMachineConfiguration.minimumAllowedMemorySize / 1024 / 1024);
 		uint max_mem = (uint)(VZVirtualMachineConfiguration.maximumAllowedMemorySize / 1024 / 1024);
+
+		VZLinuxRosettaAvailability rosettaAvailability = VZLinuxRosettaDirectoryShare.availability;
+		switch (rosettaAvailability) {
+			case VZLinuxRosettaAvailabilityNotSupported:
+				fprintf(stderr, "\nRosetta not available.\n\n");
+				break;
+			case VZLinuxRosettaAvailabilityNotInstalled:
+				fprintf(stderr, "\nRosetta not installed.\n\n");
+				[VZLinuxRosettaDirectoryShare installRosettaWithCompletionHandler:^(NSError *error) {
+					if (!error) {
+						fprintf(stdout, "\nRosetta installed.\n\n");
+						rosetta_enabled = true;
+					} else {
+						switch (error.code) {
+							case VZErrorNetworkError:
+								fprintf(stderr, "\nFailed to download rosetta.\n\n");
+								break;
+							case VZErrorOutOfDiskSpace:
+								fprintf(stderr, "\nFailed to install rosetta. Not enough disk space.\n\n");
+								break;
+							case VZErrorOperationCancelled:
+								fprintf(stderr, "\nThe installation rosetta cancelled.\n\n");
+								break;
+							case VZErrorNotSupported:
+								fprintf(stderr, "\nRosetta is not supported.\n\n");
+								break;
+							default:
+								fprintf(stderr, "\nFailed to install rosetta.\n\n");
+								break;
+						}
+					}
+				}];
+				break;
+			case VZLinuxRosettaAvailabilityInstalled:
+				rosetta_enabled = true;
+				break;
+		}
 
 		static struct option long_options[] = {
 			{"kernel",       required_argument, NULL, 'k'},
@@ -230,6 +266,12 @@ int main(int argc, char *argv[]) {
 		if (current_path) {
 			VZVirtioFileSystemDeviceConfiguration *virtiofs_conf = [[VZVirtioFileSystemDeviceConfiguration alloc] initWithTag:@"CURRENTFS"];
 			virtiofs_conf.share = [[VZSingleDirectoryShare alloc] initWithDirectory: [[VZSharedDirectory alloc] initWithURL:[NSURL fileURLWithPath:current_path] readOnly:false]];
+			dir_shares = [dir_shares arrayByAddingObject:virtiofs_conf];
+		}
+
+		if (rosetta_enabled) {
+			VZVirtioFileSystemDeviceConfiguration *virtiofs_conf = [[VZVirtioFileSystemDeviceConfiguration alloc] initWithTag:@"ROSETTA"];
+			virtiofs_conf.share = [VZLinuxRosettaDirectoryShare alloc];
 			dir_shares = [dir_shares arrayByAddingObject:virtiofs_conf];
 		}
 
