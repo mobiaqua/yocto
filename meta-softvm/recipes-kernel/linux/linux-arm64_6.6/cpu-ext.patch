@@ -1,0 +1,14 @@
+diff -urp old/arch/arm64/kernel/cpuinfo.c new/arch/arm64/kernel/cpuinfo.c
+--- old/arch/arm64/kernel/cpuinfo.c	2024-11-12 06:45:36
++++ new/arch/arm64/kernel/cpuinfo.c	2024-11-12 06:42:43
+@@ -230,6 +230,10 @@ static int c_show(struct seq_file *m, void *v)
+ 		}
+ 		seq_puts(m, "\n");
+ 
++		seq_puts(m, "flags\t\t:");
++		seq_puts(m, " mmx sse sse2 ssse3 sse4_1 sse4_2");
++		seq_puts(m, "\n");
++
+ 		seq_printf(m, "CPU implementer\t: 0x%02x\n",
+ 			   MIDR_IMPLEMENTOR(midr));
+ 		seq_printf(m, "CPU architecture: 8\n");
