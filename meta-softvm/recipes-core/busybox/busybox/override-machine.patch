@@ -1,0 +1,17 @@
+Upstream-Status: Pending
+diff -urp old/coreutils/uname.c new/coreutils/uname.c
+--- old/coreutils/uname.c	2023-01-03 15:14:43
++++ new/coreutils/uname.c	2024-11-12 07:22:56
+@@ -170,6 +170,12 @@ int uname_main(int argc UNUSED_PARAM, char **argv UNUS
+ 		}
+ 	}
+ #endif
++	{
++		char *override_machine = getenv("UNAME_ARCH");
++		if (override_machine) {
++			strcpy(uname_info.name.machine, override_machine);
++		}
++	}
+ 	if (ENABLE_BB_ARCH && (!ENABLE_UNAME || applet_name[0] == 'a')) {
+ 		puts(uname_info.name.machine);
+ 	} else {

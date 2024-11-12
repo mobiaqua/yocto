@@ -1,5 +1,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
+SRC_URI += "file://override-machine.patch"
+
 do_install:append() {
 	rm -f ${D}${sysconfdir}/init.d/rcK
 }
