@@ -10,7 +10,7 @@ RDEPENDS += ""
 RRECOMMENDS += ""
 
 IMAGE_BASENAME = "rootfs-release"
-IMAGE_INSTALL += "${INSTALL_PKGS} vm-exit binfmt-support"
+IMAGE_INSTALL += "${INSTALL_PKGS} vm-exit binfmt-support box64 util-linux"
 
 inherit mobiaqua-clean-boot
 inherit quartus-dummy-locale

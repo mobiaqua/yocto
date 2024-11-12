@@ -1,0 +1,12 @@
+diff -urp old/src/wrapped/wrappedgomp_private.h new/src/wrapped/wrappedgomp_private.h
+--- old/src/wrapped/wrappedgomp_private.h	2024-11-13 20:14:56
++++ new/src/wrapped/wrappedgomp_private.h	2024-11-13 20:58:05
+@@ -439,7 +439,7 @@ GO(omp_get_thread_num, iFv)
+ //GO(omp_set_num_teams, 
+ //GO(omp_set_num_teams_, 
+ //GO(omp_set_num_teams_8_, 
+-//GO(omp_set_num_threads, 
++GO(omp_set_num_threads, vFi)
+ //GO(omp_set_num_threads_, 
+ //GO(omp_set_num_threads_8_, 
+ //GO(omp_set_schedule, 
