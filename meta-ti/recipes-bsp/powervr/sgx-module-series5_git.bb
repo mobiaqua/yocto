@@ -34,6 +34,14 @@ PVR_WS = "lws-generic"
 EXTRA_OEMAKE += 'KERNELDIR="${STAGING_KERNEL_DIR}" BUILD=${PVR_BUILD} \
 WINDOW_SYSTEM=${PVR_WS} PVR_BUILD_DIR=${TARGET_PRODUCT}_linux TARGET_PRODUCT=${TARGET_PRODUCT}'
 
+# There are useful flags here that are interpreted by the final kbuild pass
+# These variables are not necessary when compiling outside of Yocto
+export KERNEL_CC
+export KERNEL_LD
+export KERNEL_AR
+export KERNEL_OBJCOPY
+export KERNEL_STRIP
+
 do_install() {
 	mkdir -p ${D}/lib/modules/${KERNEL_VERSION}/kernel/drivers/gpu/pvr
 	make -C ${STAGING_KERNEL_DIR} M=${B}/eurasiacon/binary_${TARGET_PRODUCT}_linux_${PVR_WS}_${PVR_BUILD}/target_armhf/kbuild INSTALL_MOD_PATH=${D}${root_prefix} PREFIX=${STAGING_DIR_HOST} modules_install
