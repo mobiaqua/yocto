@@ -1,0 +1,30 @@
+diff -urp old/iucode_tool.c new/iucode_tool.c
+--- old/iucode_tool.c	2024-11-22 21:38:21
++++ new/iucode_tool.c	2024-11-22 21:44:32
+@@ -30,7 +30,9 @@
+ #include <argp.h>
+ #include <dirent.h>
+ #include <time.h>
++#ifdef __x86_64__
+ #include <cpuid.h>
++#endif
+ 
+ #include "intel_microcode.h"
+ 
+@@ -2932,12 +2934,16 @@ static int scan_system_processors(unsigned int strateg
+ 
+ 	assert(filter_list);
+ 
++#ifdef __aarch64__
++	return 0;
++#else
+ 	print_msg(3, "trying to get CPUID information directly");
+ 	if (!(__get_cpuid(0, &id0, &id1, &id2, &id3) &&
+ 	      __get_cpuid(1, &sig, &idx, &idx, &idx))) {
+ 		print_msg(1, "microcode signature unavailable");
+ 		return 0;
+ 	}
++#endif
+ 
+ 	/*
+ 	 * fail-safe: only change filter_list_allow (switch away from "select
