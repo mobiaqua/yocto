@@ -1,12 +1,49 @@
 diff -urp old/Makefile new/Makefile
---- old/Makefile	2021-11-04 22:02:36.000000000 +0100
-+++ new/Makefile	2021-11-04 22:03:43.000000000 +0100
-@@ -325,7 +325,7 @@ HOSTLDFLAGS += $(call os_x_before, 10, 7
+--- old/Makefile	2024-11-22 19:39:22
++++ new/Makefile	2024-11-22 19:59:30
+@@ -312,20 +312,6 @@ os_x_after = $(shell if [ $(DARWIN_MAJOR_VERSION) -ge 
  
- # macOS Mojave (10.14.X) 
- # Undefined symbols for architecture x86_64: "_PyArg_ParseTuple"
+ os_x_after = $(shell if [ $(DARWIN_MAJOR_VERSION) -ge $(1) -a \
+ 	$(DARWIN_MINOR_VERSION) -ge $(2) ] ; then echo "$(3)"; else echo "$(4)"; fi ;)	
+-
+-# Snow Leopards build environment has no longer restrictions as described above
+-HOSTCC       = $(call os_x_before, 10, 5, "cc", "gcc")
+-HOSTCFLAGS  += $(call os_x_before, 10, 4, "-traditional-cpp")
+-HOSTLDFLAGS += $(call os_x_before, 10, 5, "-multiply_defined suppress")
+-
+-# since Lion (10.7) ASLR is on by default, but we use linker generated lists
+-# in some host tools which is a problem then ... so disable ASLR for these
+-# tools
+-HOSTLDFLAGS += $(call os_x_before, 10, 7, "", "-Xlinker -no_pie")
+-
+-# macOS Mojave (10.14.X) 
+-# Undefined symbols for architecture x86_64: "_PyArg_ParseTuple"
 -HOSTLDFLAGS += $(call os_x_after, 10, 14, "-lpython -dynamclib", "")
-+#HOSTLDFLAGS += $(call os_x_after, 10, 14, "-lpython -dynamclib", "")
  endif
  
  # Decide whether to build built-in, modular, or both.
+diff -urp old/tools/imagetool.h new/tools/imagetool.h
+--- old/tools/imagetool.h	2024-11-22 19:39:21
++++ new/tools/imagetool.h	2024-11-22 20:02:13
+@@ -265,17 +265,19 @@ int rockchip_copy_image(int fd, struct image_tool_para
+  *  b) we need a API call to get the respective section symbols */
+ #if defined(__MACH__)
+ #include <mach-o/getsect.h>
++#include <mach-o/dyld.h>
+ 
+ #define INIT_SECTION(name)  do {					\
+ 		unsigned long name ## _len;				\
+-		char *__cat(pstart_, name) = getsectdata("__TEXT",	\
++		char *__cat(pstart_, name) = getsectdata("__DATA",	\
+ 			#name, &__cat(name, _len));			\
++		__cat(pstart_, name) += _dyld_get_image_vmaddr_slide(0);\
+ 		char *__cat(pstop_, name) = __cat(pstart_, name) +	\
+ 			__cat(name, _len);				\
+ 		__cat(__start_, name) = (void *)__cat(pstart_, name);	\
+ 		__cat(__stop_, name) = (void *)__cat(pstop_, name);	\
+ 	} while (0)
+-#define SECTION(name)   __attribute__((section("__TEXT, " #name)))
++#define SECTION(name)   __attribute__((section("__DATA, " #name)))
+ 
+ struct image_type_params **__start_image_type, **__stop_image_type;
+ #else
