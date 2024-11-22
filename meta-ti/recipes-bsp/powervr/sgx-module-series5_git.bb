@@ -22,7 +22,7 @@ SRC_URI = "git://github.com/mobiaqua/sgx-pvr5-module.git;protocol=https;branch=m
 
 S = "${WORKDIR}/git"
 
-SRCREV = "40eb28c8b8efb79899e9678e5db1deb341749bfb"
+SRCREV = "2b2b5afa93f76372eae1aef5e60fc9509e61e14f"
 
 TARGET_PRODUCT:panda = "ti443x"
 TARGET_PRODUCT:beagle = "ti572x"
