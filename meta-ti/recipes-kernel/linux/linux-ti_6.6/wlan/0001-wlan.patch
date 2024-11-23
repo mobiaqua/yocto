@@ -4371,10 +4371,11 @@ index 8effeb7a7..3cf0a549a 100644
  #include <asm/unaligned.h>
  #include <defs.h>
  #include <brcmu_wifi.h>
-@@ -35,14 +37,19 @@
+@@ -35,14 +37,20 @@
  #include "core.h"
  #include "common.h"
  #include "bcdc.h"
++#include "debug.h"
 +#include "fwil.h"
 +#include "bt_shared_sdio.h"
  
