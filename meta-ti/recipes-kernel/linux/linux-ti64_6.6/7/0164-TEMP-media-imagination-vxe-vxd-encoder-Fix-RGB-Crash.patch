@@ -1,0 +1,57 @@
+From 541c20281af79a7df96bb94b4e3a923092d7ceff Mon Sep 17 00:00:00 2001
+From: Brandon Brnich <b-brnich@ti.com>
+Date: Thu, 14 Nov 2024 10:37:46 -0600
+Subject: [PATCH 164/173] TEMP: media: imagination: vxe-vxd: encoder: Fix RGB
+ Crash
+
+IMG VXE Encoder supports reading in raw RGB videos and converting them
+to be encoded in NV12 format. The colorspace converter has a requirement
+where the width must be aligned to 64. In cases where the width is not,
+alignment fails and colorspace converter hangs.
+
+A deeper dive is needed into the calculation of the coefficients used to
+program the colorspace converter. In the meantime, lets reject invalid
+widths so crashes do not occur.
+
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+Acked-by: Darren Etheridge <detheridge@ti.com>
+---
+ .../platform/imagination/vxe-vxd/encoder/vxe_v4l2.c    | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c b/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
+index f2942e82f74f..1d8601c2d1a4 100644
+--- a/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
++++ b/drivers/media/platform/imagination/vxe-vxd/encoder/vxe_v4l2.c
+@@ -63,7 +63,7 @@ static struct vxe_enc_fmt vxe_enc_formats[] = {
+ 		.csc_preset = IMG_CSC_NONE,
+ 	},
+ 	{
+-		.fourcc = V4L2_PIX_FMT_ARGB32,
++		.fourcc = V4L2_PIX_FMT_XRGB32,
+ 		.num_planes = 1,
+ 		.type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE,
+ 		.fmt = IMG_CODEC_XBCA,
+@@ -1060,11 +1060,19 @@ static int vxe_try_fmt(struct file *file, void *priv, struct v4l2_format *f)
+ 		pix_mp->width = width;
+ 		pix_mp->height = height;
+ 
++		if (fmt->fourcc == V4L2_PIX_FMT_XRGB32) {
++			if (!IS_ALIGNED(pix_mp->width, 1 << 6)) {
++				pr_warn("Width must be aligned to 64\n");
++				return -EINVAL;
++			}
++		}
++
+ 		for (i = 0; i < fmt->num_planes; i++) {
+ 			plane_fmt[i].bytesperline = vxe_get_stride(pix_mp->width, fmt);
+ 			plane_fmt[i].sizeimage = vxe_get_sizeimage(plane_fmt[i].bytesperline,
+ 								   pix_mp->height, fmt, i);
+ 		}
++
+ 	} else {
+ 		/* Worst case estimation of sizeimage
+ 		 *plane_fmt[0].sizeimage = ALIGN(pix_mp->width, HW_ALIGN) *
+-- 
+2.39.5 (Apple Git-154)
+

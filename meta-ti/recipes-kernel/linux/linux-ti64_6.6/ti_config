@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm64 6.6.52 Kernel Configuration
+# Linux/arm64 6.6.63 Kernel Configuration
 #
 CONFIG_CC_VERSION_TEXT="aarch64-mobiaqua-linux-gcc (GCC) 13.3.0"
 CONFIG_CC_IS_GCC=y
@@ -466,7 +466,6 @@ CONFIG_ARM64_EPAN=y
 # end of ARMv8.7 architectural features
 
 CONFIG_ARM64_SVE=y
-CONFIG_ARM64_SME=y
 # CONFIG_ARM64_PSEUDO_NMI is not set
 CONFIG_RELOCATABLE=y
 # CONFIG_RANDOMIZE_BASE is not set
@@ -1043,7 +1042,6 @@ CONFIG_MAC80211_RC_DEFAULT=""
 # CONFIG_MAC80211_MESH is not set
 CONFIG_MAC80211_LEDS=y
 # CONFIG_MAC80211_DEBUGFS is not set
-# CONFIG_MAC80211_MESSAGE_TRACING is not set
 # CONFIG_MAC80211_DEBUG_MENU is not set
 CONFIG_MAC80211_STA_HASH_MAX_SIZE=0
 # CONFIG_RFKILL is not set
@@ -3198,6 +3196,7 @@ CONFIG_HID_GENERIC=y
 # CONFIG_HID_ZYDACRON is not set
 # CONFIG_HID_SENSOR_HUB is not set
 # CONFIG_HID_ALPS is not set
+# CONFIG_HID_MCP2200 is not set
 # CONFIG_HID_MCP2221 is not set
 # end of Special HID drivers
 
@@ -4200,6 +4199,9 @@ CONFIG_KEYS=y
 # CONFIG_ENCRYPTED_KEYS is not set
 # CONFIG_KEY_DH_OPERATIONS is not set
 # CONFIG_SECURITY_DMESG_RESTRICT is not set
+CONFIG_PROC_MEM_ALWAYS_FORCE=y
+# CONFIG_PROC_MEM_FORCE_PTRACE is not set
+# CONFIG_PROC_MEM_NO_FORCE is not set
 # CONFIG_SECURITY is not set
 # CONFIG_SECURITYFS is not set
 # CONFIG_HARDENED_USERCOPY is not set

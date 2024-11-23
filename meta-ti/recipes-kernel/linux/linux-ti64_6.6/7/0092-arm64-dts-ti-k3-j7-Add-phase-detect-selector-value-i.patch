@@ -1,0 +1,36 @@
+From 2e3cd8a0057c01bdd4f6a0cb1805edd2211dc5d5 Mon Sep 17 00:00:00 2001
+From: Prasanth Babu Mantena <p-mantena@ti.com>
+Date: Wed, 6 Nov 2024 16:27:11 +0530
+Subject: [PATCH 092/173] arm64: dts: ti: k3-j7: Add phase-detect-selector
+ value in device tree
+
+The DLL Phase Detect Selector manages sampling clock and handles clock
+domain crossing betweent the reference and sampling clocks. Since the
+selector value varies across devices, add the corresponding value to
+the 'phase-detect-selector' property for ospi controller nodes.
+
+Signed-off-by: Prasanth Babu Mantena <p-mantena@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi  | 2 ++
+ 4 files changed, 7 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+index e1ed0a3038e9..8252c6185ea4 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+@@ -381,6 +381,7 @@ ospi0: spi@47040000 {
+ 			cdns,fifo-depth = <256>;
+ 			cdns,fifo-width = <4>;
+ 			cdns,trigger-address = <0x0>;
++			cdns,phase-detect-selector = <2>;
+ 			clocks = <&k3_clks 103 0>;
+ 			assigned-clocks = <&k3_clks 103 0>;
+ 			assigned-clock-parents = <&k3_clks 103 2>;
+@@ -399,6 +400,7 @@ ospi1: spi@47050000 {
+ 			cdns,fifo-depth = <256>;
+ 			cdns,fifo-width = <4>;
+ 			cdns,trigger-address = <0x0>;
++			cdns,phase-detect-selector = <2>;
+ 			clocks = <&k3_clks 104 0>;
+ 			power-domains = <&k3_pds 104 TI_SCI_PD_EXCLUSIVE>;
+ 			#address-cells = <1>;

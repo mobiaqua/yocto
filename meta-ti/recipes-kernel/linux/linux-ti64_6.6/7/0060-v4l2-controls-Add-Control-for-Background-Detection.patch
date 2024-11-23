@@ -1,0 +1,72 @@
+From 4fefde8d64f10d37ffa06307905a73a79a6d1df0 Mon Sep 17 00:00:00 2001
+From: Nas Chung <nas.chung@chipsnmedia.com>
+Date: Wed, 9 Oct 2024 12:08:52 -0500
+Subject: [PATCH 060/173] v4l2-controls: Add Control for Background Detection
+
+Background detection is a useful technique in video encoding to preserve
+bits in cases when the video being encoded has a background that doesn't
+change often. A predominant use case for this is security scenarios where
+the background hardly changes. Some video IPs offer this feature as part of
+their hardware. Expose this control so end-users can select this feature if
+offered by the IP.
+
+Signed-off-by: Nas Chung <nas.chung@chipsnmedia.com>
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+---
+ Documentation/userspace-api/media/v4l/ext-ctrls-codec.rst | 6 ++++++
+ drivers/media/v4l2-core/v4l2-ctrls-defs.c                 | 2 ++
+ include/uapi/linux/v4l2-controls.h                        | 1 +
+ 3 files changed, 9 insertions(+)
+
+diff --git a/Documentation/userspace-api/media/v4l/ext-ctrls-codec.rst b/Documentation/userspace-api/media/v4l/ext-ctrls-codec.rst
+index 2a165ae063fb..9fee9fa6ab84 100644
+--- a/Documentation/userspace-api/media/v4l/ext-ctrls-codec.rst
++++ b/Documentation/userspace-api/media/v4l/ext-ctrls-codec.rst
+@@ -736,6 +736,12 @@ enum v4l2_mpeg_video_frame_skip_mode -
+     Enable writing sample aspect ratio in the Video Usability
+     Information. Applicable to the H264 encoder.
+ 
++``V4L2_CID_MPEG_VIDEO_BACKGROUND_DETECTION (boolean)``
++    If enabled then, the encoder detect a background region in frame and
++    use low bits or skip mode to encode the background region.
++    If a lot of scenes are stationary or background, It may help to
++    reduce the video bitrate. Applicable to the encoder.
++
+ .. _v4l2-mpeg-video-h264-vui-sar-idc:
+ 
+ ``V4L2_CID_MPEG_VIDEO_H264_VUI_SAR_IDC``
+diff --git a/drivers/media/v4l2-core/v4l2-ctrls-defs.c b/drivers/media/v4l2-core/v4l2-ctrls-defs.c
+index 0076dd055ec5..a1386a4c3d0c 100644
+--- a/drivers/media/v4l2-core/v4l2-ctrls-defs.c
++++ b/drivers/media/v4l2-core/v4l2-ctrls-defs.c
+@@ -890,6 +890,7 @@ const char *v4l2_ctrl_get_name(u32 id)
+ 	case V4L2_CID_MPEG_VIDEO_DEC_DISPLAY_DELAY:		return "Display Delay";
+ 	case V4L2_CID_MPEG_VIDEO_DEC_DISPLAY_DELAY_ENABLE:	return "Display Delay Enable";
+ 	case V4L2_CID_MPEG_VIDEO_AU_DELIMITER:			return "Generate Access Unit Delimiters";
++	case V4L2_CID_MPEG_VIDEO_BACKGROUND_DETECTION:		return "Background Detection";
+ 	case V4L2_CID_MPEG_VIDEO_H263_I_FRAME_QP:		return "H263 I-Frame QP Value";
+ 	case V4L2_CID_MPEG_VIDEO_H263_P_FRAME_QP:		return "H263 P-Frame QP Value";
+ 	case V4L2_CID_MPEG_VIDEO_H263_B_FRAME_QP:		return "H263 B-Frame QP Value";
+@@ -1293,6 +1294,7 @@ void v4l2_ctrl_fill(u32 id, const char **name, enum v4l2_ctrl_type *type,
+ 	case V4L2_CID_MPEG_VIDEO_MPEG4_QPEL:
+ 	case V4L2_CID_MPEG_VIDEO_REPEAT_SEQ_HEADER:
+ 	case V4L2_CID_MPEG_VIDEO_AU_DELIMITER:
++	case V4L2_CID_MPEG_VIDEO_BACKGROUND_DETECTION:
+ 	case V4L2_CID_WIDE_DYNAMIC_RANGE:
+ 	case V4L2_CID_IMAGE_STABILIZATION:
+ 	case V4L2_CID_RDS_RECEPTION:
+diff --git a/include/uapi/linux/v4l2-controls.h b/include/uapi/linux/v4l2-controls.h
+index e4214da27424..7dff9beb3ad1 100644
+--- a/include/uapi/linux/v4l2-controls.h
++++ b/include/uapi/linux/v4l2-controls.h
+@@ -434,6 +434,7 @@ enum v4l2_mpeg_video_intra_refresh_period_type {
+ 	V4L2_CID_MPEG_VIDEO_INTRA_REFRESH_PERIOD_TYPE_RANDOM	= 0,
+ 	V4L2_CID_MPEG_VIDEO_INTRA_REFRESH_PERIOD_TYPE_CYCLIC	= 1,
+ };
++#define V4L2_CID_MPEG_VIDEO_BACKGROUND_DETECTION	(V4L2_CID_CODEC_BASE+238)
+ 
+ /* CIDs for the MPEG-2 Part 2 (H.262) codec */
+ #define V4L2_CID_MPEG_VIDEO_MPEG2_LEVEL			(V4L2_CID_CODEC_BASE+270)
+-- 
+2.39.5 (Apple Git-154)
+

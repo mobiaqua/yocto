@@ -1,0 +1,111 @@
+From bb925b66d23b8000c03fb23e12a0fc41e853f3e4 Mon Sep 17 00:00:00 2001
+From: Kendall Willis <k-willis@ti.com>
+Date: Tue, 19 Nov 2024 09:02:32 -0600
+Subject: [PATCH 172/173] HACK: gpio: davinci: Restore GPIO context early in
+ ti_sci_resume
+
+Fixes bug where GPIO state would reset upon resume from low power. GPIO
+state should be maintained through system suspend/resume. The bug stems
+from disabling IO isolation which would reset the GPIO state. Fix is
+calling GPIO resume before disabling IO isolation in ti_sci_resume.
+
+Labeled as HACK because davinci_gpio_resume is exposed and is being called
+within ti_sci_resume. A flag has been added to the davinci_gpio_controller
+to track if it has already restored context in order to not restore context
+twice when resuming. In the process of finding a better way to fix the bug
+where each driver is independent of each other.
+
+Signed-off-by: Kendall Willis <k-willis@ti.com>
+Reviewed-by: Dhruva Gole <d-gole@ti.com>
+---
+ drivers/firmware/ti_sci.c   |  8 ++++++++
+ drivers/gpio/gpio-davinci.c | 20 +++++++++++++++++++-
+ 2 files changed, 27 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/firmware/ti_sci.c b/drivers/firmware/ti_sci.c
+index 9d181a6f9993..96649b11d827 100644
+--- a/drivers/firmware/ti_sci.c
++++ b/drivers/firmware/ti_sci.c
+@@ -3750,12 +3750,20 @@ static int ti_sci_suspend_noirq(struct device *dev)
+ 	return 0;
+ }
+ 
++extern int davinci_gpio_resume_all_devices(void);
++
+ static int ti_sci_resume(struct device *dev)
+ {
+ 	struct ti_sci_info *info = dev_get_drvdata(dev);
+ 	u32 source;
+ 	u64 time;
+ 	int ret = 0;
++	int err;
++
++	/* Resume GPIO before disabling isolation to maintain GPIO state */
++	err = davinci_gpio_resume_all_devices();
++	if (err)
++		return err;
+ 
+ 	ret = ti_sci_cmd_set_io_isolation(&info->handle, TISCI_MSG_VALUE_IO_DISABLE);
+ 	if (ret)
+diff --git a/drivers/gpio/gpio-davinci.c b/drivers/gpio/gpio-davinci.c
+index aa3ce8aa99dc..a57002ff5c83 100644
+--- a/drivers/gpio/gpio-davinci.c
++++ b/drivers/gpio/gpio-davinci.c
+@@ -63,6 +63,7 @@ struct davinci_gpio_controller {
+ 	int			irqs[MAX_INT_PER_BANK];
+ 	struct davinci_gpio_regs context[MAX_REGS_BANKS];
+ 	u32			binten_context;
++	bool		needs_context_restore;
+ };
+ 
+ static inline u32 __gpio_mask(unsigned gpio)
+@@ -259,6 +260,7 @@ static int davinci_gpio_probe(struct platform_device *pdev)
+ 	chips->chip.request = gpiochip_generic_request;
+ 	chips->chip.free = gpiochip_generic_free;
+ #endif
++	chips->needs_context_restore = false;
+ 	spin_lock_init(&chips->lock);
+ 
+ 	nbank = DIV_ROUND_UP(ngpio, 32);
+@@ -682,6 +684,7 @@ static int davinci_gpio_suspend(struct device *dev)
+ 	u32 nbank = DIV_ROUND_UP(pdata->ngpio, 32);
+ 
+ 	davinci_gpio_save_context(chips, nbank);
++	chips->needs_context_restore = true;
+ 
+ 	return 0;
+ }
+@@ -692,7 +695,10 @@ static int davinci_gpio_resume(struct device *dev)
+ 	struct davinci_gpio_platform_data *pdata = dev_get_platdata(dev);
+ 	u32 nbank = DIV_ROUND_UP(pdata->ngpio, 32);
+ 
+-	davinci_gpio_restore_context(chips, nbank);
++	if (chips->needs_context_restore) {
++		davinci_gpio_restore_context(chips, nbank);
++		chips->needs_context_restore = false;
++	}
+ 
+ 	return 0;
+ }
+@@ -717,6 +723,18 @@ static struct platform_driver davinci_gpio_driver = {
+ 	},
+ };
+ 
++static int davinci_gpio_resume_wrapper(struct device *dev, void *unused)
++{
++	return davinci_gpio_resume(dev);
++}
++
++int davinci_gpio_resume_all_devices(void)
++{
++	return driver_for_each_device(&davinci_gpio_driver.driver, NULL,
++					NULL, davinci_gpio_resume_wrapper);
++}
++EXPORT_SYMBOL(davinci_gpio_resume_all_devices);
++
+ /*
+  * GPIO driver registration needs to be done before machine_init functions
+  * access GPIO. Hence davinci_gpio_drv_reg() is a postcore_initcall.
+-- 
+2.39.5 (Apple Git-154)
+

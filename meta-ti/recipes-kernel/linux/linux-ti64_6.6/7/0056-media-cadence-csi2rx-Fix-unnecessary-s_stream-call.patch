@@ -1,0 +1,35 @@
+From 16abf38ee9cdc8aeb300a8dbfc413f223b70f0e0 Mon Sep 17 00:00:00 2001
+From: Vaishnav Achath <vaishnav.a@ti.com>
+Date: Wed, 16 Oct 2024 23:29:00 +0530
+Subject: [PATCH 056/173] media: cadence: csi2rx: Fix unnecessary s_stream call
+
+During stable Linux merge, the s_stream subdev call was added
+by mistake, the cdns_csirx driver uses enable_streams API which
+is multi-stream aware. This redundant call to start subdev stream
+is unnecessary and would return a EALREADY error since there is
+already a call to enable subdev streams through
+v4l2_subdev_enable_streams(), fix it by removing the call.
+
+Fixes: f17c9117f54a ("Merge tag 'v6.6.44' into ti-linux-6.6.y-cicd")
+
+Signed-off-by: Vaishnav Achath <vaishnav.a@ti.com>
+Reviewed-by: Udit Kumar <u-kumar1@ti.com>
+---
+ drivers/media/platform/cadence/cdns-csi2rx.c | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/drivers/media/platform/cadence/cdns-csi2rx.c b/drivers/media/platform/cadence/cdns-csi2rx.c
+index 59c6765f5139..26b83cc47b5d 100644
+--- a/drivers/media/platform/cadence/cdns-csi2rx.c
++++ b/drivers/media/platform/cadence/cdns-csi2rx.c
+@@ -327,10 +327,6 @@ static int csi2rx_start(struct csi2rx_priv *csi2rx)
+ 		writel(CSI2RX_STREAM_CTRL_START,
+ 		       csi2rx->base + CSI2RX_STREAM_CTRL_REG(i));
+ 	}
+-
+-	ret = clk_prepare_enable(csi2rx->sys_clk);
+-	if (ret)
+-		goto err_disable_pixclk;
+ 
+ 	reset_control_deassert(csi2rx->sys_rst);
+ 

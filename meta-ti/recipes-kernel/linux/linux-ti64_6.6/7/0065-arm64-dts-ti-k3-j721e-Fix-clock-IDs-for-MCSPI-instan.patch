@@ -1,0 +1,53 @@
+From 19368e6157253dfd56ce3cb45e9a5d5e49942ab1 Mon Sep 17 00:00:00 2001
+From: Anurag Dutta <a-dutta@ti.com>
+Date: Fri, 25 Oct 2024 14:46:36 +0530
+Subject: [PATCH 065/173] arm64: dts: ti: k3-j721e: Fix clock IDs for MCSPI
+ instances
+
+The clock IDs for multiple MCSPI instances across wakeup domain
+in J721e are incorrect when compared with documentation [1]. Fix
+the clock ids to their appropriate values.
+
+[1]https://software-dl.ti.com/tisci/esd/latest/5_soc_doc/j721e/clocks.html
+
+Fixes: 76aa309f9fa7 ("arm64: dts: ti: k3-j721e: Add MCSPI nodes")
+
+Signed-off-by: Anurag Dutta <a-dutta@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+index a91a7dfcaa76..e1ed0a3038e9 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+@@ -649,7 +649,7 @@ mcu_spi0: spi@40300000 {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 		power-domains = <&k3_pds 274 TI_SCI_PD_EXCLUSIVE>;
+-		clocks = <&k3_clks 274 0>;
++		clocks = <&k3_clks 274 1>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -660,7 +660,7 @@ mcu_spi1: spi@40310000 {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 		power-domains = <&k3_pds 275 TI_SCI_PD_EXCLUSIVE>;
+-		clocks = <&k3_clks 275 0>;
++		clocks = <&k3_clks 275 1>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -671,7 +671,7 @@ mcu_spi2: spi@40320000 {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 		power-domains = <&k3_pds 276 TI_SCI_PD_EXCLUSIVE>;
+-		clocks = <&k3_clks 276 0>;
++		clocks = <&k3_clks 276 1>;
+ 		status = "disabled";
+ 	};
+ 
+-- 
+2.39.5 (Apple Git-154)
+

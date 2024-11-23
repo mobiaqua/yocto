@@ -1,0 +1,43 @@
+From 6778b6d7416ae53f0a99336b1a7aa9306a4ac03b Mon Sep 17 00:00:00 2001
+From: Nishanth Menon <nm@ti.com>
+Date: Thu, 14 Nov 2024 06:06:27 +0530
+Subject: [PATCH 154/173] arm64: dts: ti: k3-serdes: Add MIT license along with
+ GPL-2.0
+
+Modify license to include dual licensing as GPL-2.0-only OR MIT
+license for SoC and TI evm device tree files. This allows for Linux
+kernel device tree to be used in other Operating System ecosystems
+such as Zephyr or FreeBSD.
+
+While at this, update the GPL-2.0 to be GPL-2.0-only to be in sync
+with latest SPDX conventions (GPL-2.0 is deprecated).
+
+While at this, update the TI copyright year to sync with current year
+to indicate license change.
+
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Acked-by: Rob Herring <robh@kernel.org>
+Link: https://lore.kernel.org/r/20240122145539.194512-13-nm@ti.com
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-serdes.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-serdes.h b/arch/arm64/boot/dts/ti/k3-serdes.h
+index 9eb6aa522f14..9082abeddcb1 100644
+--- a/arch/arm64/boot/dts/ti/k3-serdes.h
++++ b/arch/arm64/boot/dts/ti/k3-serdes.h
+@@ -1,8 +1,8 @@
+-/* SPDX-License-Identifier: GPL-2.0 */
++/* SPDX-License-Identifier: GPL-2.0-only OR MIT */
+ /*
+  * This header provides constants for SERDES MUX for TI SoCs
+  *
+- * Copyright (C) 2023 Texas Instruments Incorporated - https://www.ti.com/
++ * Copyright (C) 2023-2024 Texas Instruments Incorporated - https://www.ti.com/
+  */
+ 
+ #ifndef DTS_ARM64_TI_K3_SERDES_H
+-- 
+2.39.5 (Apple Git-154)
+

@@ -1,0 +1,33 @@
+From ac50d98591faaeb68fe0a216c148280cd9b12b1e Mon Sep 17 00:00:00 2001
+From: Guillaume La Roque <glaroque@baylibre.com>
+Date: Mon, 4 Nov 2024 10:48:12 +0100
+Subject: [PATCH 088/173] remoteproc: k3-r5: fix unused variable
+
+logic in k3_r5_rproc_stop which using core1 variable  was removed but
+variable was still here.
+
+Remove unused variable to fix build issue with -Werror,-Wunused-variable.
+
+Fixes: a04282dfaa0a ("remoteproc: k3-r5: keep the device on during stop")
+Reviewed-by: Siddharth Vadapalli <s-vadapalli@ti.com>
+Signed-off-by: Guillaume La Roque <glaroque@baylibre.com>
+---
+ drivers/remoteproc/ti_k3_r5_remoteproc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/remoteproc/ti_k3_r5_remoteproc.c b/drivers/remoteproc/ti_k3_r5_remoteproc.c
+index 08d5e20eaf11..3c2d2ff2dbfe 100644
+--- a/drivers/remoteproc/ti_k3_r5_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_r5_remoteproc.c
+@@ -826,7 +826,7 @@ static int k3_r5_rproc_stop(struct rproc *rproc)
+ 	struct k3_r5_rproc *kproc = rproc->priv;
+ 	struct k3_r5_cluster *cluster = kproc->cluster;
+ 	struct device *dev = kproc->dev;
+-	struct k3_r5_core *core1, *core = kproc->core;
++	struct k3_r5_core *core = kproc->core;
+ 	unsigned long msg = RP_MBOX_SHUTDOWN;
+ 	int ret;
+ 	u32 stat = 0;
+-- 
+2.39.5 (Apple Git-154)
+

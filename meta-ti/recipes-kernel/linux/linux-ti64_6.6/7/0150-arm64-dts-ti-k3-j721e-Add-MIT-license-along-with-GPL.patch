@@ -1,0 +1,100 @@
+From 1d43eb53fa1e67d78bd3d4341a10e92eb017f183 Mon Sep 17 00:00:00 2001
+From: Nishanth Menon <nm@ti.com>
+Date: Thu, 14 Nov 2024 06:06:23 +0530
+Subject: [PATCH 150/173] arm64: dts: ti: k3-j721e: Add MIT license along with
+ GPL-2.0
+
+Modify license to include dual licensing as GPL-2.0-only OR MIT
+license for SoC and TI evm device tree files. This allows for Linux
+kernel device tree to be used in other Operating System ecosystems
+such as Zephyr or FreeBSD.
+
+While at this, update the GPL-2.0 to be GPL-2.0-only to be in sync
+with latest SPDX conventions (GPL-2.0 is deprecated).
+
+While at this, update the TI copyright year to sync with current year
+to indicate license change (and add it at least for one file which was
+missing TI copyright).
+
+Cc: "Alexander A. Klimov" <grandmaster@al2klimov.de>
+Cc: Jerome Neanne <jneanne@baylibre.com>
+Cc: Krzysztof Kozlowski <krzysztof.kozlowski@linaro.org>
+Cc: Peng Fan <peng.fan@nxp.com>
+Cc: Pierre Gondois <pierre.gondois@arm.com>
+Cc: Tony Lindgren <tony@atomide.com>
+
+Acked-by: Krzysztof Kozlowski <krzysztof.kozlowski@linaro.org>
+Acked-by: Pierre Gondois <pierre.gondois@arm.com>
+Acked-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Acked-by: Rob Herring <robh@kernel.org>
+Link: https://lore.kernel.org/r/20240122145539.194512-9-nm@ti.com
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi                  | 4 ++--
+ arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi            | 4 ++--
+ arch/arm64/boot/dts/ti/k3-j721e-thermal.dtsi               | 5 ++++-
+ arch/arm64/boot/dts/ti/k3-j721e.dtsi                       | 4 ++--
+ 10 files changed, 22 insertions(+), 19 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index bbc1b99c5ea3..5377f462f4a5 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -1,8 +1,8 @@
+-// SPDX-License-Identifier: GPL-2.0
++// SPDX-License-Identifier: GPL-2.0-only OR MIT
+ /*
+  * Device Tree Source for J721E SoC Family Main Domain peripherals
+  *
+- * Copyright (C) 2016-2020 Texas Instruments Incorporated - https://www.ti.com/
++ * Copyright (C) 2016-2024 Texas Instruments Incorporated - https://www.ti.com/
+  */
+ #include <dt-bindings/phy/phy.h>
+ #include <dt-bindings/phy/phy-ti.h>
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+index 8252c6185ea4..67b540901fc8 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+@@ -1,8 +1,8 @@
+-// SPDX-License-Identifier: GPL-2.0
++// SPDX-License-Identifier: GPL-2.0-only OR MIT
+ /*
+  * Device Tree Source for J721E SoC Family MCU/WAKEUP Domain peripherals
+  *
+- * Copyright (C) 2016-2020 Texas Instruments Incorporated - https://www.ti.com/
++ * Copyright (C) 2016-2024 Texas Instruments Incorporated - https://www.ti.com/
+  */
+ 
+ &cbass_mcu_wakeup {
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-thermal.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-thermal.dtsi
+index c2523279001b..927f7614ae7a 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-thermal.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-thermal.dtsi
+@@ -1,4 +1,7 @@
+-// SPDX-License-Identifier: GPL-2.0
++// SPDX-License-Identifier: GPL-2.0-only OR MIT
++/*
++ * Copyright (C) 2023-2024 Texas Instruments Incorporated - https://www.ti.com/
++ */
+ 
+ #include <dt-bindings/thermal/thermal.h>
+ 
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e.dtsi b/arch/arm64/boot/dts/ti/k3-j721e.dtsi
+index a200810df54a..5a72c518ceb6 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e.dtsi
+@@ -1,8 +1,8 @@
+-// SPDX-License-Identifier: GPL-2.0
++// SPDX-License-Identifier: GPL-2.0-only OR MIT
+ /*
+  * Device Tree Source for J721E SoC Family
+  *
+- * Copyright (C) 2016-2019 Texas Instruments Incorporated - https://www.ti.com/
++ * Copyright (C) 2016-2024 Texas Instruments Incorporated - https://www.ti.com/
+  */
+ 
+ #include <dt-bindings/interrupt-controller/irq.h>
+-- 
+2.39.5 (Apple Git-154)
+
