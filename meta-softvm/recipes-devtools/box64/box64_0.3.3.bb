@@ -13,7 +13,7 @@ SRC_URI = "git://github.com/ptitSeb/box64.git;branch=main;protocol=https \
            file://no_logs.patch \
 "
 
-SRCREV = "0f4f274bc7be14899d17685d519827ed0b3cae25"
+SRCREV = "8b2b96d5c584e2b2dedc95c0a1056dd73fa93899"
 
 S = "${WORKDIR}/git"
 
