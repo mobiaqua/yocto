@@ -1,0 +1,129 @@
+diff --git a/src/core.c b/src/core.c
+index 36393235..5a3d549c 100644
+--- a/src/core.c
++++ b/src/core.c
+@@ -778,6 +778,7 @@ void LoadLogEnv()
+         else
+             printf_log(LOG_INFO, "Dynarec will not continue block on forward jump\n");
+     }
++    if (box64_dynarec_strongmem != -1) {
+     p = getenv("BOX64_DYNAREC_STRONGMEM");
+     if(p) {
+         if(strlen(p)==1) {
+@@ -787,6 +788,7 @@ void LoadLogEnv()
+         if(box64_dynarec_strongmem)
+             printf_log(LOG_INFO, "Dynarec will try to emulate a strong memory model%s\n", (box64_dynarec_strongmem==1)?" with limited performance loss":((box64_dynarec_strongmem>1)?" with more performance loss":""));
+     }
++    }
+     p = getenv("BOX64_DYNAREC_WEAKBARRIER");
+     if (p) {
+         if (strlen(p) == 1) {
+diff --git a/src/dynarec/dynarec_helper.h b/src/dynarec/dynarec_helper.h
+index 1f567be2..1ee8b7f5 100644
+--- a/src/dynarec/dynarec_helper.h
++++ b/src/dynarec/dynarec_helper.h
+@@ -132,6 +132,7 @@
+ // An opcode will write memory, this will be put before the STORE instruction automatically.
+ #define WILLWRITE()                                                                                  \
+     do {                                                                                             \
++        if (box64_dynarec_strongmem > 0)                                                             \
+         if (box64_dynarec_strongmem >= dyn->insts[ninst].will_write && dyn->smwrite == 0) {          \
+             /* Will write but never written, this is the start of a SEQ, put a barrier. */           \
+             if (box64_dynarec_weakbarrier)                                                           \
+@@ -167,7 +168,7 @@
+ // Will be put at the end of the SEQ
+ #define SMEND()                                                         \
+     do {                                                                \
+-        if (box64_dynarec_strongmem) {                                  \
++        if (box64_dynarec_strongmem > 0) {                              \
+             /* It's a SEQ, put a barrier here. */                       \
+             if (dyn->smwrite) {                                         \
+                 /* Check if the next instruction has a end loop mark */ \
+diff --git a/src/librarian/library.c b/src/librarian/library.c
+index bba84224..fdfeb5b5 100644
+--- a/src/librarian/library.c
++++ b/src/librarian/library.c
+@@ -360,10 +360,12 @@ static int loadEmulatedLib(const char* libname, library_t *lib, box64context_t*
+         if(libname && box64_dynarec_bleeding_edge && strstr(libname, "libmonobdwgc-2.0.so")) {
+             printf_dump(LOG_INFO, "MonoBleedingEdge detected, disable Dynarec BigBlock and enable Dynarec StrongMem\n");
+             box64_dynarec_bigblock = 0;
++            if (box64_dynarec_strongmem != -1)
+             box64_dynarec_strongmem = 1;
+         }
+         if(libname && box64_dynarec_tbb && strstr(libname, "libtbb.so")) {
+             printf_dump(LOG_INFO, "libtbb detected, enable Dynarec StrongMem\n");
++            if (box64_dynarec_strongmem != -1)
+             box64_dynarec_strongmem = 1;
+         }
+         #endif
+@@ -371,6 +373,7 @@ static int loadEmulatedLib(const char* libname, library_t *lib, box64context_t*
+             #ifdef DYNAREC
+             printf_dump(LOG_INFO, "libjvm detected, disable Dynarec BigBlock and enable Dynarec StrongMem, hide SSE 4.2\n");
+             box64_dynarec_bigblock = 0;
++            if (box64_dynarec_strongmem != -1)
+             box64_dynarec_strongmem = 1;
+             #else
+             printf_dump(LOG_INFO, "libjvm detected, hide SSE 4.2\n");
+diff --git a/src/main.c b/src/main.c
+index 5f73ab4b..328cef9c 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -1,9 +1,58 @@
+ #include "core.h"
++#include "debug.h"
++
++#include <stdlib.h>
++#include <stdio.h>
++#include <sys/prctl.h>
++
++void setupTSOEmulation(void) {
++  int result, box64_hw_tso = 1;
++  const char *p;
++#ifndef PR_GET_MEM_MODEL
++#define PR_GET_MEM_MODEL 0x6d4d444c
++#endif
++#ifndef PR_SET_MEM_MODEL
++#define PR_SET_MEM_MODEL 0x4d4d444c
++#endif
++#ifndef PR_SET_MEM_MODEL_DEFAULT
++#define PR_SET_MEM_MODEL_DEFAULT 0
++#endif
++#ifndef PR_SET_MEM_MODEL_TSO
++#define PR_SET_MEM_MODEL_TSO 1
++#endif
++  // Check to see if TSO is supported.
++  result = prctl(PR_GET_MEM_MODEL, 0, 0, 0, 0);
++  if(result == -1) {
++    perror("TSO not supported");
++    // Unsupported, early exit.
++    return;
++  }
++
++  p = getenv("BOX64_HW_TSO");
++  if(p) {
++    if(strlen(p)==1) {
++      if(p[0]>='0' && p[0]<='0'+1)
++        box64_hw_tso = p[0]-'0';
++    }
++  }
++  if(box64_hw_tso == 0)
++    return;
++
++  // Try to set the TSO mode if we are currently default.
++  result = prctl(PR_SET_MEM_MODEL, PR_SET_MEM_MODEL_TSO, 0, 0, 0);
++  if (result == 0) {
++    // TSO mode successfully enabled.
++    box64_dynarec_strongmem = -1;
++  }
++}
+ 
+ int main(int argc, const char **argv, char **env) {
+ 
+     x64emu_t* emu = NULL;
+     elfheader_t* elf_header = NULL;
++
++    setupTSOEmulation();
++
+     if (initialize(argc, argv, env, &emu, &elf_header, 1)) {
+         return -1;
+     }
