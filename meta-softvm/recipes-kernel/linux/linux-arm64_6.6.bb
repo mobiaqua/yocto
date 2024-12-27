@@ -16,6 +16,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/linux-arm64_6.6:"
 
 SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
            file://0001_fix_nonlinux_compile.patch \
+           file://arm64-Support-the-TSO-memory-model.patch \
            file://cpu-ext.patch \
            file://defconfig \
            "

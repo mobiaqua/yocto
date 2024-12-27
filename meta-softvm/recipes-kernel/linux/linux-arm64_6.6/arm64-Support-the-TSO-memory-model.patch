@@ -1,0 +1,543 @@
+diff --git a/include/linux/memory_ordering_model.h b/include/linux/memory_ordering_model.h
+new file mode 100644
+index 000000000000..267a12ca6630
+--- /dev/null
++++ b/include/linux/memory_ordering_model.h
+@@ -0,0 +1,11 @@
++/* SPDX-License-Identifier: GPL-2.0 */
++#ifndef __ASM_MEMORY_ORDERING_MODEL_H
++#define __ASM_MEMORY_ORDERING_MODEL_H
++
++/* Arch hooks to implement the PR_{GET_SET}_MEM_MODEL prctls */
++
++struct task_struct;
++int arch_prctl_mem_model_get(struct task_struct *t);
++int arch_prctl_mem_model_set(struct task_struct *t, unsigned long val);
++
++#endif
+diff --git a/include/uapi/linux/prctl.h b/include/uapi/linux/prctl.h
+index 370ed14b1ae0..961216093f11 100644
+--- a/include/uapi/linux/prctl.h
++++ b/include/uapi/linux/prctl.h
+@@ -306,4 +306,9 @@ struct prctl_mm_map {
+ # define PR_RISCV_V_VSTATE_CTRL_NEXT_MASK	0xc
+ # define PR_RISCV_V_VSTATE_CTRL_MASK		0x1f
+ 
++#define PR_GET_MEM_MODEL	0x6d4d444c
++#define PR_SET_MEM_MODEL	0x4d4d444c
++# define PR_SET_MEM_MODEL_DEFAULT	0
++# define PR_SET_MEM_MODEL_TSO		1
++
+ #endif /* _LINUX_PRCTL_H */
+diff --git a/kernel/sys.c b/kernel/sys.c
+index f8e543f1e38a..6af659a9f826 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -45,6 +45,7 @@
+ #include <linux/version.h>
+ #include <linux/ctype.h>
+ #include <linux/syscall_user_dispatch.h>
++#include <linux/memory_ordering_model.h>
+ 
+ #include <linux/compat.h>
+ #include <linux/syscalls.h>
+@@ -2442,6 +2443,16 @@ static int prctl_get_auxv(void __user *addr, unsigned long len)
+ 	return sizeof(mm->saved_auxv);
+ }
+ 
++int __weak arch_prctl_mem_model_get(struct task_struct *t)
++{
++	return -EINVAL;
++}
++
++int __weak arch_prctl_mem_model_set(struct task_struct *t, unsigned long val)
++{
++	return -EINVAL;
++}
++
+ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 		unsigned long, arg4, unsigned long, arg5)
+ {
+@@ -2757,6 +2768,16 @@ SYSCALL_DEFINE5(prctl, int, option, unsigned long, arg2, unsigned long, arg3,
+ 	case PR_RISCV_V_GET_CONTROL:
+ 		error = RISCV_V_GET_CONTROL();
+ 		break;
++	case PR_GET_MEM_MODEL:
++		if (arg2 || arg3 || arg4 || arg5)
++			return -EINVAL;
++		error = arch_prctl_mem_model_get(me);
++		break;
++	case PR_SET_MEM_MODEL:
++		if (arg3 || arg4 || arg5)
++			return -EINVAL;
++		error = arch_prctl_mem_model_set(me, arg2);
++		break;
+ 	default:
+ 		error = -EINVAL;
+ 		break;
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 7b11c98b3e84..f8e66fe44ff4 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -2162,6 +2162,15 @@ config ARM64_DEBUG_PRIORITY_MASKING
+ 	  If unsure, say N
+ endif # ARM64_PSEUDO_NMI
+ 
++config ARM64_MEMORY_MODEL_CONTROL
++	bool "Runtime memory model control"
++	help
++	  Some ARM64 CPUs support runtime switching of the CPU memory
++	  model, which can be useful to emulate other CPU architectures
++	  which have different memory models. Say Y to enable support
++	  for the PR_SET_MEM_MODEL/PR_GET_MEM_MODEL prctl() calls on
++	  CPUs with this feature.
++
+ config RELOCATABLE
+ 	bool "Build a relocatable kernel image" if EXPERT
+ 	select ARCH_HAS_RELR
+diff --git a/arch/arm64/include/asm/cpufeature.h b/arch/arm64/include/asm/cpufeature.h
+index 8b904a757bd3..fb215b0e7529 100644
+--- a/arch/arm64/include/asm/cpufeature.h
++++ b/arch/arm64/include/asm/cpufeature.h
+@@ -1032,6 +1032,10 @@ static inline bool cpu_has_lpa2(void)
+ #endif
+ }
+ 
++void __init init_cpucap_indirect_list_impdef(void);
++void __init init_cpucap_indirect_list_from_array(const struct arm64_cpu_capabilities *caps);
++bool cpufeature_matches(u64 reg, const struct arm64_cpu_capabilities *entry);
++
+ #endif /* __ASSEMBLY__ */
+ 
+ #endif
+diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
+index 763824963ed1..5eaaee7b8358 100644
+--- a/arch/arm64/kernel/Makefile
++++ b/arch/arm64/kernel/Makefile
+@@ -33,7 +33,7 @@ obj-y			:= debug-monitors.o entry.o irq.o fpsimd.o		\
+ 			   return_address.o cpuinfo.o cpu_errata.o		\
+ 			   cpufeature.o alternative.o cacheinfo.o		\
+ 			   smp.o smp_spin_table.o topology.o smccc-call.o	\
+ 			   syscall.o proton-pack.o idreg-override.o idle.o	\
+-			   patching.o
++			   patching.o cpufeature_impdef.o
+ 
+ obj-$(CONFIG_COMPAT)			+= sys32.o signal32.o			\
+ 					   sys_compat.o
+diff --git a/arch/arm64/kernel/cpufeature.c b/arch/arm64/kernel/cpufeature.c
+index 56583677c1f2..e39ab93ad683 100644
+--- a/arch/arm64/kernel/cpufeature.c
++++ b/arch/arm64/kernel/cpufeature.c
+@@ -1028,7 +1028,7 @@ static void init_cpu_ftr_reg(u32 sys_reg, u64 new)
+ extern const struct arm64_cpu_capabilities arm64_errata[];
+ static const struct arm64_cpu_capabilities arm64_features[];
+ 
+-static void __init
++void __init
+ init_cpucap_indirect_list_from_array(const struct arm64_cpu_capabilities *caps)
+ {
+ 	for (; caps->matches; caps++) {
+@@ -1540,8 +1540,8 @@ has_always(const struct arm64_cpu_capabilities *entry, int scope)
+ 	return true;
+ }
+ 
+-static bool
+-feature_matches(u64 reg, const struct arm64_cpu_capabilities *entry)
++bool
++cpufeature_matches(u64 reg, const struct arm64_cpu_capabilities *entry)
+ {
+ 	int val, min, max;
+ 	u64 tmp;
+@@ -1594,14 +1594,14 @@ has_user_cpuid_feature(const struct arm64_cpu_capabilities *entry, int scope)
+ 	if (!mask)
+ 		return false;
+ 
+-	return feature_matches(val, entry);
++	return cpufeature_matches(val, entry);
+ }
+ 
+ static bool
+ has_cpuid_feature(const struct arm64_cpu_capabilities *entry, int scope)
+ {
+ 	u64 val = read_scoped_sysreg(entry, scope);
+-	return feature_matches(val, entry);
++	return cpufeature_matches(val, entry);
+ }
+ 
+ const struct cpumask *system_32bit_el0_cpumask(void)
+@@ -3486,6 +3486,7 @@ void __init setup_boot_cpu_features(void)
+ 	 * handle the boot CPU.
+ 	 */
+ 	init_cpucap_indirect_list();
++	init_cpucap_indirect_list_impdef();
+ 
+ 	/*
+ 	 * Detect broken pseudo-NMI. Must be called _before_ the call to
+diff --git a/arch/arm64/kernel/cpufeature_impdef.c b/arch/arm64/kernel/cpufeature_impdef.c
+new file mode 100644
+index 000000000000..bb04a8e3d79d
+--- /dev/null
++++ b/arch/arm64/kernel/cpufeature_impdef.c
+@@ -0,0 +1,38 @@
++// SPDX-License-Identifier: GPL-2.0-only
++/*
++ * Contains implementation-defined CPU feature definitions.
++ */
++
++#include <asm/cpufeature.h>
++
++#ifdef CONFIG_ARM64_MEMORY_MODEL_CONTROL
++static bool has_tso_fixed(const struct arm64_cpu_capabilities *entry, int scope)
++{
++	/* List of CPUs that always use the TSO memory model */
++	static const struct midr_range fixed_tso_list[] = {
++		MIDR_ALL_VERSIONS(MIDR_NVIDIA_DENVER),
++		MIDR_ALL_VERSIONS(MIDR_NVIDIA_CARMEL),
++		MIDR_ALL_VERSIONS(MIDR_FUJITSU_A64FX),
++		{ /* sentinel */ }
++	};
++
++	return is_midr_in_range_list(read_cpuid_id(), fixed_tso_list);
++}
++#endif
++
++static const struct arm64_cpu_capabilities arm64_impdef_features[] = {
++#ifdef CONFIG_ARM64_MEMORY_MODEL_CONTROL
++	{
++		.desc = "TSO memory model (Fixed)",
++		.capability = ARM64_HAS_TSO_FIXED,
++		.type = ARM64_CPUCAP_SYSTEM_FEATURE,
++		.matches = has_tso_fixed,
++	},
++#endif
++	{},
++};
++
++void __init init_cpucap_indirect_list_impdef(void)
++{
++	init_cpucap_indirect_list_from_array(arm64_impdef_features);
++}
+diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
+index 4ae31b7af6c3..7920056bad3e 100644
+--- a/arch/arm64/kernel/process.c
++++ b/arch/arm64/kernel/process.c
+@@ -41,6 +41,7 @@
+ #include <linux/thread_info.h>
+ #include <linux/prctl.h>
+ #include <linux/stacktrace.h>
++#include <linux/memory_ordering_model.h>
+ 
+ #include <asm/alternative.h>
+ #include <asm/compat.h>
+@@ -513,6 +514,25 @@ void update_sctlr_el1(u64 sctlr)
+ 	isb();
+ }
+ 
++#ifdef CONFIG_ARM64_MEMORY_MODEL_CONTROL
++int arch_prctl_mem_model_get(struct task_struct *t)
++{
++	return PR_SET_MEM_MODEL_DEFAULT;
++}
++
++int arch_prctl_mem_model_set(struct task_struct *t, unsigned long val)
++{
++	if (alternative_has_cap_unlikely(ARM64_HAS_TSO_FIXED) &&
++	    val == PR_SET_MEM_MODEL_TSO)
++		return 0;
++
++	if (val == PR_SET_MEM_MODEL_DEFAULT)
++		return 0;
++
++	return -EINVAL;
++}
++#endif
++
+ /*
+  * Thread switching.
+  */
+@@ -651,6 +671,10 @@ void arch_setup_new_exec(void)
+ 		arch_prctl_spec_ctrl_set(current, PR_SPEC_STORE_BYPASS,
+ 					 PR_SPEC_ENABLE);
+ 	}
++
++#ifdef CONFIG_ARM64_MEMORY_MODEL_CONTROL
++	arch_prctl_mem_model_set(current, PR_SET_MEM_MODEL_DEFAULT);
++#endif
+ }
+ 
+ #ifdef CONFIG_ARM64_TAGGED_ADDR_ABI
+diff --git a/arch/arm64/tools/cpucaps b/arch/arm64/tools/cpucaps
+index 62b2838a231a..daa6b9495402 100644
+--- a/arch/arm64/tools/cpucaps
++++ b/arch/arm64/tools/cpucaps
+@@ -52,6 +52,7 @@ HAS_STAGE2_FWB
+ HAS_TCR2
+ HAS_TIDCP1
+ HAS_TLB_RANGE
++HAS_TSO_FIXED
+ HAS_VIRT_HOST_EXTN
+ HAS_WFXT
+ HW_DBM
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index f8e66fe44ff4..9b3593b34cce 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -408,6 +408,9 @@ config KASAN_SHADOW_OFFSET
+ config UNWIND_TABLES
+ 	bool
+ 
++config ARM64_ACTLR_STATE
++	bool
++
+ source "arch/arm64/Kconfig.platforms"
+ 
+ menu "Kernel Features"
+diff --git a/arch/arm64/include/asm/cpufeature.h b/arch/arm64/include/asm/cpufeature.h
+index fb215b0e7529..46ab37f8f4d8 100644
+--- a/arch/arm64/include/asm/cpufeature.h
++++ b/arch/arm64/include/asm/cpufeature.h
+@@ -909,6 +909,11 @@ static inline unsigned int get_vmid_bits(u64 mmfr1)
+ 	return 8;
+ }
+ 
++static __always_inline bool system_has_actlr_state(void)
++{
++	return false;
++}
++
+ s64 arm64_ftr_safe_value(const struct arm64_ftr_bits *ftrp, s64 new, s64 cur);
+ struct arm64_ftr_reg *get_arm64_ftr_reg(u32 sys_id);
+ 
+diff --git a/arch/arm64/include/asm/processor.h b/arch/arm64/include/asm/processor.h
+index f77371232d8c..d43c5791a35e 100644
+--- a/arch/arm64/include/asm/processor.h
++++ b/arch/arm64/include/asm/processor.h
+@@ -184,6 +184,9 @@ struct thread_struct {
+ 	u64			sctlr_user;
+ 	u64			svcr;
+ 	u64			tpidr2_el0;
++#ifdef CONFIG_ARM64_ACTLR_STATE
++	u64			actlr;
++#endif
+ };
+ 
+ static inline unsigned int thread_get_vl(struct thread_struct *thread,
+diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
+index 7920056bad3e..117f80e16aac 100644
+--- a/arch/arm64/kernel/process.c
++++ b/arch/arm64/kernel/process.c
+@@ -372,6 +372,11 @@ int copy_thread(struct task_struct *p, const struct kernel_clone_args *args)
+ 		if (system_supports_tpidr2())
+ 			p->thread.tpidr2_el0 = read_sysreg_s(SYS_TPIDR2_EL0);
+ 
++#ifdef CONFIG_ARM64_ACTLR_STATE
++		if (system_has_actlr_state())
++			p->thread.actlr = read_sysreg(actlr_el1);
++#endif
++
+ 		if (stack_start) {
+ 			if (is_compat_thread(task_thread_info(p)))
+ 				childregs->compat_sp = stack_start;
+@@ -533,6 +538,25 @@ int arch_prctl_mem_model_set(struct task_struct *t, unsigned long val)
+ }
+ #endif
+ 
++#ifdef CONFIG_ARM64_ACTLR_STATE
++/*
++ * IMPDEF control register ACTLR_EL1 handling. Some CPUs use this to
++ * expose features that can be controlled by userspace.
++ */
++static void actlr_thread_switch(struct task_struct *next)
++{
++	if (!system_has_actlr_state())
++		return;
++
++	current->thread.actlr = read_sysreg(actlr_el1);
++	write_sysreg(next->thread.actlr, actlr_el1);
++}
++#else
++static inline void actlr_thread_switch(struct task_struct *next)
++{
++}
++#endif
++
+ /*
+  * Thread switching.
+  */
+@@ -550,6 +574,7 @@ struct task_struct *__switch_to(struct task_struct *prev,
+ 	ssbs_thread_switch(next);
+ 	erratum_1418040_thread_switch(next);
+ 	ptrauth_thread_switch_user(next);
++	actlr_thread_switch(next);
+ 
+ 	/*
+ 	 * Complete any pending TLB or cache maintenance on this CPU in case
+diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+index 65a052bf741f..35342f633a85 100644
+--- a/arch/arm64/kernel/setup.c
++++ b/arch/arm64/kernel/setup.c
+@@ -359,6 +359,14 @@ void __init __no_sanitize_address setup_arch(char **cmdline_p)
+ 	 */
+ 	init_task.thread_info.ttbr0 = phys_to_ttbr(__pa_symbol(reserved_pg_dir));
+ #endif
++#ifdef CONFIG_ARM64_ACTLR_STATE
++	/* Store the boot CPU ACTLR_EL1 value as the default. This will only
++	 * be actually restored during context switching if the platform is
++	 * known to use ACTLR_EL1 for exposable features and its layout is
++	 * known to be the same on all CPUs.
++	 */
++	init_task.thread.actlr = read_sysreg(actlr_el1);
++#endif
+ 
+ 	if (boot_args[1] || boot_args[2] || boot_args[3]) {
+ 		pr_err("WARNING: x1-x3 nonzero in violation of boot protocol:\n"
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index 9b3593b34cce..2f3eedd955c9 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -2167,6 +2167,8 @@ endif # ARM64_PSEUDO_NMI
+ 
+ config ARM64_MEMORY_MODEL_CONTROL
+ 	bool "Runtime memory model control"
++	default ARCH_APPLE
++	select ARM64_ACTLR_STATE
+ 	help
+ 	  Some ARM64 CPUs support runtime switching of the CPU memory
+ 	  model, which can be useful to emulate other CPU architectures
+diff --git a/arch/arm64/include/asm/apple_cpufeature.h b/arch/arm64/include/asm/apple_cpufeature.h
+new file mode 100644
+index 000000000000..4370d91ffa3e
+--- /dev/null
++++ b/arch/arm64/include/asm/apple_cpufeature.h
+@@ -0,0 +1,15 @@
++// SPDX-License-Identifier: GPL-2.0
++
++#ifndef __ASM_APPLE_CPUFEATURES_H
++#define __ASM_APPLE_CPUFEATURES_H
++
++#include <linux/bits.h>
++#include <asm/sysreg.h>
++
++#define AIDR_APPLE_TSO_SHIFT	9
++#define AIDR_APPLE_TSO		BIT(9)
++
++#define ACTLR_APPLE_TSO_SHIFT	1
++#define ACTLR_APPLE_TSO		BIT(1)
++
++#endif
+diff --git a/arch/arm64/include/asm/cpufeature.h b/arch/arm64/include/asm/cpufeature.h
+index 46ab37f8f4d8..a191000d88c2 100644
+--- a/arch/arm64/include/asm/cpufeature.h
++++ b/arch/arm64/include/asm/cpufeature.h
+@@ -911,7 +911,8 @@ static inline unsigned int get_vmid_bits(u64 mmfr1)
+ 
+ static __always_inline bool system_has_actlr_state(void)
+ {
+-	return false;
++	return IS_ENABLED(CONFIG_ARM64_ACTLR_STATE) &&
++		alternative_has_cap_unlikely(ARM64_HAS_TSO_APPLE);
+ }
+ 
+ s64 arm64_ftr_safe_value(const struct arm64_ftr_bits *ftrp, s64 new, s64 cur);
+diff --git a/arch/arm64/kernel/cpufeature_impdef.c b/arch/arm64/kernel/cpufeature_impdef.c
+index bb04a8e3d79d..9325d1eb12f4 100644
+--- a/arch/arm64/kernel/cpufeature_impdef.c
++++ b/arch/arm64/kernel/cpufeature_impdef.c
+@@ -4,8 +4,21 @@
+  */
+ 
+ #include <asm/cpufeature.h>
++#include <asm/apple_cpufeature.h>
+ 
+ #ifdef CONFIG_ARM64_MEMORY_MODEL_CONTROL
++static bool has_apple_feature(const struct arm64_cpu_capabilities *entry, int scope)
++{
++	u64 val;
++	WARN_ON(scope != SCOPE_SYSTEM);
++
++	if (read_cpuid_implementor() != ARM_CPU_IMP_APPLE)
++		return false;
++
++	val = read_sysreg(aidr_el1);
++	return cpufeature_matches(val, entry);
++}
++
+ static bool has_tso_fixed(const struct arm64_cpu_capabilities *entry, int scope)
+ {
+ 	/* List of CPUs that always use the TSO memory model */
+@@ -22,6 +35,16 @@ static bool has_tso_fixed(const struct arm64_cpu_capabilities *entry, int scope)
+ 
+ static const struct arm64_cpu_capabilities arm64_impdef_features[] = {
+ #ifdef CONFIG_ARM64_MEMORY_MODEL_CONTROL
++	{
++		.desc = "TSO memory model (Apple)",
++		.capability = ARM64_HAS_TSO_APPLE,
++		.type = ARM64_CPUCAP_SYSTEM_FEATURE,
++		.matches = has_apple_feature,
++		.field_pos = AIDR_APPLE_TSO_SHIFT,
++		.field_width = 1,
++		.sign = FTR_UNSIGNED,
++		.min_field_value = 1,
++	},
+ 	{
+ 		.desc = "TSO memory model (Fixed)",
+ 		.capability = ARM64_HAS_TSO_FIXED,
+diff --git a/arch/arm64/kernel/process.c b/arch/arm64/kernel/process.c
+index 117f80e16aac..34a19ecfb630 100644
+--- a/arch/arm64/kernel/process.c
++++ b/arch/arm64/kernel/process.c
+@@ -44,6 +44,7 @@
+ #include <linux/memory_ordering_model.h>
+ 
+ #include <asm/alternative.h>
++#include <asm/apple_cpufeature.h>
+ #include <asm/compat.h>
+ #include <asm/cpufeature.h>
+ #include <asm/cacheflush.h>
+@@ -522,6 +523,10 @@ void update_sctlr_el1(u64 sctlr)
+ #ifdef CONFIG_ARM64_MEMORY_MODEL_CONTROL
+ int arch_prctl_mem_model_get(struct task_struct *t)
+ {
++	if (alternative_has_cap_unlikely(ARM64_HAS_TSO_APPLE) &&
++		t->thread.actlr & ACTLR_APPLE_TSO)
++		return PR_SET_MEM_MODEL_TSO;
++
+ 	return PR_SET_MEM_MODEL_DEFAULT;
+ }
+ 
+@@ -531,6 +536,23 @@ int arch_prctl_mem_model_set(struct task_struct *t, unsigned long val)
+ 	    val == PR_SET_MEM_MODEL_TSO)
+ 		return 0;
+ 
++	if (alternative_has_cap_unlikely(ARM64_HAS_TSO_APPLE)) {
++		WARN_ON(!system_has_actlr_state());
++
++		switch (val) {
++		case PR_SET_MEM_MODEL_TSO:
++			t->thread.actlr |= ACTLR_APPLE_TSO;
++			break;
++		case PR_SET_MEM_MODEL_DEFAULT:
++			t->thread.actlr &= ~ACTLR_APPLE_TSO;
++			break;
++		default:
++			return -EINVAL;
++		}
++		write_sysreg(t->thread.actlr, actlr_el1);
++		return 0;
++	}
++
+ 	if (val == PR_SET_MEM_MODEL_DEFAULT)
+ 		return 0;
+ 
+diff --git a/arch/arm64/tools/cpucaps b/arch/arm64/tools/cpucaps
+index daa6b9495402..62f9ca9ce44b 100644
+--- a/arch/arm64/tools/cpucaps
++++ b/arch/arm64/tools/cpucaps
+@@ -52,6 +52,7 @@ HAS_STAGE2_FWB
+ HAS_TCR2
+ HAS_TIDCP1
+ HAS_TLB_RANGE
++HAS_TSO_APPLE
+ HAS_TSO_FIXED
+ HAS_VIRT_HOST_EXTN
+ HAS_WFXT
