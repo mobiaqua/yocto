@@ -28,6 +28,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
            file://0020-FogBugz-398879-2-fpga-mgr-debugfs.patch \
            file://0030-OF-DT-Overlay-configfs-interface-v7.patch \
            file://0031-kbuild-Enable-DT-symbols-when-CONFIG_OF_OVERLAY-is-u.patch \
+           file://0200-Fix-for-unaligned-IN-data.-57.patch \
            file://defconfig \
            "
 
