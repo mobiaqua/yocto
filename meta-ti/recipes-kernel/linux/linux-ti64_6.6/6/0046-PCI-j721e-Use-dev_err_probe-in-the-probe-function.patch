@@ -41,7 +41,7 @@ index cde6cd77e406..2e5193a71089 100644
  		goto err_get_sync;
  	}
  
-@@ -516,28 +516,25 @@ static int j721e_pcie_probe(struct platform_device *pdev)
+@@ -516,29 +516,26 @@ static int j721e_pcie_probe(struct platform_device *pdev)
  	case PCI_MODE_RC:
  		gpiod = devm_gpiod_get_optional(dev, "reset", GPIOD_OUT_LOW);
  		if (IS_ERR(gpiod)) {
@@ -51,6 +51,7 @@ index cde6cd77e406..2e5193a71089 100644
 +			ret = dev_err_probe(dev, PTR_ERR(gpiod), "Failed to get reset GPIO\n");
  			goto err_get_sync;
  		}
+ 		pcie->reset_gpio = gpiod;
  
  		ret = cdns_pcie_init_phy(dev, cdns_pcie);
  		if (ret) {

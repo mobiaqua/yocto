@@ -7,7 +7,7 @@ COMPATIBLE_MACHINE = "beagle64"
 KERNEL_VERSION_SANITY_SKIP = "1"
 INSANE_SKIP += "buildpaths"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.6.63"
+LINUX_VERSION = "6.6.76"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -65,8 +65,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://1/0196-net-ethernet-ti-am65-cpsw-qos-Add-Frame-Preemption-M.patch \
             file://1/0197-net-ethernet-ti-am65-cpsw-add-sw-tx-rx-irq-coalescin.patch \
             file://1/0203-mux-mmio-use-reg-property-when-parent-device-is-not-.patch \
-            file://1/0208-PCI-j721e-Add-per-platform-maximum-lane-settings.patch \
-            file://1/0209-PCI-j721e-Add-PCIe-4x-lane-selection-support.patch \
             file://1/0214-media-cadence-csi2rx-add-Y8_1X8-format.patch \
             file://1/0215-media-ti-j721e-csi2rx-add-GREY-format.patch \
             file://1/0216-media-cadence-csi2rx-add-support-for-RGB-formats.patch \
@@ -132,8 +130,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://5/0142-drm-bridge-cdns-dsi-Implement-early_enable-and-late_.patch \
             file://5/0146-drm-tidss-Add-OLDI-bridge-support.patch \
             file://5/0162-arm64-dts-ti-k3-j721e-main-Add-DSI-and-DPHY-TX.patch \
-            file://5/0169-usb-cdns3-Add-quirk-flag-to-enable-suspend-residency.patch \
-            file://5/0170-usb-cdns3-ti-Add-workaround-for-Errata-i2409.patch \
             file://5/0176-phy-cadence-torrent-Add-PCIe-100MHz-USXGMII-156.25MH.patch \
             file://5/0177-phy-cadence-torrent-Add-USXGMII-156.25MHz-SGMII-QSGM.patch \
             file://5/0178-phy-cadence-torrent-Add-USXGMII-156.25MHz-SGMII-QSGM.patch \
@@ -201,13 +197,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://6/0041-i2c-omap-wakeup-the-controller-during-suspend-callba.patch \
             file://6/0042-mux-add-mux_chip_resume-function.patch \
             file://6/0043-mux-mmio-add-resume-support.patch \
-            file://6/0044-PCI-cadence-Extract-link-setup-sequence-from-cdns_pc.patch \
-            file://6/0045-PCI-cadence-Set-cdns_pcie_host_init-global.patch \
             file://6/0046-PCI-j721e-Use-dev_err_probe-in-the-probe-function.patch \
-            file://6/0047-PCI-j721e-Add-reset-GPIO-to-struct-j721e_pcie.patch \
-            file://6/0048-PCI-Add-T_PERST_CLK_US-macro.patch \
-            file://6/0049-PCI-j721e-Use-T_PERST_CLK_US-macro.patch \
-            file://6/0050-PCI-j721e-Add-suspend-and-resume-support.patch \
             file://6/0061-media-ti-j721e-csi2rx-Fix-missing-v4l2-cleanup.patch \
             file://6/0062-HACK-media-ti-j721e-csi2rx-Enable-all-streams-togeth.patch \
             file://6/0063-media-ti-j721e-csi2rx-Add-system-suspend-resume-hook.patch \
@@ -362,10 +352,8 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://7/0056-media-cadence-csi2rx-Fix-unnecessary-s_stream-call.patch \
             file://7/0060-v4l2-controls-Add-Control-for-Background-Detection.patch \
             file://7/0062-drm-bridge-cdns-mhdp8546-Fix-possible-null-pointer-d.patch \
-            file://7/0065-arm64-dts-ti-k3-j721e-Fix-clock-IDs-for-MCSPI-instan.patch \
             file://7/0071-remoteproc-k3-r5-Drop-check-performed-in-k3_r5_rproc.patch \
             file://7/0072-remoteproc-k3-dsp-Drop-check-performed-in-k3_dsp_rpr.patch \
-            file://7/0087-PCI-j721e-Deassert-PERST-after-a-delay-of-PCIE_T_PVP.patch \
             file://7/0088-remoteproc-k3-r5-fix-unused-variable.patch \
             file://7/0092-arm64-dts-ti-k3-j7-Add-phase-detect-selector-value-i.patch \
             file://7/0124-drm-tidss-Fix-issue-in-irq-handling-causing-irq-floo.patch \
@@ -391,7 +379,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://ti_config \
 "
 
-SRC_URI[sha256sum] = "d1054ab4803413efe2850f50f1a84349c091631ec50a1cf9e891d1b1f9061835"
+SRC_URI[sha256sum] = "81168b15f0c64034a2ab553ae37a5a38b79c3fe10f69faccc9f374ced4eb13a0"
 
 S = "${WORKDIR}/linux-${PV}"
 
