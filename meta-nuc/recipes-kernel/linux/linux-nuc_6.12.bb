@@ -1,7 +1,7 @@
 require recipes-kernel/linux/linux-yocto.inc
 
 INC_PR = "r0"
-DEPENDS += "openssl-native ncurses-native elf-native kmod-native linux-firmware wireless-regdb intel-microcode"
+DEPENDS += "openssl-native ncurses-native elf-native kmod-native lz4-native linux-firmware wireless-regdb intel-microcode"
 DEPENDS:remove = "util-linux-native elfutils-native"
 COMPATIBLE_MACHINE:intel-x86-common = "${MACHINE}"
 KMACHINE:corei7-64-intel-common = "intel-corei7-64"
@@ -11,7 +11,7 @@ KERNEL_FEATURES:remove = "cfg/efi.scc"
 KERNEL_VERSION_SANITY_SKIP = "1"
 INSANE_SKIP += "buildpaths"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.12.1"
+LINUX_VERSION = "6.12.13"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -30,7 +30,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
            file://nuc_config \
            "
 
-SRC_URI[sha256sum] = "0193b1d86dd372ec891bae799f6da20deef16fc199f30080a4ea9de8cef0c619"
+SRC_URI[sha256sum] = "f3ebdeea9e555b4cface44e29670056f4024541e6bd222fbcf776c818974fbba"
 
 S = "${WORKDIR}/linux-${PV}"
 
