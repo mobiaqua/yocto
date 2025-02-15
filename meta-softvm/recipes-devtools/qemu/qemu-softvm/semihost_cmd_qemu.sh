@@ -75,7 +75,7 @@ $QEMU_BIN \
     -m $RAM \
     -nographic \
     -audiodev id=none,driver=none \
-    -kernel ${SOFTVM_INSTALL_PATH}/kernels/vmlinux-x64 \
+    -kernel ${SOFTVM_INSTALL_PATH}/kernels/vmlinux \
     -append "console=ttyS1 root=/dev/nfs nfsroot=$NFS_EXPORT_ROOTFS,tcp,vers=3,nolock,port=$NFSD_PORT,mountport=$MOUNTD_PORT rw \
              ip=dhcp quiet loglevel=3 \
              tdir=\"$NFS_EXPORT_TOOLS\" wdir=\"$NFS_EXPORT_WORKSPACE\" cdir=\"$NFS_EXPORT_CURRENT\" cmd=\"$CMD\"" \
