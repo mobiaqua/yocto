@@ -28,6 +28,10 @@ EXTRA_OECONF = "--disable-xml-docs \
                 "
 EXTRA_OECONF:append:class-target = " SYSTEMCTL=${base_bindir}/systemctl"
 
+# MobiAqua: added static for MacOS
+EXTRA_OECONF:append:class-native = " --enable-shared=no"
+EXTRA_OECONF:append:class-nativesdk = " --enable-shared=no"
+
 PACKAGECONFIG ??= "${@bb.utils.filter('DISTRO_FEATURES', 'systemd x11', d)} \
                    user-session \
                   "
