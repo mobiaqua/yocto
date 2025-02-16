@@ -1,16 +1,19 @@
-diff -urp old/src/include/env.h new/src/include/env.h
---- old/src/include/env.h	2025-02-15 13:38:48
-+++ new/src/include/env.h	2025-02-15 13:43:15
-@@ -78,10 +78,10 @@ extern char* ftrace_name;
-     BOOLEAN(BOX64_LIBCEF, libcef, 1)                                    \
-     STRING(BOX64_LIBGL, libgl)                                          \
-     ADDRESS(BOX64_LOAD_ADDR, load_addr)                                 \
--    INTEGER(BOX64_LOG, log, DEFAULT_LOG_LEVEL, 0, 3)                    \
-+    INTEGER(BOX64_LOG, log, LOG_NONE, 0, 3)                             \
-     INTEGER(BOX64_MALLOC_HACK, malloc_hack, 0, 0, 2)                    \
-     INTEGER(BOX64_MAXCPU, new_maxcpu, 0, 0, 100)                        \
--    BOOLEAN(BOX64_NOBANNER, nobanner, (isatty(fileno(stdout)) ? 0 : 1)) \
-+    BOOLEAN(BOX64_NOBANNER, nobanner, 1)                                \
-     STRING(BOX64_NODYNAREC, nodynarec)                                  \
-     BOOLEAN(BOX64_NOGTK, nogtk, 0)                                      \
-     BOOLEAN(BOX64_NOPULSE, nopulse, 0)                                  \
+diff -urp old/src/core.c new/src/core.c
+--- old/src/core.c	2024-11-13 20:14:56
++++ new/src/core.c	2024-11-13 20:19:11
+@@ -644,6 +644,7 @@ void LoadLogEnv()
+                 box64_nobanner = p[0]-'0';
+         }
+     }
++    box64_nobanner = 1;
+     // grab BOX64_TRACE_FILE envvar, and change %pid to actual pid is present in the name
+     openFTrace(NULL, 0);
+     box64_log = ftrace_name?LOG_INFO:(isatty(fileno(stdout))?LOG_INFO:LOG_NONE); //default LOG value different if stdout is redirected or not
+@@ -672,6 +673,7 @@ void LoadLogEnv()
+         if(!box64_nobanner)
+             printf_log(LOG_INFO, "Debug level is %d\n", box64_log);
+     }
++    box64_log = LOG_NONE;
+     if((box64_nobanner || box64_log) && ftrace==stdout)
+         box64_stdout_no_w = 1;
+ 

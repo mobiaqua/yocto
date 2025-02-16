@@ -1,58 +1,76 @@
-diff -urp old/src/dynarec/dynarec_helper.h new/src/dynarec/dynarec_helper.h
---- old/src/dynarec/dynarec_helper.h	2025-02-15 13:36:43
-+++ new/src/dynarec/dynarec_helper.h	2025-02-15 13:34:51
-@@ -167,7 +167,7 @@
+diff --git a/src/core.c b/src/core.c
+index 36393235..5a3d549c 100644
+--- a/src/core.c
++++ b/src/core.c
+@@ -778,6 +778,7 @@ void LoadLogEnv()
+         else
+             printf_log(LOG_INFO, "Dynarec will not continue block on forward jump\n");
+     }
++    if (box64_dynarec_strongmem != -1) {
+     p = getenv("BOX64_DYNAREC_STRONGMEM");
+     if(p) {
+         if(strlen(p)==1) {
+@@ -787,6 +788,7 @@ void LoadLogEnv()
+         if(box64_dynarec_strongmem)
+             printf_log(LOG_INFO, "Dynarec will try to emulate a strong memory model%s\n", (box64_dynarec_strongmem==1)?" with limited performance loss":((box64_dynarec_strongmem>1)?" with more performance loss":""));
+     }
++    }
+     p = getenv("BOX64_DYNAREC_WEAKBARRIER");
+     if (p) {
+         if (strlen(p) == 1) {
+diff --git a/src/dynarec/dynarec_helper.h b/src/dynarec/dynarec_helper.h
+index 1f567be2..1ee8b7f5 100644
+--- a/src/dynarec/dynarec_helper.h
++++ b/src/dynarec/dynarec_helper.h
+@@ -132,6 +132,7 @@
+ // An opcode will write memory, this will be put before the STORE instruction automatically.
+ #define WILLWRITE()                                                                                  \
+     do {                                                                                             \
++        if (box64_dynarec_strongmem > 0)                                                             \
+         if (box64_dynarec_strongmem >= dyn->insts[ninst].will_write && dyn->smwrite == 0) {          \
+             /* Will write but never written, this is the start of a SEQ, put a barrier. */           \
+             if (box64_dynarec_weakbarrier)                                                           \
+@@ -167,7 +168,7 @@
  // Will be put at the end of the SEQ
  #define SMEND()                                                         \
      do {                                                                \
--        if (BOX64DRENV(dynarec_strongmem)) {                            \
-+        if (BOX64DRENV(dynarec_strongmem) > 0) {                        \
+-        if (box64_dynarec_strongmem) {                                  \
++        if (box64_dynarec_strongmem > 0) {                              \
              /* It's a SEQ, put a barrier here. */                       \
              if (dyn->smwrite) {                                         \
                  /* Check if the next instruction has a end loop mark */ \
-diff -urp old/src/librarian/library.c new/src/librarian/library.c
---- old/src/librarian/library.c	2025-02-15 09:17:56
-+++ new/src/librarian/library.c	2025-02-15 13:30:42
-@@ -360,10 +360,12 @@ static int loadEmulatedLib(const char* libname, librar
-         if(libname && BOX64ENV(dynarec_bleeding_edge) && strstr(libname, "libmonobdwgc-2.0.so")) {
+diff --git a/src/librarian/library.c b/src/librarian/library.c
+index bba84224..fdfeb5b5 100644
+--- a/src/librarian/library.c
++++ b/src/librarian/library.c
+@@ -360,10 +360,12 @@ static int loadEmulatedLib(const char* libname, library_t *lib, box64context_t*
+         if(libname && box64_dynarec_bleeding_edge && strstr(libname, "libmonobdwgc-2.0.so")) {
              printf_dump(LOG_INFO, "MonoBleedingEdge detected, disable Dynarec BigBlock and enable Dynarec StrongMem\n");
-             SET_BOX64ENV(dynarec_bigblock, 0);
-+            if (BOX64ENV(dynarec_strongmem) != -1)
-             SET_BOX64ENV(dynarec_strongmem, 1);
+             box64_dynarec_bigblock = 0;
++            if (box64_dynarec_strongmem != -1)
+             box64_dynarec_strongmem = 1;
          }
-         if(libname && BOX64ENV(dynarec_tbb) && strstr(libname, "libtbb.so")) {
+         if(libname && box64_dynarec_tbb && strstr(libname, "libtbb.so")) {
              printf_dump(LOG_INFO, "libtbb detected, enable Dynarec StrongMem\n");
-+            if (BOX64ENV(dynarec_strongmem) != -1)
-             SET_BOX64ENV(dynarec_strongmem, 1);
++            if (box64_dynarec_strongmem != -1)
+             box64_dynarec_strongmem = 1;
          }
          #endif
-@@ -371,6 +373,7 @@ static int loadEmulatedLib(const char* libname, librar
+@@ -371,6 +373,7 @@ static int loadEmulatedLib(const char* libname, library_t *lib, box64context_t*
              #ifdef DYNAREC
              printf_dump(LOG_INFO, "libjvm detected, disable Dynarec BigBlock and enable Dynarec StrongMem, hide SSE 4.2\n");
-             SET_BOX64ENV(dynarec_bigblock, 0);
-+            if (BOX64ENV(dynarec_strongmem) != -1)
-             SET_BOX64ENV(dynarec_strongmem, 1);
+             box64_dynarec_bigblock = 0;
++            if (box64_dynarec_strongmem != -1)
+             box64_dynarec_strongmem = 1;
              #else
              printf_dump(LOG_INFO, "libjvm detected, hide SSE 4.2\n");
-diff -urp old/src/tools/wine_tools.c new/src/tools/wine_tools.c
---- old/src/tools/wine_tools.c	2025-02-15 09:17:54
-+++ new/src/tools/wine_tools.c	2025-02-15 13:32:17
-@@ -163,6 +163,7 @@ void DetectUnityPlayer(int fd)
-             printf_log(LOG_NONE, "Detected UnityPlayer.dll\n");
- #ifdef DYNAREC
-             if (!BOX64ENV(dynarec_strongmem)) {
-+                if (BOX64ENV(dynarec_strongmem) != -1)
-                 SET_BOX64ENV(dynarec_strongmem, 1);
-                 PrintEnvVariables(&box64env, LOG_INFO);
-             }
 diff --git a/src/main.c b/src/main.c
 index 5f73ab4b..328cef9c 100644
 --- a/src/main.c
 +++ b/src/main.c
-@@ -1,9 +1,59 @@
+@@ -1,9 +1,58 @@
  #include "core.h"
 +#include "debug.h"
-+#include "env.h"
 +
 +#include <stdlib.h>
 +#include <stdio.h>
@@ -95,7 +113,7 @@ index 5f73ab4b..328cef9c 100644
 +  result = prctl(PR_SET_MEM_MODEL, PR_SET_MEM_MODEL_TSO, 0, 0, 0);
 +  if (result == 0) {
 +    // TSO mode successfully enabled.
-+    SET_BOX64ENV(dynarec_strongmem, -1);
++    box64_dynarec_strongmem = -1;
 +  }
 +}
  
