@@ -83,10 +83,11 @@ index ac02244a6..416ed202f 100644
  	kfree(sdiodev);
  	kfree(bus_if);
  	return err;
-@@ -1131,15 +1149,27 @@ static int brcmf_ops_sdio_suspend(struct device *dev)
+@@ -1131,17 +1149,29 @@ static int brcmf_ops_sdio_suspend(struct device *dev)
  	struct brcmf_bus *bus_if;
  	struct brcmf_sdio_dev *sdiodev;
  	mmc_pm_flag_t sdio_flags;
+ 	bool cap_power_off;
 +	struct brcmf_cfg80211_info *config;
 +	int retry = BRCMF_PM_WAIT_MAXRETRY;
  	int ret = 0;
@@ -108,11 +109,12 @@ index ac02244a6..416ed202f 100644
  	if (func->num != 1)
  		return 0;
  
+ 	cap_power_off = !!(func->card->host->caps & MMC_CAP_POWER_OFF_CARD);
 -
 -	bus_if = dev_get_drvdata(dev);
  	sdiodev = bus_if->bus_priv.sdio;
  
- 	if (sdiodev->wowl_enabled) {
+ 	if (sdiodev->wowl_enabled || !cap_power_off) {
 @@ -1219,9 +1249,13 @@ static struct sdio_driver brcmf_sdmmc_driver = {
  	},
  };
