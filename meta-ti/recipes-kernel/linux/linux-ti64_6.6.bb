@@ -7,7 +7,7 @@ COMPATIBLE_MACHINE = "beagle64"
 KERNEL_VERSION_SANITY_SKIP = "1"
 INSANE_SKIP += "buildpaths"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.6.76"
+LINUX_VERSION = "6.6.87"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -134,7 +134,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://5/0177-phy-cadence-torrent-Add-USXGMII-156.25MHz-SGMII-QSGM.patch \
             file://5/0178-phy-cadence-torrent-Add-USXGMII-156.25MHz-SGMII-QSGM.patch \
             file://5/0188-net-ethernet-ti-am65-cpsw-nuss-Enable-SGMII-mode-for.patch \
-            file://5/0210-drm-tidss-Add-simple-K2G-manual-reset.patch \
             file://5/0211-drm-tidss-Add-dispc_is_idle.patch \
             file://5/0212-drm-tidss-Add-some-support-for-splash-screen.patch \
             file://5/0215-drm-bridge-cdns-mhdp8546-core-Move-mode_valid-hook-t.patch \
@@ -356,12 +355,9 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://7/0072-remoteproc-k3-dsp-Drop-check-performed-in-k3_dsp_rpr.patch \
             file://7/0088-remoteproc-k3-r5-fix-unused-variable.patch \
             file://7/0092-arm64-dts-ti-k3-j7-Add-phase-detect-selector-value-i.patch \
-            file://7/0124-drm-tidss-Fix-issue-in-irq-handling-causing-irq-floo.patch \
             file://7/0125-drm-tidss-Remove-unused-OCP-error-flag.patch \
             file://7/0126-drm-tidss-Remove-extra-K2G-check.patch \
             file://7/0127-drm-tidss-Add-printing-of-underflows.patch \
-            file://7/0128-drm-tidss-Clear-the-interrupt-status-for-interrupts-.patch \
-            file://7/0129-drm-tidss-Fix-race-condition-while-handling-interrup.patch \
             file://7/0130-drm-tidss-Rename-wait_lock-to-irq_lock.patch \
             file://7/0150-arm64-dts-ti-k3-j721e-Add-MIT-license-along-with-GPL.patch \
             file://7/0153-arm64-dts-ti-k3-pinctrl-Add-MIT-license-along-with-G.patch \
@@ -379,7 +375,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://ti_config \
 "
 
-SRC_URI[sha256sum] = "81168b15f0c64034a2ab553ae37a5a38b79c3fe10f69faccc9f374ced4eb13a0"
+SRC_URI[sha256sum] = "8957e5c2dacdbc47a16dbf1f6303ca7088409be6197a3881f752313275357ac6"
 
 S = "${WORKDIR}/linux-${PV}"
 
