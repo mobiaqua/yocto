@@ -17,7 +17,10 @@ SRC_URI = " \
     file://0001-meson.build-check-for-all-linux-host_os-combinations.patch \
     file://0001-meson-misdetects-64bit-atomics-on-mips-clang.patch \
     file://0001-gallium-Fix-build-with-llvm-17.patch \
-    file://0001-meson-Disable-cmake-dependency-detector-for-llvm.patch \
+    file://0001-drisw-fix-build-without-dri3.patch \
+    file://0002-glxext-don-t-try-zink-if-not-enabled-in-mesa.patch \
+    file://0001-gallivm-Call-StringMapIterator-from-llvm-scope.patch \
+    file://0001-Update-lp_bld_misc.cpp-to-support-llvm-19.patch \
 "
 
 S = "${WORKDIR}/git"
@@ -25,7 +28,8 @@ S = "${WORKDIR}/git"
 # MobiAqua: removed dynamic 'pvr', 'sgx' and added fixed 'pvr'
 PACKAGECONFIG:append = "pvr"
 
-SRCREV = "b12290126ba6a154f0e8b0a8c8b2b0d64f98e427"
+SRCREV = "82e6a9293c476267417c5b6b906b01fb73a34e38"
+PV = "24.0.1"
 
 PACKAGECONFIG[pvr] = "-Dgallium-pvr-alias=tidss,"
 
