@@ -8,7 +8,7 @@ inherit module
 PROVIDES = "virtual/gpudriver"
 
 PR = "r0"
-PV = "24.1"
+PV = "24.2"
 PR:append = "+gitr-${SRCREV}"
 
 PACKAGE_ARCH = "${MACHINE_ARCH}"
@@ -19,14 +19,13 @@ COMPATIBLE_MACHINE = "beagle64"
 
 DEPENDS = "virtual/kernel"
 
-BRANCH = "linuxws/scarthgap/k6.6/24.1.6554834"
+BRANCH = "linuxws/scarthgap/k6.12/24.2.6643903"
 
-SRC_URI = "git://git.ti.com/git/graphics/ti-img-rogue-driver.git;protocol=https;branch=${BRANCH} \
-          "
+SRC_URI = "git://git.ti.com/git/graphics/ti-img-rogue-driver.git;protocol=https;branch=${BRANCH}"
 
 S = "${WORKDIR}/git"
 
-SRCREV = "0884dea56e6b9fd59bcc6beba40a089b7161d70d"
+SRCREV = "8eaff654a8871118c08cfafe53795f57e3b6b396"
 
 TARGET_PRODUCT:beagle64 = "j721e_linux"
 PVR_BUILD = "release"
