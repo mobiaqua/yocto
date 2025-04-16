@@ -11,7 +11,7 @@ KERNEL_FEATURES:remove = "cfg/efi.scc"
 KERNEL_VERSION_SANITY_SKIP = "1"
 INSANE_SKIP += "buildpaths"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.12.13"
+LINUX_VERSION = "6.12.23"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -30,7 +30,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
            file://nuc_config \
            "
 
-SRC_URI[sha256sum] = "f3ebdeea9e555b4cface44e29670056f4024541e6bd222fbcf776c818974fbba"
+SRC_URI[sha256sum] = "d8d95404f8deeb7ff6992c0df855025062e9e8182bca6daa27ef2e9275d27749"
 
 S = "${WORKDIR}/linux-${PV}"
 
