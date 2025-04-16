@@ -32,6 +32,25 @@ SRC_URI = " \
     file://CVE-2024-31582.patch \
     file://CVE-2023-50008.patch \
     file://CVE-2024-32230.patch \
+    file://CVE-2023-49501.patch \
+    file://CVE-2024-28661.patch \
+    file://CVE-2023-50007.patch \
+    file://CVE-2023-49528.patch \
+    file://CVE-2024-7055.patch \
+    file://CVE-2024-35366.patch \
+    file://CVE-2024-35367.patch \
+    file://CVE-2024-35368.patch \
+    file://CVE-2024-35365.patch \
+    file://CVE-2024-36613.patch \
+    file://CVE-2024-36616.patch \
+    file://CVE-2024-36617.patch \
+    file://CVE-2024-36618.patch \
+    file://CVE-2024-36619.patch \
+    file://CVE-2024-35369.patch \
+    file://CVE-2025-25473.patch \
+    file://CVE-2025-22919.patch \
+    file://CVE-2025-22921.patch \
+    file://CVE-2025-0518.patch \
 "
 
 SRC_URI[sha256sum] = "8684f4b00f94b85461884c3719382f1261f0d9eb3d59640a1f4ac0873616f968"

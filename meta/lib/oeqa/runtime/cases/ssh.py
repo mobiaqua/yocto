@@ -16,8 +16,8 @@ class SSHTest(OERuntimeTestCase):
     @OETestDepends(['ping.PingTest.test_ping'])
     @OEHasPackage(['dropbear', 'openssh-sshd'])
     def test_ssh(self):
-        for i in range(20):
-          status, output = self.target.run("uname -a", timeout=5)
+        for i in range(5):
+          status, output = self.target.run("uname -a", timeout=30)
           if status == 0:
               break
           elif status == 255 or status == -signal.SIGTERM:

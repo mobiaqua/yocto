@@ -9,8 +9,6 @@ do_install:append() {
 
     install -d ${D}${sysconfdir}/bluetooth/
     install -m 0644 ${S}/src/main.conf ${D}/${sysconfdir}/bluetooth/
-    install -m 0644 ${S}/profiles/network/network.conf ${D}/${sysconfdir}/bluetooth/
-    install -m 0644 ${S}/profiles/input/input.conf ${D}/${sysconfdir}/bluetooth/
 
     sed -i -e 's/#AutoEnable=true/AutoEnable=true/g' ${D}/${sysconfdir}/bluetooth/main.conf
     sed -i -e 's/#IdleTimeout=30/IdleTimeout=3/g' ${D}/${sysconfdir}/bluetooth/input.conf
