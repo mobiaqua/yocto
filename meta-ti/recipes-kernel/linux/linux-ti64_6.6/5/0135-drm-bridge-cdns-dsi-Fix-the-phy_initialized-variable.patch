@@ -19,9 +19,9 @@ index b016f2ba06bb..42565e253b2d 100644
 --- a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
 +++ b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
 @@ -1153,6 +1153,7 @@ static int __maybe_unused cdns_dsi_suspend(struct device *dev)
+ 	clk_disable_unprepare(dsi->dsi_sys_clk);
  	clk_disable_unprepare(dsi->dsi_p_clk);
  	reset_control_assert(dsi->dsi_p_rst);
- 	dsi->link_initialized = false;
 +	dsi->phy_initialized = false;
  	return 0;
  }

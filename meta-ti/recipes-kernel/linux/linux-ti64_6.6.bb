@@ -7,7 +7,7 @@ COMPATIBLE_MACHINE = "beagle64"
 KERNEL_VERSION_SANITY_SKIP = "1"
 INSANE_SKIP += "buildpaths"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.6.87"
+LINUX_VERSION = "6.6.103"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -119,11 +119,8 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://5/0119-drm-tidss-IRQ-code-cleanup.patch \
             file://5/0120-drm-tidss-Use-DRM_PLANE_COMMIT_ACTIVE_ONLY.patch \
             file://5/0133-drm-tidss-Populate-crtc_-timing-params.patch \
-            file://5/0134-drm-bridge-cdns-dsi-Fix-OF-node-pointer.patch \
             file://5/0135-drm-bridge-cdns-dsi-Fix-the-phy_initialized-variable.patch \
             file://5/0136-drm-bridge-cdns-dsi-Fix-the-link-and-phy-init-order.patch \
-            file://5/0137-drm-bridge-cdns-dsi-Fix-the-clock-variable-for-mode_.patch \
-            file://5/0138-drm-bridge-cdns-dsi-Wait-for-Clk-and-Data-Lanes-to-b.patch \
             file://5/0139-drm-bridge-cdns-dsi-Reset-the-DCS-write-FIFO.patch \
             file://5/0140-drm-bridge-cdns-dsi-Support-atomic-bridge-APIs.patch \
             file://5/0141-drm-bridge-Introduce-early_enable-and-late-disable.patch \
@@ -351,7 +348,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://7/0056-media-cadence-csi2rx-Fix-unnecessary-s_stream-call.patch \
             file://7/0060-v4l2-controls-Add-Control-for-Background-Detection.patch \
             file://7/0062-drm-bridge-cdns-mhdp8546-Fix-possible-null-pointer-d.patch \
-            file://7/0071-remoteproc-k3-r5-Drop-check-performed-in-k3_r5_rproc.patch \
             file://7/0072-remoteproc-k3-dsp-Drop-check-performed-in-k3_dsp_rpr.patch \
             file://7/0088-remoteproc-k3-r5-fix-unused-variable.patch \
             file://7/0092-arm64-dts-ti-k3-j7-Add-phase-detect-selector-value-i.patch \
@@ -375,7 +371,7 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
             file://ti_config \
 "
 
-SRC_URI[sha256sum] = "8957e5c2dacdbc47a16dbf1f6303ca7088409be6197a3881f752313275357ac6"
+SRC_URI[sha256sum] = "d288dd38c3e62ba576ba6b3ad2a84cfba65cd43b702f6c50d1f701aee942b18e"
 
 S = "${WORKDIR}/linux-${PV}"
 
