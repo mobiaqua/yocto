@@ -23,6 +23,7 @@ SRC_URI = "git://github.com/ThomasDickey/ncurses-snapshots.git;protocol=https;br
            file://0001-Updating-reset-code-ncurses-6.4-patch-20231104.patch \
            file://CVE-2023-50495.patch \
            file://CVE-2023-45918.patch \
+           file://CVE-2025-6141.patch \
            "
 
 S = "${WORKDIR}/git"

@@ -21,8 +21,16 @@ SRC_URI = "${GNOME_MIRROR}/glib/${SHRT_VER}/glib-${PV}.tar.xz \
            file://gdatetime-test-fail-0001.patch \
            file://gdatetime-test-fail-0002.patch \
            file://gdatetime-test-fail-0003.patch \
+           file://CVE-2025-3360-01.patch \
+           file://CVE-2025-3360-02.patch \
+           file://CVE-2025-3360-03.patch \
+           file://CVE-2025-3360-04.patch \
+           file://CVE-2025-3360-05.patch \
+           file://CVE-2025-3360-06.patch \
+           file://CVE-2025-4373-01.patch \
+           file://CVE-2025-4373-02.patch \
            "
-SRC_URI:append:class-native = " file://relocate-modules.patch \ 
+SRC_URI:append:class-native = " file://relocate-modules.patch \
                                 file://0001-meson.build-do-not-enable-pidfd-features-on-native-g.patch \
                               "
 SRC_URI:append:class-native:darwin = " file://patch-declarations.diff;striplevel=0"
@@ -59,3 +67,5 @@ def find_meson_cross_files(d):
 python () {
     find_meson_cross_files(d)
 }
+
+CVE_STATUS[CVE-2025-4056] = "not-applicable-platform: Issue only applies on Windows"
