@@ -1,4 +1,4 @@
-DESCRIPTION = "Kernel drivers for the PowerVR SGX 5 Series chipset found in the TI devices"
+SUMMARY =  "Kernel drivers for the PowerVR SGX chipset found in the TI SoCs"
 LICENSE = "MIT | GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://GPL-COPYING;md5=60422928ba677faaa13d6ab5f5baaa1e"
 

@@ -13,11 +13,15 @@ PRUETH_FW_AM65X_SR2_VERSION = "02.02.15.04"
 GOODIX_FW_VERSION = "1.0.0.0"
 CADENCE_MHDP_FW_VERSION = "2.1.0"
 IMG_DEC_FW_VERSION = "1.0"
-CNM_WAVE521_FW_VERSION = "1.0.7"
-TI_DM_FW_VERSION = "11.00.09"
-TI_SYSFW_VERSION = "11.00.07"
+CNM_WAVE521_FW_VERSION = "1.0.8"
+TI_DM_FW_VERSION = "11.01.09"
+TI_SYSFW_VERSION = "11.01.05"
+TI_HSM_DEMO_FW_VERSION = "11.00.09"
+TAD5212_FW_VERSION = "1.0.0.0"
+TI_PKA_FW_VERSION = "2.1.0"
+TI_IPC_EXAMPLES_FW_VERSION = "3.52.00.01"
 
-TI_LINUX_FW_SRCREV ?= "c3ad8113c766bee7b8ddfae222e9b8017b565ea3"
+TI_LINUX_FW_SRCREV ?= "fb492164151831b90e961dd37fccc57a8fdc1257"
 SRCREV = "${TI_LINUX_FW_SRCREV}"
 
 BRANCH ?= "ti-linux-firmware"
@@ -41,6 +45,9 @@ INHIBIT_SYSROOT_STRIP = "1"
 
 # This is used to prevent the build system from splitting out the firmware debug info into a separate file
 INHIBIT_PACKAGE_DEBUG_SPLIT = "1"
+
+# Firmware here are prebuilt with no external dependencies
+INHIBIT_DEFAULT_DEPS = "1"
 
 # Disable arch checking as firmware is likely to be a different arch from the Yocto build
 INSANE_SKIP:${PN} += "arch"
