@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/x86 6.6.87 Kernel Configuration
+# Linux/x86 6.6.103 Kernel Configuration
 #
 CONFIG_CC_VERSION_TEXT="x86_64-softvm-linux-gcc (GCC) 13.3.0"
 CONFIG_CC_IS_GCC=y
@@ -770,7 +770,6 @@ CONFIG_NET=y
 #
 # CONFIG_PACKET is not set
 CONFIG_UNIX=y
-CONFIG_UNIX_SCM=y
 CONFIG_AF_UNIX_OOB=y
 # CONFIG_UNIX_DIAG is not set
 # CONFIG_TLS is not set
@@ -874,8 +873,6 @@ CONFIG_FAILOVER=y
 #
 # Device Drivers
 #
-CONFIG_HAVE_EISA=y
-# CONFIG_EISA is not set
 CONFIG_HAVE_PCI=y
 CONFIG_PCI=y
 CONFIG_PCI_DOMAINS=y
@@ -1965,6 +1962,7 @@ CONFIG_CRYPTO_LIB_BLAKE2S_GENERIC=y
 CONFIG_CRYPTO_LIB_POLY1305_RSIZE=11
 # CONFIG_CRYPTO_LIB_POLY1305 is not set
 CONFIG_CRYPTO_LIB_SHA1=y
+CONFIG_CRYPTO_LIB_SHA256=y
 # end of Crypto library routines
 
 # CONFIG_CRC_CCITT is not set

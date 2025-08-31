@@ -6,7 +6,7 @@ DEPENDS:remove = "util-linux-native elfutils-native"
 COMPATIBLE_MACHINE = "vm-*"
 KERNEL_VERSION_SANITY_SKIP = "1"
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
-LINUX_VERSION = "6.6.87"
+LINUX_VERSION = "6.6.103"
 PV = "${LINUX_VERSION}"
 KERNEL_ARTIFACT_NAME = "${PKGE}${PKGV}${IMAGE_VERSION_SUFFIX}"
 KERNEL_ARTIFACT_LINK_NAME = ""
@@ -21,6 +21,6 @@ SRC_URI = "${KERNELORG_MIRROR}/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz \
            file://defconfig \
            "
 
-SRC_URI[sha256sum] = "8957e5c2dacdbc47a16dbf1f6303ca7088409be6197a3881f752313275357ac6"
+SRC_URI[sha256sum] = "d288dd38c3e62ba576ba6b3ad2a84cfba65cd43b702f6c50d1f701aee942b18e"
 
 S = "${WORKDIR}/linux-${PV}"
