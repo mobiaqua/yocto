@@ -16,7 +16,7 @@ LIC_FILES_CHKSUM = "file://license;md5=d8405101ec6e90c1d84b082b0c40c721"
 SRC_URI = "git://github.com/intel/Intel-Linux-Processor-Microcode-Data-Files.git;protocol=https;branch=main \
            "
 
-SRCREV = "8a62de41c011615d749f8e72bb906dddc72e56a8"
+SRCREV = "4ded52b4b0e1d60e83259cc88d1f5ad22f71a63e"
 
 DEPENDS = "iucode-tool-native"
 S = "${WORKDIR}/git"
