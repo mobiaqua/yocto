@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm 6.6.87 Kernel Configuration
+# Linux/arm 6.6.103 Kernel Configuration
 #
 CONFIG_CC_VERSION_TEXT="arm-mobiaqua-linux-gnueabi-gcc (GCC) 13.3.0"
 CONFIG_CC_IS_GCC=y
@@ -853,7 +853,6 @@ CONFIG_SKB_EXTENSIONS=y
 CONFIG_PACKET=y
 # CONFIG_PACKET_DIAG is not set
 CONFIG_UNIX=y
-CONFIG_UNIX_SCM=y
 CONFIG_AF_UNIX_OOB=y
 # CONFIG_UNIX_DIAG is not set
 # CONFIG_TLS is not set
@@ -3816,6 +3815,7 @@ CONFIG_SONY_FF=y
 # CONFIG_HID_THRUSTMASTER is not set
 # CONFIG_HID_UDRAW_PS3 is not set
 # CONFIG_HID_U2FZERO is not set
+# CONFIG_HID_UNIVERSAL_PIDFF is not set
 # CONFIG_HID_WACOM is not set
 # CONFIG_HID_WIIMOTE is not set
 # CONFIG_HID_XINMO is not set
@@ -4624,6 +4624,17 @@ CONFIG_NVMEM_SYSFS=y
 # CONFIG_FPGA is not set
 # CONFIG_FSI is not set
 # CONFIG_TEE is not set
+CONFIG_MULTIPLEXER=y
+
+#
+# Multiplexer drivers
+#
+# CONFIG_MUX_ADG792A is not set
+# CONFIG_MUX_ADGS1408 is not set
+# CONFIG_MUX_GPIO is not set
+# CONFIG_MUX_MMIO is not set
+# end of Multiplexer drivers
+
 CONFIG_PM_OPP=y
 # CONFIG_SIOX is not set
 # CONFIG_SLIMBUS is not set

@@ -700,18 +700,6 @@ index ba5231861..740de040d 100644
  s32 brcmf_notify_escan_complete(struct brcmf_cfg80211_info *cfg,
  				struct brcmf_if *ifp, bool aborted,
  				bool fw_abort)
-@@ -1211,11 +1507,6 @@ brcmf_cfg80211_scan(struct wiphy *wiphy, struct cfg80211_scan_request *request)
- 	if (err)
- 		goto scan_out;
- 
--	err = brcmf_vif_set_mgmt_ie(vif, BRCMF_VNDR_IE_PRBREQ_FLAG,
--				    request->ie, request->ie_len);
--	if (err)
--		goto scan_out;
--
- 	err = brcmf_do_escan(vif->ifp, request);
- 	if (err)
- 		goto scan_out;
 @@ -1610,14 +1903,18 @@ static s32 brcmf_set_wpa_version(struct net_device *ndev,
  	s32 val = 0;
  	s32 err = 0;
@@ -7379,9 +7367,9 @@ index f08d4b3bb..4362f52ea 100644
  	INIT_WORK(&rdev->mgmt_registrations_update_wk,
  		  cfg80211_mgmt_registrations_update_wk);
 -	spin_lock_init(&rdev->mgmt_registrations_lock);
- 
- #ifdef CONFIG_CFG80211_DEFAULT_PS
- 	rdev->wiphy.flags |= WIPHY_FLAG_PS_ON_BY_DEFAULT;
+ 	INIT_WORK(&rdev->wiphy_work, cfg80211_wiphy_work);
+ 	INIT_LIST_HEAD(&rdev->wiphy_work_list);
+ 	spin_lock_init(&rdev->wiphy_work_lock);
 @@ -1290,6 +1289,7 @@ void cfg80211_init_wdev(struct wireless_dev *wdev)
  	INIT_LIST_HEAD(&wdev->event_list);
  	spin_lock_init(&wdev->event_lock);
@@ -7712,16 +7700,6 @@ index 41ea65deb..00980c855 100644
  		   skb_copy_bits(skb, hdrlen, &payload, sizeof(payload)) == 0 &&
  		   ((ether_addr_equal(payload.hdr, rfc1042_header) &&
  		     payload.proto != htons(ETH_P_AARP) &&
-@@ -773,9 +773,6 @@ void ieee80211_amsdu_to_8023s(struct sk_buff *skb, struct sk_buff_head *list,
- 		remaining = skb->len - offset;
- 		if (subframe_len > remaining)
- 			goto purge;
--		/* mitigate A-MSDU aggregation injection attacks */
--		if (ether_addr_equal(hdr.eth.h_dest, rfc1042_header))
--			goto purge;
- 
- 		offset += sizeof(struct ethhdr);
- 		last = remaining <= subframe_len + padding;
 @@ -1030,14 +1027,14 @@ int cfg80211_change_iface(struct cfg80211_registered_device *rdev,
  	    !(rdev->wiphy.interface_modes & (1 << ntype)))
  		return -EOPNOTSUPP;
