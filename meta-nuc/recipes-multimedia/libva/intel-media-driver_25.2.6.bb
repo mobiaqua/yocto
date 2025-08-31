@@ -21,7 +21,7 @@ DEPENDS += "libva gmmlib"
 SRC_URI = "git://github.com/intel/media-driver.git;protocol=https;nobranch=1 \
           "
 
-SRCREV = "38dec7dfa4a99bcff62bbc7f4678d6521ec79df1"
+SRCREV = "c6ab0c941edfedf3ce79fa4dd7756f3369902e8d"
 S = "${WORKDIR}/git"
 
 COMPATIBLE_HOST:x86-x32 = "null"
