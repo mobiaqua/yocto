@@ -110,7 +110,8 @@ do_install:append() {
 }
 
 do_install:append () {
-	sed -i -e 's:${HOSTTOOLS_DIR}/::g' \
+	sed -i -e 's:${HOSTTOOLS_DIR}::g' \
+            -e 's:${STAGING_DIR_NATIVE}::g' \
 	    ${D}/${libdir}/rpm/macros
 }
 

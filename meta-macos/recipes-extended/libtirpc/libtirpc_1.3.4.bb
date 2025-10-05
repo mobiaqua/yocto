@@ -12,6 +12,8 @@ PROVIDES = "virtual/librpc"
 SRCREV = "d68523a88ba0a60b949c3bbb2c246be3cfeb0eea"
 
 SRC_URI = "git://git.linux-nfs.org/projects/steved/libtirpc.git;protocol=git;branch=master \
+	   file://0001-Update-declarations-to-allow-compile-with-gcc-15.patch \
+	   file://0002-update-signal-and-key_call-declarations-to-allow-com.patch \
 	   file://0001-match-complain-defines-with-linux-defines.patch \
 	   file://0002-added-missing-include-for-memset.patch \
 	   file://0003-define-endian.h-include-for-macos.patch \
