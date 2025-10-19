@@ -4,7 +4,7 @@ PRIORITY = "optional"
 LICENSE = ""
 ERROR_QA:remove = "license-checksum"
 
-DEPENDS:append = " make-native "
+DEPENDS:append = " make-native gdb-cross-${TARGET_ARCH} "
 
 do_configure() {
     :

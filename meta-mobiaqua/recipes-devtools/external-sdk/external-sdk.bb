@@ -4,7 +4,7 @@ PRIORITY = "optional"
 LICENSE = ""
 ERROR_QA:remove = "license-checksum"
 
-DEPENDS = "ffmpeg zlib freetype fontconfig alsa-lib ncurses \
+DEPENDS = "make-native gdb-cross-${TARGET_ARCH} ffmpeg zlib freetype fontconfig alsa-lib ncurses \
 libsdl2 libsdl2-net virtual/libgbm virtual/egl virtual/libgles2 libvorbis libogg zlib curl libmad \
 mpeg2dec flac libjpeg-turbo libpng libtheora faad2 fluidsynth readline liba52 libmpg123 libass lua"
 
