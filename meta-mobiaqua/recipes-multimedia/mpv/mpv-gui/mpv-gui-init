@@ -19,7 +19,8 @@
 case "$1" in
 	start|"")
 		printf '\e[3J' > /dev/tty0
-		/usr/bin/mpv-gui $MPV_GUI_ROOT & >/dev/null 2>&1
+		/usr/bin/mpv-gui $MPV_GUI_ROOT $MPV_GUI_DISPLAY1 $MPV_GUI_DISPLAY2 \
+			$MPV_GUI_AUDIO_DEV1 $MPV_GUI_AUDIO_DEV2 $MPV_GUI_REMOTE1_MAC $MPV_GUI_REMOTE2_MAC & >/dev/null 2>&1
 		;;
 	stop)
 		killall mpv-gui >/dev/null 2>&1
