@@ -1,0 +1,29 @@
+From c940fb8b79f3431629426f184d18733539869482 Mon Sep 17 00:00:00 2001
+From: Jai Luthra <j-luthra@ti.com>
+Date: Thu, 19 Dec 2024 20:29:09 +0530
+Subject: [PATCH 015/406] PENDING: media: v4l2-core: Enable streams api
+
+Multiple streams support needs to be explicitly enabled in v4l2.
+
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Signed-off-by: Yemike Abhilash Chandra <y-abhilashchandra@ti.com>
+---
+ drivers/media/v4l2-core/v4l2-subdev.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/v4l2-core/v4l2-subdev.c b/drivers/media/v4l2-core/v4l2-subdev.c
+index 3a4ba08810d2..77d733f04aa1 100644
+--- a/drivers/media/v4l2-core/v4l2-subdev.c
++++ b/drivers/media/v4l2-core/v4l2-subdev.c
+@@ -32,7 +32,7 @@
+  * 'v4l2_subdev_enable_streams_api' to 1 below.
+  */
+ 
+-static bool v4l2_subdev_enable_streams_api;
++static bool v4l2_subdev_enable_streams_api = 1;
+ #endif
+ 
+ /*
+-- 
+2.39.5 (Apple Git-154)
+

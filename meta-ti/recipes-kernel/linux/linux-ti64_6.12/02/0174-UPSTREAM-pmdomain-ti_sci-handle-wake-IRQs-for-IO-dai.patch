@@ -1,0 +1,55 @@
+From f528876c7fe0917d6b81124605e0631d753a7cbd Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@baylibre.com>
+Date: Fri, 31 Jan 2025 18:04:51 -0600
+Subject: [PATCH 174/406] UPSTREAM: pmdomain: ti_sci: handle wake IRQs for IO
+ daisy chain wakeups
+
+commit b06bc47279919628b328710f7767ea7a18a68973 upstream.
+
+When a device supports IO daisy-chain wakeups, it uses a dedicated
+wake IRQ.  Devices with IO daisy-chain wakeups enabled should not set
+wakeup constraints since these can happen even from deep power states,
+so should not prevent the DM from picking deep power states.
+
+Wake IRQs are set with dev_pm_set_wake_irq() or
+dev_pm_set_dedicated_wake_irq().  The latter is used by the serial
+driver used on K3 platforms (drivers/tty/serial/8250/8250_omap.c)
+when the interrupts-extended property is used to describe the
+dedicated wakeup interrupt.
+
+Detect these wake IRQs in the suspend path, and if set, skip sending
+constraint.
+
+Tested-by: Dhruva Gole <d-gole@ti.com>
+Signed-off-by: Kevin Hilman <khilman@baylibre.com>
+Reviewed-by: Dhruva Gole <d-gole@ti.com>
+Message-ID: <20241206-lpm-v6-10-constraints-pmdomain-v6-3-833980158c68@baylibre.com>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Kendall Willis <k-willis@ti.com>
+---
+ drivers/pmdomain/ti/ti_sci_pm_domains.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/drivers/pmdomain/ti/ti_sci_pm_domains.c b/drivers/pmdomain/ti/ti_sci_pm_domains.c
+index 4e4a0d8ba3e8..8e320e1f3f49 100644
+--- a/drivers/pmdomain/ti/ti_sci_pm_domains.c
++++ b/drivers/pmdomain/ti/ti_sci_pm_domains.c
+@@ -87,6 +87,15 @@ static inline void ti_sci_pd_set_wkup_constraint(struct device *dev)
+ 	int ret;
+ 
+ 	if (device_may_wakeup(dev)) {
++		/*
++		 * If device can wakeup using IO daisy chain wakeups,
++		 * we do not want to set a constraint.
++		 */
++		if (dev->power.wakeirq) {
++			dev_dbg(dev, "%s: has wake IRQ, not setting constraints\n", __func__);
++			return;
++		}
++
+ 		ret = ti_sci->ops.pm_ops.set_device_constraint(ti_sci, pd->idx,
+ 							       TISCI_MSG_CONSTRAINT_SET);
+ 		if (!ret)
+-- 
+2.39.5 (Apple Git-154)
+

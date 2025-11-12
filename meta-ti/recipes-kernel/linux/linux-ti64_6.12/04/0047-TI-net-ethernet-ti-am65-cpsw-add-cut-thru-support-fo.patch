@@ -1,0 +1,437 @@
+From b205b27e52de3fed1ad5d35023c5cae3146b15e1 Mon Sep 17 00:00:00 2001
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+Date: Mon, 3 Mar 2025 13:28:03 +0530
+Subject: [PATCH 047/181] TI: net: ethernet: ti: am65-cpsw: add cut-thru
+ support for am64 cpsw3g
+
+Add basic cut-thru support for AM64 CPSW3g.
+
+The cut-thru through ethtool command:
+ ethtool --set-priv-flags eth0 cut-thru on
+
+Once enabled, it will enable cut-thru for RX/TX PRI0 by default.
+Note. pri selection not supported yet, PRI0 selected to avoid complex cfg
+for now, but will be changed to PRI7.
+Port0 cut-thru is not allowed.
+
+It is recommended to use following delays after Link up is detected and
+MAC_SL configured - 15us in 10/100 mode and 3us in 1G mode.
+Hence, add 40us delay before reading CPSW_PN_SPEED_REG and implement
+fall back to manual configuration if link speed auto detection fails.
+
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+[vigneshr@ti.com: Replace udelay() with usleep_range()]
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+Signed-off-by: Chintan Vankar <c-vankar@ti.com>
+---
+ drivers/net/ethernet/ti/am65-cpsw-ethtool.c |  20 ++-
+ drivers/net/ethernet/ti/am65-cpsw-nuss.c    |  10 +-
+ drivers/net/ethernet/ti/am65-cpsw-nuss.h    |   2 +
+ drivers/net/ethernet/ti/am65-cpsw-qos.c     | 172 +++++++++++++++++++-
+ drivers/net/ethernet/ti/am65-cpsw-qos.h     |  20 ++-
+ 5 files changed, 217 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/net/ethernet/ti/am65-cpsw-ethtool.c b/drivers/net/ethernet/ti/am65-cpsw-ethtool.c
+index 9032444435e9..8cccf12be350 100644
+--- a/drivers/net/ethernet/ti/am65-cpsw-ethtool.c
++++ b/drivers/net/ethernet/ti/am65-cpsw-ethtool.c
+@@ -374,6 +374,8 @@ static const struct am65_cpsw_ethtool_stat am65_slave_stats[] = {
+ static const char am65_cpsw_ethtool_priv_flags[][ETH_GSTRING_LEN] = {
+ #define	AM65_CPSW_PRIV_P0_RX_PTYPE_RROBIN	BIT(0)
+ 	"p0-rx-ptype-rrobin",
++#define AM65_CPSW_PRIV_CUT_THRU			BIT(1)
++	"cut-thru",
+ };
+ 
+ static int am65_cpsw_ethtool_op_begin(struct net_device *ndev)
+@@ -723,20 +725,25 @@ static int am65_cpsw_get_ethtool_ts_info(struct net_device *ndev,
+ static u32 am65_cpsw_get_ethtool_priv_flags(struct net_device *ndev)
+ {
+ 	struct am65_cpsw_common *common = am65_ndev_to_common(ndev);
++	struct am65_cpsw_port *port = am65_ndev_to_port(ndev);
+ 	u32 priv_flags = 0;
+ 
+ 	if (common->pf_p0_rx_ptype_rrobin)
+ 		priv_flags |= AM65_CPSW_PRIV_P0_RX_PTYPE_RROBIN;
+ 
++	if (port->qos.cut_thru.enable)
++		priv_flags |= AM65_CPSW_PRIV_CUT_THRU;
+ 	return priv_flags;
+ }
+ 
+ static int am65_cpsw_set_ethtool_priv_flags(struct net_device *ndev, u32 flags)
+ {
+ 	struct am65_cpsw_common *common = am65_ndev_to_common(ndev);
+-	int rrobin;
++	struct am65_cpsw_port *port = am65_ndev_to_port(ndev);
++	int rrobin, cut_thru;
+ 
+ 	rrobin = !!(flags & AM65_CPSW_PRIV_P0_RX_PTYPE_RROBIN);
++	cut_thru =  !!(flags & AM65_CPSW_PRIV_CUT_THRU);
+ 
+ 	if (common->usage_count)
+ 		return -EBUSY;
+@@ -747,7 +754,18 @@ static int am65_cpsw_set_ethtool_priv_flags(struct net_device *ndev, u32 flags)
+ 		return -EINVAL;
+ 	}
+ 
++	if (cut_thru && !(common->pdata.quirks & AM64_CPSW_QUIRK_CUT_THRU)) {
++		netdev_err(ndev, "Cut-Thru not supported\n");
++		return -EOPNOTSUPP;
++	}
++
++	if (cut_thru && common->is_emac_mode) {
++		netdev_err(ndev, "Enable switch mode for cut-thru\n");
++		return -EINVAL;
++	}
++
+ 	common->pf_p0_rx_ptype_rrobin = rrobin;
++	port->qos.cut_thru.enable = cut_thru;
+ 
+ 	return 0;
+ }
+diff --git a/drivers/net/ethernet/ti/am65-cpsw-nuss.c b/drivers/net/ethernet/ti/am65-cpsw-nuss.c
+index d458bc4ddf64..09cd64b6f3f3 100644
+--- a/drivers/net/ethernet/ti/am65-cpsw-nuss.c
++++ b/drivers/net/ethernet/ti/am65-cpsw-nuss.c
+@@ -953,6 +953,7 @@ static int am65_cpsw_nuss_ndo_slave_stop(struct net_device *ndev)
+ 
+ 	phylink_disconnect_phy(port->slave.phylink);
+ 
++	am65_cpsw_qos_cut_thru_cleanup(port);
+ 	ret = am65_cpsw_nuss_common_stop(common);
+ 	if (ret)
+ 		return ret;
+@@ -1051,6 +1052,7 @@ static int am65_cpsw_nuss_ndo_slave_open(struct net_device *ndev)
+ 	/* restore vlan configurations */
+ 	vlan_for_each(ndev, cpsw_restore_vlans, port);
+ 
++	am65_cpsw_qos_cut_thru_init(port);
+ 	phylink_start(port->slave.phylink);
+ 
+ 	return 0;
+@@ -2272,7 +2274,7 @@ static void am65_cpsw_nuss_mac_link_up(struct phylink_config *config, struct phy
+ 	/* enable forwarding */
+ 	cpsw_ale_control_set(common->ale, port->port_id, ALE_PORT_STATE, ALE_PORT_STATE_FORWARD);
+ 
+-	am65_cpsw_qos_link_up(ndev, speed);
++	am65_cpsw_qos_link_up(ndev, speed, duplex);
+ 	netif_tx_wake_all_queues(ndev);
+ }
+ 
+@@ -3329,8 +3331,10 @@ static int am65_cpsw_dl_switch_mode_set(struct devlink *dl, u32 id,
+ 
+ 			port = am65_ndev_to_port(sl_ndev);
+ 			port->slave.port_vlan = 0;
+-			if (netif_running(sl_ndev))
++			if (netif_running(sl_ndev)) {
+ 				am65_cpsw_init_port_emac_ale(port);
++				am65_cpsw_qos_cut_thru_cleanup(port);
++			}
+ 		}
+ 	}
+ 	cpsw_ale_control_set(cpsw->ale, HOST_PORT_NUM, ALE_BYPASS, 0);
+@@ -3563,7 +3567,7 @@ static const struct am65_cpsw_pdata j721e_pdata = {
+ };
+ 
+ static const struct am65_cpsw_pdata am64x_cpswxg_pdata = {
+-	.quirks = AM64_CPSW_QUIRK_DMA_RX_TDOWN_IRQ,
++	.quirks = AM64_CPSW_QUIRK_DMA_RX_TDOWN_IRQ | AM64_CPSW_QUIRK_CUT_THRU,
+ 	.ale_dev_id = "am64-cpswxg",
+ 	.fdqring_mode = K3_RINGACC_RING_MODE_RING,
+ };
+diff --git a/drivers/net/ethernet/ti/am65-cpsw-nuss.h b/drivers/net/ethernet/ti/am65-cpsw-nuss.h
+index 92a27ba4c601..1320dd69938f 100644
+--- a/drivers/net/ethernet/ti/am65-cpsw-nuss.h
++++ b/drivers/net/ethernet/ti/am65-cpsw-nuss.h
+@@ -121,6 +121,7 @@ struct am65_cpsw_rx_chn {
+ 
+ #define AM65_CPSW_QUIRK_I2027_NO_TX_CSUM BIT(0)
+ #define AM64_CPSW_QUIRK_DMA_RX_TDOWN_IRQ BIT(1)
++#define AM64_CPSW_QUIRK_CUT_THRU	 BIT(2)
+ 
+ struct am65_cpsw_pdata {
+ 	u32	quirks;
+@@ -172,6 +173,7 @@ struct am65_cpsw_common {
+ 	struct am65_cpts	*cpts;
+ 	int			est_enabled;
+ 	bool			iet_enabled;
++	unsigned int		cut_thru_enabled;
+ 
+ 	bool		is_emac_mode;
+ 	u16			br_members;
+diff --git a/drivers/net/ethernet/ti/am65-cpsw-qos.c b/drivers/net/ethernet/ti/am65-cpsw-qos.c
+index fa96db7c1a13..40ab28dd1ee7 100644
+--- a/drivers/net/ethernet/ti/am65-cpsw-qos.c
++++ b/drivers/net/ethernet/ti/am65-cpsw-qos.c
+@@ -7,6 +7,7 @@
+  * Interspersed Express Traffic (IET - P802.3br/D2.0)
+  */
+ 
++#include <linux/bitfield.h>
+ #include <linux/pm_runtime.h>
+ #include <linux/math.h>
+ #include <linux/math64.h>
+@@ -19,6 +20,23 @@
+ #include "am65-cpts.h"
+ #include "cpsw_ale.h"
+ 
++#define AM65_CPSW_REG_FREQ			0x05c
++
++#define AM64_CPSW_PN_CUT_THRU			0x3C0
++#define AM64_CPSW_PN_SPEED			0x3C4
++
++/* AM65_CPSW_REG_CTL register fields */
++#define AM64_CPSW_CTL_CUT_THRU_EN		BIT(19)
++
++/* Cut-Thru AM64_CPSW_PN_CUT_THRU */
++#define  AM64_PN_CUT_THRU_TX_PRI		GENMASK(7, 0)
++#define  AM64_PN_CUT_THRU_RX_PRI		GENMASK(15, 8)
++
++/* Cut-Thru AM64_CPSW_PN_SPEED */
++#define  AM64_PN_SPEED_VAL			GENMASK(3, 0)
++#define  AM64_PN_SPEED_AUTO_EN			BIT(8)
++#define  AM64_PN_AUTO_SPEED			GENMASK(15, 12)
++
+ #define TO_MBPS(x)	DIV_ROUND_UP((x), BYTES_PER_MBIT)
+ 
+ enum timer_act {
+@@ -27,6 +45,9 @@ enum timer_act {
+ 	TACT_SKIP_PROG,		/* just buffer can be updated */
+ };
+ 
++/* number of traffic classes (fifos) per port */
++#define AM65_CPSW_PN_TC_NUM			8
++
+ static void am65_cpsw_iet_change_preemptible_tcs(struct am65_cpsw_port *port, u8 preemptible_tcs);
+ 
+ static u32
+@@ -1295,13 +1316,92 @@ int am65_cpsw_qos_ndo_setup_tc(struct net_device *ndev, enum tc_setup_type type,
+ 	}
+ }
+ 
+-void am65_cpsw_qos_link_up(struct net_device *ndev, int link_speed)
++static void am65_cpsw_cut_thru_dump(struct am65_cpsw_port *port)
++{
++	struct am65_cpsw_common *common = port->common;
++	u32 contro, cut_thru, speed;
++
++	contro = readl(common->cpsw_base + AM65_CPSW_REG_CTL);
++	cut_thru = readl(port->port_base + AM64_CPSW_PN_CUT_THRU);
++	speed = readl(port->port_base + AM64_CPSW_PN_SPEED);
++	dev_dbg(common->dev,
++		"Port%u: cut_thru dump control:%08x cut_thru:%08x hwspeed:%08x\n",
++		port->port_id, contro, cut_thru, speed);
++}
++
++static u32 am65_cpsw_cut_thru_speed2hw(int link_speed)
++{
++	switch (link_speed) {
++	case SPEED_10:
++		return 1;
++	case SPEED_100:
++		return 2;
++	case SPEED_1000:
++		return 3;
++	default:
++		return 0;
++	}
++}
++
++static void am65_cpsw_cut_thru_link_up(struct am65_cpsw_port *port)
++{
++	struct am65_cpsw_cut_thru *cut_thru = &port->qos.cut_thru;
++	struct am65_cpsw_common *common = port->common;
++	u32 val, speed;
++
++	if (!cut_thru->enable)
++		return;
++
++	writel(AM64_PN_SPEED_AUTO_EN, port->port_base + AM64_CPSW_PN_SPEED);
++	/* barrier */
++	readl(port->port_base + AM64_CPSW_PN_SPEED);
++	/* HW need 15us in 10/100 mode and 3us in 1G mode auto speed detection
++	 * add delay with some margin
++	 */
++	usleep_range(40, 50);
++	val = readl(port->port_base + AM64_CPSW_PN_SPEED);
++	speed = FIELD_GET(AM64_PN_AUTO_SPEED, val);
++	if (!speed) {
++		dev_warn(common->dev,
++			 "Port%u: cut_thru no speed auto detected switch to manual\n",
++			 port->port_id);
++		speed = am65_cpsw_cut_thru_speed2hw(port->qos.link_speed);
++		if (!speed) {
++			dev_err(common->dev,
++				"Port%u: cut_thru speed configuration failed\n",
++				port->port_id);
++			return;
++		}
++		val = FIELD_PREP(AM64_PN_SPEED_VAL, speed);
++		writel(val, port->port_base + AM64_CPSW_PN_SPEED);
++	}
++
++	val = FIELD_PREP(AM64_PN_CUT_THRU_TX_PRI, cut_thru->tx_pri_mask) |
++	      FIELD_PREP(AM64_PN_CUT_THRU_RX_PRI, cut_thru->rx_pri_mask);
++
++	if (port->qos.duplex) {
++		writel(val, port->port_base + AM64_CPSW_PN_CUT_THRU);
++		dev_info(common->dev, "Port%u: Enable cut_thru rx:%08x tx:%08x hwspeed:%u (%08x)\n",
++			 port->port_id,
++			 cut_thru->rx_pri_mask, cut_thru->tx_pri_mask,
++			 speed, val);
++	} else {
++		writel(0, port->port_base + AM64_CPSW_PN_CUT_THRU);
++		dev_info(common->dev, "Port%u: Disable cut_thru duplex=%d\n",
++			 port->port_id, port->qos.duplex);
++	}
++	am65_cpsw_cut_thru_dump(port);
++}
++
++void am65_cpsw_qos_link_up(struct net_device *ndev, int link_speed, int duplex)
+ {
+ 	struct am65_cpsw_port *port = am65_ndev_to_port(ndev);
+ 
+ 	port->qos.link_speed = link_speed;
++	port->qos.duplex = duplex;
+ 	am65_cpsw_tx_pn_shaper_apply(port);
+ 	am65_cpsw_iet_link_state_update(ndev);
++	am65_cpsw_cut_thru_link_up(port);
+ 
+ 	am65_cpsw_est_link_up(ndev, link_speed);
+ 	port->qos.link_down_time = 0;
+@@ -1318,3 +1418,73 @@ void am65_cpsw_qos_link_down(struct net_device *ndev)
+ 	if (!port->qos.link_down_time)
+ 		port->qos.link_down_time = ktime_get();
+ }
++
++static void am65_cpsw_cut_thru_enable(struct am65_cpsw_common *common)
++{
++	u32 val;
++
++	if (common->cut_thru_enabled) {
++		common->cut_thru_enabled++;
++		return;
++	}
++
++	/* Populate CPSW VBUS freq for auto speed detection */
++	writel(common->bus_freq / 1000000,
++	       common->cpsw_base + AM65_CPSW_REG_FREQ);
++
++	val = readl(common->cpsw_base + AM65_CPSW_REG_CTL);
++	val |= AM64_CPSW_CTL_CUT_THRU_EN;
++	writel(val, common->cpsw_base + AM65_CPSW_REG_CTL);
++	common->cut_thru_enabled++;
++}
++
++void am65_cpsw_qos_cut_thru_init(struct am65_cpsw_port *port)
++{
++	struct am65_cpsw_cut_thru *cut_thru = &port->qos.cut_thru;
++	struct am65_cpsw_common *common = port->common;
++
++	/* Enable cut_thr only if user has enabled priv flag */
++	if (!cut_thru->enable)
++		return;
++
++	if (common->is_emac_mode) {
++		cut_thru->enable = false;
++		dev_info(common->dev, "Disable cut-thru, need Switch mode\n");
++		return;
++	}
++
++	am65_cpsw_cut_thru_enable(common);
++
++	/* en auto speed */
++	writel(AM64_PN_SPEED_AUTO_EN, port->port_base + AM64_CPSW_PN_SPEED);
++	dev_info(common->dev, "Init cut_thru\n");
++	am65_cpsw_cut_thru_dump(port);
++}
++
++static void am65_cpsw_cut_thru_disable(struct am65_cpsw_common *common)
++{
++	u32 val;
++
++	if (--common->cut_thru_enabled)
++		return;
++
++	val = readl(common->cpsw_base + AM65_CPSW_REG_CTL);
++	val &= ~AM64_CPSW_CTL_CUT_THRU_EN;
++	writel(val, common->cpsw_base + AM65_CPSW_REG_CTL);
++}
++
++void am65_cpsw_qos_cut_thru_cleanup(struct am65_cpsw_port *port)
++{
++	struct am65_cpsw_cut_thru *cut_thru = &port->qos.cut_thru;
++	struct am65_cpsw_common *common = port->common;
++
++	if (!cut_thru->enable)
++		return;
++
++	writel(0, port->port_base + AM64_CPSW_PN_CUT_THRU);
++	writel(0, port->port_base + AM64_CPSW_PN_SPEED);
++
++	am65_cpsw_cut_thru_disable(common);
++	dev_info(common->dev, "Cleanup cut_thru\n");
++	am65_cpsw_cut_thru_dump(port);
++}
+diff --git a/drivers/net/ethernet/ti/am65-cpsw-qos.h b/drivers/net/ethernet/ti/am65-cpsw-qos.h
+index b328e56c5b2b..c31b0de089e2 100644
+--- a/drivers/net/ethernet/ti/am65-cpsw-qos.h
++++ b/drivers/net/ethernet/ti/am65-cpsw-qos.h
+@@ -34,13 +34,21 @@ struct am65_cpsw_ale_ratelimit {
+ 	u64 rate_packet_ps;
+ };
+ 
++struct am65_cpsw_cut_thru {
++	unsigned int rx_pri_mask;
++	unsigned int tx_pri_mask;
++	bool enable;
++};
++
+ struct am65_cpsw_qos {
+ 	struct am65_cpsw_est *est_admin;
+ 	struct am65_cpsw_est *est_oper;
+ 	ktime_t link_down_time;
+ 	int link_speed;
++	int duplex;
+ 	struct am65_cpsw_mqprio mqprio;
+ 	struct am65_cpsw_iet iet;
++	struct am65_cpsw_cut_thru cut_thru;
+ 
+ 	struct am65_cpsw_ale_ratelimit ale_bc_ratelimit;
+ 	struct am65_cpsw_ale_ratelimit ale_mc_ratelimit;
+@@ -96,8 +104,10 @@ struct am65_cpsw_qos {
+ #if IS_ENABLED(CONFIG_TI_AM65_CPSW_QOS)
+ int am65_cpsw_qos_ndo_setup_tc(struct net_device *ndev, enum tc_setup_type type,
+ 			       void *type_data);
+-void am65_cpsw_qos_link_up(struct net_device *ndev, int link_speed);
++void am65_cpsw_qos_link_up(struct net_device *ndev, int link_speed, int duplex);
+ void am65_cpsw_qos_link_down(struct net_device *ndev);
++void am65_cpsw_qos_cut_thru_init(struct am65_cpsw_port *port);
++void am65_cpsw_qos_cut_thru_cleanup(struct am65_cpsw_port *port);
+ int am65_cpsw_qos_ndo_tx_p0_set_maxrate(struct net_device *ndev, int queue, u32 rate_mbps);
+ void am65_cpsw_qos_tx_p0_rate_init(struct am65_cpsw_common *common);
+ void am65_cpsw_iet_commit_preemptible_tcs(struct am65_cpsw_port *port);
+@@ -111,12 +121,18 @@ static inline int am65_cpsw_qos_ndo_setup_tc(struct net_device *ndev,
+ }
+ 
+ static inline void am65_cpsw_qos_link_up(struct net_device *ndev,
+-					 int link_speed)
++					 int link_speed, int duplex)
+ { }
+ 
+ static inline void am65_cpsw_qos_link_down(struct net_device *ndev)
+ { }
+ 
++static inline void am65_cpsw_qos_cut_thru_init(struct am65_cpsw_port *port)
++{ }
++
++static inline void am65_cpsw_qos_cut_thru_cleanup(struct am65_cpsw_port *port)
++{ }
++
+ static inline int am65_cpsw_qos_ndo_tx_p0_set_maxrate(struct net_device *ndev,
+ 						      int queue,
+ 						      u32 rate_mbps)
+-- 
+2.49.0
+

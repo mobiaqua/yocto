@@ -1,0 +1,52 @@
+From 9ec0c67879c418fa09d7495b4464bc28a4c61540 Mon Sep 17 00:00:00 2001
+From: Jai Luthra <j-luthra@ti.com>
+Date: Thu, 19 Dec 2024 20:28:57 +0530
+Subject: [PATCH 003/406] PENDING: media: ti: csi2rx: Support RAW12 bayer
+ formats
+
+This patch adds support for RAW12 bayer formats in ti csi2rx driver.
+
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Signed-off-by: Yemike Abhilash Chandra <y-abhilashchandra@ti.com>
+---
+ .../platform/ti/j721e-csi2rx/j721e-csi2rx.c   | 24 +++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+
+diff --git a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+index 22442fce7607..d346fa17c8f5 100644
+--- a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
++++ b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+@@ -188,6 +188,30 @@ static const struct ti_csi2rx_fmt ti_csi2rx_formats[] = {
+ 		.csi_dt			= MIPI_CSI2_DT_RAW10,
+ 		.bpp			= 16,
+ 		.size			= SHIM_DMACNTX_SIZE_16,
++	}, {
++		.fourcc			= V4L2_PIX_FMT_SBGGR12,
++		.code			= MEDIA_BUS_FMT_SBGGR12_1X12,
++		.csi_dt			= MIPI_CSI2_DT_RAW12,
++		.bpp			= 16,
++		.size			= SHIM_DMACNTX_SIZE_16,
++	}, {
++		.fourcc			= V4L2_PIX_FMT_SGBRG12,
++		.code			= MEDIA_BUS_FMT_SGBRG12_1X12,
++		.csi_dt			= MIPI_CSI2_DT_RAW12,
++		.bpp			= 16,
++		.size			= SHIM_DMACNTX_SIZE_16,
++	}, {
++		.fourcc			= V4L2_PIX_FMT_SGRBG12,
++		.code			= MEDIA_BUS_FMT_SGRBG12_1X12,
++		.csi_dt			= MIPI_CSI2_DT_RAW12,
++		.bpp			= 16,
++		.size			= SHIM_DMACNTX_SIZE_16,
++	}, {
++		.fourcc			= V4L2_PIX_FMT_SRGGB12,
++		.code			= MEDIA_BUS_FMT_SRGGB12_1X12,
++		.csi_dt			= MIPI_CSI2_DT_RAW12,
++		.bpp			= 16,
++		.size			= SHIM_DMACNTX_SIZE_16,
+ 	}, {
+ 		.fourcc			= V4L2_PIX_FMT_RGB565X,
+ 		.code			= MEDIA_BUS_FMT_RGB565_1X16,
+-- 
+2.39.5 (Apple Git-154)
+

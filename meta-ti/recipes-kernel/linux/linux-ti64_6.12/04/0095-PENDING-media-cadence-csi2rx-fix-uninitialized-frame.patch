@@ -1,0 +1,37 @@
+From 71ca29ed83923089eb97848cf9bc4575a032ff85 Mon Sep 17 00:00:00 2001
+From: Jai Luthra <j-luthra@ti.com>
+Date: Wed, 12 Mar 2025 16:29:23 +0530
+Subject: [PATCH 095/181] PENDING: media: cadence: csi2rx: fix uninitialized
+ frame descriptor
+
+The frame descriptor structure may be uninitialized by the caller, so
+make sure we zero it out before using it. This fixes out-of-bound memory
+access crashes due to uninitialized fd->num_entries.
+
+Reported-by: Brandon Brnich <b-brnich@ti.com>
+Fixes: 5d5b27e25278 ("media: cadence: csi2rx: Enable multi-stream support")
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Tested-by: Brandon Brnich <b-brnich@ti.com>
+Reviewed-by: Kamlesh Gurudasani <kamlesh@ti.com>
+Signed-off-by: Rishikesh Donadkar <r-donadkar@ti.com>
+Reviewed-by: Devarsh Thakkar <devarsht@ti.com>
+---
+ drivers/media/platform/cadence/cdns-csi2rx.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/media/platform/cadence/cdns-csi2rx.c b/drivers/media/platform/cadence/cdns-csi2rx.c
+index 642c026a814d..78852ecb2e63 100644
+--- a/drivers/media/platform/cadence/cdns-csi2rx.c
++++ b/drivers/media/platform/cadence/cdns-csi2rx.c
+@@ -774,6 +774,8 @@ static int csi2rx_get_frame_desc(struct v4l2_subdev *subdev, unsigned int pad,
+ 	if (ret)
+ 		return ret;
+ 
++	memset(fd, 0, sizeof(*fd));
++
+ 	fd->type = V4L2_MBUS_FRAME_DESC_TYPE_CSI2;
+ 
+ 	state = v4l2_subdev_lock_and_get_active_state(subdev);
+-- 
+2.49.0
+

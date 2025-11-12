@@ -1,0 +1,57 @@
+From bfd578ee75b376ed35d0752007c162c012ee81b1 Mon Sep 17 00:00:00 2001
+From: Hari Nagalla <hnagalla@ti.com>
+Date: Wed, 5 Nov 2025 04:58:05 -0600
+Subject: [PATCH 081/102] TI: remoteproc: k3-r5: remove remote processor
+ mailbox ping
+
+Pinging the remote processor during k3_rproc_request_mbox() does not
+have any functional effect. However this can lead to leaving stale
+messages in the mailbox in the event remote processor loading has
+failed due to some reason or the other. Hence remove the ping message
+and it solves the issues observed during suspend with mailbox stale
+messages in the event of image load failures.
+
+Suggested-by: Andrew Davis <afd@ti.com>
+Based-on: e673fe31d727 ("remoteproc: k3: Remove remote processor mailbox ping")
+by Hiago De Franco <hiago.franco@toradex.com>
+Signed-off-by: Hari Nagalla <hnagalla@ti.com>
+---
+ drivers/remoteproc/ti_k3_r5_remoteproc.c | 15 ---------------
+ 1 file changed, 15 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_r5_remoteproc.c b/drivers/remoteproc/ti_k3_r5_remoteproc.c
+index 0ea868d29012..def6d69fee60 100644
+--- a/drivers/remoteproc/ti_k3_r5_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_r5_remoteproc.c
+@@ -489,7 +489,6 @@ static int k3_r5_rproc_request_mbox(struct rproc *rproc)
+ 	struct k3_r5_rproc *kproc = rproc->priv;
+ 	struct mbox_client *client = &kproc->client;
+ 	struct device *dev = kproc->dev;
+-	int ret;
+ 
+ 	client->dev = dev;
+ 	client->tx_done = NULL;
+@@ -502,20 +501,6 @@ static int k3_r5_rproc_request_mbox(struct rproc *rproc)
+ 		return dev_err_probe(dev, PTR_ERR(kproc->mbox),
+ 				     "mbox_request_channel failed\n");
+ 
+-	/*
+-	 * Ping the remote processor, this is only for sanity-sake for now;
+-	 * there is no functional effect whatsoever.
+-	 *
+-	 * Note that the reply will _not_ arrive immediately: this message
+-	 * will wait in the mailbox fifo until the remote processor is booted.
+-	 */
+-	ret = mbox_send_message(kproc->mbox, (void *)RP_MBOX_ECHO_REQUEST);
+-	if (ret < 0) {
+-		dev_err(dev, "mbox_send_message failed: %d\n", ret);
+-		mbox_free_channel(kproc->mbox);
+-		return ret;
+-	}
+-
+ 	return 0;
+ }
+ 
+-- 
+2.51.1
+

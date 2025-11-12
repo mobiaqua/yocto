@@ -1,0 +1,106 @@
+From 1a2d611ee02d63eda3ad6d636e1b0cbf5af87b95 Mon Sep 17 00:00:00 2001
+From: Vignesh Raghavendra <vigneshr@ti.com>
+Date: Wed, 26 Feb 2025 22:36:19 +0530
+Subject: [PATCH 120/154] PENDING: dmaengine: ti: k3-udma Fix warnings with W=1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Fix following build time warnings
+
+In file included from drivers/dma/ti/k3-udma-glue.c:21:
+drivers/dma/ti/k3-udma.h:275:27: warning: ‘am62l_mmr_names’ defined but
+not used [-Wunused-const-variable=]
+  275 | static const char * const am62l_mmr_names[] = {
+      |                           ^~~~~~~~~~~~~~~
+drivers/dma/ti/k3-udma.h:268:27: warning: ‘mmr_names’ defined but not
+used [-Wunused-const-variable=]
+  268 | static const char * const mmr_names[] = {
+      |                           ^~~~~~~~~
+  CC      drivers/net/phy/mscc/mscc_main.o
+  CC      drivers/mtd/spi-nor/core.o
+drivers/dma/ti/k3-udma-am62l.c: In function ‘am62l_udma_reset_rings’:
+drivers/dma/ti/k3-udma-am62l.c:76:25: warning: variable ‘ring2’ set but
+not used [-Wunused-but-set-variable]
+   76 |         struct k3_ring *ring2 = NULL;
+      |                         ^~~~~
+drivers/dma/ti/k3-udma-am62l.c:75:25: warning: variable ‘ring1’ set but
+not used [-Wunused-but-set-variable]
+   75 |         struct k3_ring *ring1 = NULL;
+      |                         ^~~~~
+drivers/dma/ti/k3-udma-am62l.c: In function ‘am62l_udma_start’:
+drivers/dma/ti/k3-udma-am62l.c:171:21: warning: variable ‘ret’ set but
+not used [-Wunused-but-set-variable]
+  171 |         int status, ret;
+      |                     ^~~
+drivers/dma/ti/k3-udma-am62l.c: In function ‘am62l_udma_get_mmrs’:
+drivers/dma/ti/k3-udma-am62l.c:1226:19: warning: variable ‘cap3’ set but
+not used [-Wunused-but-set-variable]
+ 1226 |         u32 cap2, cap3;
+      |                   ^~~~
+drivers/dma/ti/k3-udma-am62l.c:1226:13: warning: variable ‘cap2’ set but
+not used [-Wunused-but-set-variable]
+ 1226 |         u32 cap2, cap3;
+      |             ^~~~
+In file included from drivers/dma/ti/k3-udma-am62l.c:34:
+drivers/dma/ti/k3-udma.h: At top level:
+drivers/dma/ti/k3-udma.h:268:27: warning: ‘mmr_names’ defined but not
+used [-Wunused-const-variable=]
+  268 | static const char * const mmr_names[] = {
+      |                           ^~~~~~~~~
+In file included from drivers/dma/ti/k3-udma-common.c:33:
+drivers/dma/ti/k3-udma.h:275:27: warning: ‘am62l_mmr_names’ defined but
+not used [-Wunused-const-variable=]
+  275 | static const char * const am62l_mmr_names[] = {
+      |                           ^~~~~~~~~~~~~~~
+drivers/dma/ti/k3-udma.h:268:27: warning: ‘mmr_names’ defined but not
+used [-Wunused-const-variable=]
+  268 | static const char * const mmr_names[] = {
+      |                           ^~~~~~~~~
+
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/dma/ti/k3-udma.c       |  7 +++++++
+ drivers/dma/ti/k3-udma.h       | 13 -------------
+ 3 files changed, 14 insertions(+), 39 deletions(-)
+
+diff --git a/drivers/dma/ti/k3-udma.c b/drivers/dma/ti/k3-udma.c
+index baff294897db..0dd75341bf50 100644
+--- a/drivers/dma/ti/k3-udma.c
++++ b/drivers/dma/ti/k3-udma.c
+@@ -33,6 +33,13 @@
+ #include "k3-udma.h"
+ #include "k3-psil-priv.h"
+ 
++static const char * const mmr_names[] = {
++	[MMR_GCFG] = "gcfg",
++	[MMR_BCHANRT] = "bchanrt",
++	[MMR_RCHANRT] = "rchanrt",
++	[MMR_TCHANRT] = "tchanrt",
++};
++
+ int navss_psil_pair(struct udma_dev *ud, u32 src_thread, u32 dst_thread)
+ {
+ 	struct udma_tisci_rm *tisci_rm = &ud->tisci_rm;
+diff --git a/drivers/dma/ti/k3-udma.h b/drivers/dma/ti/k3-udma.h
+index dde1ba28d70f..34e1613baa52 100644
+--- a/drivers/dma/ti/k3-udma.h
++++ b/drivers/dma/ti/k3-udma.h
+@@ -265,14 +265,6 @@ struct udma_oes_offsets {
+ };
+ 
+ 
+-static const char * const mmr_names[] = {
+-	[MMR_GCFG] = "gcfg",
+-	[MMR_BCHANRT] = "bchanrt",
+-	[MMR_RCHANRT] = "rchanrt",
+-	[MMR_TCHANRT] = "tchanrt",
+-};
+-
+-
+ struct udma_tisci_rm {
+ 	const struct ti_sci_handle *tisci;
+ 	const struct ti_sci_rm_udmap_ops *tisci_udmap_ops;
+-- 
+2.49.0
+

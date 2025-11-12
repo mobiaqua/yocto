@@ -1,0 +1,45 @@
+From e8328705aa3be96feaecde1815379158c310cbd7 Mon Sep 17 00:00:00 2001
+From: Chintan Vankar <c-vankar@ti.com>
+Date: Thu, 26 Jun 2025 11:11:25 +0530
+Subject: [PATCH 48/73] PENDING: net: ethernet: ti: cpsw_ale: Update multicast
+ entry handling in ALE Table
+
+The current implementation of multicast entry flushing marks all multicast
+entries as free whenever any interface adds, deletes, or modifies
+multicast entry. It then re-adds the entries, which disrupts existing
+multicast connection for other interfaces associated with that entry.
+
+Update multicast flushing API to handle above case by clearing out a bit
+in port_mask for that specific interface.
+
+Signed-off-by: Chintan Vankar <c-vankar@ti.com>
+---
+ drivers/net/ethernet/ti/cpsw_ale.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/ethernet/ti/cpsw_ale.c b/drivers/net/ethernet/ti/cpsw_ale.c
+index dc5e247ca5d1..a6bb09545c60 100644
+--- a/drivers/net/ethernet/ti/cpsw_ale.c
++++ b/drivers/net/ethernet/ti/cpsw_ale.c
+@@ -443,14 +443,13 @@ static void cpsw_ale_flush_mcast(struct cpsw_ale *ale, u32 *ale_entry,
+ 				      ale->port_mask_bits);
+ 	if ((mask & port_mask) == 0)
+ 		return; /* ports dont intersect, not interested */
+-	mask &= ~port_mask;
++	mask &= (~port_mask | ALE_PORT_HOST);
+ 
+-	/* free if only remaining port is host port */
+-	if (mask)
++	if (mask == 0x0 || mask == ALE_PORT_HOST)
++		cpsw_ale_set_entry_type(ale_entry, ALE_TYPE_FREE);
++	else
+ 		cpsw_ale_set_port_mask(ale_entry, mask,
+ 				       ale->port_mask_bits);
+-	else
+-		cpsw_ale_set_entry_type(ale_entry, ALE_TYPE_FREE);
+ }
+ 
+ int cpsw_ale_flush_multicast(struct cpsw_ale *ale, int port_mask, int vid)
+-- 
+2.51.1
+

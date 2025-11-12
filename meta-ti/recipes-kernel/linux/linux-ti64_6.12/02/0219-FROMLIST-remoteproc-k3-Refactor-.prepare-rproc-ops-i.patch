@@ -1,0 +1,229 @@
+From a44b571438d65db5a3e2edccbeda5815e8bbedff Mon Sep 17 00:00:00 2001
+From: Beleswar Padhi <b-padhi@ti.com>
+Date: Mon, 3 Feb 2025 14:09:59 +0530
+Subject: [PATCH 219/406] FROMLIST: remoteproc: k3: Refactor .prepare rproc ops
+ into common driver
+
+The ti_k3_dsp_remoteproc.c driver asserts the local reset in probe and
+releases the global reset in .prepare callback. Whereas, the
+ti_k3_m4_remoteproc.c driver does both operations in .prepare callback,
+which is more suitable as it ensures lreset is asserted for subsequent
+core start operations from sysfs. Refactor the k3_m4_rproc_prepare()
+function into the ti_k3_common.c driver as k3_rproc_prepare() and align
+DSP and M4 drivers to register this common function as .prepare ops.
+
+Link: https://lore.kernel.org/all/20250103101231.1508151-10-b-padhi@ti.com/
+Signed-off-by: Beleswar Padhi <b-padhi@ti.com>
+---
+ drivers/remoteproc/ti_k3_common.c         | 46 +++++++++++++++++++++++
+ drivers/remoteproc/ti_k3_common.h         |  1 +
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 42 +--------------------
+ drivers/remoteproc/ti_k3_m4_remoteproc.c  | 45 +---------------------
+ 4 files changed, 49 insertions(+), 85 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_common.c b/drivers/remoteproc/ti_k3_common.c
+index 5a39ce834a82..6550890334cd 100644
+--- a/drivers/remoteproc/ti_k3_common.c
++++ b/drivers/remoteproc/ti_k3_common.c
+@@ -192,5 +192,51 @@ int k3_rproc_request_mbox(struct rproc *rproc)
+ }
+ EXPORT_SYMBOL_GPL(k3_rproc_request_mbox);
+ 
++/*
++ * The K3 DSP and M4 cores have a local reset that affects only the CPU, and a
++ * generic module reset that powers on the device and allows the internal
++ * memories to be accessed while the local reset is asserted. This function is
++ * used to release the global reset on remote cores to allow loading into the
++ * internal RAMs. The .prepare() ops is invoked by remoteproc core before any
++ * firmware loading, and is followed by the .start() ops after loading to
++ * actually let the remote cores to run.
++ */
++int k3_rproc_prepare(struct rproc *rproc)
++{
++	struct k3_rproc *kproc = rproc->priv;
++	struct device *dev = kproc->dev;
++	int ret;
++
++	/* If the core is running already no need to deassert the module reset */
++	if (rproc->state == RPROC_DETACHED)
++		return 0;
++
++	/*
++	 * Ensure the local reset is asserted so the core doesn't
++	 * execute bogus code when the module reset is released.
++	 */
++	if (kproc->data->uses_lreset) {
++		ret = k3_rproc_reset(kproc);
++		if (ret)
++			return ret;
++
++		ret = reset_control_status(kproc->reset);
++		if (ret <= 0) {
++			dev_err(dev, "local reset still not asserted\n");
++			return ret;
++		}
++	}
++
++	ret = kproc->ti_sci->ops.dev_ops.get_device(kproc->ti_sci,
++						    kproc->ti_sci_id);
++	if (ret) {
++		dev_err(dev, "could not deassert module-reset for internal RAM loading\n");
++		return ret;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(k3_rproc_prepare);
++
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("TI K3 common Remoteproc code");
+diff --git a/drivers/remoteproc/ti_k3_common.h b/drivers/remoteproc/ti_k3_common.h
+index 5591ff966e41..9c331e425690 100644
+--- a/drivers/remoteproc/ti_k3_common.h
++++ b/drivers/remoteproc/ti_k3_common.h
+@@ -91,4 +91,5 @@ void k3_rproc_kick(struct rproc *rproc, int vqid);
+ int k3_rproc_reset(struct k3_rproc *kproc);
+ int k3_rproc_release(struct k3_rproc *kproc);
+ int k3_rproc_request_mbox(struct rproc *rproc);
++int k3_rproc_prepare(struct rproc *rproc);
+ #endif /* REMOTEPROC_TI_K3_COMMON_H */
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index 9dd2edada7cf..4b9f8b855f52 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -24,31 +24,6 @@
+ 
+ #define KEYSTONE_RPROC_LOCAL_ADDRESS_MASK	(SZ_16M - 1)
+ 
+-/*
+- * The C66x DSP cores have a local reset that affects only the CPU, and a
+- * generic module reset that powers on the device and allows the DSP internal
+- * memories to be accessed while the local reset is asserted. This function is
+- * used to release the global reset on C66x DSPs to allow loading into the DSP
+- * internal RAMs. The .prepare() ops is invoked by remoteproc core before any
+- * firmware loading, and is followed by the .start() ops after loading to
+- * actually let the C66x DSP cores run. This callback is invoked only in
+- * remoteproc mode.
+- */
+-static int k3_dsp_rproc_prepare(struct rproc *rproc)
+-{
+-	struct k3_rproc *kproc = rproc->priv;
+-	struct device *dev = kproc->dev;
+-	int ret;
+-
+-	ret = kproc->ti_sci->ops.dev_ops.get_device(kproc->ti_sci,
+-						    kproc->ti_sci_id);
+-	if (ret)
+-		dev_err(dev, "module-reset deassert failed, cannot enable internal RAM loading (%pe)\n",
+-			ERR_PTR(ret));
+-
+-	return ret;
+-}
+-
+ /*
+  * This function implements the .unprepare() ops and performs the complimentary
+  * operations to that of the .prepare() ops. The function is used to assert the
+@@ -403,7 +378,7 @@ static int k3_dsp_rproc_probe(struct platform_device *pdev)
+ 	rproc->has_iommu = false;
+ 	rproc->recovery_disabled = true;
+ 	if (data->uses_lreset) {
+-		rproc->ops->prepare = k3_dsp_rproc_prepare;
++		rproc->ops->prepare = k3_rproc_prepare;
+ 		rproc->ops->unprepare = k3_dsp_rproc_unprepare;
+ 	}
+ 	kproc = rproc->priv;
+@@ -461,7 +436,6 @@ static int k3_dsp_rproc_probe(struct platform_device *pdev)
+ 		dev_info(dev, "configured DSP for IPC-only mode\n");
+ 		rproc->state = RPROC_DETACHED;
+ 		/* override rproc ops with only required IPC-only mode ops */
+-		rproc->ops->prepare = NULL;
+ 		rproc->ops->unprepare = NULL;
+ 		rproc->ops->start = NULL;
+ 		rproc->ops->stop = NULL;
+@@ -470,20 +444,6 @@ static int k3_dsp_rproc_probe(struct platform_device *pdev)
+ 		rproc->ops->get_loaded_rsc_table = k3_dsp_get_loaded_rsc_table;
+ 	} else {
+ 		dev_info(dev, "configured DSP for remoteproc mode\n");
+-		/*
+-		 * ensure the DSP local reset is asserted to ensure the DSP
+-		 * doesn't execute bogus code in .prepare() when the module
+-		 * reset is released.
+-		 */
+-		if (data->uses_lreset) {
+-			ret = reset_control_status(kproc->reset);
+-			if (ret < 0) {
+-				return dev_err_probe(dev, ret, "failed to get reset status\n");
+-			} else if (ret == 0) {
+-				dev_warn(dev, "local reset is deasserted for device\n");
+-				k3_rproc_reset(kproc);
+-			}
+-		}
+ 	}
+ 
+ 	ret = dma_coerce_mask_and_coherent(&rproc->dev, DMA_BIT_MASK(48));
+diff --git a/drivers/remoteproc/ti_k3_m4_remoteproc.c b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+index 14419bc97955..50ac5791fc28 100644
+--- a/drivers/remoteproc/ti_k3_m4_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+@@ -21,49 +21,6 @@
+ #include "ti_sci_proc.h"
+ #include "ti_k3_common.h"
+ 
+-/*
+- * The M4 cores have a local reset that affects only the CPU, and a
+- * generic module reset that powers on the device and allows the internal
+- * memories to be accessed while the local reset is asserted. This function is
+- * used to release the global reset on remote cores to allow loading into the
+- * internal RAMs. The .prepare() ops is invoked by remoteproc core before any
+- * firmware loading, and is followed by the .start() ops after loading to
+- * actually let the remote cores to run.
+- */
+-static int k3_m4_rproc_prepare(struct rproc *rproc)
+-{
+-	struct k3_rproc *kproc = rproc->priv;
+-	struct device *dev = kproc->dev;
+-	int ret;
+-
+-	/* If the core is running already no need to deassert the module reset */
+-	if (rproc->state == RPROC_DETACHED)
+-		return 0;
+-
+-	/*
+-	 * Ensure the local reset is asserted so the core doesn't
+-	 * execute bogus code when the module reset is released.
+-	 */
+-	ret = k3_rproc_reset(kproc);
+-	if (ret)
+-		return ret;
+-
+-	ret = reset_control_status(kproc->reset);
+-	if (ret <= 0) {
+-		dev_err(dev, "local reset still not asserted\n");
+-		return ret;
+-	}
+-
+-	ret = kproc->ti_sci->ops.dev_ops.get_device(kproc->ti_sci,
+-						    kproc->ti_sci_id);
+-	if (ret) {
+-		dev_err(dev, "could not deassert module-reset for internal RAM loading\n");
+-		return ret;
+-	}
+-
+-	return 0;
+-}
+-
+ /*
+  * This function implements the .unprepare() ops and performs the complimentary
+  * operations to that of the .prepare() ops. The function is used to assert the
+@@ -376,7 +333,7 @@ static int k3_m4_rproc_detach(struct rproc *rproc)
+ }
+ 
+ static const struct rproc_ops k3_m4_rproc_ops = {
+-	.prepare = k3_m4_rproc_prepare,
++	.prepare = k3_rproc_prepare,
+ 	.unprepare = k3_m4_rproc_unprepare,
+ 	.start = k3_m4_rproc_start,
+ 	.stop = k3_m4_rproc_stop,
+-- 
+2.39.5 (Apple Git-154)
+

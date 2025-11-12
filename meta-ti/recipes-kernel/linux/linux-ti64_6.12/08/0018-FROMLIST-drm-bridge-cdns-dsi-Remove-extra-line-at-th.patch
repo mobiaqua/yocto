@@ -1,0 +1,29 @@
+From e53253148ec04e8cd7dd95eb48f11562d1cbac7d Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Date: Fri, 20 Jun 2025 17:29:26 +0530
+Subject: [PATCH 18/73] FROMLIST: drm/bridge: cdns-dsi: Remove extra line at
+ the end of the file
+
+Remove extra line at the end of the file.
+
+Line: https://lore.kernel.org/all/20250618-cdns-dsi-impro-v4-6-862c841dbe02@ideasonboard.com/
+Reviewed-by: Aradhya Bhatia <aradhya.bhatia@linux.dev>
+Tested-by: Parth Pancholi <parth.pancholi@toradex.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Signed-off-by: Harikrishna Shenoy <h-shenoy@ti.com>
+---
+ drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
+index 3cda4f19db23..6fc939a6f4f9 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
++++ b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
+@@ -1436,4 +1436,3 @@ MODULE_AUTHOR("Boris Brezillon <boris.brezillon@bootlin.com>");
+ MODULE_DESCRIPTION("Cadence DSI driver");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:cdns-dsi");
+-
+-- 
+2.51.1
+

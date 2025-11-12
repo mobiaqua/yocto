@@ -1,0 +1,31 @@
+From 8e65b1c350a599bd74c45cc474eb42fd7b898f6a Mon Sep 17 00:00:00 2001
+From: Udit Kumar <u-kumar1@ti.com>
+Date: Fri, 31 Oct 2025 09:25:18 +0530
+Subject: [PATCH 083/102] TI: HACK: EXPERIMENTAL: drm: bridge:
+ cdns-mhdp8546-core: increase timeout for fw load
+
+Few a time, driver report timeout while loading firmware.
+So increase timeout of fw loading.
+
+Signed-off-by: Udit Kumar <u-kumar1@ti.com>
+Acked-by: Devarsh Thakkar <devarsht@ti.com>
+---
+ drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
+index 92b84d7e4292..69887166e911 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
++++ b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
+@@ -1598,7 +1598,7 @@ static int cdns_mhdp_attach(struct drm_bridge *bridge,
+ 	if (mhdp->no_hpd) {
+ 		ret = wait_event_timeout(mhdp->fw_load_wq,
+ 					 mhdp->hw_state == MHDP_HW_READY,
+-					 msecs_to_jiffies(100));
++					 msecs_to_jiffies(1000));
+ 		if (ret == 0) {
+ 			dev_err(mhdp->dev, "%s: Timeout waiting for fw loading\n",
+ 				__func__);
+-- 
+2.51.1
+

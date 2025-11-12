@@ -1,0 +1,36 @@
+From b50b32d29f4c51a44ea217722c09e03a4c673d01 Mon Sep 17 00:00:00 2001
+From: Siddharth Vadapalli <s-vadapalli@ti.com>
+Date: Tue, 20 May 2025 13:46:55 +0530
+Subject: [PATCH 03/29] UPSTREAM: arm64: dts: ti: k3-j721e: Add ranges for
+ PCIe0 DAT1 and PCIe1 DAT1
+
+commit 1025003a1e068a25b35e1dbb39cad18e23278c0f upstream.
+
+The PCIe0 DAT1 and PCIe1 DAT1 are 4 GB address regions in the 64-bit
+address space of the respective PCIe Controllers. Hence, update the
+ranges to include them.
+
+Signed-off-by: Siddharth Vadapalli <s-vadapalli@ti.com>
+Reviewed-by: Udit Kumar <u-kumar1@ti.com>
+Link: https://lore.kernel.org/r/20250422120042.3746004-4-s-vadapalli@ti.com
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e.dtsi | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e.dtsi b/arch/arm64/boot/dts/ti/k3-j721e.dtsi
+index a7f2f52f42f7..b6e22c242951 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e.dtsi
+@@ -126,6 +126,8 @@ cbass_main: bus@100000 {
+ 			 <0x00 0x10000000 0x00 0x10000000 0x00 0x10000000>, /* PCIe DAT */
+ 			 <0x00 0x64800000 0x00 0x64800000 0x00 0x00800000>, /* C71 */
+ 			 <0x00 0x6f000000 0x00 0x6f000000 0x00 0x00310000>, /* A72 PERIPHBASE */
++			 <0x40 0x00000000 0x40 0x00000000 0x01 0x00000000>, /* PCIe0 DAT1 */
++			 <0x41 0x00000000 0x41 0x00000000 0x01 0x00000000>, /* PCIe1 DAT1 */
+ 			 <0x44 0x00000000 0x44 0x00000000 0x00 0x08000000>, /* PCIe2 DAT */
+ 			 <0x44 0x10000000 0x44 0x10000000 0x00 0x08000000>, /* PCIe3 DAT */
+ 			 <0x4d 0x80800000 0x4d 0x80800000 0x00 0x00800000>, /* C66_0 */
+-- 
+2.51.1
+

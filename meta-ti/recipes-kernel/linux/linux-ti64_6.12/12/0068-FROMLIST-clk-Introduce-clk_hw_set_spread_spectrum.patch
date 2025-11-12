@@ -1,0 +1,128 @@
+From 95d73a138981cc97c83b50f0d4d8edfd21e793a0 Mon Sep 17 00:00:00 2001
+From: Peng Fan <peng.fan@nxp.com>
+Date: Wed, 5 Nov 2025 11:26:17 +0530
+Subject: [PATCH 068/102] FROMLIST: clk: Introduce clk_hw_set_spread_spectrum
+
+Add clk_hw_set_spread_spectrum to configure a clock to enable spread
+spectrum feature. set_spread_spectrum ops is added for clk drivers to
+have their own hardware specific implementation.
+
+Link: https://lore.kernel.org/lkml/20251009-clk-ssc-v5-1-v5-0-d6447d76171e@nxp.com/
+Reviewed-by: Brian Masney <bmasney@redhat.com>
+Signed-off-by: Peng Fan <peng.fan@nxp.com>
+---
+ drivers/clk/clk.c            | 27 +++++++++++++++++++++++++++
+ include/linux/clk-provider.h | 31 +++++++++++++++++++++++++++++++
+ 2 files changed, 58 insertions(+)
+
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index 7de3dfdae4b5..8f59b779258e 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -2796,6 +2796,33 @@ int clk_set_max_rate(struct clk *clk, unsigned long rate)
+ }
+ EXPORT_SYMBOL_GPL(clk_set_max_rate);
+ 
++int clk_hw_set_spread_spectrum(struct clk_hw *hw, const struct clk_spread_spectrum *ss_conf)
++{
++	struct clk_core *core;
++	int ret;
++
++	if (!hw)
++		return 0;
++
++	core = hw->core;
++
++	clk_prepare_lock();
++
++	ret = clk_pm_runtime_get(core);
++	if (ret)
++		goto fail;
++
++	if (core->ops->set_spread_spectrum)
++		ret = core->ops->set_spread_spectrum(hw, ss_conf);
++
++	clk_pm_runtime_put(core);
++
++fail:
++	clk_prepare_unlock();
++	return ret;
++}
++EXPORT_SYMBOL_GPL(clk_hw_set_spread_spectrum);
++
+ /**
+  * clk_get_parent - return the parent of a clk
+  * @clk: the clk whose parent gets returned
+diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+index 7e43caabb54b..7721b3345b13 100644
+--- a/include/linux/clk-provider.h
++++ b/include/linux/clk-provider.h
+@@ -6,6 +6,7 @@
+ #ifndef __LINUX_CLK_PROVIDER_H
+ #define __LINUX_CLK_PROVIDER_H
+ 
++#include <dt-bindings/clock/clock.h>
+ #include <linux/of.h>
+ #include <linux/of_clk.h>
+ 
+@@ -84,6 +85,26 @@ struct clk_duty {
+ 	unsigned int den;
+ };
+ 
++enum clk_ssc_method {
++	CLK_SPREAD_NO		= CLK_SSC_NO_SPREAD,
++	CLK_SPREAD_CENTER	= CLK_SSC_CENTER_SPREAD,
++	CLK_SPREAD_UP		= CLK_SSC_UP_SPREAD,
++	CLK_SPREAD_DOWN		= CLK_SSC_DOWN_SPREAD,
++};
++
++/**
++ * struct clk_spread_spectrum - Structure encoding spread spectrum of a clock
++ *
++ * @modfreq_hz:		Modulation frequency
++ * @spread_bp:		Modulation percent in permyriad
++ * @method:		Modulation method
++ */
++struct clk_spread_spectrum {
++	u32 modfreq_hz;
++	u32 spread_bp;
++	enum clk_ssc_method method;
++};
++
+ /**
+  * struct clk_ops -  Callback operations for hardware clocks; these are to
+  * be provided by the clock implementation, and will be called by drivers
+@@ -178,6 +199,12 @@ struct clk_duty {
+  *		separately via calls to .set_parent and .set_rate.
+  *		Returns 0 on success, -EERROR otherwise.
+  *
++ * @set_spread_spectrum: Optional callback used to configure the spread
++ *		spectrum modulation frequency, percentage, and method
++ *		to reduce EMI by spreading the clock frequency over a
++ *		wider range.
++ *		Returns 0 on success, -EERROR otherwise.
++ *
+  * @recalc_accuracy: Recalculate the accuracy of this clock. The clock accuracy
+  *		is expressed in ppb (parts per billion). The parent accuracy is
+  *		an input parameter.
+@@ -255,6 +282,8 @@ struct clk_ops {
+ 	int		(*set_rate_and_parent)(struct clk_hw *hw,
+ 				    unsigned long rate,
+ 				    unsigned long parent_rate, u8 index);
++	int		(*set_spread_spectrum)(struct clk_hw *hw,
++					       const struct clk_spread_spectrum *ss_conf);
+ 	unsigned long	(*recalc_accuracy)(struct clk_hw *hw,
+ 					   unsigned long parent_accuracy);
+ 	int		(*get_phase)(struct clk_hw *hw);
+@@ -1379,6 +1408,8 @@ void clk_hw_get_rate_range(struct clk_hw *hw, unsigned long *min_rate,
+ 			   unsigned long *max_rate);
+ void clk_hw_set_rate_range(struct clk_hw *hw, unsigned long min_rate,
+ 			   unsigned long max_rate);
++int clk_hw_set_spread_spectrum(struct clk_hw *hw,
++			       const struct clk_spread_spectrum *ss_conf);
+ 
+ static inline void __clk_hw_set_clk(struct clk_hw *dst, struct clk_hw *src)
+ {
+-- 
+2.51.1
+

@@ -1,0 +1,152 @@
+From fb5a785ce8983f4fa223cac90b54aa4a5b889159 Mon Sep 17 00:00:00 2001
+From: Beleswar Padhi <b-padhi@ti.com>
+Date: Mon, 3 Feb 2025 14:09:54 +0530
+Subject: [PATCH 214/406] FROMLIST: remoteproc: k3: Refactor .kick rproc ops
+ into common driver
+
+The .kick rproc ops implementations in ti_k3_dsp_remoteproc.c and
+ti_k3_m4_remoteproc.c drivers sends a mailbox message to the remote
+processor in the same way. Refactor the implementations into a common
+function 'k3_rproc_kick()' in the ti_k3_common.c driver.
+
+Link: https://lore.kernel.org/all/20250103101231.1508151-5-b-padhi@ti.com/
+Signed-off-by: Beleswar Padhi <b-padhi@ti.com>
+---
+ drivers/remoteproc/ti_k3_common.c         | 25 ++++++++++++++++++++++
+ drivers/remoteproc/ti_k3_common.h         |  1 +
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 22 +------------------
+ drivers/remoteproc/ti_k3_m4_remoteproc.c  | 26 +----------------------
+ 4 files changed, 28 insertions(+), 46 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_common.c b/drivers/remoteproc/ti_k3_common.c
+index 56caf7a51b59..f91ca9f0079f 100644
+--- a/drivers/remoteproc/ti_k3_common.c
++++ b/drivers/remoteproc/ti_k3_common.c
+@@ -79,5 +79,30 @@ void k3_rproc_mbox_callback(struct mbox_client *client, void *data)
+ }
+ EXPORT_SYMBOL_GPL(k3_rproc_mbox_callback);
+ 
++/*
++ * Kick the remote processor to notify about pending unprocessed messages.
++ * The vqid usage is not used and is inconsequential, as the kick is performed
++ * through a simulated GPIO (a bit in an IPC interrupt-triggering register),
++ * the remote processor is expected to process both its Tx and Rx virtqueues.
++ */
++void k3_rproc_kick(struct rproc *rproc, int vqid)
++{
++	struct k3_rproc *kproc = rproc->priv;
++	struct device *dev = kproc->dev;
++	u32 msg = (u32)vqid;
++	int ret;
++
++	/*
++	 * Send the index of the triggered virtqueue in the mailbox payload.
++	 * NOTE: msg is cast to uintptr_t to prevent compiler warnings when
++	 * void* is 64bit. It is safely cast back to u32 in the mailbox driver.
++	 */
++	ret = mbox_send_message(kproc->mbox, (void *)(uintptr_t)msg);
++	if (ret < 0)
++		dev_err(dev, "failed to send mailbox message, status = %d\n",
++			ret);
++}
++EXPORT_SYMBOL_GPL(k3_rproc_kick);
++
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("TI K3 common Remoteproc code");
+diff --git a/drivers/remoteproc/ti_k3_common.h b/drivers/remoteproc/ti_k3_common.h
+index 62ee0aacd2ec..8e630847fecc 100644
+--- a/drivers/remoteproc/ti_k3_common.h
++++ b/drivers/remoteproc/ti_k3_common.h
+@@ -87,4 +87,5 @@ struct k3_rproc {
+ };
+ 
+ void k3_rproc_mbox_callback(struct mbox_client *client, void *data);
++void k3_rproc_kick(struct rproc *rproc, int vqid);
+ #endif /* REMOTEPROC_TI_K3_COMMON_H */
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index a615de1f63c3..eae2883d6196 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -24,26 +24,6 @@
+ 
+ #define KEYSTONE_RPROC_LOCAL_ADDRESS_MASK	(SZ_16M - 1)
+ 
+-/*
+- * Kick the remote processor to notify about pending unprocessed messages.
+- * The vqid usage is not used and is inconsequential, as the kick is performed
+- * through a simulated GPIO (a bit in an IPC interrupt-triggering register),
+- * the remote processor is expected to process both its Tx and Rx virtqueues.
+- */
+-static void k3_dsp_rproc_kick(struct rproc *rproc, int vqid)
+-{
+-	struct k3_rproc *kproc = rproc->priv;
+-	struct device *dev = rproc->dev.parent;
+-	mbox_msg_t msg = (mbox_msg_t)vqid;
+-	int ret;
+-
+-	/* send the index of the triggered virtqueue in the mailbox payload */
+-	ret = mbox_send_message(kproc->mbox, (void *)msg);
+-	if (ret < 0)
+-		dev_err(dev, "failed to send mailbox message (%pe)\n",
+-			ERR_PTR(ret));
+-}
+-
+ /* Put the DSP processor into reset */
+ static int k3_dsp_rproc_reset(struct k3_rproc *kproc)
+ {
+@@ -342,7 +322,7 @@ static void *k3_dsp_rproc_da_to_va(struct rproc *rproc, u64 da, size_t len, bool
+ static const struct rproc_ops k3_dsp_rproc_ops = {
+ 	.start		= k3_dsp_rproc_start,
+ 	.stop		= k3_dsp_rproc_stop,
+-	.kick		= k3_dsp_rproc_kick,
++	.kick		= k3_rproc_kick,
+ 	.da_to_va	= k3_dsp_rproc_da_to_va,
+ };
+ 
+diff --git a/drivers/remoteproc/ti_k3_m4_remoteproc.c b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+index 1ad7afdf26bf..ef03a122ce97 100644
+--- a/drivers/remoteproc/ti_k3_m4_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+@@ -24,30 +24,6 @@
+ #define K3_M4_IRAM_DEV_ADDR 0x00000
+ #define K3_M4_DRAM_DEV_ADDR 0x30000
+ 
+-/*
+- * Kick the remote processor to notify about pending unprocessed messages.
+- * The vqid usage is not used and is inconsequential, as the kick is performed
+- * through a simulated GPIO (a bit in an IPC interrupt-triggering register),
+- * the remote processor is expected to process both its Tx and Rx virtqueues.
+- */
+-static void k3_m4_rproc_kick(struct rproc *rproc, int vqid)
+-{
+-	struct k3_rproc *kproc = rproc->priv;
+-	struct device *dev = kproc->dev;
+-	u32 msg = (u32)vqid;
+-	int ret;
+-
+-	/*
+-	 * Send the index of the triggered virtqueue in the mailbox payload.
+-	 * NOTE: msg is cast to uintptr_t to prevent compiler warnings when
+-	 * void* is 64bit. It is safely cast back to u32 in the mailbox driver.
+-	 */
+-	ret = mbox_send_message(kproc->mbox, (void *)(uintptr_t)msg);
+-	if (ret < 0)
+-		dev_err(dev, "failed to send mailbox message, status = %d\n",
+-			ret);
+-}
+-
+ static int k3_m4_rproc_ping_mbox(struct k3_rproc *kproc)
+ {
+ 	struct device *dev = kproc->dev;
+@@ -454,7 +430,7 @@ static const struct rproc_ops k3_m4_rproc_ops = {
+ 	.stop = k3_m4_rproc_stop,
+ 	.attach = k3_m4_rproc_attach,
+ 	.detach = k3_m4_rproc_detach,
+-	.kick = k3_m4_rproc_kick,
++	.kick = k3_rproc_kick,
+ 	.da_to_va = k3_m4_rproc_da_to_va,
+ 	.get_loaded_rsc_table = k3_m4_get_loaded_rsc_table,
+ };
+-- 
+2.39.5 (Apple Git-154)
+

@@ -1,0 +1,121 @@
+From 385fa83ebf4f5c70f21d70d437a53b4644259fce Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Wed, 2 Oct 2024 17:26:35 -0500
+Subject: [PATCH 03/27] PENDING: remoteproc: core: Make shutdown-on-release
+ per-file handle
+
+More than one file handle can be open for a single remote processor,
+but the flag specifying that the core should be shutdown when a file
+handle closes is global for a remote processor. This means that if
+any file handle closes, the core is shutdown, even if that user
+didn't set that on the current file handle.
+
+Store an instance of the shutdown-on-release flag for each handle.
+This allows for other users of the rproc cdev to use and close
+file handles without accidentally shutting off the core.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+---
+ drivers/remoteproc/remoteproc_cdev.c | 37 +++++++++++++++++++++++-----
+ include/linux/remoteproc.h           |  1 -
+ 2 files changed, 31 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/remoteproc/remoteproc_cdev.c b/drivers/remoteproc/remoteproc_cdev.c
+index 687f205fd70a..938ac98a1f26 100644
+--- a/drivers/remoteproc/remoteproc_cdev.c
++++ b/drivers/remoteproc/remoteproc_cdev.c
+@@ -18,9 +18,15 @@
+ #define NUM_RPROC_DEVICES	64
+ static dev_t rproc_major;
+ 
++struct rproc_cdev {
++	struct rproc *rproc;
++	bool cdev_put_on_release;
++};
++
+ static ssize_t rproc_cdev_write(struct file *filp, const char __user *buf, size_t len, loff_t *pos)
+ {
+-	struct rproc *rproc = container_of(filp->f_inode->i_cdev, struct rproc, cdev);
++	struct rproc_cdev *rproc_cdev = filp->private_data;
++	struct rproc *rproc = rproc_cdev->rproc;
+ 	int ret = 0;
+ 	char cmd[10];
+ 
+@@ -47,7 +53,8 @@ static ssize_t rproc_cdev_write(struct file *filp, const char __user *buf, size_
+ 
+ static long rproc_device_ioctl(struct file *filp, unsigned int ioctl, unsigned long arg)
+ {
+-	struct rproc *rproc = container_of(filp->f_inode->i_cdev, struct rproc, cdev);
++	struct rproc_cdev *rproc_cdev = filp->private_data;
++	struct rproc *rproc = rproc_cdev->rproc;
+ 	void __user *argp = (void __user *)arg;
+ 	s32 param;
+ 
+@@ -56,10 +63,10 @@ static long rproc_device_ioctl(struct file *filp, unsigned int ioctl, unsigned l
+ 		if (copy_from_user(&param, argp, sizeof(s32)))
+ 			return -EFAULT;
+ 
+-		rproc->cdev_put_on_release = !!param;
++		rproc_cdev->cdev_put_on_release = !!param;
+ 		break;
+ 	case RPROC_GET_SHUTDOWN_ON_RELEASE:
+-		param = (s32)rproc->cdev_put_on_release;
++		param = (s32)rproc_cdev->cdev_put_on_release;
+ 		if (copy_to_user(argp, &param, sizeof(s32)))
+ 			return -EFAULT;
+ 
+@@ -72,12 +79,29 @@ static long rproc_device_ioctl(struct file *filp, unsigned int ioctl, unsigned l
+ 	return 0;
+ }
+ 
+-static int rproc_cdev_release(struct inode *inode, struct file *filp)
++static int rproc_cdev_open(struct inode *inode, struct file *file)
+ {
+ 	struct rproc *rproc = container_of(inode->i_cdev, struct rproc, cdev);
++	struct rproc_cdev *rproc_cdev;
++
++	rproc_cdev = kzalloc(sizeof(*rproc_cdev), GFP_KERNEL);
++	if (!rproc_cdev)
++		return -ENOMEM;
++
++	rproc_cdev->rproc = rproc;
++
++	file->private_data = rproc_cdev;
++
++	return 0;
++}
++
++static int rproc_cdev_release(struct inode *inode, struct file *filp)
++{
++	struct rproc_cdev *rproc_cdev = filp->private_data;
++	struct rproc *rproc = rproc_cdev->rproc;
+ 	int ret = 0;
+ 
+-	if (!rproc->cdev_put_on_release)
++	if (!rproc_cdev->cdev_put_on_release)
+ 		return 0;
+ 
+ 	if (rproc->state == RPROC_RUNNING)
+@@ -92,6 +116,7 @@ static const struct file_operations rproc_fops = {
+ 	.write = rproc_cdev_write,
+ 	.unlocked_ioctl = rproc_device_ioctl,
+ 	.compat_ioctl = compat_ptr_ioctl,
++	.open = rproc_cdev_open,
+ 	.release = rproc_cdev_release,
+ };
+ 
+diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
+index 4cc680f34d41..fd9da4334a6c 100644
+--- a/include/linux/remoteproc.h
++++ b/include/linux/remoteproc.h
+@@ -584,7 +584,6 @@ struct rproc {
+ 	u8 elf_class;
+ 	u16 elf_machine;
+ 	struct cdev cdev;
+-	bool cdev_put_on_release;
+ 	struct device_dma_parameters dma_parms;
+ 	DECLARE_BITMAP(features, RPROC_MAX_FEATURES);
+ };
+-- 
+2.39.5 (Apple Git-154)
+

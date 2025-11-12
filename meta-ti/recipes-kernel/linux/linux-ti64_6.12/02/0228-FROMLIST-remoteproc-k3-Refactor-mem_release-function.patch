@@ -1,0 +1,106 @@
+From 635838eef9c52733abddc473b0b01e832f177989 Mon Sep 17 00:00:00 2001
+From: Beleswar Padhi <b-padhi@ti.com>
+Date: Mon, 3 Feb 2025 14:10:08 +0530
+Subject: [PATCH 228/406] FROMLIST: remoteproc: k3: Refactor mem_release()
+ functions into common driver
+
+The k3_dsp_mem_release() and k3_m4_rproc_dev_mem_release() functions
+release the reserved memory of the device, which get auto triggered upon
+device removal. Refactor these functions into ti_k3_common.c driver as
+k3_mem_release() and align DSP and M4 drivers to use this common
+function throughout.
+
+Link: https://lore.kernel.org/all/20250103101231.1508151-19-b-padhi@ti.com/
+Signed-off-by: Beleswar Padhi <b-padhi@ti.com>
+---
+ drivers/remoteproc/ti_k3_common.c         | 8 ++++++++
+ drivers/remoteproc/ti_k3_common.h         | 1 +
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 9 +--------
+ drivers/remoteproc/ti_k3_m4_remoteproc.c  | 9 +--------
+ 4 files changed, 11 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_common.c b/drivers/remoteproc/ti_k3_common.c
+index 187b094b4356..402574fe390e 100644
+--- a/drivers/remoteproc/ti_k3_common.c
++++ b/drivers/remoteproc/ti_k3_common.c
+@@ -466,5 +466,13 @@ int k3_rproc_of_get_memories(struct platform_device *pdev,
+ }
+ EXPORT_SYMBOL_GPL(k3_rproc_of_get_memories);
+ 
++void k3_mem_release(void *data)
++{
++	struct device *dev = data;
++
++	of_reserved_mem_device_release(dev);
++}
++EXPORT_SYMBOL_GPL(k3_mem_release);
++
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("TI K3 common Remoteproc code");
+diff --git a/drivers/remoteproc/ti_k3_common.h b/drivers/remoteproc/ti_k3_common.h
+index 4f1ab44ce178..4427738d4ddf 100644
+--- a/drivers/remoteproc/ti_k3_common.h
++++ b/drivers/remoteproc/ti_k3_common.h
+@@ -105,4 +105,5 @@ void *k3_rproc_da_to_va(struct rproc *rproc, u64 da, size_t len,
+ 			bool *is_iomem);
+ int k3_rproc_of_get_memories(struct platform_device *pdev,
+ 			     struct k3_rproc *kproc);
++void k3_mem_release(void *data);
+ #endif /* REMOTEPROC_TI_K3_COMMON_H */
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index d04de032249b..2881a6bb4f5f 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -66,13 +66,6 @@ static const struct rproc_ops k3_dsp_rproc_ops = {
+ 	.get_loaded_rsc_table	=	k3_get_loaded_rsc_table,
+ };
+ 
+-static void k3_dsp_mem_release(void *data)
+-{
+-	struct device *dev = data;
+-
+-	of_reserved_mem_device_release(dev);
+-}
+-
+ static int k3_dsp_reserved_mem_init(struct k3_rproc *kproc)
+ {
+ 	struct device *dev = kproc->dev;
+@@ -102,7 +95,7 @@ static int k3_dsp_reserved_mem_init(struct k3_rproc *kproc)
+ 			ERR_PTR(ret));
+ 		return ret;
+ 	}
+-	ret = devm_add_action_or_reset(dev, k3_dsp_mem_release, dev);
++	ret = devm_add_action_or_reset(dev, k3_mem_release, dev);
+ 	if (ret)
+ 		return ret;
+ 
+diff --git a/drivers/remoteproc/ti_k3_m4_remoteproc.c b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+index 9c6a154b15d3..1dac9f59d6f2 100644
+--- a/drivers/remoteproc/ti_k3_m4_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+@@ -21,13 +21,6 @@
+ #include "ti_sci_proc.h"
+ #include "ti_k3_common.h"
+ 
+-static void k3_m4_rproc_dev_mem_release(void *data)
+-{
+-	struct device *dev = data;
+-
+-	of_reserved_mem_device_release(dev);
+-}
+-
+ static int k3_m4_reserved_mem_init(struct k3_rproc *kproc)
+ {
+ 	struct device *dev = kproc->dev;
+@@ -56,7 +49,7 @@ static int k3_m4_reserved_mem_init(struct k3_rproc *kproc)
+ 		dev_err(dev, "device cannot initialize DMA pool (%d)\n", ret);
+ 		return ret;
+ 	}
+-	ret = devm_add_action_or_reset(dev, k3_m4_rproc_dev_mem_release, dev);
++	ret = devm_add_action_or_reset(dev, k3_mem_release, dev);
+ 	if (ret)
+ 		return ret;
+ 
+-- 
+2.39.5 (Apple Git-154)
+

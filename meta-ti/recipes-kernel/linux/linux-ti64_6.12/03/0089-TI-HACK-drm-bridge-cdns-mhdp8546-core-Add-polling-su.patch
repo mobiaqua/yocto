@@ -1,0 +1,44 @@
+From 703338fc1284f2a8233d3c58a0582cd9d42b828c Mon Sep 17 00:00:00 2001
+From: Harikrishna Shenoy <h-shenoy@ti.com>
+Date: Thu, 20 Feb 2025 13:01:38 +0530
+Subject: [PATCH 089/154] TI: HACK: drm: bridge: cdns-mhdp8546-core: Add
+ polling support for no-hpd
+
+Currently for no-hpd, mhdp->plugged status is only updated at attach time,
+this patch updates mhdp->plugged status via polling by using
+update_link_status for no-hpd case in cdns_mhdp_bridge_detect(), as
+cdns_mhdp_bridge_detect() is being polled by drm framework.
+
+Signed-off-by: Harikrishna Shenoy <h-shenoy@ti.com>
+Acked-by: Swamil Jain <s-jain1@ti.com>
+---
+ drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
+index a168a12e891d..d41b58ec61a7 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
++++ b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
+@@ -2214,6 +2214,19 @@ static enum drm_connector_status cdns_mhdp_bridge_detect(struct drm_bridge *brid
+ {
+ 	struct cdns_mhdp_device *mhdp = bridge_to_mhdp(bridge);
+ 
++	if (mhdp->no_hpd) {
++		int ret = cdns_mhdp_update_link_status(mhdp);
++
++		if (mhdp->connector.dev) {
++			if (ret < 0)
++				schedule_work(&mhdp->modeset_retry_work);
++			else
++				drm_kms_helper_hotplug_event(mhdp->bridge.dev);
++		} else {
++			drm_bridge_hpd_notify(&mhdp->bridge, cdns_mhdp_detect(mhdp));
++		}
++	}
++
+ 	return cdns_mhdp_detect(mhdp);
+ }
+ 
+-- 
+2.49.0
+

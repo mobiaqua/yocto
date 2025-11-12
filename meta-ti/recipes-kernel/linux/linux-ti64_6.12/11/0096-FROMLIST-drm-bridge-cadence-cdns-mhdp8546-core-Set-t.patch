@@ -1,0 +1,68 @@
+From bd661f8d622739850f8e487337df5ecea842ae11 Mon Sep 17 00:00:00 2001
+From: Jayesh Choudhary <j-choudhary@ti.com>
+Date: Mon, 13 Oct 2025 12:06:18 +0530
+Subject: [PATCH 096/110] FROMLIST: drm/bridge: cadence: cdns-mhdp8546-core:
+ Set the mhdp connector earlier in atomic_enable()
+
+In case if we get errors in cdns_mhdp_link_up() or cdns_mhdp_reg_read()
+in atomic_enable, we will go to cdns_mhdp_modeset_retry_fn() and will hit
+NULL pointer while trying to access the mutex. We need the connector to
+be set before that. Unlike in legacy !(DBANC) cases, we do not have
+connector initialised in bridge_attach(). Now that we have the connector
+pointer in mhdp bridge structure, so set the mhdp->connector in
+atomic_enable() earlier to avoid possible NULL pointer dereference
+in recovery paths like modeset_retry_fn() with the DBANC flag set.
+
+Fixes: c932ced6b585 ("drm/tidss: Update encoder/bridge chain connect model")
+Signed-off-by: Jayesh Choudhary <j-choudhary@ti.com>
+Signed-off-by: Harikrishna Shenoy <h-shenoy@ti.com>
+---
+ .../drm/bridge/cadence/cdns-mhdp8546-core.c   | 20 +++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
+index 5bd45bc1e4c3..b7387b128385 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
++++ b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
+@@ -1845,12 +1845,21 @@ static void cdns_mhdp_atomic_enable(struct drm_bridge *bridge,
+ 	struct drm_bridge_state *new_state;
+ 	const struct drm_display_mode *mode;
+ 	u32 resp;
+-	int ret;
++	int ret = 0;
+ 
+ 	dev_dbg(mhdp->dev, "bridge enable\n");
+ 
+ 	mutex_lock(&mhdp->link_mutex);
+ 
++	mhdp->connector = drm_atomic_get_new_connector_for_encoder(state,
++								   bridge->encoder);
++	if (WARN_ON(!mhdp->connector))
++		goto out;
++
++	conn_state = drm_atomic_get_new_connector_state(state, mhdp->connector);
++	if (WARN_ON(!conn_state))
++		goto out;
++
+ 	if (mhdp->plugged && !mhdp->link_up) {
+ 		ret = cdns_mhdp_link_up(mhdp);
+ 		if (ret < 0)
+@@ -1870,15 +1879,6 @@ static void cdns_mhdp_atomic_enable(struct drm_bridge *bridge,
+ 	cdns_mhdp_reg_write(mhdp, CDNS_DPTX_CAR,
+ 			    resp | CDNS_VIF_CLK_EN | CDNS_VIF_CLK_RSTN);
+ 
+-	mhdp->connector = drm_atomic_get_new_connector_for_encoder(state,
+-								   bridge->encoder);
+-	if (WARN_ON(!mhdp->connector))
+-		goto out;
+-
+-	conn_state = drm_atomic_get_new_connector_state(state, mhdp->connector);
+-	if (WARN_ON(!conn_state))
+-		goto out;
+-
+ 	if (mhdp->hdcp_supported &&
+ 	    mhdp->hw_state == MHDP_HW_READY &&
+ 	    conn_state->content_protection ==
+-- 
+2.51.1
+

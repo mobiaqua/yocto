@@ -1,0 +1,33 @@
+From 957cccbdb2db78918375cd70a3aa2399d3536c97 Mon Sep 17 00:00:00 2001
+From: Rishikesh Donadkar <r-donadkar@ti.com>
+Date: Wed, 12 Mar 2025 22:54:47 +0530
+Subject: [PATCH 102/181] PENDING: media: ti: j721e-csi2rx: Add 10-bit GREY
+ formats
+
+Add grey formats to the table to allow capturing them.
+
+Signed-off-by: Rishikesh Donadkar <r-donadkar@ti.com>
+---
+ drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+index 7d4da8b354a2..2174418b0951 100644
+--- a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
++++ b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+@@ -292,6 +292,12 @@ static const struct ti_csi2rx_fmt ti_csi2rx_formats[] = {
+ 		.csi_dt			= MIPI_CSI2_DT_RGB565,
+ 		.bpp			= 16,
+ 		.size			= SHIM_DMACNTX_SIZE_16,
++	}, {
++		.fourcc			= V4L2_PIX_FMT_Y10,
++		.code			= MEDIA_BUS_FMT_Y10_1X10,
++		.csi_dt			= MIPI_CSI2_DT_RAW10,
++		.bpp			= 16,
++		.size			= SHIM_DMACNTX_SIZE_16,
+ 	}, {
+ 		.fourcc			= V4L2_PIX_FMT_XBGR32,
+ 		.code			= MEDIA_BUS_FMT_RGB888_1X24,
+-- 
+2.49.0
+

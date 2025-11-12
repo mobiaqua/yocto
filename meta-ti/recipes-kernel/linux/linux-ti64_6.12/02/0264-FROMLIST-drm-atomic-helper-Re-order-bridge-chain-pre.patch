@@ -1,0 +1,84 @@
+From b3227631bb865bea99c33fa0022e3070269d3575 Mon Sep 17 00:00:00 2001
+From: Aradhya Bhatia <aradhya.bhatia@linux.dev>
+Date: Thu, 6 Feb 2025 11:04:00 +0530
+Subject: [PATCH 264/406] FROMLIST: drm/atomic-helper: Re-order bridge chain
+ pre-enable and post-disable
+
+Move the bridge pre_enable call before crtc enable, and the bridge
+post_disable call after the crtc disable.
+
+The sequence of enable after this patch will look like:
+
+	bridge[n]_pre_enable
+	...
+	bridge[1]_pre_enable
+
+	crtc_enable
+	encoder_enable
+
+	bridge[1]_enable
+	...
+	bridge[n]_enable
+
+And, the disable sequence for the display pipeline will look like:
+
+	bridge[n]_disable
+	...
+	bridge[1]_disable
+
+	encoder_disable
+	crtc_disable
+
+	bridge[1]_post_disable
+	...
+	bridge[n]_post_disable
+
+The definition of bridge pre_enable hook says that,
+"The display pipe (i.e. clocks and timing signals) feeding this bridge
+will not yet be running when this callback is called".
+
+Since CRTC is also a source feeding the bridge, it should not be enabled
+before the bridges in the pipeline are pre_enabled. Fix that by
+re-ordering the sequence of bridge pre_enable and bridge post_disable.
+
+Link: https://lore.kernel.org/all/20250126191551.741957-13-aradhya.bhatia@linux.dev/
+Signed-off-by: Aradhya Bhatia <a-bhatia1@ti.com>
+Signed-off-by: Aradhya Bhatia <aradhya.bhatia@linux.dev>
+Acked-by: Dmitry Baryshkov <dmitry.baryshkov@linaro.org>
+Signed-off-by: Jayesh Choudhary <j-choudhary@ti.com>
+---
+ drivers/gpu/drm/drm_atomic_helper.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpu/drm/drm_atomic_helper.c b/drivers/gpu/drm/drm_atomic_helper.c
+index ca64bae3c745..1b580dc068bf 100644
+--- a/drivers/gpu/drm/drm_atomic_helper.c
++++ b/drivers/gpu/drm/drm_atomic_helper.c
+@@ -1298,9 +1298,9 @@ disable_outputs(struct drm_device *dev, struct drm_atomic_state *old_state)
+ {
+ 	encoder_bridge_disable(dev, old_state);
+ 
+-	encoder_bridge_post_disable(dev, old_state);
+-
+ 	crtc_disable(dev, old_state);
++
++	encoder_bridge_post_disable(dev, old_state);
+ }
+ 
+ /**
+@@ -1635,10 +1635,10 @@ encoder_bridge_enable(struct drm_device *dev, struct drm_atomic_state *old_state
+ void drm_atomic_helper_commit_modeset_enables(struct drm_device *dev,
+ 					      struct drm_atomic_state *old_state)
+ {
+-	crtc_enable(dev, old_state);
+-
+ 	encoder_bridge_pre_enable(dev, old_state);
+ 
++	crtc_enable(dev, old_state);
++
+ 	encoder_bridge_enable(dev, old_state);
+ 
+ 	drm_atomic_helper_commit_writebacks(dev, old_state);
+-- 
+2.39.5 (Apple Git-154)
+

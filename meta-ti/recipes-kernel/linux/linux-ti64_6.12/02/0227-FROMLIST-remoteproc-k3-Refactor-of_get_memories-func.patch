@@ -1,0 +1,241 @@
+From f3c110b2ed1bb5138b319f3f4c040deb584fdf66 Mon Sep 17 00:00:00 2001
+From: Beleswar Padhi <b-padhi@ti.com>
+Date: Mon, 3 Feb 2025 14:10:07 +0530
+Subject: [PATCH 227/406] FROMLIST: remoteproc: k3: Refactor of_get_memories()
+ functions into common driver
+
+The k3_{dsp_/m4_}rproc_of_get_memories() function initializes and
+assigns memory regions used by the remote processor. Refactor these
+implementations into ti_k3_common.c driver as k3_rproc_of_get_memories()
+and align DSP and M4 drivers to use this common function throughout.
+
+Link: https://lore.kernel.org/all/20250103101231.1508151-18-b-padhi@ti.com/
+Signed-off-by: Beleswar Padhi <b-padhi@ti.com>
+---
+ drivers/remoteproc/ti_k3_common.c         | 53 ++++++++++++++++++++++
+ drivers/remoteproc/ti_k3_common.h         |  2 +
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 54 +----------------------
+ drivers/remoteproc/ti_k3_m4_remoteproc.c  | 54 +----------------------
+ 4 files changed, 57 insertions(+), 106 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_common.c b/drivers/remoteproc/ti_k3_common.c
+index 0f80cb8749aa..187b094b4356 100644
+--- a/drivers/remoteproc/ti_k3_common.c
++++ b/drivers/remoteproc/ti_k3_common.c
+@@ -413,5 +413,58 @@ void *k3_rproc_da_to_va(struct rproc *rproc, u64 da, size_t len, bool *is_iomem)
+ }
+ EXPORT_SYMBOL_GPL(k3_rproc_da_to_va);
+ 
++int k3_rproc_of_get_memories(struct platform_device *pdev,
++			     struct k3_rproc *kproc)
++{
++	const struct k3_rproc_dev_data *data = kproc->data;
++	struct device *dev = &pdev->dev;
++	struct resource *res;
++	int num_mems = 0;
++	int i;
++
++	num_mems = kproc->data->num_mems;
++	kproc->mem = devm_kcalloc(kproc->dev, num_mems,
++				  sizeof(*kproc->mem), GFP_KERNEL);
++	if (!kproc->mem)
++		return -ENOMEM;
++
++	for (i = 0; i < num_mems; i++) {
++		res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
++						   data->mems[i].name);
++		if (!res) {
++			dev_err(dev, "found no memory resource for %s\n",
++				data->mems[i].name);
++			return -EINVAL;
++		}
++		if (!devm_request_mem_region(dev, res->start,
++					     resource_size(res),
++					     dev_name(dev))) {
++			dev_err(dev, "could not request %s region for resource\n",
++				data->mems[i].name);
++			return -EBUSY;
++		}
++
++		kproc->mem[i].cpu_addr = devm_ioremap_wc(dev, res->start,
++							 resource_size(res));
++		if (!kproc->mem[i].cpu_addr) {
++			dev_err(dev, "failed to map %s memory\n",
++				data->mems[i].name);
++			return -ENOMEM;
++		}
++		kproc->mem[i].bus_addr = res->start;
++		kproc->mem[i].dev_addr = data->mems[i].dev_addr;
++		kproc->mem[i].size = resource_size(res);
++
++		dev_dbg(dev, "memory %8s: bus addr %pa size 0x%zx va %pK da 0x%x\n",
++			data->mems[i].name, &kproc->mem[i].bus_addr,
++			kproc->mem[i].size, kproc->mem[i].cpu_addr,
++			kproc->mem[i].dev_addr);
++	}
++	kproc->num_mems = num_mems;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(k3_rproc_of_get_memories);
++
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("TI K3 common Remoteproc code");
+diff --git a/drivers/remoteproc/ti_k3_common.h b/drivers/remoteproc/ti_k3_common.h
+index b869c9369794..4f1ab44ce178 100644
+--- a/drivers/remoteproc/ti_k3_common.h
++++ b/drivers/remoteproc/ti_k3_common.h
+@@ -103,4 +103,6 @@ struct resource_table *k3_get_loaded_rsc_table(struct rproc *rproc,
+ 					       size_t *rsc_table_sz);
+ void *k3_rproc_da_to_va(struct rproc *rproc, u64 da, size_t len,
+ 			bool *is_iomem);
++int k3_rproc_of_get_memories(struct platform_device *pdev,
++			     struct k3_rproc *kproc);
+ #endif /* REMOTEPROC_TI_K3_COMMON_H */
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index 4da5d5bcdee2..d04de032249b 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -66,58 +66,6 @@ static const struct rproc_ops k3_dsp_rproc_ops = {
+ 	.get_loaded_rsc_table	=	k3_get_loaded_rsc_table,
+ };
+ 
+-static int k3_dsp_rproc_of_get_memories(struct platform_device *pdev,
+-					struct k3_rproc *kproc)
+-{
+-	const struct k3_rproc_dev_data *data = kproc->data;
+-	struct device *dev = &pdev->dev;
+-	struct resource *res;
+-	int num_mems = 0;
+-	int i;
+-
+-	num_mems = kproc->data->num_mems;
+-	kproc->mem = devm_kcalloc(kproc->dev, num_mems,
+-				  sizeof(*kproc->mem), GFP_KERNEL);
+-	if (!kproc->mem)
+-		return -ENOMEM;
+-
+-	for (i = 0; i < num_mems; i++) {
+-		res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+-						   data->mems[i].name);
+-		if (!res) {
+-			dev_err(dev, "found no memory resource for %s\n",
+-				data->mems[i].name);
+-			return -EINVAL;
+-		}
+-		if (!devm_request_mem_region(dev, res->start,
+-					     resource_size(res),
+-					     dev_name(dev))) {
+-			dev_err(dev, "could not request %s region for resource\n",
+-				data->mems[i].name);
+-			return -EBUSY;
+-		}
+-
+-		kproc->mem[i].cpu_addr = devm_ioremap_wc(dev, res->start,
+-							 resource_size(res));
+-		if (!kproc->mem[i].cpu_addr) {
+-			dev_err(dev, "failed to map %s memory\n",
+-				data->mems[i].name);
+-			return -ENOMEM;
+-		}
+-		kproc->mem[i].bus_addr = res->start;
+-		kproc->mem[i].dev_addr = data->mems[i].dev_addr;
+-		kproc->mem[i].size = resource_size(res);
+-
+-		dev_dbg(dev, "memory %8s: bus addr %pa size 0x%zx va %pK da 0x%x\n",
+-			data->mems[i].name, &kproc->mem[i].bus_addr,
+-			kproc->mem[i].size, kproc->mem[i].cpu_addr,
+-			kproc->mem[i].dev_addr);
+-	}
+-	kproc->num_mems = num_mems;
+-
+-	return 0;
+-}
+-
+ static void k3_dsp_mem_release(void *data)
+ {
+ 	struct device *dev = data;
+@@ -271,7 +219,7 @@ static int k3_dsp_rproc_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = k3_dsp_rproc_of_get_memories(pdev, kproc);
++	ret = k3_rproc_of_get_memories(pdev, kproc);
+ 	if (ret)
+ 		return ret;
+ 
+diff --git a/drivers/remoteproc/ti_k3_m4_remoteproc.c b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+index 4616f72be7a8..9c6a154b15d3 100644
+--- a/drivers/remoteproc/ti_k3_m4_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+@@ -21,58 +21,6 @@
+ #include "ti_sci_proc.h"
+ #include "ti_k3_common.h"
+ 
+-static int k3_m4_rproc_of_get_memories(struct platform_device *pdev,
+-				       struct k3_rproc *kproc)
+-{
+-	const struct k3_rproc_dev_data *data = kproc->data;
+-	struct device *dev = &pdev->dev;
+-	struct resource *res;
+-	int num_mems;
+-	int i;
+-
+-	num_mems = kproc->data->num_mems;
+-	kproc->mem = devm_kcalloc(kproc->dev, num_mems,
+-				  sizeof(*kproc->mem), GFP_KERNEL);
+-	if (!kproc->mem)
+-		return -ENOMEM;
+-
+-	for (i = 0; i < num_mems; i++) {
+-		res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+-						   data->mems[i].name);
+-		if (!res) {
+-			dev_err(dev, "found no memory resource for %s\n",
+-				data->mems[i].name);
+-			return -EINVAL;
+-		}
+-		if (!devm_request_mem_region(dev, res->start,
+-					     resource_size(res),
+-					     dev_name(dev))) {
+-			dev_err(dev, "could not request %s region for resource\n",
+-				data->mems[i].name);
+-			return -EBUSY;
+-		}
+-
+-		kproc->mem[i].cpu_addr = devm_ioremap_wc(dev, res->start,
+-							 resource_size(res));
+-		if (!kproc->mem[i].cpu_addr) {
+-			dev_err(dev, "failed to map %s memory\n",
+-				data->mems[i].name);
+-			return -ENOMEM;
+-		}
+-		kproc->mem[i].bus_addr = res->start;
+-		kproc->mem[i].dev_addr = data->mems[i].dev_addr;
+-		kproc->mem[i].size = resource_size(res);
+-
+-		dev_dbg(dev, "memory %8s: bus addr %pa size 0x%zx va %pK da 0x%x\n",
+-			data->mems[i].name, &kproc->mem[i].bus_addr,
+-			kproc->mem[i].size, kproc->mem[i].cpu_addr,
+-			kproc->mem[i].dev_addr);
+-	}
+-	kproc->num_mems = num_mems;
+-
+-	return 0;
+-}
+-
+ static void k3_m4_rproc_dev_mem_release(void *data)
+ {
+ 	struct device *dev = data;
+@@ -226,7 +174,7 @@ static int k3_m4_rproc_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = k3_m4_rproc_of_get_memories(pdev, kproc);
++	ret = k3_rproc_of_get_memories(pdev, kproc);
+ 	if (ret)
+ 		return ret;
+ 
+-- 
+2.39.5 (Apple Git-154)
+

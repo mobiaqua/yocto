@@ -1,0 +1,32 @@
+From a4541fceb908423a6c0c08df73cd5aaf9cdfed6e Mon Sep 17 00:00:00 2001
+From: Jayesh Choudhary <j-choudhary@ti.com>
+Date: Thu, 6 Feb 2025 11:04:57 +0530
+Subject: [PATCH 321/406] TI: HACK: arm64: dts: ti: k3-j721e-beagleboneai64:
+ Drop dp_link max phy rate
+
+Drop the max phy rate from 5.4Gbps to 2.7Gbps to drop 3840x2160@60fps
+resolution causing 'CRTC SYNC LOST' issue.
+This limits the max resolution to 3840x2160@30fps and equivalent
+resolution.
+
+Signed-off-by: Jayesh Choudhary <j-choudhary@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts b/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
+index fb899c99753e..f68152125ad6 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
++++ b/arch/arm64/boot/dts/ti/k3-j721e-beagleboneai64.dts
+@@ -698,7 +698,7 @@ torrent_phy_dp: phy@0 {
+ 		resets = <&serdes_wiz4 1>;
+ 		cdns,phy-type = <PHY_TYPE_DP>;
+ 		cdns,num-lanes = <4>;
+-		cdns,max-bit-rate = <5400>;
++		cdns,max-bit-rate = <2700>;
+ 		#phy-cells = <0>;
+ 	};
+ };
+-- 
+2.39.5 (Apple Git-154)
+

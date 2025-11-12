@@ -1,0 +1,207 @@
+From 65469cba7c69144f72bf85b0bfcd63c5a18667bb Mon Sep 17 00:00:00 2001
+From: Georgi Vlaev <g-vlaev@ti.com>
+Date: Tue, 21 Jan 2025 16:14:40 -0600
+Subject: [PATCH 088/406] UPSTREAM: firmware: ti_sci: Add support for querying
+ the firmware caps
+
+commit 055b6cfb62f5a1ea811aa21b96f2e611329b12b8 upstream.
+
+Add support for the TISCI_MSG_QUERY_FW_CAPS message, used to retrieve
+the firmware capabilities of the currently running system firmware. The
+message belongs to the TISCI general core message API [1] and is
+available in SysFW version 08.04.03 and above. Currently, the message is
+supported on devices with split architecture of the system firmware (DM
++ TIFS) like AM62x. Old revisions or not yet supported platforms will
+NACK this request.
+
+We're using this message locally in ti_sci.c to get the low power
+features of the FW/SoC. As there's no other kernel consumers yet, this
+is not added to struct ti_sci_core_ops.
+
+Sysfw version >= 10.00.04 support LPM_DM_MANAGED capability [2], where
+Device Mgr firmware now manages which low power mode is chosen. Going
+forward, this is the default configuration supported for TI AM62 family
+of devices. The state chosen by the DM can be influenced by sending
+constraints using the new LPM constraint APIs.
+
+[1] https://software-dl.ti.com/tisci/esd/latest/2_tisci_msgs/general/core.html
+[2] https://software-dl.ti.com/tisci/esd/latest/2_tisci_msgs/general/core.html#tisci-msg-query-fw-caps
+
+Signed-off-by: Georgi Vlaev <g-vlaev@ti.com>
+[vibhore@ti.com: Support for LPM_DM_MANAGED mode]
+Signed-off-by: Vibhore Vardhan <vibhore@ti.com>
+Signed-off-by: Kevin Hilman <khilman@baylibre.com>
+Tested-by: Dhruva Gole <d-gole@ti.com>
+Signed-off-by: Markus Schneider-Pargmann <msp@baylibre.com>
+Tested-by: Kevin Hilman <khilman@baylibre.com>
+Tested-by: Roger Quadros <rogerq@kernel.org>
+Acked-by: Dhruva Gole <d-gole@ti.com>
+Link: https://lore.kernel.org/r/20241007-tisci-syssuspendresume-v13-2-ed54cd659a49@baylibre.com
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ drivers/firmware/ti_sci.c | 73 ++++++++++++++++++++++++++++++++++++++-
+ drivers/firmware/ti_sci.h | 22 ++++++++++++
+ 2 files changed, 94 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/firmware/ti_sci.c b/drivers/firmware/ti_sci.c
+index 160968301b1f..d53192607709 100644
+--- a/drivers/firmware/ti_sci.c
++++ b/drivers/firmware/ti_sci.c
+@@ -2,7 +2,7 @@
+ /*
+  * Texas Instruments System Control Interface Protocol Driver
+  *
+- * Copyright (C) 2015-2022 Texas Instruments Incorporated - https://www.ti.com/
++ * Copyright (C) 2015-2024 Texas Instruments Incorporated - https://www.ti.com/
+  *	Nishanth Menon
+  */
+ 
+@@ -24,6 +24,7 @@
+ #include <linux/slab.h>
+ #include <linux/soc/ti/ti-msgmgr.h>
+ #include <linux/soc/ti/ti_sci_protocol.h>
++#include <linux/sys_soc.h>
+ #include <linux/reboot.h>
+ 
+ #include "ti_sci.h"
+@@ -98,6 +99,7 @@ struct ti_sci_desc {
+  * @minfo:	Message info
+  * @node:	list head
+  * @host_id:	Host ID
++ * @fw_caps:	FW/SoC low power capabilities
+  * @users:	Number of users of this instance
+  */
+ struct ti_sci_info {
+@@ -114,6 +116,7 @@ struct ti_sci_info {
+ 	struct ti_sci_xfers_info minfo;
+ 	struct list_head node;
+ 	u8 host_id;
++	u64 fw_caps;
+ 	/* protected by ti_sci_list_mutex */
+ 	int users;
+ };
+@@ -1651,6 +1654,67 @@ static int ti_sci_cmd_clk_get_freq(const struct ti_sci_handle *handle,
+ 	return ret;
+ }
+ 
++/**
++ * ti_sci_msg_cmd_query_fw_caps() - Get the FW/SoC capabilities
++ * @handle:		Pointer to TI SCI handle
++ * @fw_caps:		Each bit in fw_caps indicating one FW/SOC capability
++ *
++ * Check if the firmware supports any optional low power modes.
++ * Old revisions of TIFS (< 08.04) will NACK the request which results in
++ * -ENODEV being returned.
++ *
++ * Return: 0 if all went well, else returns appropriate error value.
++ */
++static int ti_sci_msg_cmd_query_fw_caps(const struct ti_sci_handle *handle,
++					u64 *fw_caps)
++{
++	struct ti_sci_info *info;
++	struct ti_sci_xfer *xfer;
++	struct ti_sci_msg_resp_query_fw_caps *resp;
++	struct device *dev;
++	int ret = 0;
++
++	if (IS_ERR(handle))
++		return PTR_ERR(handle);
++	if (!handle)
++		return -EINVAL;
++
++	info = handle_to_ti_sci_info(handle);
++	dev = info->dev;
++
++	xfer = ti_sci_get_one_xfer(info, TI_SCI_MSG_QUERY_FW_CAPS,
++				   TI_SCI_FLAG_REQ_ACK_ON_PROCESSED,
++				   sizeof(struct ti_sci_msg_hdr),
++				   sizeof(*resp));
++	if (IS_ERR(xfer)) {
++		ret = PTR_ERR(xfer);
++		dev_err(dev, "Message alloc failed(%d)\n", ret);
++		return ret;
++	}
++
++	ret = ti_sci_do_xfer(info, xfer);
++	if (ret) {
++		dev_err(dev, "Mbox send fail %d\n", ret);
++		goto fail;
++	}
++
++	resp = (struct ti_sci_msg_resp_query_fw_caps *)xfer->xfer_buf;
++
++	if (!ti_sci_is_response_ack(resp)) {
++		dev_err(dev, "Failed to get capabilities\n");
++		ret = -ENODEV;
++		goto fail;
++	}
++
++	if (fw_caps)
++		*fw_caps = resp->fw_caps;
++
++fail:
++	ti_sci_put_one_xfer(&info->minfo, xfer);
++
++	return ret;
++}
++
+ static int ti_sci_cmd_core_reboot(const struct ti_sci_handle *handle)
+ {
+ 	struct ti_sci_info *info;
+@@ -3390,6 +3454,13 @@ static int ti_sci_probe(struct platform_device *pdev)
+ 		goto out;
+ 	}
+ 
++	ti_sci_msg_cmd_query_fw_caps(&info->handle, &info->fw_caps);
++	dev_dbg(dev, "Detected firmware capabilities: %s%s%s\n",
++		info->fw_caps & MSG_FLAG_CAPS_GENERIC ? "Generic" : "",
++		info->fw_caps & MSG_FLAG_CAPS_LPM_PARTIAL_IO ? " Partial-IO" : "",
++		info->fw_caps & MSG_FLAG_CAPS_LPM_DM_MANAGED ? " DM-Managed" : ""
++	);
++
+ 	ti_sci_setup_ops(info);
+ 
+ 	ret = devm_register_restart_handler(dev, tisci_reboot_handler, info);
+diff --git a/drivers/firmware/ti_sci.h b/drivers/firmware/ti_sci.h
+index 5846c60220f5..73ca9503606b 100644
+--- a/drivers/firmware/ti_sci.h
++++ b/drivers/firmware/ti_sci.h
+@@ -19,6 +19,7 @@
+ #define TI_SCI_MSG_WAKE_REASON	0x0003
+ #define TI_SCI_MSG_GOODBYE	0x0004
+ #define TI_SCI_MSG_SYS_RESET	0x0005
++#define TI_SCI_MSG_QUERY_FW_CAPS	0x0022
+ 
+ /* Device requests */
+ #define TI_SCI_MSG_SET_DEVICE_STATE	0x0200
+@@ -132,6 +133,27 @@ struct ti_sci_msg_req_reboot {
+ 	struct ti_sci_msg_hdr hdr;
+ } __packed;
+ 
++/**
++ * struct ti_sci_msg_resp_query_fw_caps - Response for query firmware caps
++ * @hdr:	Generic header
++ * @fw_caps:	Each bit in fw_caps indicating one FW/SOC capability
++ *		MSG_FLAG_CAPS_GENERIC: Generic capability (LPM not supported)
++ *		MSG_FLAG_CAPS_LPM_PARTIAL_IO: Partial IO in LPM
++ *		MSG_FLAG_CAPS_LPM_DM_MANAGED: LPM can be managed by DM
++ *
++ * Response to a generic message with message type TI_SCI_MSG_QUERY_FW_CAPS
++ * providing currently available SOC/firmware capabilities. SoC that don't
++ * support low power modes return only MSG_FLAG_CAPS_GENERIC capability.
++ */
++struct ti_sci_msg_resp_query_fw_caps {
++	struct ti_sci_msg_hdr hdr;
++#define MSG_FLAG_CAPS_GENERIC		TI_SCI_MSG_FLAG(0)
++#define MSG_FLAG_CAPS_LPM_PARTIAL_IO	TI_SCI_MSG_FLAG(4)
++#define MSG_FLAG_CAPS_LPM_DM_MANAGED	TI_SCI_MSG_FLAG(5)
++#define MSG_MASK_CAPS_LPM		GENMASK_ULL(4, 1)
++	u64 fw_caps;
++} __packed;
++
+ /**
+  * struct ti_sci_msg_req_set_device_state - Set the desired state of the device
+  * @hdr:		Generic header
+-- 
+2.39.5 (Apple Git-154)
+

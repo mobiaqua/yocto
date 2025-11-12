@@ -1,0 +1,76 @@
+From 3124ae9ee61faf5ff5e53750bef816844e5e69f9 Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Date: Fri, 20 Jun 2025 17:29:35 +0530
+Subject: [PATCH 27/73] FROMLIST: drm/bridge: cdns-dsi: Fix event mode
+
+The timings calculation gets it wrong for DSI event mode, resulting in
+too large hbp value. Fix the issue by taking into account the
+pulse/event mode difference.
+
+Link: https://lore.kernel.org/all/20250618-cdns-dsi-impro-v4-15-862c841dbe02@ideasonboard.com/
+Tested-by: Parth Pancholi <parth.pancholi@toradex.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Signed-off-by: Harikrishna Shenoy <h-shenoy@ti.com>
+---
+ .../gpu/drm/bridge/cadence/cdns-dsi-core.c    | 31 ++++++++++++-------
+ 1 file changed, 20 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
+index 6b4e043a921b..609723d63cab 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
++++ b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
+@@ -418,7 +418,8 @@
+ #define DSI_OUTPUT_PORT			0
+ #define DSI_INPUT_PORT(inputid)		(1 + (inputid))
+ 
+-#define DSI_HBP_FRAME_OVERHEAD		12
++#define DSI_HBP_FRAME_PULSE_OVERHEAD	12
++#define DSI_HBP_FRAME_EVENT_OVERHEAD	16
+ #define DSI_HSA_FRAME_OVERHEAD		14
+ #define DSI_HFP_FRAME_OVERHEAD		6
+ #define DSI_HSS_VSS_VSE_FRAME_OVERHEAD	4
+@@ -487,23 +488,31 @@ static int cdns_dsi_mode2cfg(struct cdns_dsi *dsi,
+ 
+ 	bpp = mipi_dsi_pixel_format_to_bpp(output->dev->format);
+ 
+-	dsi_cfg->hbp = dpi_to_dsi_timing(dpi_hbp + (sync_pulse ? 0 : dpi_hsa),
+-					 bpp, DSI_HBP_FRAME_OVERHEAD);
++	if (sync_pulse) {
++		dsi_cfg->hbp = dpi_to_dsi_timing(dpi_hbp, bpp,
++						 DSI_HBP_FRAME_PULSE_OVERHEAD);
+ 
+-	if (sync_pulse)
+-		dsi_cfg->hsa =
+-			dpi_to_dsi_timing(dpi_hsa, bpp, DSI_HSA_FRAME_OVERHEAD);
++		dsi_cfg->hsa = dpi_to_dsi_timing(dpi_hsa, bpp,
++						 DSI_HSA_FRAME_OVERHEAD);
++	} else {
++		dsi_cfg->hbp = dpi_to_dsi_timing(dpi_hbp + dpi_hsa, bpp,
++						 DSI_HBP_FRAME_EVENT_OVERHEAD);
++
++		dsi_cfg->hsa = 0;
++	}
+ 
+ 	dsi_cfg->hact = dpi_to_dsi_timing(dpi_hact, bpp, 0);
+ 
+ 	dsi_cfg->hfp = dpi_to_dsi_timing(dpi_hfp, bpp, DSI_HFP_FRAME_OVERHEAD);
+ 
+-	dsi_cfg->htotal = dsi_cfg->hbp + DSI_HBP_FRAME_OVERHEAD;
+-	if (output->dev->mode_flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE)
+-		dsi_cfg->htotal += dsi_cfg->hsa + DSI_HSA_FRAME_OVERHEAD;
++	dsi_cfg->htotal = dsi_cfg->hact + dsi_cfg->hfp + DSI_HFP_FRAME_OVERHEAD;
+ 
+-	dsi_cfg->htotal += dsi_cfg->hact;
+-	dsi_cfg->htotal += dsi_cfg->hfp + DSI_HFP_FRAME_OVERHEAD;
++	if (sync_pulse) {
++		dsi_cfg->htotal += dsi_cfg->hbp + DSI_HBP_FRAME_PULSE_OVERHEAD;
++		dsi_cfg->htotal += dsi_cfg->hsa + DSI_HSA_FRAME_OVERHEAD;
++	} else {
++		dsi_cfg->htotal += dsi_cfg->hbp + DSI_HBP_FRAME_EVENT_OVERHEAD;
++	}
+ 
+ 	return 0;
+ }
+-- 
+2.51.1
+

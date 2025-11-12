@@ -1,0 +1,78 @@
+From 1f955a270005ce67fc21b656b4c450a5e3870a9e Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Date: Mon, 6 Oct 2025 21:27:58 +0530
+Subject: [PATCH 091/110] FROMLIST: drm/tidss: Set vblank (event) time at
+ crtc_atomic_enable
+
+It was reported that Weston stops at an assert, which checks that the
+page flip event timestamp is the same or newer than the previous
+timestamp:
+
+weston_output_finish_frame: Assertion `timespec_sub_to_nsec(stamp, &output->frame_time) >= 0' failed.
+
+With manual tests, I can see that when I enable the CRTC, I get a page
+flip event with a timestamp of 0. Tracking this down led to
+drm_reset_vblank_timestamp() which does "t_vblank = 0" if
+"high-precision query" is not available.
+
+TI DSS does not have any hardware timestamping, and thus the default
+ktime_get() is used in the DRM framework to get the vblank timestamp,
+and ktime_get() is not "high precision" here.
+
+It is not quite clear why the framework behaves this way, but I assume
+the idea is that drm_crtc_vblank_on(), which calls
+drm_reset_vblank_timestamp(), can be called at any time, and thus
+ktime_get() wouldn't give a good timestamp. And, the idea is that the
+driver would wait until next vblank after the CRTC enable, and then we
+could get a good timestamp. This is hinted in the comment: "reinitialize
+delayed at next vblank interrupt and assign 0 for now".
+
+I think that makes sense. However, when we enable the CRTC in TI DSS,
+i.e. we write the enable bit to the hardware, that's the exact moment
+when the "vblank cycle" starts. It is the zero point in the cycle, and
+thus ktime_get() would give a good timestamp.
+
+I am not sure if this is applicable to other hardware, and if so, how
+should it be solved in the framework. So, let's fix this in the tidss
+driver at least for now.
+
+This patch updates the vblank->time manually to ktime_get() just before
+sending the vblank event, and we enable the crtc just before calling
+ktime_get(). To get even more exact timing, the dispc_vp_enable() is
+moved inside the event_lock spinlock.
+
+With this, we get a proper timestamp for the page flip event from
+enabling the CRTC, and Weston is happy.
+
+Link: https://lore.kernel.org/all/20250905-tidss-fix-timestamp-v1-2-c2aedf31e2c9@ideasonboard.com/
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Signed-off-by: Swamil Jain <s-jain1@ti.com>
+---
+ drivers/gpu/drm/tidss/tidss_crtc.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/tidss/tidss_crtc.c b/drivers/gpu/drm/tidss/tidss_crtc.c
+index cfc9c8b3ce56..adc440fc2ce0 100644
+--- a/drivers/gpu/drm/tidss/tidss_crtc.c
++++ b/drivers/gpu/drm/tidss/tidss_crtc.c
+@@ -286,11 +286,15 @@ static void tidss_crtc_atomic_enable(struct drm_crtc *crtc,
+ 
+ 	dispc_vp_prepare(tidss->dispc, tcrtc->hw_videoport, crtc->state);
+ 
+-	dispc_vp_enable(tidss->dispc, tcrtc->hw_videoport, crtc->state);
+-
+ 	spin_lock_irqsave(&ddev->event_lock, flags);
+ 
++	dispc_vp_enable(tidss->dispc, tcrtc->hw_videoport, crtc->state);
++
+ 	if (crtc->state->event) {
++		unsigned int pipe = drm_crtc_index(crtc);
++		struct drm_vblank_crtc *vblank = &ddev->vblank[pipe];
++
++		vblank->time = ktime_get();
+ 		drm_crtc_send_vblank_event(crtc, crtc->state->event);
+ 		crtc->state->event = NULL;
+ 	}
+-- 
+2.51.1
+

@@ -1,0 +1,144 @@
+From 00158db3633b9d7be37e4fe6940a0548d7de0a46 Mon Sep 17 00:00:00 2001
+From: Beleswar Padhi <b-padhi@ti.com>
+Date: Mon, 3 Feb 2025 14:09:57 +0530
+Subject: [PATCH 217/406] FROMLIST: remoteproc: k3: Refactor rproc_release()
+ implementation into common driver
+
+The k3_dsp_rproc_release() function erroneously deasserts the local
+reset even for devices which do not support it. Even though it results
+in a no-operation, Update the logic to explicitly deassert the local
+reset for devices that support it and only the global reset for those
+that do not.
+
+Further, refactor the above function into the ti_k3_common.c driver as
+k3_rproc_release() and use it throughout DSP and M4 drivers for
+releasing the reset from the remote processor.
+
+Link: https://lore.kernel.org/all/20250103101231.1508151-8-b-padhi@ti.com/
+Signed-off-by: Beleswar Padhi <b-padhi@ti.com>
+---
+ drivers/remoteproc/ti_k3_common.c         | 27 ++++++++++++++++++++
+ drivers/remoteproc/ti_k3_common.h         |  1 +
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 30 +----------------------
+ drivers/remoteproc/ti_k3_m4_remoteproc.c  |  8 +++---
+ 4 files changed, 32 insertions(+), 34 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_common.c b/drivers/remoteproc/ti_k3_common.c
+index db6a12c89226..3b1d041fec7b 100644
+--- a/drivers/remoteproc/ti_k3_common.c
++++ b/drivers/remoteproc/ti_k3_common.c
+@@ -129,5 +129,32 @@ int k3_rproc_reset(struct k3_rproc *kproc)
+ }
+ EXPORT_SYMBOL_GPL(k3_rproc_reset);
+ 
++/* Release the remote processor from reset */
++int k3_rproc_release(struct k3_rproc *kproc)
++{
++	struct device *dev = kproc->dev;
++	int ret;
++
++	if (kproc->data->uses_lreset) {
++		ret = reset_control_deassert(kproc->reset);
++		if (ret) {
++			dev_err(dev, "local-reset deassert failed, (%pe)\n", ERR_PTR(ret));
++			if (kproc->ti_sci->ops.dev_ops.put_device(kproc->ti_sci,
++								  kproc->ti_sci_id))
++				dev_warn(dev, "module-reset assert back failed\n");
++		}
++
++		return ret;
++	}
++
++	ret = kproc->ti_sci->ops.dev_ops.get_device(kproc->ti_sci,
++						    kproc->ti_sci_id);
++	if (ret)
++		dev_err(dev, "module-reset deassert failed (%pe)\n", ERR_PTR(ret));
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(k3_rproc_release);
++
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("TI K3 common Remoteproc code");
+diff --git a/drivers/remoteproc/ti_k3_common.h b/drivers/remoteproc/ti_k3_common.h
+index a7afd7ec3136..18d66987645c 100644
+--- a/drivers/remoteproc/ti_k3_common.h
++++ b/drivers/remoteproc/ti_k3_common.h
+@@ -89,4 +89,5 @@ struct k3_rproc {
+ void k3_rproc_mbox_callback(struct mbox_client *client, void *data);
+ void k3_rproc_kick(struct rproc *rproc, int vqid);
+ int k3_rproc_reset(struct k3_rproc *kproc);
++int k3_rproc_release(struct k3_rproc *kproc);
+ #endif /* REMOTEPROC_TI_K3_COMMON_H */
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index 9aeac6aa2750..cad9b0f9c2f8 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -24,34 +24,6 @@
+ 
+ #define KEYSTONE_RPROC_LOCAL_ADDRESS_MASK	(SZ_16M - 1)
+ 
+-/* Release the DSP processor from reset */
+-static int k3_dsp_rproc_release(struct k3_rproc *kproc)
+-{
+-	struct device *dev = kproc->dev;
+-	int ret;
+-
+-	if (kproc->data->uses_lreset)
+-		goto lreset;
+-
+-	ret = kproc->ti_sci->ops.dev_ops.get_device(kproc->ti_sci,
+-						    kproc->ti_sci_id);
+-	if (ret) {
+-		dev_err(dev, "module-reset deassert failed (%pe)\n", ERR_PTR(ret));
+-		return ret;
+-	}
+-
+-lreset:
+-	ret = reset_control_deassert(kproc->reset);
+-	if (ret) {
+-		dev_err(dev, "local-reset deassert failed, (%pe)\n", ERR_PTR(ret));
+-		if (kproc->ti_sci->ops.dev_ops.put_device(kproc->ti_sci,
+-							  kproc->ti_sci_id))
+-			dev_warn(dev, "module-reset assert back failed\n");
+-	}
+-
+-	return ret;
+-}
+-
+ static int k3_dsp_rproc_request_mbox(struct rproc *rproc)
+ {
+ 	struct k3_rproc *kproc = rproc->priv;
+@@ -160,7 +132,7 @@ static int k3_dsp_rproc_start(struct rproc *rproc)
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = k3_dsp_rproc_release(kproc);
++	ret = k3_rproc_release(kproc);
+ 	if (ret)
+ 		return ret;
+ 
+diff --git a/drivers/remoteproc/ti_k3_m4_remoteproc.c b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+index 31f245ad71ec..30700840c3ad 100644
+--- a/drivers/remoteproc/ti_k3_m4_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+@@ -356,13 +356,11 @@ static int k3_m4_rproc_start(struct rproc *rproc)
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = reset_control_deassert(kproc->reset);
+-	if (ret) {
++	ret = k3_rproc_release(kproc);
++	if (ret)
+ 		dev_err(dev, "local-reset deassert failed, ret = %d\n", ret);
+-		return ret;
+-	}
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ /*
+-- 
+2.39.5 (Apple Git-154)
+

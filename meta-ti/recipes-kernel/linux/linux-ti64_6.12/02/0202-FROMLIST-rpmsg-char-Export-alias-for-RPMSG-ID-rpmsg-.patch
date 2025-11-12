@@ -1,0 +1,50 @@
+From bb0033a76cdd2b82426fd452fedfddf2a8208579 Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Mon, 3 Feb 2025 14:09:42 +0530
+Subject: [PATCH 202/406] FROMLIST: rpmsg: char: Export alias for RPMSG ID
+ rpmsg-raw from table
+
+Module aliases are used by userspace to identify the correct module to
+load for a detected hardware. The currently supported RPMSG device IDs for
+this module include "rpmsg-raw", but the module alias is "rpmsg_chrdev".
+
+Use the helper macro MODULE_DEVICE_TABLE(rpmsg) to export the correct
+supported IDs. And while here, to keep backwards compatibility we also add
+the other ID "rpmsg_chrdev" so that it is also still exported as an alias.
+
+This has the side benefit of adding support for some legacy firmware
+which still uses the original "rpmsg_chrdev" ID. This was the ID used for
+this driver before it was upstreamed (as reflected by the module alias).
+
+Link: https://lore.kernel.org/all/20240729164527.340590-1-afd@ti.com
+Signed-off-by: Andrew Davis <afd@ti.com>
+Signed-off-by: Beleswar Padhi <b-padhi@ti.com>
+---
+ drivers/rpmsg/rpmsg_char.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/rpmsg/rpmsg_char.c b/drivers/rpmsg/rpmsg_char.c
+index eec7642d2686..96fcdd2d7093 100644
+--- a/drivers/rpmsg/rpmsg_char.c
++++ b/drivers/rpmsg/rpmsg_char.c
+@@ -522,8 +522,10 @@ static void rpmsg_chrdev_remove(struct rpmsg_device *rpdev)
+ 
+ static struct rpmsg_device_id rpmsg_chrdev_id_table[] = {
+ 	{ .name	= "rpmsg-raw" },
++	{ .name	= "rpmsg_chrdev" },
+ 	{ },
+ };
++MODULE_DEVICE_TABLE(rpmsg, rpmsg_chrdev_id_table);
+ 
+ static struct rpmsg_driver rpmsg_chrdev_driver = {
+ 	.probe = rpmsg_chrdev_probe,
+@@ -565,6 +567,5 @@ static void rpmsg_chrdev_exit(void)
+ }
+ module_exit(rpmsg_chrdev_exit);
+ 
+-MODULE_ALIAS("rpmsg:rpmsg_chrdev");
+ MODULE_DESCRIPTION("RPMSG device interface");
+ MODULE_LICENSE("GPL v2");
+-- 
+2.39.5 (Apple Git-154)
+

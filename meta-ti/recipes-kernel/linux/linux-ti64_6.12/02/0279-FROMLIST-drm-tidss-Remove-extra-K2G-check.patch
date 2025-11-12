@@ -1,0 +1,33 @@
+From 50f644f02e3c7c746eae5749685df585fadebf4f Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Date: Thu, 6 Feb 2025 11:04:15 +0530
+Subject: [PATCH 279/406] FROMLIST: drm/tidss: Remove extra K2G check
+
+We check if the platform is K2G in dispc_k3_clear_irqstatus(), and
+return early if so. This cannot happen, as the _k3_ functions are never
+called on K2G in the first place. So remove the check.
+
+Link: https://lore.kernel.org/all/20241021-tidss-irq-fix-v1-3-82ddaec94e4a@ideasonboard.com/
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Signed-off-by: Swamil Jain <s-jain1@ti.com>
+Signed-off-by: Jayesh Choudhary <j-choudhary@ti.com>
+---
+ drivers/gpu/drm/tidss/tidss_dispc.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/tidss/tidss_dispc.c b/drivers/gpu/drm/tidss/tidss_dispc.c
+index 22f8cd8b6733..3b8de46a2fd0 100644
+--- a/drivers/gpu/drm/tidss/tidss_dispc.c
++++ b/drivers/gpu/drm/tidss/tidss_dispc.c
+@@ -906,8 +906,6 @@ void dispc_k3_clear_irqstatus(struct dispc_device *dispc, dispc_irq_t clearmask)
+ 		if (clearmask & DSS_IRQ_PLANE_MASK(i))
+ 			dispc_k3_vid_write_irqstatus(dispc, i, clearmask);
+ 	}
+-	if (dispc->feat->subrev == DISPC_K2G)
+-		return;
+ 
+ 	/* always clear the top level irqstatus */
+ 	dispc_write(dispc, DISPC_IRQSTATUS, dispc_read(dispc, DISPC_IRQSTATUS));
+-- 
+2.39.5 (Apple Git-154)
+

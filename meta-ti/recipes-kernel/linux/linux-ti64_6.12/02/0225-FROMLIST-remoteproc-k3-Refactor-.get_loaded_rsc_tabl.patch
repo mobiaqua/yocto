@@ -1,0 +1,209 @@
+From bbe07210a35c9619fbc53bf733c5893858b1471e Mon Sep 17 00:00:00 2001
+From: Beleswar Padhi <b-padhi@ti.com>
+Date: Mon, 3 Feb 2025 14:10:05 +0530
+Subject: [PATCH 225/406] FROMLIST: remoteproc: k3: Refactor
+ .get_loaded_rsc_table ops into common driver
+
+The .get_loaded_rsc_table rproc ops implementations in
+ti_k3_dsp_remoteproc.c and ti_k3_m4_remoteproc.c drivers return a
+pointer to the resource table that was pre-loaded at the base address of
+the DDR region reserved for firmware usage. Refactor the implementations
+into ti_k3_common.c driver as k3_get_loaded_rsc_table() and align DSP
+and M4 drivers to register this common function as .get_loaded_rsc_table
+ops.
+
+Link: https://lore.kernel.org/all/20250103101231.1508151-16-b-padhi@ti.com/
+Signed-off-by: Beleswar Padhi <b-padhi@ti.com>
+---
+ drivers/remoteproc/ti_k3_common.c         | 33 +++++++++++++++
+ drivers/remoteproc/ti_k3_common.h         |  2 +
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 49 ++++-------------------
+ drivers/remoteproc/ti_k3_m4_remoteproc.c  | 34 +---------------
+ 4 files changed, 44 insertions(+), 74 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_common.c b/drivers/remoteproc/ti_k3_common.c
+index 7cb455a21cfe..b0a4932b251c 100644
+--- a/drivers/remoteproc/ti_k3_common.c
++++ b/drivers/remoteproc/ti_k3_common.c
+@@ -319,5 +319,38 @@ EXPORT_SYMBOL_GPL(k3_rproc_attach);
+ int k3_rproc_detach(struct rproc *rproc) { return 0; }
+ EXPORT_SYMBOL_GPL(k3_rproc_detach);
+ 
++/*
++ * This function implements the .get_loaded_rsc_table() callback and is used
++ * to provide the resource table for a booted remote processor in IPC-only
++ * mode. The remote processor firmwares follow a design-by-contract approach
++ * and are expected to have the resource table at the base of the DDR region
++ * reserved for firmware usage. This provides flexibility for the remote
++ * processor to be booted by different bootloaders that may or may not have the
++ * ability to publish the resource table address and size through a DT
++ * property.
++ */
++struct resource_table *k3_get_loaded_rsc_table(struct rproc *rproc,
++					       size_t *rsc_table_sz)
++{
++	struct k3_rproc *kproc = rproc->priv;
++	struct device *dev = kproc->dev;
++
++	if (!kproc->rmem[0].cpu_addr) {
++		dev_err(dev, "memory-region #1 does not exist, loaded rsc table can't be found");
++		return ERR_PTR(-ENOMEM);
++	}
++
++	/*
++	 * NOTE: The resource table size is currently hard-coded to a maximum
++	 * of 256 bytes. The most common resource table usage for K3 firmwares
++	 * is to only have the vdev resource entry and an optional trace entry.
++	 * The exact size could be computed based on resource table address, but
++	 * the hard-coded value suffices to support the IPC-only mode.
++	 */
++	*rsc_table_sz = 256;
++	return (__force struct resource_table *)kproc->rmem[0].cpu_addr;
++}
++EXPORT_SYMBOL_GPL(k3_get_loaded_rsc_table);
++
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("TI K3 common Remoteproc code");
+diff --git a/drivers/remoteproc/ti_k3_common.h b/drivers/remoteproc/ti_k3_common.h
+index dc2d33c152c0..bdcee1d09eea 100644
+--- a/drivers/remoteproc/ti_k3_common.h
++++ b/drivers/remoteproc/ti_k3_common.h
+@@ -97,4 +97,6 @@ int k3_rproc_start(struct rproc *rproc);
+ int k3_rproc_stop(struct rproc *rproc);
+ int k3_rproc_attach(struct rproc *rproc);
+ int k3_rproc_detach(struct rproc *rproc);
++struct resource_table *k3_get_loaded_rsc_table(struct rproc *rproc,
++					       size_t *rsc_table_sz);
+ #endif /* REMOTEPROC_TI_K3_COMMON_H */
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index 2e04e07932f5..7fb2b9a371ac 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -58,38 +58,6 @@ static int k3_dsp_rproc_start(struct rproc *rproc)
+ 	return 0;
+ }
+ 
+-/*
+- * This function implements the .get_loaded_rsc_table() callback and is used
+- * to provide the resource table for a booted DSP in IPC-only mode. The K3 DSP
+- * firmwares follow a design-by-contract approach and are expected to have the
+- * resource table at the base of the DDR region reserved for firmware usage.
+- * This provides flexibility for the remote processor to be booted by different
+- * bootloaders that may or may not have the ability to publish the resource table
+- * address and size through a DT property. This callback is invoked only in
+- * IPC-only mode.
+- */
+-static struct resource_table *k3_dsp_get_loaded_rsc_table(struct rproc *rproc,
+-							  size_t *rsc_table_sz)
+-{
+-	struct k3_rproc *kproc = rproc->priv;
+-	struct device *dev = kproc->dev;
+-
+-	if (!kproc->rmem[0].cpu_addr) {
+-		dev_err(dev, "memory-region #1 does not exist, loaded rsc table can't be found");
+-		return ERR_PTR(-ENOMEM);
+-	}
+-
+-	/*
+-	 * NOTE: The resource table size is currently hard-coded to a maximum
+-	 * of 256 bytes. The most common resource table usage for K3 firmwares
+-	 * is to only have the vdev resource entry and an optional trace entry.
+-	 * The exact size could be computed based on resource table address, but
+-	 * the hard-coded value suffices to support the IPC-only mode.
+-	 */
+-	*rsc_table_sz = 256;
+-	return (struct resource_table *)kproc->rmem[0].cpu_addr;
+-}
+-
+ /*
+  * Custom function to translate a DSP device address (internal RAMs only) to a
+  * kernel virtual address.  The DSPs can access their RAMs at either an internal
+@@ -150,12 +118,13 @@ static void *k3_dsp_rproc_da_to_va(struct rproc *rproc, u64 da, size_t len, bool
+ }
+ 
+ static const struct rproc_ops k3_dsp_rproc_ops = {
+-	.start		= k3_dsp_rproc_start,
+-	.stop		= k3_rproc_stop,
+-	.attach		= k3_rproc_attach,
+-	.detach		= k3_rproc_detach,
+-	.kick		= k3_rproc_kick,
+-	.da_to_va	= k3_dsp_rproc_da_to_va,
++	.start			=	k3_dsp_rproc_start,
++	.stop			=	k3_rproc_stop,
++	.attach			=	k3_rproc_attach,
++	.detach			=	k3_rproc_detach,
++	.kick			=	k3_rproc_kick,
++	.da_to_va		=	k3_dsp_rproc_da_to_va,
++	.get_loaded_rsc_table	=	k3_get_loaded_rsc_table,
+ };
+ 
+ static int k3_dsp_rproc_of_get_memories(struct platform_device *pdev,
+@@ -376,12 +345,10 @@ static int k3_dsp_rproc_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		return dev_err_probe(dev, ret, "failed to get initial state, mode cannot be determined\n");
+ 
+-	/* configure J721E devices for either remoteproc or IPC-only mode */
++	/* configure devices for either remoteproc or IPC-only mode */
+ 	if (p_state) {
+ 		dev_info(dev, "configured DSP for IPC-only mode\n");
+ 		rproc->state = RPROC_DETACHED;
+-		/* override rproc ops with only required IPC-only mode ops */
+-		rproc->ops->get_loaded_rsc_table = k3_dsp_get_loaded_rsc_table;
+ 	} else {
+ 		dev_info(dev, "configured DSP for remoteproc mode\n");
+ 	}
+diff --git a/drivers/remoteproc/ti_k3_m4_remoteproc.c b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+index e33a0057b39a..ee4d0f871b46 100644
+--- a/drivers/remoteproc/ti_k3_m4_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+@@ -21,38 +21,6 @@
+ #include "ti_sci_proc.h"
+ #include "ti_k3_common.h"
+ 
+-/*
+- * This function implements the .get_loaded_rsc_table() callback and is used
+- * to provide the resource table for a booted remote processor in IPC-only
+- * mode. The remote processor firmwares follow a design-by-contract approach
+- * and are expected to have the resource table at the base of the DDR region
+- * reserved for firmware usage. This provides flexibility for the remote
+- * processor to be booted by different bootloaders that may or may not have the
+- * ability to publish the resource table address and size through a DT
+- * property.
+- */
+-static struct resource_table *k3_m4_get_loaded_rsc_table(struct rproc *rproc,
+-							 size_t *rsc_table_sz)
+-{
+-	struct k3_rproc *kproc = rproc->priv;
+-	struct device *dev = kproc->dev;
+-
+-	if (!kproc->rmem[0].cpu_addr) {
+-		dev_err(dev, "memory-region #1 does not exist, loaded rsc table can't be found");
+-		return ERR_PTR(-ENOMEM);
+-	}
+-
+-	/*
+-	 * NOTE: The resource table size is currently hard-coded to a maximum
+-	 * of 256 bytes. The most common resource table usage for K3 firmwares
+-	 * is to only have the vdev resource entry and an optional trace entry.
+-	 * The exact size could be computed based on resource table address, but
+-	 * the hard-coded value suffices to support the IPC-only mode.
+-	 */
+-	*rsc_table_sz = 256;
+-	return (__force struct resource_table *)kproc->rmem[0].cpu_addr;
+-}
+-
+ /*
+  * Custom function to translate a remote processor device address (internal
+  * RAMs only) to a kernel virtual address.  The remote processors can access
+@@ -255,7 +223,7 @@ static const struct rproc_ops k3_m4_rproc_ops = {
+ 	.detach = k3_rproc_detach,
+ 	.kick = k3_rproc_kick,
+ 	.da_to_va = k3_m4_rproc_da_to_va,
+-	.get_loaded_rsc_table = k3_m4_get_loaded_rsc_table,
++	.get_loaded_rsc_table = k3_get_loaded_rsc_table,
+ };
+ 
+ static int k3_m4_rproc_probe(struct platform_device *pdev)
+-- 
+2.39.5 (Apple Git-154)
+

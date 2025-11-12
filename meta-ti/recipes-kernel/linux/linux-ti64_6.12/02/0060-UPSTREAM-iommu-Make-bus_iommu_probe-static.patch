@@ -1,0 +1,59 @@
+From f6d94a7a385e4422d93c232c2eeaa30d449c9a94 Mon Sep 17 00:00:00 2001
+From: Robin Murphy <robin.murphy@arm.com>
+Date: Wed, 15 Jan 2025 12:20:06 +0530
+Subject: [PATCH 060/406] UPSTREAM: iommu: Make bus_iommu_probe() static
+
+commit 95b6235e36953e9d6c822270961e79751eee2276 upstream.
+
+With the last external caller of bus_iommu_probe() now gone, make it
+internal as it really should be.
+
+Signed-off-by: Robin Murphy <robin.murphy@arm.com>
+Tested-by: H. Nikolaus Schaller <hns@goldelico.com>
+Reviewed-by: Kevin Hilman <khilman@baylibre.com>
+Tested-by: Kevin Hilman <khilman@baylibre.com>
+Tested-by: Beleswar Padhi <b-padhi@ti.com>
+Link: https://lore.kernel.org/r/a7511a034a27259aff4e14d80a861d3c40fbff1e.1730136799.git.robin.murphy@arm.com
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
+Signed-off-by: Beleswar Padhi <b-padhi@ti.com>
+---
+ drivers/iommu/iommu.c | 3 ++-
+ include/linux/iommu.h | 1 -
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
+index 83c8e617a2c5..35291b02aab1 100644
+--- a/drivers/iommu/iommu.c
++++ b/drivers/iommu/iommu.c
+@@ -90,6 +90,7 @@ static const char * const iommu_group_resv_type_string[] = {
+ #define IOMMU_CMD_LINE_DMA_API		BIT(0)
+ #define IOMMU_CMD_LINE_STRICT		BIT(1)
+ 
++static int bus_iommu_probe(const struct bus_type *bus);
+ static int iommu_bus_notifier(struct notifier_block *nb,
+ 			      unsigned long action, void *data);
+ static void iommu_release_device(struct device *dev);
+@@ -1795,7 +1796,7 @@ static void iommu_group_do_probe_finalize(struct device *dev)
+ 		ops->probe_finalize(dev);
+ }
+ 
+-int bus_iommu_probe(const struct bus_type *bus)
++static int bus_iommu_probe(const struct bus_type *bus)
+ {
+ 	struct iommu_group *group, *next;
+ 	LIST_HEAD(group_list);
+diff --git a/include/linux/iommu.h b/include/linux/iommu.h
+index bd722f473635..84a6ed5e803a 100644
+--- a/include/linux/iommu.h
++++ b/include/linux/iommu.h
+@@ -784,7 +784,6 @@ static inline void iommu_iotlb_gather_init(struct iommu_iotlb_gather *gather)
+ 	};
+ }
+ 
+-extern int bus_iommu_probe(const struct bus_type *bus);
+ extern bool iommu_present(const struct bus_type *bus);
+ extern bool device_iommu_capable(struct device *dev, enum iommu_cap cap);
+ extern bool iommu_group_has_isolated_msi(struct iommu_group *group);
+-- 
+2.39.5 (Apple Git-154)
+

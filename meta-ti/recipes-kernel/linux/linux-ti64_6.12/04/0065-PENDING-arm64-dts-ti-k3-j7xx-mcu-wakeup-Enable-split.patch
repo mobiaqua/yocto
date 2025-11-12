@@ -1,0 +1,29 @@
+From 6ce6d23682cdeb2627d8f663ebaca613bc7a02b0 Mon Sep 17 00:00:00 2001
+From: Beleswar Padhi <b-padhi@ti.com>
+Date: Mon, 24 Feb 2025 17:13:57 +0530
+Subject: [PATCH 065/181] PENDING: arm64: dts: ti: k3-j7xx-mcu-wakeup: Enable
+ split mode for MCU R5F
+
+All J7 SoCs have one R5F cluster in the MCU voltage domain, and each of
+these are configured for LockStep mode at the moment. Switch the MCU R5F
+cluster to Split mode by default to maximize the number of R5F cores.
+
+Signed-off-by: Beleswar Padhi <b-padhi@ti.com>
+Reviewed-by: Judith Mendez <jm@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi                | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+index d3bd9bf1d650..f60e6bf089b6 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-mcu-wakeup.dtsi
+@@ -590,7 +590,7 @@ cpts@3d000 {
+ 
+ 	mcu_r5fss0: r5fss@41000000 {
+ 		compatible = "ti,j721e-r5fss";
+-		ti,cluster-mode = <1>;
++		ti,cluster-mode = <0>;
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
+ 		ranges = <0x41000000 0x00 0x41000000 0x20000>,

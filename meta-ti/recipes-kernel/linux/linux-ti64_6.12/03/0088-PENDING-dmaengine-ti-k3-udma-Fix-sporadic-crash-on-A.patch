@@ -1,0 +1,51 @@
+From b05c9a230b71525ca5e9ca9f91cfb987a7aa5632 Mon Sep 17 00:00:00 2001
+From: Vignesh Raghavendra <vigneshr@ti.com>
+Date: Mon, 24 Feb 2025 12:05:35 +0530
+Subject: [PATCH 088/154] PENDING: dmaengine: ti: k3-udma: Fix sporadic crash
+ on AM62x
+
+ring_init_data is declared on stack and thus can contain garbage which
+can lead to k3_ringacc_dmarings use junk address for ringrt base leading
+to below crash during ring pop
+
+[    1.998239] cadence-qspi fc40000.spi: couldn't determine phase-detect-selector
+[    2.532106] Unable to handle kernel paging request at virtual address ffff800081a84b98
+[    2.540051] Mem abort info:
+[...]
+[    2.629987] Workqueue: events_unbound deferred_probe_work_func
+[    2.635832] pstate: 800000c5 (Nzcv daIF -PAN -UAO -TCO -DIT -SSBS BTYPE=--)
+[    2.642787] pc : k3_ringacc_ring_pop+0x48/0x94
+[    2.647234] lr : udma_pop_from_ring+0x7c/0xb4
+[...]
+[    2.726250] Call trace:
+[    2.728691]  k3_ringacc_ring_pop+0x48/0x94
+[    2.732786]  udma_ring_irq_handler+0x34/0x218
+[    2.737141]  __handle_irq_event_percpu+0x60/0x14c
+[    2.741846]  handle_irq_event+0x4c/0xa8
+
+Fix this by explicitly initializing the variable to 0.
+
+Fixes: a621a1075550 ("PENDING: drivers: soc: ti: k3-ringacc: handle absence of tisci")
+Reported-by: Rishikesh Donadkar <r-donadkar@ti.com>
+Reported-by: Kendall Willis <k-willis@ti.com>
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/dma/ti/k3-udma.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/dma/ti/k3-udma.c b/drivers/dma/ti/k3-udma.c
+index fbeb5ec8ad79..baff294897db 100644
+--- a/drivers/dma/ti/k3-udma.c
++++ b/drivers/dma/ti/k3-udma.c
+@@ -2251,7 +2251,7 @@ static int udma_probe(struct platform_device *pdev)
+ 	if (ud->match_data->type == DMA_TYPE_UDMA) {
+ 		ud->ringacc = of_k3_ringacc_get_by_phandle(dev->of_node, "ti,ringacc");
+ 	} else {
+-		struct k3_ringacc_init_data ring_init_data;
++		struct k3_ringacc_init_data ring_init_data = { 0 };
+ 
+ 		ring_init_data.tisci = ud->tisci_rm.tisci;
+ 		ring_init_data.tisci_dev_id = ud->tisci_rm.tisci_dev_id;
+-- 
+2.49.0
+

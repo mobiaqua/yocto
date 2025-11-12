@@ -1,0 +1,385 @@
+From bf957180ec746cd0a62632ba161140c5cd00d249 Mon Sep 17 00:00:00 2001
+From: Vibhore Vardhan <vibhore@ti.com>
+Date: Tue, 21 Jan 2025 16:14:41 -0600
+Subject: [PATCH 089/406] UPSTREAM: firmware: ti_sci: Add system suspend and
+ resume call
+
+commit ec24643bdd625971933451f22b8e33d364920f6e upstream.
+
+Introduce system suspend call that enables the ti_sci driver to support
+low power mode when the user space issues a suspend to mem.
+
+The following power management operations defined in the TISCI
+Low Power Mode API [1] are implemented to support suspend and resume:
+
+1) TISCI_MSG_PREPARE_SLEEP
+Prepare the SOC for entering into a low power mode and
+provide details to firmware about the state being entered.
+
+2) TISCI_MSG_SET_IO_ISOLATION
+Control the IO isolation for Low Power Mode.
+
+Also, write a ti_sci_prepare_system_suspend call to be used in the driver
+suspend handler to allow the system to identify the low power mode being
+entered and if necessary, send TISCI_MSG_PREPARE_SLEEP with information
+about the mode being entered.
+
+Sysfw version >= 10.00.04 support LPM_DM_MANAGED capability [2], where
+Device Mgr firmware now manages which low power mode is chosen. Going
+forward, this is the default configuration supported for TI AM62 family
+of devices. The state chosen by the DM can be influenced by sending
+constraints using the new LPM constraint APIs.
+
+In case the firmware does not support LPM_DM_MANAGED mode, the mode
+selection logic can be extended as needed. If no suspend-to-RAM modes
+are supported, return without taking any action.
+
+We're using "pm_suspend_target_state" to map the kernel's target suspend
+state to SysFW low power mode. Make sure this is available only when
+CONFIG_SUSPEND is enabled.
+
+Suspend has to be split into two parts, ti_sci_suspend() will send
+the prepare sleep message to prepare suspend. ti_sci_suspend_noirq()
+sets IO isolation which needs to be done as late as possible to avoid
+any issues. On resume this has to be done as early as possible.
+
+[1] https://software-dl.ti.com/tisci/esd/latest/2_tisci_msgs/pm/lpm.html
+
+Co-developed-by: Dave Gerlach <d-gerlach@ti.com>
+Signed-off-by: Dave Gerlach <d-gerlach@ti.com>
+Signed-off-by: Georgi Vlaev <g-vlaev@ti.com>
+Signed-off-by: Dhruva Gole <d-gole@ti.com>
+Signed-off-by: Vibhore Vardhan <vibhore@ti.com>
+Signed-off-by: Kevin Hilman <khilman@baylibre.com>
+Tested-by: Dhruva Gole <d-gole@ti.com>
+Signed-off-by: Markus Schneider-Pargmann <msp@baylibre.com>
+Tested-by: Roger Quadros <rogerq@kernel.org>
+Link: https://lore.kernel.org/r/20241007-tisci-syssuspendresume-v13-3-ed54cd659a49@baylibre.com
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ drivers/firmware/ti_sci.c              | 194 +++++++++++++++++++++++++
+ drivers/firmware/ti_sci.h              |  45 +++++-
+ include/linux/soc/ti/ti_sci_protocol.h |   4 +
+ 3 files changed, 242 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/firmware/ti_sci.c b/drivers/firmware/ti_sci.c
+index d53192607709..ebf6c0756ba4 100644
+--- a/drivers/firmware/ti_sci.c
++++ b/drivers/firmware/ti_sci.c
+@@ -24,6 +24,7 @@
+ #include <linux/slab.h>
+ #include <linux/soc/ti/ti-msgmgr.h>
+ #include <linux/soc/ti/ti_sci_protocol.h>
++#include <linux/suspend.h>
+ #include <linux/sys_soc.h>
+ #include <linux/reboot.h>
+ 
+@@ -1654,6 +1655,68 @@ static int ti_sci_cmd_clk_get_freq(const struct ti_sci_handle *handle,
+ 	return ret;
+ }
+ 
++/**
++ * ti_sci_cmd_prepare_sleep() - Prepare system for system suspend
++ * @handle:		pointer to TI SCI handle
++ * @mode:		Device identifier
++ * @ctx_lo:		Low part of address for context save
++ * @ctx_hi:		High part of address for context save
++ * @debug_flags:	Debug flags to pass to firmware
++ *
++ * Return: 0 if all went well, else returns appropriate error value.
++ */
++static int ti_sci_cmd_prepare_sleep(const struct ti_sci_handle *handle, u8 mode,
++				    u32 ctx_lo, u32 ctx_hi, u32 debug_flags)
++{
++	struct ti_sci_info *info;
++	struct ti_sci_msg_req_prepare_sleep *req;
++	struct ti_sci_msg_hdr *resp;
++	struct ti_sci_xfer *xfer;
++	struct device *dev;
++	int ret = 0;
++
++	if (IS_ERR(handle))
++		return PTR_ERR(handle);
++	if (!handle)
++		return -EINVAL;
++
++	info = handle_to_ti_sci_info(handle);
++	dev = info->dev;
++
++	xfer = ti_sci_get_one_xfer(info, TI_SCI_MSG_PREPARE_SLEEP,
++				   TI_SCI_FLAG_REQ_ACK_ON_PROCESSED,
++				   sizeof(*req), sizeof(*resp));
++	if (IS_ERR(xfer)) {
++		ret = PTR_ERR(xfer);
++		dev_err(dev, "Message alloc failed(%d)\n", ret);
++		return ret;
++	}
++
++	req = (struct ti_sci_msg_req_prepare_sleep *)xfer->xfer_buf;
++	req->mode = mode;
++	req->ctx_lo = ctx_lo;
++	req->ctx_hi = ctx_hi;
++	req->debug_flags = debug_flags;
++
++	ret = ti_sci_do_xfer(info, xfer);
++	if (ret) {
++		dev_err(dev, "Mbox send fail %d\n", ret);
++		goto fail;
++	}
++
++	resp = (struct ti_sci_msg_hdr *)xfer->xfer_buf;
++
++	if (!ti_sci_is_response_ack(resp)) {
++		dev_err(dev, "Failed to prepare sleep\n");
++		ret = -ENODEV;
++	}
++
++fail:
++	ti_sci_put_one_xfer(&info->minfo, xfer);
++
++	return ret;
++}
++
+ /**
+  * ti_sci_msg_cmd_query_fw_caps() - Get the FW/SoC capabilities
+  * @handle:		Pointer to TI SCI handle
+@@ -1715,6 +1778,61 @@ static int ti_sci_msg_cmd_query_fw_caps(const struct ti_sci_handle *handle,
+ 	return ret;
+ }
+ 
++/**
++ * ti_sci_cmd_set_io_isolation() - Enable IO isolation in LPM
++ * @handle:		Pointer to TI SCI handle
++ * @state:		The desired state of the IO isolation
++ *
++ * Return: 0 if all went well, else returns appropriate error value.
++ */
++static int ti_sci_cmd_set_io_isolation(const struct ti_sci_handle *handle,
++				       u8 state)
++{
++	struct ti_sci_info *info;
++	struct ti_sci_msg_req_set_io_isolation *req;
++	struct ti_sci_msg_hdr *resp;
++	struct ti_sci_xfer *xfer;
++	struct device *dev;
++	int ret = 0;
++
++	if (IS_ERR(handle))
++		return PTR_ERR(handle);
++	if (!handle)
++		return -EINVAL;
++
++	info = handle_to_ti_sci_info(handle);
++	dev = info->dev;
++
++	xfer = ti_sci_get_one_xfer(info, TI_SCI_MSG_SET_IO_ISOLATION,
++				   TI_SCI_FLAG_REQ_ACK_ON_PROCESSED,
++				   sizeof(*req), sizeof(*resp));
++	if (IS_ERR(xfer)) {
++		ret = PTR_ERR(xfer);
++		dev_err(dev, "Message alloc failed(%d)\n", ret);
++		return ret;
++	}
++	req = (struct ti_sci_msg_req_set_io_isolation *)xfer->xfer_buf;
++	req->state = state;
++
++	ret = ti_sci_do_xfer(info, xfer);
++	if (ret) {
++		dev_err(dev, "Mbox send fail %d\n", ret);
++		goto fail;
++	}
++
++	resp = (struct ti_sci_msg_hdr *)xfer->xfer_buf;
++
++	if (!ti_sci_is_response_ack(resp)) {
++		dev_err(dev, "Failed to set IO isolation\n");
++		ret = -ENODEV;
++	}
++
++fail:
++	ti_sci_put_one_xfer(&info->minfo, xfer);
++
++	return ret;
++}
++
+ static int ti_sci_cmd_core_reboot(const struct ti_sci_handle *handle)
+ {
+ 	struct ti_sci_info *info;
+@@ -3326,6 +3444,81 @@ static int tisci_reboot_handler(struct sys_off_data *data)
+ 	return NOTIFY_BAD;
+ }
+ 
++static int ti_sci_prepare_system_suspend(struct ti_sci_info *info)
++{
++	/*
++	 * Map and validate the target Linux suspend state to TISCI LPM.
++	 * Default is to let Device Manager select the low power mode.
++	 */
++	switch (pm_suspend_target_state) {
++	case PM_SUSPEND_MEM:
++		if (info->fw_caps & MSG_FLAG_CAPS_LPM_DM_MANAGED) {
++			/*
++			 * For the DM_MANAGED mode the context is reserved for
++			 * internal use and can be 0
++			 */
++			return ti_sci_cmd_prepare_sleep(&info->handle,
++							TISCI_MSG_VALUE_SLEEP_MODE_DM_MANAGED,
++							0, 0, 0);
++		} else {
++			/* DM Managed is not supported by the firmware. */
++			dev_err(info->dev, "Suspend to memory is not supported by the firmware\n");
++			return -EOPNOTSUPP;
++		}
++		break;
++	default:
++		/*
++		 * Do not fail if we don't have action to take for a
++		 * specific suspend mode.
++		 */
++		return 0;
++	}
++}
++
++static int __maybe_unused ti_sci_suspend(struct device *dev)
++{
++	struct ti_sci_info *info = dev_get_drvdata(dev);
++	int ret;
++
++	ret = ti_sci_prepare_system_suspend(info);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
++static int __maybe_unused ti_sci_suspend_noirq(struct device *dev)
++{
++	struct ti_sci_info *info = dev_get_drvdata(dev);
++	int ret = 0;
++
++	ret = ti_sci_cmd_set_io_isolation(&info->handle, TISCI_MSG_VALUE_IO_ENABLE);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
++static int __maybe_unused ti_sci_resume_noirq(struct device *dev)
++{
++	struct ti_sci_info *info = dev_get_drvdata(dev);
++	int ret = 0;
++
++	ret = ti_sci_cmd_set_io_isolation(&info->handle, TISCI_MSG_VALUE_IO_DISABLE);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
++static const struct dev_pm_ops ti_sci_pm_ops = {
++#ifdef CONFIG_PM_SLEEP
++	.suspend = ti_sci_suspend,
++	.suspend_noirq = ti_sci_suspend_noirq,
++	.resume_noirq = ti_sci_resume_noirq,
++#endif
++};
++
+ /* Description for K2G */
+ static const struct ti_sci_desc ti_sci_pmmc_k2g_desc = {
+ 	.default_host_id = 2,
+@@ -3494,6 +3687,7 @@ static struct platform_driver ti_sci_driver = {
+ 		   .name = "ti-sci",
+ 		   .of_match_table = of_match_ptr(ti_sci_of_match),
+ 		   .suppress_bind_attrs = true,
++		   .pm = &ti_sci_pm_ops,
+ 	},
+ };
+ module_platform_driver(ti_sci_driver);
+diff --git a/drivers/firmware/ti_sci.h b/drivers/firmware/ti_sci.h
+index 73ca9503606b..8efe4d0e61fb 100644
+--- a/drivers/firmware/ti_sci.h
++++ b/drivers/firmware/ti_sci.h
+@@ -6,7 +6,7 @@
+  * The system works in a message response protocol
+  * See: https://software-dl.ti.com/tisci/esd/latest/index.html for details
+  *
+- * Copyright (C)  2015-2016 Texas Instruments Incorporated - https://www.ti.com/
++ * Copyright (C)  2015-2024 Texas Instruments Incorporated - https://www.ti.com/
+  */
+ 
+ #ifndef __TI_SCI_H
+@@ -36,6 +36,10 @@
+ #define TI_SCI_MSG_QUERY_CLOCK_FREQ	0x010d
+ #define TI_SCI_MSG_GET_CLOCK_FREQ	0x010e
+ 
++/* Low Power Mode Requests */
++#define TI_SCI_MSG_PREPARE_SLEEP	0x0300
++#define TI_SCI_MSG_SET_IO_ISOLATION	0x0307
++
+ /* Resource Management Requests */
+ #define TI_SCI_MSG_GET_RESOURCE_RANGE	0x1500
+ 
+@@ -567,6 +571,45 @@ struct ti_sci_msg_resp_get_clock_freq {
+ 	u64 freq_hz;
+ } __packed;
+ 
++/**
++ * struct tisci_msg_req_prepare_sleep - Request for TISCI_MSG_PREPARE_SLEEP.
++ *
++ * @hdr				TISCI header to provide ACK/NAK flags to the host.
++ * @mode			Low power mode to enter.
++ * @ctx_lo			Low 32-bits of physical pointer to address to use for context save.
++ * @ctx_hi			High 32-bits of physical pointer to address to use for context save.
++ * @debug_flags			Flags that can be set to halt the sequence during suspend or
++ *				resume to allow JTAG connection and debug.
++ *
++ * This message is used as the first step of entering a low power mode. It
++ * allows configurable information, including which state to enter to be
++ * easily shared from the application, as this is a non-secure message and
++ * therefore can be sent by anyone.
++ */
++struct ti_sci_msg_req_prepare_sleep {
++	struct ti_sci_msg_hdr	hdr;
++
++#define TISCI_MSG_VALUE_SLEEP_MODE_DM_MANAGED				0xfd
++	u8			mode;
++	u32			ctx_lo;
++	u32			ctx_hi;
++	u32			debug_flags;
++} __packed;
++
++/**
++ * struct tisci_msg_set_io_isolation_req - Request for TI_SCI_MSG_SET_IO_ISOLATION.
++ *
++ * @hdr:	Generic header
++ * @state:	The deseared state of the IO isolation.
++ *
++ * This message is used to enable/disable IO isolation for low power modes.
++ * Response is generic ACK / NACK message.
++ */
++struct ti_sci_msg_req_set_io_isolation {
++	struct ti_sci_msg_hdr hdr;
++	u8 state;
++} __packed;
++
+ #define TI_SCI_IRQ_SECONDARY_HOST_INVALID	0xff
+ 
+ /**
+diff --git a/include/linux/soc/ti/ti_sci_protocol.h b/include/linux/soc/ti/ti_sci_protocol.h
+index bd0d11af76c5..1f1871e23f76 100644
+--- a/include/linux/soc/ti/ti_sci_protocol.h
++++ b/include/linux/soc/ti/ti_sci_protocol.h
+@@ -195,6 +195,10 @@ struct ti_sci_clk_ops {
+ 			u64 *current_freq);
+ };
+ 
++/* TISCI LPM IO isolation control values */
++#define TISCI_MSG_VALUE_IO_ENABLE			1
++#define TISCI_MSG_VALUE_IO_DISABLE			0
++
+ /**
+  * struct ti_sci_resource_desc - Description of TI SCI resource instance range.
+  * @start:	Start index of the first resource range.
+-- 
+2.39.5 (Apple Git-154)
+

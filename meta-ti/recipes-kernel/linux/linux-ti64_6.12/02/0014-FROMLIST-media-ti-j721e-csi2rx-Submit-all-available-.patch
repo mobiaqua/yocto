@@ -1,0 +1,111 @@
+From b00a833ca89e7e65ca63dd80b50147308b1023af Mon Sep 17 00:00:00 2001
+From: Jai Luthra <j-luthra@ti.com>
+Date: Thu, 19 Dec 2024 20:29:08 +0530
+Subject: [PATCH 014/406] FROMLIST: media: ti: j721e-csi2rx: Submit all
+ available buffers
+
+We already make sure to submit all available buffers to DMA in each DMA
+completion callback.
+
+Move that logic in a separate function, and use it during stream start
+as well, as most application queue all their buffers before stream on.
+
+Link: https://lore.kernel.org/all/20240627-multistream-v2-13-6ae96c54c1c3@ti.com/
+
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Signed-off-by: Yemike Abhilash Chandra <y-abhilashchandra@ti.com>
+---
+ .../platform/ti/j721e-csi2rx/j721e-csi2rx.c   | 43 +++++++++++--------
+ 1 file changed, 24 insertions(+), 19 deletions(-)
+
+diff --git a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+index 734cd7d28e07..eb1da3a56895 100644
+--- a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
++++ b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+@@ -663,6 +663,27 @@ static int ti_csi2rx_drain_dma(struct ti_csi2rx_ctx *ctx)
+ 	return ret;
+ }
+ 
++static int ti_csi2rx_dma_submit_pending(struct ti_csi2rx_ctx *ctx)
++{
++	struct ti_csi2rx_dma *dma = &ctx->dma;
++	struct ti_csi2rx_buffer *buf;
++	int ret = 0;
++
++	/* If there are more buffers to process then start their transfer. */
++	while (!list_empty(&dma->queue)) {
++		buf = list_entry(dma->queue.next, struct ti_csi2rx_buffer, list);
++		ret = ti_csi2rx_start_dma(ctx, buf);
++		if (ret) {
++			dev_err(ctx->csi->dev,
++				"Failed to queue the next buffer for DMA\n");
++			vb2_buffer_done(&buf->vb.vb2_buf, VB2_BUF_STATE_ERROR);
++			break;
++		}
++		list_move_tail(&buf->list, &dma->submitted);
++	}
++	return ret;
++}
++
+ static void ti_csi2rx_dma_callback(void *param)
+ {
+ 	struct ti_csi2rx_buffer *buf = param;
+@@ -683,19 +704,7 @@ static void ti_csi2rx_dma_callback(void *param)
+ 	vb2_buffer_done(&buf->vb.vb2_buf, VB2_BUF_STATE_DONE);
+ 	list_del(&buf->list);
+ 
+-	/* If there are more buffers to process then start their transfer. */
+-	while (!list_empty(&dma->queue)) {
+-		buf = list_entry(dma->queue.next, struct ti_csi2rx_buffer, list);
+-
+-		if (ti_csi2rx_start_dma(ctx, buf)) {
+-			dev_err(ctx->csi->dev,
+-				"Failed to queue the next buffer for DMA\n");
+-			list_del(&buf->list);
+-			vb2_buffer_done(&buf->vb.vb2_buf, VB2_BUF_STATE_ERROR);
+-		} else {
+-			list_move_tail(&buf->list, &dma->submitted);
+-		}
+-	}
++	ti_csi2rx_dma_submit_pending(ctx);
+ 
+ 	if (list_empty(&dma->submitted))
+ 		dma->state = TI_CSI2RX_DMA_IDLE;
+@@ -903,7 +913,6 @@ static int ti_csi2rx_start_streaming(struct vb2_queue *vq, unsigned int count)
+ 	struct ti_csi2rx_ctx *ctx = vb2_get_drv_priv(vq);
+ 	struct ti_csi2rx_dev *csi = ctx->csi;
+ 	struct ti_csi2rx_dma *dma = &ctx->dma;
+-	struct ti_csi2rx_buffer *buf;
+ 	struct v4l2_subdev_krouting *routing;
+ 	struct v4l2_subdev_route *route = NULL, *r;
+ 	struct media_pad *remote_pad;
+@@ -968,16 +977,13 @@ static int ti_csi2rx_start_streaming(struct vb2_queue *vq, unsigned int count)
+ 	ctx->sequence = 0;
+ 
+ 	spin_lock_irqsave(&dma->lock, flags);
+-	buf = list_entry(dma->queue.next, struct ti_csi2rx_buffer, list);
+ 
+-	ret = ti_csi2rx_start_dma(ctx, buf);
++	ret = ti_csi2rx_dma_submit_pending(ctx);
+ 	if (ret) {
+-		dev_err(csi->dev, "Failed to start DMA: %d\n", ret);
+ 		spin_unlock_irqrestore(&dma->lock, flags);
+-		goto err_pipeline;
++		goto err_dma;
+ 	}
+ 
+-	list_move_tail(&buf->list, &dma->submitted);
+ 	dma->state = TI_CSI2RX_DMA_ACTIVE;
+ 	spin_unlock_irqrestore(&dma->lock, flags);
+ 
+@@ -992,7 +998,6 @@ static int ti_csi2rx_start_streaming(struct vb2_queue *vq, unsigned int count)
+ 
+ err_dma:
+ 	ti_csi2rx_stop_dma(ctx);
+-err_pipeline:
+ 	video_device_pipeline_stop(&ctx->vdev);
+ 	writel(0, csi->shim + SHIM_CNTL);
+ 	writel(0, csi->shim + SHIM_DMACNTX(ctx->idx));
+-- 
+2.39.5 (Apple Git-154)
+

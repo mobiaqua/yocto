@@ -1,0 +1,127 @@
+From 324f334b4b5bbcf744b2582f9ecb59f254fc81f9 Mon Sep 17 00:00:00 2001
+From: Beleswar Padhi <b-padhi@ti.com>
+Date: Mon, 3 Feb 2025 14:10:03 +0530
+Subject: [PATCH 223/406] FROMLIST: remoteproc: k3: Refactor .attach rproc ops
+ into common driver
+
+The .attach rproc ops implementations in ti_k3_dsp_remoteproc.c and
+ti_k3_m4_remoteproc.c drivers set the "is_attach_ongoing" flag to
+signify that the core is undergoing transition from detached to
+attached state. Refactor the implementations into ti_k3_common.c driver
+as k3_rproc_attach() and align DSP and M4 drivers to register this
+common function as .attach ops.
+
+Link: https://lore.kernel.org/all/20250103101231.1508151-14-b-padhi@ti.com/
+Signed-off-by: Beleswar Padhi <b-padhi@ti.com>
+---
+ drivers/remoteproc/ti_k3_common.c         | 12 ++++++++++++
+ drivers/remoteproc/ti_k3_common.h         |  1 +
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 13 +------------
+ drivers/remoteproc/ti_k3_m4_remoteproc.c  | 14 +-------------
+ 4 files changed, 15 insertions(+), 25 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_common.c b/drivers/remoteproc/ti_k3_common.c
+index 93d793e0899f..6b6612bc7e84 100644
+--- a/drivers/remoteproc/ti_k3_common.c
++++ b/drivers/remoteproc/ti_k3_common.c
+@@ -297,5 +297,17 @@ int k3_rproc_stop(struct rproc *rproc)
+ }
+ EXPORT_SYMBOL_GPL(k3_rproc_stop);
+ 
++/*
++ * Attach to a running remote processor (IPC-only mode)
++ *
++ * This rproc attach callback is a NOP. The remote processor is already
++ * booted, and all required resources have been acquired during probe
++ * routine, so there is no need to issue any TI-SCI commands to boot the
++ * remote core. This callback is invoked only in IPC-only mode and exists
++ * because rproc_validate() checks for its existence.
++ */
++int k3_rproc_attach(struct rproc *rproc) { return 0; }
++EXPORT_SYMBOL_GPL(k3_rproc_attach);
++
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("TI K3 common Remoteproc code");
+diff --git a/drivers/remoteproc/ti_k3_common.h b/drivers/remoteproc/ti_k3_common.h
+index 4c40754f091e..ac22cbb988ff 100644
+--- a/drivers/remoteproc/ti_k3_common.h
++++ b/drivers/remoteproc/ti_k3_common.h
+@@ -95,4 +95,5 @@ int k3_rproc_prepare(struct rproc *rproc);
+ int k3_rproc_unprepare(struct rproc *rproc);
+ int k3_rproc_start(struct rproc *rproc);
+ int k3_rproc_stop(struct rproc *rproc);
++int k3_rproc_attach(struct rproc *rproc);
+ #endif /* REMOTEPROC_TI_K3_COMMON_H */
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index 61ff9076fab4..18ed85ecff18 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -58,17 +58,6 @@ static int k3_dsp_rproc_start(struct rproc *rproc)
+ 	return 0;
+ }
+ 
+-/*
+- * Attach to a running DSP remote processor (IPC-only mode)
+- *
+- * This rproc attach callback is a NOP. The remote processor is already booted,
+- * and all required resources have been acquired during probe routine, so there
+- * is no need to issue any TI-SCI commands to boot the DSP core. This callback
+- * is invoked only in IPC-only mode and exists because rproc_validate() checks
+- * for its existence.
+- */
+-static int k3_dsp_rproc_attach(struct rproc *rproc) { return 0; }
+-
+ /*
+  * Detach from a running DSP remote processor (IPC-only mode)
+  *
+@@ -172,6 +161,7 @@ static void *k3_dsp_rproc_da_to_va(struct rproc *rproc, u64 da, size_t len, bool
+ static const struct rproc_ops k3_dsp_rproc_ops = {
+ 	.start		= k3_dsp_rproc_start,
+ 	.stop		= k3_rproc_stop,
++	.attach		= k3_rproc_attach,
+ 	.kick		= k3_rproc_kick,
+ 	.da_to_va	= k3_dsp_rproc_da_to_va,
+ };
+@@ -399,7 +389,6 @@ static int k3_dsp_rproc_probe(struct platform_device *pdev)
+ 		dev_info(dev, "configured DSP for IPC-only mode\n");
+ 		rproc->state = RPROC_DETACHED;
+ 		/* override rproc ops with only required IPC-only mode ops */
+-		rproc->ops->attach = k3_dsp_rproc_attach;
+ 		rproc->ops->detach = k3_dsp_rproc_detach;
+ 		rproc->ops->get_loaded_rsc_table = k3_dsp_get_loaded_rsc_table;
+ 	} else {
+diff --git a/drivers/remoteproc/ti_k3_m4_remoteproc.c b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+index 14aef6c27ab4..3a361344ad99 100644
+--- a/drivers/remoteproc/ti_k3_m4_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+@@ -246,18 +246,6 @@ static void k3_m4_release_tsp(void *data)
+ 	ti_sci_proc_release(tsp);
+ }
+ 
+-/*
+- * Attach to a running M4 remote processor (IPC-only mode)
+- *
+- * The remote processor is already booted, so there is no need to issue any
+- * TI-SCI commands to boot the M4 core. This callback is used only in IPC-only
+- * mode.
+- */
+-static int k3_m4_rproc_attach(struct rproc *rproc)
+-{
+-	return 0;
+-}
+-
+ /*
+  * Detach from a running M4 remote processor (IPC-only mode)
+  *
+@@ -275,7 +263,7 @@ static const struct rproc_ops k3_m4_rproc_ops = {
+ 	.unprepare = k3_rproc_unprepare,
+ 	.start = k3_rproc_start,
+ 	.stop = k3_rproc_stop,
+-	.attach = k3_m4_rproc_attach,
++	.attach = k3_rproc_attach,
+ 	.detach = k3_m4_rproc_detach,
+ 	.kick = k3_rproc_kick,
+ 	.da_to_va = k3_m4_rproc_da_to_va,
+-- 
+2.39.5 (Apple Git-154)
+

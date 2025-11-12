@@ -1,0 +1,44 @@
+From a5975a1416b8714279160f20aeb0163e6ea9baa9 Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Date: Fri, 20 Jun 2025 17:29:32 +0530
+Subject: [PATCH 24/73] FROMLIST: drm/bridge: cdns-dsi: Adjust mode to negative
+ syncs
+
+The Cadence DSI requires negative syncs from the incoming video signal,
+but at the moment that requirement is not expressed in any way. If the
+crtc decides to use positive syncs, things break down.
+
+Use the adjusted_mode in atomic_check to set the sync flags to negative
+ones.
+
+Link: https://lore.kernel.org/all/20250618-cdns-dsi-impro-v4-12-862c841dbe02@ideasonboard.com/
+Reviewed-by: Aradhya Bhatia <aradhya.bhatia@linux.dev>
+Tested-by: Parth Pancholi <parth.pancholi@toradex.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Signed-off-by: Harikrishna Shenoy <h-shenoy@ti.com>
+---
+ drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
+index 4d5605064656..7a7a4d5fa3ed 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
++++ b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
+@@ -902,9 +902,13 @@ static int cdns_dsi_bridge_atomic_check(struct drm_bridge *bridge,
+ 	struct cdns_dsi_input *input = bridge_to_cdns_dsi_input(bridge);
+ 	struct cdns_dsi *dsi = input_to_dsi(input);
+ 	struct cdns_dsi_bridge_state *dsi_state = to_cdns_dsi_bridge_state(bridge_state);
+-	const struct drm_display_mode *adjusted_mode = &crtc_state->adjusted_mode;
++	struct drm_display_mode *adjusted_mode = &crtc_state->adjusted_mode;
+ 	struct cdns_dsi_cfg *dsi_cfg = &dsi_state->dsi_cfg;
+ 
++	/* cdns-dsi requires negative syncs */
++	adjusted_mode->flags &= ~(DRM_MODE_FLAG_PHSYNC | DRM_MODE_FLAG_PVSYNC);
++	adjusted_mode->flags |= DRM_MODE_FLAG_NHSYNC | DRM_MODE_FLAG_NVSYNC;
++
+ 	return cdns_dsi_check_conf(dsi, adjusted_mode, dsi_cfg);
+ }
+ 
+-- 
+2.51.1
+

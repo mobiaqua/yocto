@@ -1,0 +1,95 @@
+From 4268e58970c119e8dda8ad951f329d267eacc7a7 Mon Sep 17 00:00:00 2001
+From: Vaishnav Achath <vaishnav.a@ti.com>
+Date: Thu, 19 Dec 2024 20:29:10 +0530
+Subject: [PATCH 016/406] PENDING: media: i2c: imx219: Add mbus_frame_desc for
+ pad
+
+The next subdev in the media graph may want to enquire information such
+as bus format, virtual channel, bus data type to route the stream from
+this sensor correctly.
+
+Add support for sharing this information using a get_frame_desc()
+callback.
+
+Link: https://lore.kernel.org/all/20240627-multistream-v2-0-6ae96c54c1c3@ti.com/
+
+Signed-off-by: Vaishnav Achath <vaishnav.a@ti.com>
+Signed-off-by: Jai Luthra <j-luthra@ti.com>
+Signed-off-by: Yemike Abhilash Chandra <y-abhilashchandra@ti.com>
+---
+ drivers/media/i2c/imx219.c | 45 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 45 insertions(+)
+
+diff --git a/drivers/media/i2c/imx219.c b/drivers/media/i2c/imx219.c
+index e78a80b2bb2e..a7f9d583f8d1 100644
+--- a/drivers/media/i2c/imx219.c
++++ b/drivers/media/i2c/imx219.c
+@@ -29,6 +29,7 @@
+ #include <media/v4l2-event.h>
+ #include <media/v4l2-fwnode.h>
+ #include <media/v4l2-mediabus.h>
++#include <media/v4l2-subdev.h>
+ 
+ /* Chip ID */
+ #define IMX219_REG_CHIP_ID		CCI_REG16(0x0000)
+@@ -460,6 +461,49 @@ static unsigned long imx219_get_pixel_rate(struct imx219 *imx219)
+ 	return (imx219->lanes == 2) ? IMX219_PIXEL_RATE : IMX219_PIXEL_RATE_4LANE;
+ }
+ 
++
++static int imx219_get_frame_desc(struct v4l2_subdev *sd, unsigned int pad,
++				 struct v4l2_mbus_frame_desc *fd)
++{
++	struct v4l2_mbus_framefmt *format;
++	struct v4l2_subdev_state *state;
++	u32 bpp;
++	int ret = 0;
++
++	if (pad != 0)
++		return -EINVAL;
++
++	memset(fd, 0, sizeof(*fd));
++
++	fd->type = V4L2_MBUS_FRAME_DESC_TYPE_CSI2;
++
++	state = v4l2_subdev_lock_and_get_active_state(sd);
++	format = v4l2_subdev_state_get_format(state, 0);
++
++	/* pixel stream */
++
++	if (format->code == MEDIA_BUS_FMT_SRGGB10_1X10)
++		bpp = 10;
++	else
++		bpp = 8;
++
++	fd->entry[fd->num_entries].stream = 0;
++
++	fd->entry[fd->num_entries].flags = V4L2_MBUS_FRAME_DESC_FL_LEN_MAX;
++	fd->entry[fd->num_entries].length = (format->width * format->height * bpp) / 8;
++	fd->entry[fd->num_entries].pixelcode = format->code;
++	fd->entry[fd->num_entries].bus.csi2.vc = 0;
++	if (format->code == MEDIA_BUS_FMT_SRGGB8_1X8)
++		fd->entry[fd->num_entries].bus.csi2.dt = 0x2a; /* SRGGB8 */
++	else if (format->code == MEDIA_BUS_FMT_SRGGB10_1X10)
++		fd->entry[fd->num_entries].bus.csi2.dt = 0x2b; /* SRGGB10 */
++	fd->num_entries++;
++
++	v4l2_subdev_unlock_state(state);
++
++	return ret;
++}
++
+ /* Initialize control handlers */
+ static int imx219_init_controls(struct imx219 *imx219)
+ {
+@@ -936,6 +980,7 @@ static const struct v4l2_subdev_pad_ops imx219_pad_ops = {
+ 	.get_fmt = v4l2_subdev_get_fmt,
+ 	.set_fmt = imx219_set_pad_format,
+ 	.get_selection = imx219_get_selection,
++	.get_frame_desc = imx219_get_frame_desc,
+ 	.enum_frame_size = imx219_enum_frame_size,
+ };
+ 
+-- 
+2.39.5 (Apple Git-154)
+

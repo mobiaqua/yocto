@@ -1,0 +1,56 @@
+From 9ed014b81d215e14c929eed6a7ead9b3dd4613aa Mon Sep 17 00:00:00 2001
+From: Kendall Willis <k-willis@ti.com>
+Date: Mon, 9 Jun 2025 14:22:26 -0500
+Subject: [PATCH 12/16] PENDING: remoteproc: k3-r5: Return if core failed to
+ suspend
+
+If an R5 core fails to suspend, return the error. This allows for Linux
+to know that the driver failed to suspend, rather than the remoteproc
+driver having a false positive where it reports that all the R5 cores
+suspended when they did not.
+
+Fixes: 85225ba4f927 ("PENDING: remoteproc: k3-r5: add support for PM suspend/resume")
+Signed-off-by: Kendall Willis <k-willis@ti.com>
+Reviewed-by: Udit Kumar <u-kumar1@ti.com>
+---
+ drivers/remoteproc/ti_k3_r5_remoteproc.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_r5_remoteproc.c b/drivers/remoteproc/ti_k3_r5_remoteproc.c
+index b2170b023023..0ea868d29012 100644
+--- a/drivers/remoteproc/ti_k3_r5_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_r5_remoteproc.c
+@@ -2,7 +2,7 @@
+ /*
+  * TI K3 R5F (MCU) Remote Processor driver
+  *
+- * Copyright (C) 2017-2022 Texas Instruments Incorporated - https://www.ti.com/
++ * Copyright (C) 2017-2025 Texas Instruments Incorporated - https://www.ti.com/
+  *	Suman Anna <s-anna@ti.com>
+  */
+ 
+@@ -642,6 +642,7 @@ static int k3_r5_suspend_late(struct device *dev)
+ {
+ 	struct k3_r5_cluster *cluster = dev_get_drvdata(dev);
+ 	struct k3_r5_core *core;
++	int ret = 0;
+ 
+ 	list_for_each_entry(core, &cluster->cores, elem) {
+ 		struct k3_r5_rproc *kproc;
+@@ -653,8 +654,11 @@ static int k3_r5_suspend_late(struct device *dev)
+ 		/* Check if pm notifier call is set. if it is, suspend/resume is
+ 		 * supported
+ 		 */
+-		if (kproc->pm_notifier.notifier_call)
+-			k3_r5_suspend(rproc);
++		if (kproc->pm_notifier.notifier_call) {
++			ret = k3_r5_suspend(rproc);
++			if (ret)
++				return ret;
++		}
+ 	}
+ 
+ 	return 0;
+-- 
+2.51.1
+

@@ -1,0 +1,12 @@
+diff --git a/drivers/media/platform/ti/Kconfig b/drivers/media/platform/ti/Kconfig
+index bab998c41..4a6718819 100644
+--- a/drivers/media/platform/ti/Kconfig
++++ b/drivers/media/platform/ti/Kconfig
+@@ -70,6 +70,7 @@ config VIDEO_TI_J721E_CSI2RX
+ 	depends on (PHY_CADENCE_DPHY_RX && VIDEO_CADENCE_CSI2RX) || COMPILE_TEST
+ 	depends on ARCH_K3 || COMPILE_TEST
+ 	select VIDEOBUF2_DMA_CONTIG
++	select V4L2_MEM2MEM_DEV
+ 	select V4L2_FWNODE
+ 	help
+ 	  Support for TI CSI2RX wrapper layer. This just enables the wrapper driver.

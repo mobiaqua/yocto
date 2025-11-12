@@ -1,0 +1,106 @@
+From 29d44abfceffde6abc79e2a6df46050381541dba Mon Sep 17 00:00:00 2001
+From: Beleswar Padhi <b-padhi@ti.com>
+Date: Mon, 3 Feb 2025 14:10:10 +0530
+Subject: [PATCH 230/406] FROMLIST: remoteproc: k3: Refactor release_tsp()
+ functions into common driver
+
+The k3_{dsp_/m4_}release_tsp() functions release the TI-SCI processor
+control of a remote processor, which is auto triggered upon device
+removal. Refactor these functions into ti_k3_common.c driver as
+k3_release_tsp() and align DSP and M4 drivers to use this common
+function throughout.
+
+Link: https://lore.kernel.org/all/20250103101231.1508151-21-b-padhi@ti.com/
+Signed-off-by: Beleswar Padhi <b-padhi@ti.com>
+---
+ drivers/remoteproc/ti_k3_common.c         | 8 ++++++++
+ drivers/remoteproc/ti_k3_common.h         | 1 +
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 9 +--------
+ drivers/remoteproc/ti_k3_m4_remoteproc.c  | 9 +--------
+ 4 files changed, 11 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_common.c b/drivers/remoteproc/ti_k3_common.c
+index e9ce94fa7107..ff5f1c37db11 100644
+--- a/drivers/remoteproc/ti_k3_common.c
++++ b/drivers/remoteproc/ti_k3_common.c
+@@ -544,5 +544,13 @@ int k3_reserved_mem_init(struct k3_rproc *kproc)
+ }
+ EXPORT_SYMBOL_GPL(k3_reserved_mem_init);
+ 
++void k3_release_tsp(void *data)
++{
++	struct ti_sci_proc *tsp = data;
++
++	ti_sci_proc_release(tsp);
++}
++EXPORT_SYMBOL_GPL(k3_release_tsp);
++
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("TI K3 common Remoteproc code");
+diff --git a/drivers/remoteproc/ti_k3_common.h b/drivers/remoteproc/ti_k3_common.h
+index 8a9ac9bfda06..a034eb818b64 100644
+--- a/drivers/remoteproc/ti_k3_common.h
++++ b/drivers/remoteproc/ti_k3_common.h
+@@ -107,4 +107,5 @@ int k3_rproc_of_get_memories(struct platform_device *pdev,
+ 			     struct k3_rproc *kproc);
+ void k3_mem_release(void *data);
+ int k3_reserved_mem_init(struct k3_rproc *kproc);
++void k3_release_tsp(void *data);
+ #endif /* REMOTEPROC_TI_K3_COMMON_H */
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index 0b61884d9f01..18909dc1821a 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -66,13 +66,6 @@ static const struct rproc_ops k3_dsp_rproc_ops = {
+ 	.get_loaded_rsc_table	=	k3_get_loaded_rsc_table,
+ };
+ 
+-static void k3_dsp_release_tsp(void *data)
+-{
+-	struct ti_sci_proc *tsp = data;
+-
+-	ti_sci_proc_release(tsp);
+-}
+-
+ static int k3_dsp_rproc_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+@@ -136,7 +129,7 @@ static int k3_dsp_rproc_probe(struct platform_device *pdev)
+ 		dev_err_probe(dev, ret, "ti_sci_proc_request failed\n");
+ 		return ret;
+ 	}
+-	ret = devm_add_action_or_reset(dev, k3_dsp_release_tsp, kproc->tsp);
++	ret = devm_add_action_or_reset(dev, k3_release_tsp, kproc->tsp);
+ 	if (ret)
+ 		return ret;
+ 
+diff --git a/drivers/remoteproc/ti_k3_m4_remoteproc.c b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+index 9a24121f1fbd..82acf10e1e73 100644
+--- a/drivers/remoteproc/ti_k3_m4_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+@@ -21,13 +21,6 @@
+ #include "ti_sci_proc.h"
+ #include "ti_k3_common.h"
+ 
+-static void k3_m4_release_tsp(void *data)
+-{
+-	struct ti_sci_proc *tsp = data;
+-
+-	ti_sci_proc_release(tsp);
+-}
+-
+ static const struct rproc_ops k3_m4_rproc_ops = {
+ 	.prepare = k3_rproc_prepare,
+ 	.unprepare = k3_rproc_unprepare,
+@@ -92,7 +85,7 @@ static int k3_m4_rproc_probe(struct platform_device *pdev)
+ 	ret = ti_sci_proc_request(kproc->tsp);
+ 	if (ret < 0)
+ 		return dev_err_probe(dev, ret, "ti_sci_proc_request failed\n");
+-	ret = devm_add_action_or_reset(dev, k3_m4_release_tsp, kproc->tsp);
++	ret = devm_add_action_or_reset(dev, k3_release_tsp, kproc->tsp);
+ 	if (ret)
+ 		return ret;
+ 
+-- 
+2.39.5 (Apple Git-154)
+

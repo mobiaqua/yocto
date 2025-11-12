@@ -1,0 +1,96 @@
+From 65743665e57fa79f150c2df0364cde81c12fded0 Mon Sep 17 00:00:00 2001
+From: Dhruva Gole <d-gole@ti.com>
+Date: Wed, 5 Nov 2025 17:15:54 +0530
+Subject: [PATCH 071/102] PENDING: clocksource/drivers/timer-ti-dm: Fix section
+ mismatch with TIMER_OF_DECLARE
+
+The DM timer driver was causing a section mismatch warning:
+  modpost: vmlinux: section mismatch in reference:
+  omap_dm_timer_probe+0x550 (section: .text) -> sched_clock_register
+
+This occurs because sched_clock_register() is marked as __init and is
+intended to be called only during early boot, but the driver was calling it
+from omap_dm_timer_probe() which is a non-__init function that can be
+executed after initialization.
+
+Fix the issue properly using TIMER_OF_DECLARE pattern, which is the
+architecturally correct solution:
+
+1. Add TIMER_OF_DECLARE support for AM654 timer in timer-ti-dm-systimer.c,
+   which calls sched_clock_register() from an __init function during
+   early boot initialization (as it should be)
+
+2. Remove the direct sched_clock_register() call from timer-ti-dm.c
+   setup_clocksource function, since it's no longer needed
+
+3. Keep legacy support in the platform driver for backwards compatibility
+   with non-system timers and older platforms
+
+This approach ensures that __init functions are only called by other __init
+functions, which properly fixes the section mismatch warning.
+
+Fixes: c38062b74da6 ("FROMLIST: clocksource/drivers/timer-ti-dm: Add clocksource support")
+Signed-off-by: Dhruva Gole <d-gole@ti.com>
+---
+ drivers/clocksource/timer-ti-dm-systimer.c |  1 +
+ drivers/clocksource/timer-ti-dm.c          | 19 ++++++++++---------
+ 2 files changed, 11 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/clocksource/timer-ti-dm-systimer.c b/drivers/clocksource/timer-ti-dm-systimer.c
+index aac7b9f3afca..88f30c543351 100644
+--- a/drivers/clocksource/timer-ti-dm-systimer.c
++++ b/drivers/clocksource/timer-ti-dm-systimer.c
+@@ -848,5 +848,6 @@ TIMER_OF_DECLARE(systimer_omap4, "ti,omap4430-timer", dmtimer_systimer_init);
+ TIMER_OF_DECLARE(systimer_omap5, "ti,omap5430-timer", dmtimer_systimer_init);
+ TIMER_OF_DECLARE(systimer_am33x, "ti,am335x-timer", dmtimer_systimer_init);
+ TIMER_OF_DECLARE(systimer_am3ms, "ti,am335x-timer-1ms", dmtimer_systimer_init);
++TIMER_OF_DECLARE(systimer_am654, "ti,am654-timer", dmtimer_systimer_init);
+ TIMER_OF_DECLARE(systimer_dm814, "ti,dm814-timer", dmtimer_systimer_init);
+ TIMER_OF_DECLARE(systimer_dm816, "ti,dm816-timer", dmtimer_systimer_init);
+diff --git a/drivers/clocksource/timer-ti-dm.c b/drivers/clocksource/timer-ti-dm.c
+index a31933e4f7bd..cdbcba00f382 100644
+--- a/drivers/clocksource/timer-ti-dm.c
++++ b/drivers/clocksource/timer-ti-dm.c
+@@ -1146,12 +1146,6 @@ static u64 omap_dm_timer_read_cycles(struct clocksource *cs)
+ 	return (u64)__omap_dm_timer_read_counter(timer);
+ }
+ 
+-static u64 notrace omap_dm_timer_read_sched_clock(void)
+-{
+-	/* Posted mode is not active here, so we can read directly */
+-	return readl_relaxed(omap_dm_timer_sched_clock_counter);
+-}
+-
+ static void omap_dm_timer_clocksource_suspend(struct clocksource *cs)
+ {
+ 	struct dmtimer_clocksource *clksrc = omap_dm_timer_to_clocksource(cs);
+@@ -1199,9 +1193,6 @@ static int omap_dm_timer_setup_clocksource(struct dmtimer *timer)
+ 	dmtimer_write(timer, OMAP_TIMER_LOAD_REG, 0);
+ 	dmtimer_write(timer, OMAP_TIMER_CTRL_REG, OMAP_TIMER_CTRL_ST | OMAP_TIMER_CTRL_AR);
+ 
+-	omap_dm_timer_sched_clock_counter = timer->func_base + _OMAP_TIMER_COUNTER_OFFSET;
+-	sched_clock_register(omap_dm_timer_read_sched_clock, 32, timer->fclk_rate);
+-
+ 	err = clocksource_register_hz(&clksrc->dev, timer->fclk_rate);
+ 	if (err)
+ 		return dev_err_probe(dev, err, "Could not register as clocksource\n");
+@@ -1408,6 +1399,16 @@ static int omap_dm_timer_probe(struct platform_device *pdev)
+ 	if (omap_dm_timer_clocksource_base && res &&
+ 	    res->start == omap_dm_timer_clocksource_base &&
+ 	    !IS_ERR_OR_NULL(timer->fclk)) {
++		/*
++		 * This timer should have been initialized early via TIMER_OF_DECLARE
++		 * by timer-ti-dm-systimer.c. If we reach here, it means the early
++		 * init didn't happen (e.g., timer doesn't have ti,timer-alwon property
++		 * or is an older platform). Set it up now for legacy compatibility.
++		 */
++		dev_info(dev, "Setting up clocksource via platform driver (legacy path)\n");
++
++		omap_dm_timer_sched_clock_counter = timer->func_base + _OMAP_TIMER_COUNTER_OFFSET;
++
+ 		ret = omap_dm_timer_setup_clocksource(timer);
+ 		if (ret)
+ 			return ret;
+-- 
+2.51.1
+

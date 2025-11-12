@@ -1,0 +1,129 @@
+From bd16778b90d51ab0e439eed68fac93a8b6eaf1c6 Mon Sep 17 00:00:00 2001
+From: Rahul T R <r-ravikumar@ti.com>
+Date: Thu, 6 Feb 2025 11:04:02 +0530
+Subject: [PATCH 266/406] FROMLIST: drm: bridge: cdns-mhdp8546: Add support for
+ no-hpd
+
+In J721S2 EVMs DP0 hpd is not connected to correct
+hpd pin on SOC, to handle such cases, Add support for
+"no-hpd" property in the device tree node to disable
+hpd
+
+Also change the log level for dpcd read failuers to
+debug, since framework retries 32 times for each read
+
+Link: https://lore.kernel.org/all/20230405142440.191939-3-j-choudhary@ti.com/
+Signed-off-by: Rahul T R <r-ravikumar@ti.com>
+[j-choudhary@ti.com: Fix cdns_mhdp_attach hook for no-hpd usecase]
+Signed-off-by: Jayesh Choudhary <j-choudhary@ti.com>
+---
+ .../drm/bridge/cadence/cdns-mhdp8546-core.c   | 38 ++++++++++++++++---
+ .../drm/bridge/cadence/cdns-mhdp8546-core.h   |  1 +
+ 2 files changed, 34 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
+index 7fe7d588f358..a17f345c0fe5 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
++++ b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
+@@ -53,6 +53,8 @@
+ #include "cdns-mhdp8546-hdcp.h"
+ #include "cdns-mhdp8546-j721e.h"
+ 
++static int cdns_mhdp_update_link_status(struct cdns_mhdp_device *mhdp);
++
+ static void cdns_mhdp_bridge_hpd_enable(struct drm_bridge *bridge)
+ {
+ 	struct cdns_mhdp_device *mhdp = bridge_to_mhdp(bridge);
+@@ -768,7 +770,8 @@ static int cdns_mhdp_fw_activate(const struct firmware *fw,
+ 	 * MHDP_HW_STOPPED happens only due to driver removal when
+ 	 * bridge should already be detached.
+ 	 */
+-	cdns_mhdp_bridge_hpd_enable(&mhdp->bridge);
++	if (!mhdp->no_hpd)
++		cdns_mhdp_bridge_hpd_enable(&mhdp->bridge);
+ 
+ 	spin_unlock(&mhdp->start_lock);
+ 
+@@ -862,7 +865,7 @@ static ssize_t cdns_mhdp_transfer(struct drm_dp_aux *aux,
+ 		ret = cdns_mhdp_dpcd_read(mhdp, msg->address,
+ 					  msg->buffer, msg->size);
+ 		if (ret) {
+-			dev_err(mhdp->dev,
++			dev_dbg(mhdp->dev,
+ 				"Failed to read DPCD addr %u\n",
+ 				msg->address);
+ 
+@@ -1752,6 +1755,19 @@ static int cdns_mhdp_attach(struct drm_bridge *bridge,
+ 
+ 	spin_unlock(&mhdp->start_lock);
+ 
++	if (mhdp->no_hpd) {
++		ret = wait_event_timeout(mhdp->fw_load_wq,
++					 mhdp->hw_state == MHDP_HW_READY,
++					 msecs_to_jiffies(100));
++		if (ret == 0) {
++			dev_err(mhdp->dev, "%s: Timeout waiting for fw loading\n",
++				__func__);
++			return -ETIMEDOUT;
++		}
++
++		cdns_mhdp_update_link_status(mhdp);
++		return 0;
++	}
+ 	/* Enable SW event interrupts */
+ 	if (hw_ready)
+ 		cdns_mhdp_bridge_hpd_enable(bridge);
+@@ -2284,7 +2300,16 @@ static int cdns_mhdp_update_link_status(struct cdns_mhdp_device *mhdp)
+ 
+ 	mutex_lock(&mhdp->link_mutex);
+ 
+-	mhdp->plugged = cdns_mhdp_detect_hpd(mhdp, &hpd_pulse);
++	if (mhdp->no_hpd) {
++		ret = drm_dp_dpcd_read_link_status(&mhdp->aux, status);
++		hpd_pulse = false;
++		if (ret < 0)
++			mhdp->plugged = false;
++		else
++			mhdp->plugged = true;
++	} else {
++		mhdp->plugged = cdns_mhdp_detect_hpd(mhdp, &hpd_pulse);
++	}
+ 
+ 	if (!mhdp->plugged) {
+ 		cdns_mhdp_link_down(mhdp);
+@@ -2481,6 +2506,8 @@ static int cdns_mhdp_probe(struct platform_device *pdev)
+ 	mhdp->aux.dev = dev;
+ 	mhdp->aux.transfer = cdns_mhdp_transfer;
+ 
++	mhdp->no_hpd = of_property_read_bool(dev->of_node, "cdns,no-hpd");
++
+ 	mhdp->regs = devm_platform_ioremap_resource(pdev, 0);
+ 	if (IS_ERR(mhdp->regs)) {
+ 		dev_err(dev, "Failed to get memory resource\n");
+@@ -2556,8 +2583,9 @@ static int cdns_mhdp_probe(struct platform_device *pdev)
+ 
+ 	mhdp->bridge.of_node = pdev->dev.of_node;
+ 	mhdp->bridge.funcs = &cdns_mhdp_bridge_funcs;
+-	mhdp->bridge.ops = DRM_BRIDGE_OP_DETECT | DRM_BRIDGE_OP_EDID |
+-			   DRM_BRIDGE_OP_HPD;
++	mhdp->bridge.ops = DRM_BRIDGE_OP_DETECT | DRM_BRIDGE_OP_EDID;
++	if (!mhdp->no_hpd)
++		mhdp->bridge.ops |= DRM_BRIDGE_OP_HPD;
+ 	mhdp->bridge.type = DRM_MODE_CONNECTOR_DisplayPort;
+ 
+ 	ret = phy_init(mhdp->phy);
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.h b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.h
+index bad2fc0c7306..48517193cf0b 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.h
++++ b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.h
+@@ -388,6 +388,7 @@ struct cdns_mhdp_device {
+ 
+ 	bool link_up;
+ 	bool plugged;
++	bool no_hpd;
+ 
+ 	/*
+ 	 * "start_lock" protects the access to bridge_attached and
+-- 
+2.39.5 (Apple Git-154)
+

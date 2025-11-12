@@ -1,0 +1,138 @@
+From eda70146c3489caf255c9df0242b863f45681ec1 Mon Sep 17 00:00:00 2001
+From: Beleswar Padhi <b-padhi@ti.com>
+Date: Mon, 3 Feb 2025 14:10:02 +0530
+Subject: [PATCH 222/406] FROMLIST: remoteproc: k3: Refactor .stop rproc ops
+ into common driver
+
+The .stop rproc ops implementations in ti_k3_dsp_remoteproc.c and
+ti_k3_m4_remoteproc.c drivers put the remote processor into reset.
+Refactor the implementations into ti_k3_common.c driver as
+k3_rproc_stop() and align DSP and M4 drivers to register this common
+function as .stop ops.
+
+Further, do not override the .stop ops with NULL when operating in
+IPC-only mode in ti_k3_dsp_remoteproc.c, as .stop is never invoked in
+rproc_detach routine.
+
+Link: https://lore.kernel.org/all/20250103101231.1508151-13-b-padhi@ti.com/
+Signed-off-by: Beleswar Padhi <b-padhi@ti.com>
+---
+ drivers/remoteproc/ti_k3_common.c         | 14 ++++++++++++++
+ drivers/remoteproc/ti_k3_common.h         |  1 +
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 18 +-----------------
+ drivers/remoteproc/ti_k3_m4_remoteproc.c  | 15 +--------------
+ 4 files changed, 17 insertions(+), 31 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_common.c b/drivers/remoteproc/ti_k3_common.c
+index e2c7da357ab5..93d793e0899f 100644
+--- a/drivers/remoteproc/ti_k3_common.c
++++ b/drivers/remoteproc/ti_k3_common.c
+@@ -283,5 +283,19 @@ int k3_rproc_start(struct rproc *rproc)
+ }
+ EXPORT_SYMBOL_GPL(k3_rproc_start);
+ 
++/*
++ * Stop the remote processor.
++ *
++ * This function puts the remote processor into reset, and finishes processing
++ * of any pending messages. This callback is invoked only in remoteproc mode.
++ */
++int k3_rproc_stop(struct rproc *rproc)
++{
++	struct k3_rproc *kproc = rproc->priv;
++
++	return k3_rproc_reset(kproc);
++}
++EXPORT_SYMBOL_GPL(k3_rproc_stop);
++
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("TI K3 common Remoteproc code");
+diff --git a/drivers/remoteproc/ti_k3_common.h b/drivers/remoteproc/ti_k3_common.h
+index 80acdf1c37d6..4c40754f091e 100644
+--- a/drivers/remoteproc/ti_k3_common.h
++++ b/drivers/remoteproc/ti_k3_common.h
+@@ -94,4 +94,5 @@ int k3_rproc_request_mbox(struct rproc *rproc);
+ int k3_rproc_prepare(struct rproc *rproc);
+ int k3_rproc_unprepare(struct rproc *rproc);
+ int k3_rproc_start(struct rproc *rproc);
++int k3_rproc_stop(struct rproc *rproc);
+ #endif /* REMOTEPROC_TI_K3_COMMON_H */
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index 22f78d187944..61ff9076fab4 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -58,21 +58,6 @@ static int k3_dsp_rproc_start(struct rproc *rproc)
+ 	return 0;
+ }
+ 
+-/*
+- * Stop the DSP remote processor.
+- *
+- * This function puts the DSP processor into reset, and finishes processing
+- * of any pending messages. This callback is invoked only in remoteproc mode.
+- */
+-static int k3_dsp_rproc_stop(struct rproc *rproc)
+-{
+-	struct k3_rproc *kproc = rproc->priv;
+-
+-	k3_rproc_reset(kproc);
+-
+-	return 0;
+-}
+-
+ /*
+  * Attach to a running DSP remote processor (IPC-only mode)
+  *
+@@ -186,7 +171,7 @@ static void *k3_dsp_rproc_da_to_va(struct rproc *rproc, u64 da, size_t len, bool
+ 
+ static const struct rproc_ops k3_dsp_rproc_ops = {
+ 	.start		= k3_dsp_rproc_start,
+-	.stop		= k3_dsp_rproc_stop,
++	.stop		= k3_rproc_stop,
+ 	.kick		= k3_rproc_kick,
+ 	.da_to_va	= k3_dsp_rproc_da_to_va,
+ };
+@@ -414,7 +399,6 @@ static int k3_dsp_rproc_probe(struct platform_device *pdev)
+ 		dev_info(dev, "configured DSP for IPC-only mode\n");
+ 		rproc->state = RPROC_DETACHED;
+ 		/* override rproc ops with only required IPC-only mode ops */
+-		rproc->ops->stop = NULL;
+ 		rproc->ops->attach = k3_dsp_rproc_attach;
+ 		rproc->ops->detach = k3_dsp_rproc_detach;
+ 		rproc->ops->get_loaded_rsc_table = k3_dsp_get_loaded_rsc_table;
+diff --git a/drivers/remoteproc/ti_k3_m4_remoteproc.c b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+index 6eebbe671d0d..14aef6c27ab4 100644
+--- a/drivers/remoteproc/ti_k3_m4_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+@@ -246,19 +246,6 @@ static void k3_m4_release_tsp(void *data)
+ 	ti_sci_proc_release(tsp);
+ }
+ 
+-/*
+- * Stop the M4 remote processor.
+- *
+- * This function puts the M4 processor into reset, and finishes processing
+- * of any pending messages. This callback is invoked only in remoteproc mode.
+- */
+-static int k3_m4_rproc_stop(struct rproc *rproc)
+-{
+-	struct k3_rproc *kproc = rproc->priv;
+-
+-	return k3_rproc_reset(kproc);
+-}
+-
+ /*
+  * Attach to a running M4 remote processor (IPC-only mode)
+  *
+@@ -287,7 +274,7 @@ static const struct rproc_ops k3_m4_rproc_ops = {
+ 	.prepare = k3_rproc_prepare,
+ 	.unprepare = k3_rproc_unprepare,
+ 	.start = k3_rproc_start,
+-	.stop = k3_m4_rproc_stop,
++	.stop = k3_rproc_stop,
+ 	.attach = k3_m4_rproc_attach,
+ 	.detach = k3_m4_rproc_detach,
+ 	.kick = k3_rproc_kick,
+-- 
+2.39.5 (Apple Git-154)
+

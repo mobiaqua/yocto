@@ -1,0 +1,32 @@
+From a61337d8049aa200ab9ce5b45ba832e3c934c285 Mon Sep 17 00:00:00 2001
+From: Chintan Vankar <c-vankar@ti.com>
+Date: Wed, 12 Mar 2025 17:02:41 +0530
+Subject: [PATCH 098/181] TI: HACK: net: ethernet: ti: Makefile: Remove
+ redundant entry to build k3-cppi-desc-pool module
+
+Remove building "k3-cppi-desc-pool.o" with ti-am65-cpsw-nuss-y since it is
+already selected with CONFIG_TI_K3_AM65_CPSW_NUSS.
+
+Fixes: 0ffc9dfa3b4f ("TI: HACK: net: ethernet: ti: am65-cpsw-nuss: add debugfs to cfg cut-thru params")
+Reported-by: Paresh Bhagat <p-bhagat@ti.com>
+Signed-off-by: Chintan Vankar <c-vankar@ti.com>
+---
+ drivers/net/ethernet/ti/Makefile | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/net/ethernet/ti/Makefile b/drivers/net/ethernet/ti/Makefile
+index b7494dafeb0a..16bc1acafff8 100644
+--- a/drivers/net/ethernet/ti/Makefile
++++ b/drivers/net/ethernet/ti/Makefile
+@@ -29,7 +29,7 @@ keystone_netcp_ethss-y := netcp_ethss.o netcp_sgmii.o netcp_xgbepcsr.o cpsw_ale.
+ obj-$(CONFIG_TI_K3_CPPI_DESC_POOL) += k3-cppi-desc-pool.o
+ 
+ obj-$(CONFIG_TI_K3_AM65_CPSW_NUSS) += ti-am65-cpsw-nuss.o
+-ti-am65-cpsw-nuss-y := am65-cpsw-nuss.o cpsw_sl.o am65-cpsw-ethtool.o cpsw_ale.o k3-cppi-desc-pool.o am65-debugfs.o
++ti-am65-cpsw-nuss-y := am65-cpsw-nuss.o cpsw_sl.o am65-cpsw-ethtool.o cpsw_ale.o am65-debugfs.o
+ ti-am65-cpsw-nuss-$(CONFIG_TI_AM65_CPSW_QOS) += am65-cpsw-qos.o
+ ti-am65-cpsw-nuss-$(CONFIG_TI_K3_AM65_CPSW_SWITCHDEV) += am65-cpsw-switchdev.o
+ obj-$(CONFIG_TI_K3_AM65_CPTS) += am65-cpts.o
+-- 
+2.49.0
+

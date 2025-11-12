@@ -1,0 +1,416 @@
+From 3119d723957038270225867130678d76081dee0c Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Wed, 2 Oct 2024 17:26:36 -0500
+Subject: [PATCH 04/27] PENDING: remoteproc: core: Add DMA-BUF attachment
+ interface to cdev
+
+Like many devices capable of DMA, a remote processor may need to work
+with memory buffers produced by other devices. The standard method for
+this is the DMA-BUF framework. The RemoteProc framework already exposes
+a character device interface (cdev). Extend the interface provided by
+this cdev to allow importing DMA-BUF handles.
+
+The DMA-BUF is attached and mapped to the remote processor using a new
+ioctl: DMA_BUF_ATTACH. This handles any bus translation and/or coherency
+management.
+
+Communicating this DMA-BUF to the remote processor is still a work in
+progress. One option is to treat it how carveouts are currently. The
+buffer address and size would be set as part of the resource table on
+boot/attach. The issue would be that all buffers would need to be
+attached before boot/attach, but we would like to have these dynamically
+attached/detached at runtime as needed.
+
+Another gap is how pointers into these buffers should be sent by users to
+the remote processors. We do not have a standard in place for sending
+memory addresses over rpmsg. So we have no universal way to do any
+translation in-flight from userspace pointers into device address
+pointers. This means for now userspace will have to send raw device
+addresses in the messages it sends. To facilitate this we return a device
+address base pointer to userspace when attaching a DMA-BUF. This is only
+a temporary solution as userspace should not be given physical addresses
+for various reasons.
+
+Signed-off-by: Andrew Davis <afd@ti.com>
+---
+ drivers/remoteproc/Kconfig               |   1 +
+ drivers/remoteproc/remoteproc_cdev.c     |  74 +++++++++++--
+ drivers/remoteproc/remoteproc_core.c     | 130 +++++++++++++++++++++++
+ drivers/remoteproc/remoteproc_internal.h |  20 ++++
+ include/linux/remoteproc.h               |   6 ++
+ include/uapi/linux/remoteproc_cdev.h     |  18 ++++
+ 6 files changed, 243 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/remoteproc/Kconfig b/drivers/remoteproc/Kconfig
+index 955e4e38477e..d0b9a229a99a 100644
+--- a/drivers/remoteproc/Kconfig
++++ b/drivers/remoteproc/Kconfig
+@@ -8,6 +8,7 @@ config REMOTEPROC
+ 	select FW_LOADER
+ 	select VIRTIO
+ 	select WANT_DEV_COREDUMP
++	select DMA_SHARED_BUFFER
+ 	help
+ 	  Support for remote processors (such as DSP coprocessors). These
+ 	  are mainly used on embedded systems.
+diff --git a/drivers/remoteproc/remoteproc_cdev.c b/drivers/remoteproc/remoteproc_cdev.c
+index 938ac98a1f26..4c0b0f9319b5 100644
+--- a/drivers/remoteproc/remoteproc_cdev.c
++++ b/drivers/remoteproc/remoteproc_cdev.c
+@@ -21,6 +21,14 @@ static dev_t rproc_major;
+ struct rproc_cdev {
+ 	struct rproc *rproc;
+ 	bool cdev_put_on_release;
++	/* Protects the attachments lists */
++	struct mutex mutex;
++	struct list_head attachments;
++};
++
++struct rproc_cdev_attach {
++	struct dma_buf *dmabuf;
++	struct list_head node;
+ };
+ 
+ static ssize_t rproc_cdev_write(struct file *filp, const char __user *buf, size_t len, loff_t *pos)
+@@ -70,6 +78,49 @@ static long rproc_device_ioctl(struct file *filp, unsigned int ioctl, unsigned l
+ 		if (copy_to_user(argp, &param, sizeof(s32)))
+ 			return -EFAULT;
+ 
++		break;
++	case RPROC_IOC_DMA_BUF_ATTACH:
++		{
++			struct rproc_dma_buf_attach_data data;
++			struct rproc_cdev_attach *attach;
++			struct dma_buf *dmabuf;
++			dma_addr_t da;
++			int ret;
++
++			if (copy_from_user(&data, (void __user *)arg, _IOC_SIZE(ioctl)))
++				return -EFAULT;
++
++			dmabuf = dma_buf_get(data.fd);
++			if (IS_ERR(dmabuf))
++				return PTR_ERR(dmabuf);
++
++			ret = rproc_attach_dmabuf(rproc, dmabuf);
++			if (ret) {
++				dma_buf_put(dmabuf);
++				return ret;
++			}
++
++			ret = rproc_dmabuf_get_da(rproc, dmabuf, &da);
++			if (ret) {
++				rproc_detach_dmabuf(rproc, dmabuf);
++				dma_buf_put(dmabuf);
++				return ret;
++			}
++			data.da = da;
++
++			/* Save for later removal */
++			attach = kzalloc(sizeof(*attach), GFP_KERNEL);
++			if (!attach) {
++				rproc_detach_dmabuf(rproc, dmabuf);
++				dma_buf_put(dmabuf);
++				return -ENOMEM;
++			}
++			attach->dmabuf = dmabuf;
++			list_add_tail(&attach->node, &rproc_cdev->attachments);
++
++			if (copy_to_user((void __user *)arg, &data, _IOC_SIZE(ioctl)))
++				return -EFAULT;
++		}
+ 		break;
+ 	default:
+ 		dev_err(&rproc->dev, "Unsupported ioctl\n");
+@@ -89,6 +140,8 @@ static int rproc_cdev_open(struct inode *inode, struct file *file)
+ 		return -ENOMEM;
+ 
+ 	rproc_cdev->rproc = rproc;
++	mutex_init(&rproc_cdev->mutex);
++	INIT_LIST_HEAD(&rproc_cdev->attachments);
+ 
+ 	file->private_data = rproc_cdev;
+ 
+@@ -101,13 +154,22 @@ static int rproc_cdev_release(struct inode *inode, struct file *filp)
+ 	struct rproc *rproc = rproc_cdev->rproc;
+ 	int ret = 0;
+ 
+-	if (!rproc_cdev->cdev_put_on_release)
+-		return 0;
++	if (rproc_cdev->cdev_put_on_release) {
++		if (rproc->state == RPROC_RUNNING)
++			rproc_shutdown(rproc);
++		else if (rproc->state == RPROC_ATTACHED)
++			ret = rproc_detach(rproc);
++	}
+ 
+-	if (rproc->state == RPROC_RUNNING)
+-		rproc_shutdown(rproc);
+-	else if (rproc->state == RPROC_ATTACHED)
+-		ret = rproc_detach(rproc);
++	/* Release all buffers attached with this file */
++	struct rproc_cdev_attach *attach, *atmp;
++	list_for_each_entry_safe(attach, atmp, &rproc_cdev->attachments, node) {
++		rproc_detach_dmabuf(rproc, attach->dmabuf);
++		dma_buf_put(attach->dmabuf);
++		kfree(attach);
++	}
++	mutex_destroy(&rproc_cdev->mutex);
++	kfree(rproc_cdev);
+ 
+ 	return ret;
+ }
+diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
+index 8003b44ba222..b5b8752b3ccb 100644
+--- a/drivers/remoteproc/remoteproc_core.c
++++ b/drivers/remoteproc/remoteproc_core.c
+@@ -896,6 +896,130 @@ void rproc_add_carveout(struct rproc *rproc, struct rproc_mem_entry *mem)
+ }
+ EXPORT_SYMBOL(rproc_add_carveout);
+ 
++static struct rproc_dmabuf_entry *rproc_find_entry_for_dmabuf(struct rproc *rproc,
++							      struct dma_buf *dmabuf)
++{
++	struct rproc_dmabuf_entry *dmabuf_entry;
++
++	list_for_each_entry(dmabuf_entry, &rproc->dmabufs, node) {
++		if (dmabuf_entry->dmabuf == dmabuf)
++			return dmabuf_entry;
++	}
++
++	return NULL;
++}
++
++/* TODO: Should we map here? */
++int rproc_dmabuf_get_da(struct rproc *rproc, struct dma_buf *dmabuf, dma_addr_t *dma)
++{
++	struct rproc_dmabuf_entry *dmabuf_entry;
++
++	guard(mutex)(&rproc->lock);
++
++	dmabuf_entry = rproc_find_entry_for_dmabuf(rproc, dmabuf);
++	if (!dmabuf_entry)
++		return -EINVAL;
++
++	/* TODO: Should this be ->da? */
++	*dma = dmabuf_entry->dma;
++
++	return 0;
++}
++
++/**
++ * rproc_attach_dmabuf() - attach a DMA-BUF to rproc device
++ * @rproc: rproc handle
++ * @dmabuf: dmabuf entry to register
++ *
++ * This function attaches and maps specified DMUBUF to this rproc.
++ */
++int rproc_attach_dmabuf(struct rproc *rproc, struct dma_buf *dmabuf)
++{
++	struct rproc_dmabuf_entry *dmabuf_entry;
++	struct device *dev = &rproc->dev;
++	struct dma_buf_attachment *attachment;
++	struct sg_table *sgt;
++	int ret;
++
++	/* Prevent multiple entries in list for same dmabuf */
++	guard(mutex)(&rproc->lock);
++
++	/* Check if already in list */
++	dmabuf_entry = rproc_find_entry_for_dmabuf(rproc, dmabuf);
++	if (dmabuf_entry) {
++		dmabuf_entry->refcount++;
++		return 0;
++	}
++
++	attachment = dma_buf_attach(dmabuf, dev);
++	if (IS_ERR(attachment))
++		return PTR_ERR(attachment);
++
++	/* TODO: Move mapping to get_da()? */
++	sgt = dma_buf_map_attachment(attachment, DMA_BIDIRECTIONAL);
++	if (IS_ERR(sgt)) {
++		ret = PTR_ERR(sgt);
++		goto fail_detach;
++	}
++
++	/* FIXME: Only physically contiguous buffers currently supported */
++	if (sgt->orig_nents != 1) {
++		dev_err(dev, "DMA-BUF not contiguous\n");
++		ret =  -EINVAL;
++		goto fail_unmap;
++	}
++
++	dmabuf_entry = kzalloc(sizeof(*dmabuf_entry), GFP_KERNEL);
++	dmabuf_entry->len = sg_dma_len(sgt->sgl);
++	dmabuf_entry->dma = sg_dma_address(sgt->sgl);
++	/* TODO: Check this */
++//	rproc_pa_to_da(rproc, dmabuf_entry->dma, &dmabuf_entry->da);
++	dmabuf_entry->dmabuf = dmabuf;
++	dmabuf_entry->attachment = attachment;
++	dmabuf_entry->sgt = sgt;
++	dmabuf_entry->refcount = 1;
++
++	list_add_tail(&dmabuf_entry->node, &rproc->dmabufs);
++
++	mutex_unlock(&rproc->lock);
++	return 0;
++
++fail_unmap:
++	dma_buf_unmap_attachment(attachment, sgt, DMA_BIDIRECTIONAL);
++fail_detach:
++	dma_buf_detach(dmabuf, attachment);
++	return ret;
++}
++EXPORT_SYMBOL(rproc_attach_dmabuf);
++
++static void rproc_release_dmabuf(struct rproc *rproc, struct rproc_dmabuf_entry *dmabuf_entry)
++{
++	if (dmabuf_entry->attachment && dmabuf_entry->sgt)
++		dma_buf_unmap_attachment(dmabuf_entry->attachment, dmabuf_entry->sgt, DMA_BIDIRECTIONAL);
++	if (dmabuf_entry->dmabuf && dmabuf_entry->attachment)
++		dma_buf_detach(dmabuf_entry->dmabuf, dmabuf_entry->attachment);
++	list_del(&dmabuf_entry->node);
++	kfree(dmabuf_entry);
++}
++
++int rproc_detach_dmabuf(struct rproc *rproc, struct dma_buf *dmabuf)
++{
++	struct rproc_dmabuf_entry *dmabuf_entry;
++
++	guard(mutex)(&rproc->lock);
++
++	dmabuf_entry = rproc_find_entry_for_dmabuf(rproc, dmabuf);
++	if (!dmabuf_entry)
++		return -EINVAL;
++
++	dmabuf_entry->refcount--;
++	if (dmabuf_entry->refcount < 1)
++		rproc_release_dmabuf(rproc, dmabuf_entry);
++
++	return 0;
++}
++EXPORT_SYMBOL(rproc_detach_dmabuf);
++
+ /**
+  * rproc_mem_entry_init() - allocate and initialize rproc_mem_entry struct
+  * @dev: pointer on device struct
+@@ -1222,6 +1346,7 @@ static int rproc_alloc_registered_carveouts(struct rproc *rproc)
+ void rproc_resource_cleanup(struct rproc *rproc)
+ {
+ 	struct rproc_mem_entry *entry, *tmp;
++	struct rproc_dmabuf_entry *dmabuf, *dtmp;
+ 	struct rproc_debug_trace *trace, *ttmp;
+ 	struct rproc_vdev *rvdev, *rvtmp;
+ 	struct device *dev = &rproc->dev;
+@@ -1257,6 +1382,10 @@ void rproc_resource_cleanup(struct rproc *rproc)
+ 		kfree(entry);
+ 	}
+ 
++	/* clean up dmabufs */
++	list_for_each_entry_safe(dmabuf, dtmp, &rproc->dmabufs, node)
++		rproc_release_dmabuf(rproc, dmabuf);
++
+ 	/* clean up remote vdev entries */
+ 	list_for_each_entry_safe(rvdev, rvtmp, &rproc->rvdevs, node)
+ 		platform_device_unregister(rvdev->pdev);
+@@ -2523,6 +2652,7 @@ struct rproc *rproc_alloc(struct device *dev, const char *name,
+ 	mutex_init(&rproc->lock);
+ 
+ 	INIT_LIST_HEAD(&rproc->carveouts);
++	INIT_LIST_HEAD(&rproc->dmabufs);
+ 	INIT_LIST_HEAD(&rproc->mappings);
+ 	INIT_LIST_HEAD(&rproc->traces);
+ 	INIT_LIST_HEAD(&rproc->rvdevs);
+diff --git a/drivers/remoteproc/remoteproc_internal.h b/drivers/remoteproc/remoteproc_internal.h
+index 0cd09e67ac14..b5219bb51922 100644
+--- a/drivers/remoteproc/remoteproc_internal.h
++++ b/drivers/remoteproc/remoteproc_internal.h
+@@ -39,6 +39,26 @@ struct rproc_vdev_data {
+ 	struct fw_rsc_vdev *rsc;
+ };
+ 
++/**
++ * struct rproc_dmabuf_entry - dmabuf entry descriptor
++ * @va:	virtual address
++ * @dma: dma address
++ * @len: length, in bytes
++ * @da: device address
++ *
++ * @node: list node
++ */
++struct rproc_dmabuf_entry {
++	size_t len;
++	dma_addr_t dma;
++	u32 da;
++	struct dma_buf *dmabuf;
++	struct dma_buf_attachment *attachment;
++	struct sg_table *sgt;
++	size_t refcount;
++	struct list_head node;
++};
++
+ static inline bool rproc_has_feature(struct rproc *rproc, unsigned int feature)
+ {
+ 	return test_bit(feature, rproc->features);
+diff --git a/include/linux/remoteproc.h b/include/linux/remoteproc.h
+index fd9da4334a6c..79873d266639 100644
+--- a/include/linux/remoteproc.h
++++ b/include/linux/remoteproc.h
+@@ -42,6 +42,7 @@
+ #include <linux/completion.h>
+ #include <linux/idr.h>
+ #include <linux/of.h>
++#include <linux/dma-buf.h>
+ 
+ /**
+  * struct resource_table - firmware resource table header
+@@ -562,6 +563,7 @@ struct rproc {
+ 	struct list_head traces;
+ 	int num_traces;
+ 	struct list_head carveouts;
++	struct list_head dmabufs;
+ 	struct list_head mappings;
+ 	u64 bootaddr;
+ 	struct list_head rvdevs;
+@@ -673,6 +675,10 @@ int devm_rproc_add(struct device *dev, struct rproc *rproc);
+ 
+ void rproc_add_carveout(struct rproc *rproc, struct rproc_mem_entry *mem);
+ 
++int rproc_attach_dmabuf(struct rproc *rproc, struct dma_buf *dmabuf);
++int rproc_dmabuf_get_da(struct rproc *rproc, struct dma_buf *dmabuf, dma_addr_t *dma);
++int rproc_detach_dmabuf(struct rproc *rproc, struct dma_buf *dmabuf);
++
+ struct rproc_mem_entry *
+ rproc_mem_entry_init(struct device *dev,
+ 		     void *va, dma_addr_t dma, size_t len, u32 da,
+diff --git a/include/uapi/linux/remoteproc_cdev.h b/include/uapi/linux/remoteproc_cdev.h
+index c43768e4b0dc..d166f16bed90 100644
+--- a/include/uapi/linux/remoteproc_cdev.h
++++ b/include/uapi/linux/remoteproc_cdev.h
+@@ -34,4 +34,22 @@
+  */
+ #define RPROC_GET_SHUTDOWN_ON_RELEASE _IOR(RPROC_MAGIC, 2, __s32)
+ 
++/**
++ * struct rproc_dma_buf_attach_data - metadata passed from userspace
++ * @fd:		DMA-BUF fd
++ * @da:		populated with device address of DMA-BUF
++ */
++struct rproc_dma_buf_attach_data {
++	__u32 fd;
++	__u64 da;
++};
++
++/**
++ * DOC: RPROC_IOC_DMA_BUF_ATTACH - Attach and map DMA-BUF a remote processor
++ *
++ * Takes a rproc_dma_buf_data struct containing a fd for a physically contiguous
++ * buffer. Pins this buffer and populates phys field with the device address.
++ */
++#define RPROC_IOC_DMA_BUF_ATTACH _IOWR(RPROC_MAGIC, 0, struct rproc_dma_buf_attach_data)
++
+ #endif
+-- 
+2.39.5 (Apple Git-154)
+

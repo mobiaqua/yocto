@@ -1,0 +1,42 @@
+From 91bc524801fe3eb12632908af14f1821a290e76f Mon Sep 17 00:00:00 2001
+From: Devarsh Thakkar <devarsht@ti.com>
+Date: Wed, 12 Mar 2025 21:12:59 +0530
+Subject: [PATCH 106/181] FROMLIST: media: ti: j721e-csi2rx: Allow passing
+ cache hints from user-space
+
+User-space can provide cache hints to enable software managed cache
+operations or skip certain cache operations using memory flags
+and buffer flags. This is useful for SoCs such as AM62px
+which do not support hardware cache coherency.
+
+This is tested on AM62px with yavta capture by passing
+V4L2_MEMORY_FLAG_NON_COHERENT while using VIDIOC_REQBUFS
+and V4L2_BUF_FLAG_NO_CACHE_CLEAN while using VIDIOC_QBUF
+and ~5x reduction in memcpy time is seen for
+copying captured frame to DDR as shared here [1].
+
+[1]:
+Link:
+https://e2e.ti.com/support/processors-group/processors/f/processors-forum/1452545/am62p-the-ads6311-radar-camera-has-lost-frame-capture/5580472#5580472
+
+https://lore.kernel.org/all/20250312112140.449765-1-devarsht@ti.com/
+Signed-off-by: Devarsh Thakkar <devarsht@ti.com>
+---
+ drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+index 2174418b0951..59a3821a8822 100644
+--- a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
++++ b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+@@ -1312,6 +1312,7 @@ static int ti_csi2rx_init_vb2q(struct ti_csi2rx_ctx *ctx)
+ 	q->dev = dmaengine_get_dma_device(ctx->dma.chan);
+ 	q->lock = &ctx->mutex;
+ 	q->min_queued_buffers = 1;
++	q->allow_cache_hints = 1;
+ 
+ 	ret = vb2_queue_init(q);
+ 	if (ret)
+-- 
+2.49.0
+

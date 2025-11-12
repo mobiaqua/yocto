@@ -1,0 +1,301 @@
+From 0ffc9dfa3b4f5a476feb37d80582b917f892ed33 Mon Sep 17 00:00:00 2001
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+Date: Mon, 3 Mar 2025 13:28:04 +0530
+Subject: [PATCH 048/181] TI: HACK: net: ethernet: ti: am65-cpsw-nuss: add
+ debugfs to cfg cut-thru params
+
+Introduce debugfs interface to configure cut-thru Port parameters - RX/TX
+prio mask.
+During probe the debugfs directory is populated for device and every phys
+Ports as below
+ debug\
+ | - <dev name> (8000000.ethernet)
+   |- Port1\
+	|- <dbgfs files>
+   ...
+   |- PortN\
+
+For every port following parameters are defined:
+ PortN\
+ |- [all] disabled [Y/N]
+	 Y - port is disabled
+ |- [if supported] cut_thru_rx_pri_mask
+	 Receive Priority Cut Through Enables
+ |- [if supported] cut_thru_tx_pri_mask
+	 Transmit Priority Cut Through Enables
+
+cut_thru_rx/tx_pri_mask available only for devices which:
+- support "Cut-thru";
+- configured in "switch-mode";
+and can be configured only when cut-thru is not enabled
+  ethtool --show-priv-flags ethX
+  cut-thru            : off
+
+Overall configuration sequence example:
+ ifconfig ethX down
+ devlink dev param set platform/8000000.ethernet name \
+  switch_mode value true cmode runtime
+ echo 0xc0 > /sys/kernel/debug/8000000.ethernet/PortY/cut_thru_tx_pri_mask
+ echo 0xc0 > /sys/kernel/debug/8000000.ethernet/PortY/cut_thru_rx_pri_mask
+ ethtool --set-priv-flags ethZ cut-thru on
+ ifconfig ethX up
+
+Note. The intended way upstream is to use devlink port params, but this
+part of devlink is broken and not easy to fix, so debugfs is used as temp
+solution and interface is subject to change.
+
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Chintan Vankar <c-vankar@ti.com>
+---
+ drivers/net/ethernet/ti/Makefile         |   2 +-
+ drivers/net/ethernet/ti/am65-cpsw-nuss.c |  12 +-
+ drivers/net/ethernet/ti/am65-cpsw-nuss.h |   8 ++
+ drivers/net/ethernet/ti/am65-debugfs.c   | 152 +++++++++++++++++++++++
+ 4 files changed, 172 insertions(+), 2 deletions(-)
+ create mode 100644 drivers/net/ethernet/ti/am65-debugfs.c
+
+diff --git a/drivers/net/ethernet/ti/Makefile b/drivers/net/ethernet/ti/Makefile
+index 3ea91c5e0058..b7494dafeb0a 100644
+--- a/drivers/net/ethernet/ti/Makefile
++++ b/drivers/net/ethernet/ti/Makefile
+@@ -29,7 +29,7 @@ keystone_netcp_ethss-y := netcp_ethss.o netcp_sgmii.o netcp_xgbepcsr.o cpsw_ale.
+ obj-$(CONFIG_TI_K3_CPPI_DESC_POOL) += k3-cppi-desc-pool.o
+ 
+ obj-$(CONFIG_TI_K3_AM65_CPSW_NUSS) += ti-am65-cpsw-nuss.o
+-ti-am65-cpsw-nuss-y := am65-cpsw-nuss.o cpsw_sl.o am65-cpsw-ethtool.o cpsw_ale.o
++ti-am65-cpsw-nuss-y := am65-cpsw-nuss.o cpsw_sl.o am65-cpsw-ethtool.o cpsw_ale.o k3-cppi-desc-pool.o am65-debugfs.o
+ ti-am65-cpsw-nuss-$(CONFIG_TI_AM65_CPSW_QOS) += am65-cpsw-qos.o
+ ti-am65-cpsw-nuss-$(CONFIG_TI_K3_AM65_CPSW_SWITCHDEV) += am65-cpsw-switchdev.o
+ obj-$(CONFIG_TI_K3_AM65_CPTS) += am65-cpts.o
+diff --git a/drivers/net/ethernet/ti/am65-cpsw-nuss.c b/drivers/net/ethernet/ti/am65-cpsw-nuss.c
+index 09cd64b6f3f3..6b19c13370b0 100644
+--- a/drivers/net/ethernet/ti/am65-cpsw-nuss.c
++++ b/drivers/net/ethernet/ti/am65-cpsw-nuss.c
+@@ -3483,6 +3483,10 @@ static int am65_cpsw_nuss_register_ndevs(struct am65_cpsw_common *common)
+ 	for (i = 0; i < common->port_num; i++) {
+ 		port = &common->ports[i];
+ 
++		ret = am65_cpsw_nuss_register_port_debugfs(port);
++		if (ret)
++			goto err_cleanup_ndev;
++
+ 		if (!port->ndev)
+ 			continue;
+ 
+@@ -3747,10 +3751,16 @@ static int am65_cpsw_nuss_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		goto err_ndevs_clear;
+ 
+-	ret = am65_cpsw_nuss_register_ndevs(common);
++	ret = am65_cpsw_nuss_register_debugfs(common);
+ 	if (ret)
+ 		goto err_ndevs_clear;
+ 
++	ret = am65_cpsw_nuss_register_ndevs(common);
++	if (ret) {
++		am65_cpsw_nuss_unregister_debugfs(common);
++		goto err_ndevs_clear;
++	}
++
+ 	pm_runtime_put(dev);
+ 	return 0;
+ 
+diff --git a/drivers/net/ethernet/ti/am65-cpsw-nuss.h b/drivers/net/ethernet/ti/am65-cpsw-nuss.h
+index 1320dd69938f..078b2a60ed61 100644
+--- a/drivers/net/ethernet/ti/am65-cpsw-nuss.h
++++ b/drivers/net/ethernet/ti/am65-cpsw-nuss.h
+@@ -6,6 +6,7 @@
+ #ifndef AM65_CPSW_NUSS_H_
+ #define AM65_CPSW_NUSS_H_
+ 
++#include <linux/debugfs.h>
+ #include <linux/if_ether.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+@@ -55,6 +56,7 @@ struct am65_cpsw_port {
+ 	bool				rx_ts_enabled;
+ 	struct am65_cpsw_qos		qos;
+ 	struct devlink_port		devlink_port;
++	struct dentry			*debugfs_port;
+ 	struct bpf_prog			*xdp_prog;
+ 	struct xdp_rxq_info		xdp_rxq[AM65_CPSW_MAX_QUEUES];
+ 	/* Only for suspend resume context */
+@@ -182,6 +184,8 @@ struct am65_cpsw_common {
+ 	struct net_device *hw_bridge_dev;
+ 	struct notifier_block am65_cpsw_netdevice_nb;
+ 	unsigned char switch_id[MAX_PHYS_ITEM_ID_LEN];
++
++	struct dentry		*debugfs_root;
+ 	/* only for suspend/resume context restore */
+ 	u32			*ale_context;
+ };
+@@ -231,4 +235,8 @@ int am65_cpsw_nuss_update_tx_rx_chns(struct am65_cpsw_common *common,
+ 
+ bool am65_cpsw_port_dev_check(const struct net_device *dev);
+ 
++int am65_cpsw_nuss_register_port_debugfs(struct am65_cpsw_port *port);
++int am65_cpsw_nuss_register_debugfs(struct am65_cpsw_common *common);
++void am65_cpsw_nuss_unregister_debugfs(struct am65_cpsw_common *common);
++
+ #endif /* AM65_CPSW_NUSS_H_ */
+diff --git a/drivers/net/ethernet/ti/am65-debugfs.c b/drivers/net/ethernet/ti/am65-debugfs.c
+new file mode 100644
+index 000000000000..3465b33f8e88
+--- /dev/null
++++ b/drivers/net/ethernet/ti/am65-debugfs.c
+@@ -0,0 +1,152 @@
++// SPDX-License-Identifier: GPL-2.0
++/* Texas Instruments K3 AM65 Ethernet debugfs submodule
++ * Copyright (C) 2023 Texas Instruments Incorporated - http://www.ti.com/
++ */
++
++#include <linux/bitfield.h>
++#include <linux/debugfs.h>
++
++#include "am65-cpsw-nuss.h"
++
++int am65_cpsw_nuss_register_debugfs(struct am65_cpsw_common *common)
++{
++	common->debugfs_root = debugfs_create_dir(dev_name(common->dev), NULL);
++	if (IS_ERR(common->debugfs_root))
++		return PTR_ERR(common->debugfs_root);
++
++	return 0;
++}
++
++void am65_cpsw_nuss_unregister_debugfs(struct am65_cpsw_common *common)
++{
++	debugfs_remove_recursive(common->debugfs_root);
++}
++
++static int
++cut_thru_tx_pri_mask_get(void *data, u64 *val)
++{
++	struct am65_cpsw_port *port = data;
++	struct am65_cpsw_cut_thru *cut_thru;
++	int ret = -EINVAL;
++
++	rtnl_lock();
++	cut_thru = &port->qos.cut_thru;
++	if (port->ndev->reg_state == NETREG_REGISTERED) {
++		*val =  cut_thru->tx_pri_mask;
++		ret = 0;
++	}
++	rtnl_unlock();
++
++	return ret;
++}
++
++static int
++cut_thru_tx_pri_mask_set(void *data, u64 val)
++{
++	struct am65_cpsw_cut_thru *cut_thru;
++	struct am65_cpsw_port *port = data;
++	struct am65_cpsw_common *common;
++	int ret = 0;
++
++	if (val & ~GENMASK(7, 0))
++		return -EINVAL;
++
++	if (!rtnl_trylock())
++		return restart_syscall();
++
++	common = port->common;
++	cut_thru = &port->qos.cut_thru;
++
++	if (cut_thru->enable) {
++		dev_err(common->dev, "Port%u: can't set cut-thru tx_pri_mask while cut-thru enabled\n",
++			port->port_id);
++		ret = -EINVAL;
++		goto err;
++	}
++	cut_thru->tx_pri_mask = val;
++
++err:
++	rtnl_unlock();
++	return ret;
++}
++
++DEFINE_DEBUGFS_ATTRIBUTE(fops_cut_thru_tx_pri_mask, cut_thru_tx_pri_mask_get,
++			 cut_thru_tx_pri_mask_set, "%llx\n");
++
++static int
++cut_thru_rx_pri_mask_get(void *data, u64 *val)
++{
++	struct am65_cpsw_port *port = data;
++	struct am65_cpsw_cut_thru *cut_thru;
++	int ret = -EINVAL;
++
++	rtnl_lock();
++	cut_thru = &port->qos.cut_thru;
++	if (port->ndev->reg_state == NETREG_REGISTERED) {
++		*val =  cut_thru->rx_pri_mask;
++		ret = 0;
++	}
++	rtnl_unlock();
++
++	return ret;
++}
++
++static int
++cut_thru_rx_pri_mask_set(void *data, u64 val)
++{
++	struct am65_cpsw_cut_thru *cut_thru;
++	struct am65_cpsw_port *port = data;
++	struct am65_cpsw_common *common;
++	int ret = 0;
++
++	if (val & ~GENMASK(7, 0))
++		return -EINVAL;
++
++	if (!rtnl_trylock())
++		return restart_syscall();
++
++	common = port->common;
++	cut_thru = &port->qos.cut_thru;
++
++	if (cut_thru->enable) {
++		dev_err(common->dev, "Port%u: can't set cut-thru rx_pri_mask while cut-thru enabled\n",
++			port->port_id);
++		ret = -EINVAL;
++		goto err;
++	}
++	cut_thru->rx_pri_mask = val;
++
++err:
++	rtnl_unlock();
++	return ret;
++}
++
++DEFINE_DEBUGFS_ATTRIBUTE(fops_cut_thru_rx_pri_mask, cut_thru_rx_pri_mask_get,
++			 cut_thru_rx_pri_mask_set, "%llx\n");
++
++int am65_cpsw_nuss_register_port_debugfs(struct am65_cpsw_port *port)
++{
++	struct am65_cpsw_common *common = port->common;
++	char dirn[32];
++
++	scnprintf(dirn, sizeof(dirn), "Port%x", port->port_id);
++	port->debugfs_port = debugfs_create_dir(dirn, common->debugfs_root);
++	if (IS_ERR(port->debugfs_port))
++		return PTR_ERR(port->debugfs_port);
++
++	debugfs_create_bool("disabled", 0400,
++			    port->debugfs_port, &port->disabled);
++	if (port->disabled)
++		return 0;
++
++	if (common->pdata.quirks & AM64_CPSW_QUIRK_CUT_THRU) {
++		debugfs_create_file("cut_thru_tx_pri_mask", 0600,
++				    port->debugfs_port,
++				    port, &fops_cut_thru_tx_pri_mask);
++		debugfs_create_file("cut_thru_rx_pri_mask", 0600,
++				    port->debugfs_port,
++				    port, &fops_cut_thru_rx_pri_mask);
++	}
++
++	return 0;
++}
+-- 
+2.49.0
+

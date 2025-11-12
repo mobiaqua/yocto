@@ -1,0 +1,51 @@
+From 5e22e73c0638c675d7c65661733bafcabf3cdbc3 Mon Sep 17 00:00:00 2001
+From: Sai Sree Kartheek Adivi <s-adivi@ti.com>
+Date: Fri, 7 Mar 2025 06:44:59 +0530
+Subject: [PATCH 104/181] PENDING: dmaengine: ti: k3-udma-common: Fix errors
+ with CONFIG_TI_K3_UDMA=n
+
+Fix following Linker errors when TI_K3_UDMA driver is disabled:
+
+aarch64-none-linux-gnu-ld: Unexpected GOT/PLT entries detected!
+aarch64-none-linux-gnu-ld: Unexpected run-time procedure linkages detected!
+aarch64-none-linux-gnu-ld: drivers/dma/ti/k3-udma-common.o: in function `xudma_navss_psil_unpair':
+drivers/dma/ti/k3-udma-private.c:21:(.text+0x31c): undefined reference to `navss_psil_unpair'
+aarch64-none-linux-gnu-ld: drivers/dma/ti/k3-udma-common.o: in function `xudma_navss_psil_pair':
+drivers/dma/ti/k3-udma-private.c:15:(.text+0x338): undefined reference to `navss_psil_pair'
+aarch64-none-linux-gnu-ld: drivers/dma/ti/k3-udma-common.o: in function `udma_free_chan_resources':
+drivers/dma/ti/k3-udma-common.c:2071:(.text+0x4054): undefined reference to `navss_psil_unpair'
+
+Signed-off-by: Sai Sree Kartheek Adivi <s-adivi@ti.com>
+---
+ drivers/dma/ti/k3-udma-private.c | 10 ++++++++--
+ 2 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/dma/ti/k3-udma-private.c b/drivers/dma/ti/k3-udma-private.c
+index eac8ff701b16..5fccb8d18c89 100644
+--- a/drivers/dma/ti/k3-udma-private.c
++++ b/drivers/dma/ti/k3-udma-private.c
+@@ -12,13 +12,19 @@
+ 
+ int xudma_navss_psil_pair(struct udma_dev *ud, u32 src_thread, u32 dst_thread)
+ {
+-	return navss_psil_pair(ud, src_thread, dst_thread);
++	if (IS_ENABLED(CONFIG_TI_K3_UDMA))
++		return navss_psil_pair(ud, src_thread, dst_thread);
++
++	return 0;
+ }
+ EXPORT_SYMBOL(xudma_navss_psil_pair);
+ 
+ int xudma_navss_psil_unpair(struct udma_dev *ud, u32 src_thread, u32 dst_thread)
+ {
+-	return navss_psil_unpair(ud, src_thread, dst_thread);
++	if (IS_ENABLED(CONFIG_TI_K3_UDMA))
++		return navss_psil_unpair(ud, src_thread, dst_thread);
++
++	return 0;
+ }
+ EXPORT_SYMBOL(xudma_navss_psil_unpair);
+ 
+-- 
+2.49.0
+

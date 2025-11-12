@@ -1,0 +1,38 @@
+From ea78745fed5f2397b1bd5af96ba3e38d2a87bc00 Mon Sep 17 00:00:00 2001
+From: Jayesh Choudhary <j-choudhary@ti.com>
+Date: Mon, 13 Oct 2025 12:06:20 +0530
+Subject: [PATCH 098/110] FROMLIST: drm/bridge: cadence: cdns-mhdp8546-core:
+ Reduce log level for DPCD read/write
+
+Reduce the log level for cdns_mhdp_dpcd_read and cdns_mhdp_dpcd_write
+errors in cdns_mhdp_transfer function as in case of failure, there is
+flooding of these prints along with other indicators like EDID failure
+logs which are fairly intuitive in themselves rendering these error logs
+useless.
+Also, the caller functions for the cdns_mhdp_transfer in drm_dp_helper.c
+(which calls it 32 times), has debug log level in case transfer fails.
+So having a superseding log level in cdns_mhdp_transfer seems bad.
+
+Reviewed-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Signed-off-by: Jayesh Choudhary <j-choudhary@ti.com>
+Signed-off-by: Harikrishna Shenoy <h-shenoy@ti.com>
+---
+ drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
+index a31761388652..f870af9905a8 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
++++ b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
+@@ -851,7 +851,7 @@ static ssize_t cdns_mhdp_transfer(struct drm_dp_aux *aux,
+ 			if (!ret)
+ 				continue;
+ 
+-			dev_err(mhdp->dev,
++			dev_dbg(mhdp->dev,
+ 				"Failed to write DPCD addr %u\n",
+ 				msg->address + i);
+ 
+-- 
+2.51.1
+

@@ -1,0 +1,103 @@
+From 221b416899289864af6c67cc2cf381633a815a9e Mon Sep 17 00:00:00 2001
+From: Keita Morisaki <keyz@google.com>
+Date: Tue, 28 Oct 2025 17:55:17 +0530
+Subject: [PATCH 041/102] UPSTREAM: cpuidle: psci: Add trace for PSCI domain
+ idle
+
+commit 7b7644831e7276f52a233ec685d13c965fff09d9 upstream.
+
+The trace event cpu_idle provides insufficient information for debugging
+PSCI requests due to lacking access to determined PSCI domain idle
+states. The cpu_idle usually only shows -1, 0, or 1 regardless how many
+idle states the power domain has.
+
+Add new trace events namely psci_domain_idle_enter and
+psci_domain_idle_exit to trace enter and exit events with a determined
+idle state.
+
+These new trace events will help developers debug CPUidle issues on ARM
+systems using PSCI by providing more detailed information about the
+requested idle states.
+
+Signed-off-by: Keita Morisaki <keyz@google.com>
+Tested-by: Kevin Hilman <khilman@baylibre.com>
+Reviewed-by: Steven Rostedt (Google) <rostedt@goodmis.org>
+Reviewed-by: Dhruva Gole <d-gole@ti.com>
+---
+ drivers/cpuidle/cpuidle-psci.c |  3 +++
+ include/trace/events/power.h   | 37 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 40 insertions(+)
+
+diff --git a/drivers/cpuidle/cpuidle-psci.c b/drivers/cpuidle/cpuidle-psci.c
+index f3c30037dc8e..d0edba80b025 100644
+--- a/drivers/cpuidle/cpuidle-psci.c
++++ b/drivers/cpuidle/cpuidle-psci.c
+@@ -25,6 +25,7 @@
+ #include <linux/syscore_ops.h>
+ 
+ #include <asm/cpuidle.h>
++#include <trace/events/power.h>
+ 
+ #include "cpuidle-psci.h"
+ #include "dt_idle_states.h"
+@@ -73,7 +74,9 @@ static __cpuidle int __psci_enter_domain_idle_state(struct cpuidle_device *dev,
+ 	if (!state)
+ 		state = states[idx];
+ 
++	trace_psci_domain_idle_enter(dev->cpu, state, s2idle);
+ 	ret = psci_cpu_suspend_enter(state) ? -1 : idx;
++	trace_psci_domain_idle_exit(dev->cpu, state, s2idle);
+ 
+ 	if (s2idle)
+ 		dev_pm_genpd_resume(pd_dev);
+diff --git a/include/trace/events/power.h b/include/trace/events/power.h
+index d2349b6b531a..9253e83b9bb4 100644
+--- a/include/trace/events/power.h
++++ b/include/trace/events/power.h
+@@ -62,6 +62,43 @@ TRACE_EVENT(cpu_idle_miss,
+ 		(unsigned long)__entry->state, (__entry->below)?"below":"above")
+ );
+ 
++DECLARE_EVENT_CLASS(psci_domain_idle,
++
++	TP_PROTO(unsigned int cpu_id, unsigned int state, bool s2idle),
++
++	TP_ARGS(cpu_id, state, s2idle),
++
++	TP_STRUCT__entry(
++		__field(u32,		cpu_id)
++		__field(u32,		state)
++		__field(bool,		s2idle)
++	),
++
++	TP_fast_assign(
++		__entry->cpu_id = cpu_id;
++		__entry->state = state;
++		__entry->s2idle = s2idle;
++	),
++
++	TP_printk("cpu_id=%lu state=0x%lx is_s2idle=%s",
++		  (unsigned long)__entry->cpu_id, (unsigned long)__entry->state,
++		  (__entry->s2idle)?"yes":"no")
++);
++
++DEFINE_EVENT(psci_domain_idle, psci_domain_idle_enter,
++
++	TP_PROTO(unsigned int cpu_id, unsigned int state, bool s2idle),
++
++	TP_ARGS(cpu_id, state, s2idle)
++);
++
++DEFINE_EVENT(psci_domain_idle, psci_domain_idle_exit,
++
++	TP_PROTO(unsigned int cpu_id, unsigned int state, bool s2idle),
++
++	TP_ARGS(cpu_id, state, s2idle)
++);
++
+ TRACE_EVENT(powernv_throttle,
+ 
+ 	TP_PROTO(int chip_id, const char *reason, int pmax),
+-- 
+2.51.1
+

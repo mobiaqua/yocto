@@ -1,0 +1,65 @@
+From 3de4c5141c2ec069d4728a6ac24c32b380552df0 Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@baylibre.com>
+Date: Fri, 31 Jan 2025 18:04:50 -0600
+Subject: [PATCH 173/406] UPSTREAM: pmdomain: ti_sci: add wakeup constraint
+ management
+
+commit 9d8aa0dd3be4099019ce258c1635062aaf56b737 upstream.
+
+During system-wide suspend, check all devices connected to PM domain
+to see if they are wakeup-enabled.  If so, set a TI SCI device
+constraint.
+
+Note: DM firmware clears all constraints on resume.
+
+Co-developed-by: Vibhore Vardhan <vibhore@ti.com>
+Signed-off-by: Vibhore Vardhan <vibhore@ti.com>
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+Tested-by: Dhruva Gole <d-gole@ti.com>
+Signed-off-by: Kevin Hilman <khilman@baylibre.com>
+Reviewed-by: Dhruva Gole <d-gole@ti.com>
+Message-ID: <20241206-lpm-v6-10-constraints-pmdomain-v6-2-833980158c68@baylibre.com>
+Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Kendall Willis <k-willis@ti.com>
+---
+ drivers/pmdomain/ti/ti_sci_pm_domains.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/drivers/pmdomain/ti/ti_sci_pm_domains.c b/drivers/pmdomain/ti/ti_sci_pm_domains.c
+index ddab8504a484..4e4a0d8ba3e8 100644
+--- a/drivers/pmdomain/ti/ti_sci_pm_domains.c
++++ b/drivers/pmdomain/ti/ti_sci_pm_domains.c
+@@ -79,6 +79,21 @@ static void ti_sci_pd_set_lat_constraint(struct device *dev, s32 val)
+ }
+ #endif
+ 
++static inline void ti_sci_pd_set_wkup_constraint(struct device *dev)
++{
++	struct generic_pm_domain *genpd = pd_to_genpd(dev->pm_domain);
++	struct ti_sci_pm_domain *pd = genpd_to_ti_sci_pd(genpd);
++	const struct ti_sci_handle *ti_sci = pd->parent->ti_sci;
++	int ret;
++
++	if (device_may_wakeup(dev)) {
++		ret = ti_sci->ops.pm_ops.set_device_constraint(ti_sci, pd->idx,
++							       TISCI_MSG_CONSTRAINT_SET);
++		if (!ret)
++			dev_dbg(dev, "ti_sci_pd: ID:%d set device constraint.\n", pd->idx);
++	}
++}
++
+ /*
+  * ti_sci_pd_power_off(): genpd power down hook
+  * @domain: pointer to the powerdomain to power off
+@@ -121,6 +136,8 @@ static int ti_sci_pd_suspend(struct device *dev)
+ 	if (ti_sci_pd_is_valid_constraint(val))
+ 		ti_sci_pd_set_lat_constraint(dev, val);
+ 
++	ti_sci_pd_set_wkup_constraint(dev);
++
+ 	return 0;
+ }
+ #else
+-- 
+2.39.5 (Apple Git-154)
+

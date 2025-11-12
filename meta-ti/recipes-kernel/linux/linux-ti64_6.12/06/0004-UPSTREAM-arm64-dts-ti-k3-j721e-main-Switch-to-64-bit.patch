@@ -1,0 +1,73 @@
+From b790488078fd6306d38b75265aba0a30faf36920 Mon Sep 17 00:00:00 2001
+From: Siddharth Vadapalli <s-vadapalli@ti.com>
+Date: Tue, 20 May 2025 13:46:56 +0530
+Subject: [PATCH 04/29] UPSTREAM: arm64: dts: ti: k3-j721e-main: Switch to
+ 64-bit address space for PCIe0 and PCIe1
+
+commit f0f78192d3b3b3c3c935de0d681e7bf2117bbb13 upstream.
+
+The PCIe0 and PCIe1 instances of PCIe in J721E SoC support:
+1. 128 MB address region in the 32-bit address space
+2. 4 GB address region in the 64-bit address space
+
+The default configuration is that of a 128 MB address region in the
+32-bit address space. While this might be sufficient for most use-cases,
+it is insufficient for supporting use-cases which require larger address
+spaces. Therefore, switch to using the 64-bit address space with a 4 GB
+address region.
+
+Signed-off-by: Siddharth Vadapalli <s-vadapalli@ti.com>
+Reviewed-by: Udit Kumar <u-kumar1@ti.com>
+Link: https://lore.kernel.org/r/20250422120042.3746004-5-s-vadapalli@ti.com
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index eef37c1bd031..8f5b638758ab 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -978,7 +978,7 @@ pcie0_rc: pcie@2900000 {
+ 		reg = <0x00 0x02900000 0x00 0x1000>,
+ 		      <0x00 0x02907000 0x00 0x400>,
+ 		      <0x00 0x0d000000 0x00 0x00800000>,
+-		      <0x00 0x10000000 0x00 0x00001000>;
++		      <0x40 0x00000000 0x00 0x00001000>; /* ECAM (4 KB) */
+ 		reg-names = "intd_cfg", "user_cfg", "reg", "cfg";
+ 		interrupt-names = "link_state";
+ 		interrupts = <GIC_SPI 318 IRQ_TYPE_EDGE_RISING>;
+@@ -996,8 +996,8 @@ pcie0_rc: pcie@2900000 {
+ 		device-id = <0xb00d>;
+ 		msi-map = <0x0 &gic_its 0x0 0x10000>;
+ 		dma-coherent;
+-		ranges = <0x01000000 0x0 0x10001000 0x0 0x10001000 0x0 0x0010000>,
+-			 <0x02000000 0x0 0x10011000 0x0 0x10011000 0x0 0x7fef000>;
++		ranges = <0x01000000 0x00 0x00001000 0x40 0x00001000 0x00 0x00100000>, /* IO (1 MB) */
++			 <0x02000000 0x00 0x00101000 0x40 0x00101000 0x00 0xffeff000>; /* 32-bit Non-Prefetchable MEM (4 GB - 1 MB - 4 KB) */
+ 		dma-ranges = <0x02000000 0x0 0x0 0x0 0x0 0x10000 0x0>;
+ 		status = "disabled";
+ 	};
+@@ -1007,7 +1007,7 @@ pcie1_rc: pcie@2910000 {
+ 		reg = <0x00 0x02910000 0x00 0x1000>,
+ 		      <0x00 0x02917000 0x00 0x400>,
+ 		      <0x00 0x0d800000 0x00 0x00800000>,
+-		      <0x00 0x18000000 0x00 0x00001000>;
++		      <0x41 0x00000000 0x00 0x00001000>; /* ECAM (4 KB) */
+ 		reg-names = "intd_cfg", "user_cfg", "reg", "cfg";
+ 		interrupt-names = "link_state";
+ 		interrupts = <GIC_SPI 330 IRQ_TYPE_EDGE_RISING>;
+@@ -1025,8 +1025,8 @@ pcie1_rc: pcie@2910000 {
+ 		device-id = <0xb00d>;
+ 		msi-map = <0x0 &gic_its 0x10000 0x10000>;
+ 		dma-coherent;
+-		ranges = <0x01000000 0x0 0x18001000 0x0 0x18001000 0x0 0x0010000>,
+-			 <0x02000000 0x0 0x18011000 0x0 0x18011000 0x0 0x7fef000>;
++		ranges = <0x01000000 0x00 0x00001000 0x41 0x00001000 0x00 0x00100000>, /* IO (1 MB) */
++			 <0x02000000 0x00 0x00101000 0x41 0x00101000 0x00 0xffeff000>; /* 32-bit Non-Prefetchable MEM (4 GB - 1 MB - 4 KB) */
+ 		dma-ranges = <0x02000000 0x0 0x0 0x0 0x0 0x10000 0x0>;
+ 		status = "disabled";
+ 	};
+-- 
+2.51.1
+

@@ -1,0 +1,63 @@
+From fec90de969a329aff7d56ad77f6618bf077f31ef Mon Sep 17 00:00:00 2001
+From: Beleswar Padhi <b-padhi@ti.com>
+Date: Mon, 3 Feb 2025 14:09:48 +0530
+Subject: [PATCH 208/406] UPSTREAM: remoteproc: k3-r5: Add devm action to
+ release tsp
+
+commit 8c8df9bd3851978c2645f1a3837230adef82fe0e upstream.
+
+Use a device lifecycle managed action to release tsp ti_sci_proc handle.
+This helps prevent mistakes like releasing out of order in cleanup
+functions and forgetting to release on error paths.
+
+Signed-off-by: Beleswar Padhi <b-padhi@ti.com>
+---
+ drivers/remoteproc/ti_k3_r5_remoteproc.c | 17 +++++++++++------
+ 1 file changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_r5_remoteproc.c b/drivers/remoteproc/ti_k3_r5_remoteproc.c
+index b4997586d7dc..efceeb15d260 100644
+--- a/drivers/remoteproc/ti_k3_r5_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_r5_remoteproc.c
+@@ -1491,6 +1491,13 @@ static int k3_r5_core_of_get_sram_memories(struct platform_device *pdev,
+ 	return 0;
+ }
+ 
++static void k3_r5_release_tsp(void *data)
++{
++	struct ti_sci_proc *tsp = data;
++
++	ti_sci_proc_release(tsp);
++}
++
+ static int k3_r5_core_of_init(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+@@ -1592,6 +1599,10 @@ static int k3_r5_core_of_init(struct platform_device *pdev)
+ 		goto err;
+ 	}
+ 
++	ret = devm_add_action_or_reset(dev, k3_r5_release_tsp, core->tsp);
++	if (ret)
++		goto err;
++
+ 	platform_set_drvdata(pdev, core);
+ 	devres_close_group(dev, k3_r5_core_of_init);
+ 
+@@ -1608,13 +1619,7 @@ static int k3_r5_core_of_init(struct platform_device *pdev)
+  */
+ static void k3_r5_core_of_exit(struct platform_device *pdev)
+ {
+-	struct k3_r5_core *core = platform_get_drvdata(pdev);
+ 	struct device *dev = &pdev->dev;
+-	int ret;
+-
+-	ret = ti_sci_proc_release(core->tsp);
+-	if (ret)
+-		dev_err(dev, "failed to release proc, ret = %d\n", ret);
+ 
+ 	platform_set_drvdata(pdev, NULL);
+ 	devres_release_group(dev, k3_r5_core_of_init);
+-- 
+2.39.5 (Apple Git-154)
+

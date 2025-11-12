@@ -1,0 +1,35 @@
+From 99670534bf077e3f57348cfa8d23cf1f9f757abe Mon Sep 17 00:00:00 2001
+From: Andrew Davis <afd@ti.com>
+Date: Wed, 5 Mar 2025 12:06:45 -0600
+Subject: [PATCH 017/181] PENDING: remoteproc: core: Fix double unlock for
+ DMA-BUF interface
+
+We use scoped lock guards in this function which automatically unlock
+this mutex when the guard goes out of scope. If we also manually unlock
+then this causes a double unlock breaking the lock.
+
+Remove this extra left-over unlock.
+
+Fixes: 3119d7239570 ("PENDING: remoteproc: core: Add DMA-BUF attachment interface to cdev")
+Reported-by: Rahul Ravikumar <r-ravikumar@ti.com>
+Signed-off-by: Andrew Davis <afd@ti.com>
+Tested-by: Shreyash Sinha <s-sinha@ti.com>
+---
+ drivers/remoteproc/remoteproc_core.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/remoteproc/remoteproc_core.c b/drivers/remoteproc/remoteproc_core.c
+index 769690a59044..c606fc188eda 100644
+--- a/drivers/remoteproc/remoteproc_core.c
++++ b/drivers/remoteproc/remoteproc_core.c
+@@ -981,7 +981,6 @@ int rproc_attach_dmabuf(struct rproc *rproc, struct dma_buf *dmabuf)
+ 
+ 	list_add_tail(&dmabuf_entry->node, &rproc->dmabufs);
+ 
+-	mutex_unlock(&rproc->lock);
+ 	return 0;
+ 
+ fail_unmap:
+-- 
+2.49.0
+

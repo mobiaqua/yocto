@@ -1,0 +1,278 @@
+From c748b256c44ecbb046cae280f960fc76535e1aed Mon Sep 17 00:00:00 2001
+From: Beleswar Padhi <b-padhi@ti.com>
+Date: Mon, 3 Feb 2025 14:10:06 +0530
+Subject: [PATCH 226/406] FROMLIST: remoteproc: k3: Refactor .da_to_va rproc
+ ops into common driver
+
+The .da_to_va rproc ops implementations in ti_k3_dsp_remoteproc.c and
+ti_k3_m4_remoteproc.c drivers return the Kernel virtual address for a
+corresponding rproc device address. Refactor the implementations into
+ti_k3_common.c driver as k3_rproc_da_to_va and align DSP and M4 drivers
+to register this common function as .da_to_va ops.
+
+Link: https://lore.kernel.org/all/20250103101231.1508151-17-b-padhi@ti.com/
+Signed-off-by: Beleswar Padhi <b-padhi@ti.com>
+---
+ drivers/remoteproc/ti_k3_common.c         | 61 ++++++++++++++++++++++
+ drivers/remoteproc/ti_k3_common.h         |  4 ++
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c | 63 +----------------------
+ drivers/remoteproc/ti_k3_m4_remoteproc.c  | 58 +--------------------
+ 4 files changed, 67 insertions(+), 119 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_common.c b/drivers/remoteproc/ti_k3_common.c
+index b0a4932b251c..0f80cb8749aa 100644
+--- a/drivers/remoteproc/ti_k3_common.c
++++ b/drivers/remoteproc/ti_k3_common.c
+@@ -352,5 +352,66 @@ struct resource_table *k3_get_loaded_rsc_table(struct rproc *rproc,
+ }
+ EXPORT_SYMBOL_GPL(k3_get_loaded_rsc_table);
+ 
++/*
++ * Custom function to translate a remote processor device address (internal
++ * RAMs only) to a kernel virtual address.  The remote processors can access
++ * their RAMs at either an internal address visible only from a remote
++ * processor, or at the SoC-level bus address. Both these addresses need to be
++ * looked through for translation. The translated addresses can be used either
++ * by the remoteproc core for loading (when using kernel remoteproc loader), or
++ * by any rpmsg bus drivers.
++ */
++void *k3_rproc_da_to_va(struct rproc *rproc, u64 da, size_t len, bool *is_iomem)
++{
++	struct k3_rproc *kproc = rproc->priv;
++	void __iomem *va = NULL;
++	phys_addr_t bus_addr;
++	u32 dev_addr, offset;
++	size_t size;
++	int i;
++
++	if (len == 0)
++		return NULL;
++
++	for (i = 0; i < kproc->num_mems; i++) {
++		bus_addr = kproc->mem[i].bus_addr;
++		dev_addr = kproc->mem[i].dev_addr;
++		size = kproc->mem[i].size;
++
++		if (da < KEYSTONE_RPROC_LOCAL_ADDRESS_MASK) {
++			/* handle rproc-view addresses */
++			if (da >= dev_addr &&
++			    ((da + len) <= (dev_addr + size))) {
++				offset = da - dev_addr;
++				va = kproc->mem[i].cpu_addr + offset;
++				return (__force void *)va;
++			}
++		} else {
++			/* handle SoC-view addresses */
++			if (da >= bus_addr &&
++			    (da + len) <= (bus_addr + size)) {
++				offset = da - bus_addr;
++				va = kproc->mem[i].cpu_addr + offset;
++				return (__force void *)va;
++			}
++		}
++	}
++
++	/* handle static DDR reserved memory regions */
++	for (i = 0; i < kproc->num_rmems; i++) {
++		dev_addr = kproc->rmem[i].dev_addr;
++		size = kproc->rmem[i].size;
++
++		if (da >= dev_addr && ((da + len) <= (dev_addr + size))) {
++			offset = da - dev_addr;
++			va = kproc->rmem[i].cpu_addr + offset;
++			return (__force void *)va;
++		}
++	}
++
++	return NULL;
++}
++EXPORT_SYMBOL_GPL(k3_rproc_da_to_va);
++
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("TI K3 common Remoteproc code");
+diff --git a/drivers/remoteproc/ti_k3_common.h b/drivers/remoteproc/ti_k3_common.h
+index bdcee1d09eea..b869c9369794 100644
+--- a/drivers/remoteproc/ti_k3_common.h
++++ b/drivers/remoteproc/ti_k3_common.h
+@@ -16,6 +16,8 @@
+ #ifndef REMOTEPROC_TI_K3_COMMON_H
+ #define REMOTEPROC_TI_K3_COMMON_H
+ 
++#define KEYSTONE_RPROC_LOCAL_ADDRESS_MASK	(SZ_16M - 1)
++
+ /**
+  * struct k3_rproc_mem - internal memory structure
+  * @cpu_addr: MPU virtual address of the memory region
+@@ -99,4 +101,6 @@ int k3_rproc_attach(struct rproc *rproc);
+ int k3_rproc_detach(struct rproc *rproc);
+ struct resource_table *k3_get_loaded_rsc_table(struct rproc *rproc,
+ 					       size_t *rsc_table_sz);
++void *k3_rproc_da_to_va(struct rproc *rproc, u64 da, size_t len,
++			bool *is_iomem);
+ #endif /* REMOTEPROC_TI_K3_COMMON_H */
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index 7fb2b9a371ac..4da5d5bcdee2 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -22,8 +22,6 @@
+ #include "ti_sci_proc.h"
+ #include "ti_k3_common.h"
+ 
+-#define KEYSTONE_RPROC_LOCAL_ADDRESS_MASK	(SZ_16M - 1)
+-
+ /*
+  * Power up the DSP remote processor.
+  *
+@@ -58,72 +56,13 @@ static int k3_dsp_rproc_start(struct rproc *rproc)
+ 	return 0;
+ }
+ 
+-/*
+- * Custom function to translate a DSP device address (internal RAMs only) to a
+- * kernel virtual address.  The DSPs can access their RAMs at either an internal
+- * address visible only from a DSP, or at the SoC-level bus address. Both these
+- * addresses need to be looked through for translation. The translated addresses
+- * can be used either by the remoteproc core for loading (when using kernel
+- * remoteproc loader), or by any rpmsg bus drivers.
+- */
+-static void *k3_dsp_rproc_da_to_va(struct rproc *rproc, u64 da, size_t len, bool *is_iomem)
+-{
+-	struct k3_rproc *kproc = rproc->priv;
+-	void __iomem *va = NULL;
+-	phys_addr_t bus_addr;
+-	u32 dev_addr, offset;
+-	size_t size;
+-	int i;
+-
+-	if (len == 0)
+-		return NULL;
+-
+-	for (i = 0; i < kproc->num_mems; i++) {
+-		bus_addr = kproc->mem[i].bus_addr;
+-		dev_addr = kproc->mem[i].dev_addr;
+-		size = kproc->mem[i].size;
+-
+-		if (da < KEYSTONE_RPROC_LOCAL_ADDRESS_MASK) {
+-			/* handle DSP-view addresses */
+-			if (da >= dev_addr &&
+-			    ((da + len) <= (dev_addr + size))) {
+-				offset = da - dev_addr;
+-				va = kproc->mem[i].cpu_addr + offset;
+-				return (__force void *)va;
+-			}
+-		} else {
+-			/* handle SoC-view addresses */
+-			if (da >= bus_addr &&
+-			    (da + len) <= (bus_addr + size)) {
+-				offset = da - bus_addr;
+-				va = kproc->mem[i].cpu_addr + offset;
+-				return (__force void *)va;
+-			}
+-		}
+-	}
+-
+-	/* handle static DDR reserved memory regions */
+-	for (i = 0; i < kproc->num_rmems; i++) {
+-		dev_addr = kproc->rmem[i].dev_addr;
+-		size = kproc->rmem[i].size;
+-
+-		if (da >= dev_addr && ((da + len) <= (dev_addr + size))) {
+-			offset = da - dev_addr;
+-			va = kproc->rmem[i].cpu_addr + offset;
+-			return (__force void *)va;
+-		}
+-	}
+-
+-	return NULL;
+-}
+-
+ static const struct rproc_ops k3_dsp_rproc_ops = {
+ 	.start			=	k3_dsp_rproc_start,
+ 	.stop			=	k3_rproc_stop,
+ 	.attach			=	k3_rproc_attach,
+ 	.detach			=	k3_rproc_detach,
+ 	.kick			=	k3_rproc_kick,
+-	.da_to_va		=	k3_dsp_rproc_da_to_va,
++	.da_to_va		=	k3_rproc_da_to_va,
+ 	.get_loaded_rsc_table	=	k3_get_loaded_rsc_table,
+ };
+ 
+diff --git a/drivers/remoteproc/ti_k3_m4_remoteproc.c b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+index ee4d0f871b46..4616f72be7a8 100644
+--- a/drivers/remoteproc/ti_k3_m4_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+@@ -21,62 +21,6 @@
+ #include "ti_sci_proc.h"
+ #include "ti_k3_common.h"
+ 
+-/*
+- * Custom function to translate a remote processor device address (internal
+- * RAMs only) to a kernel virtual address.  The remote processors can access
+- * their RAMs at either an internal address visible only from a remote
+- * processor, or at the SoC-level bus address. Both these addresses need to be
+- * looked through for translation. The translated addresses can be used either
+- * by the remoteproc core for loading (when using kernel remoteproc loader), or
+- * by any rpmsg bus drivers.
+- */
+-static void *k3_m4_rproc_da_to_va(struct rproc *rproc, u64 da, size_t len, bool *is_iomem)
+-{
+-	struct k3_rproc *kproc = rproc->priv;
+-	void __iomem *va = NULL;
+-	phys_addr_t bus_addr;
+-	u32 dev_addr, offset;
+-	size_t size;
+-	int i;
+-
+-	if (len == 0)
+-		return NULL;
+-
+-	for (i = 0; i < kproc->num_mems; i++) {
+-		bus_addr = kproc->mem[i].bus_addr;
+-		dev_addr = kproc->mem[i].dev_addr;
+-		size = kproc->mem[i].size;
+-
+-		/* handle M4-view addresses */
+-		if (da >= dev_addr && ((da + len) <= (dev_addr + size))) {
+-			offset = da - dev_addr;
+-			va = kproc->mem[i].cpu_addr + offset;
+-			return (__force void *)va;
+-		}
+-
+-		/* handle SoC-view addresses */
+-		if (da >= bus_addr && ((da + len) <= (bus_addr + size))) {
+-			offset = da - bus_addr;
+-			va = kproc->mem[i].cpu_addr + offset;
+-			return (__force void *)va;
+-		}
+-	}
+-
+-	/* handle static DDR reserved memory regions */
+-	for (i = 0; i < kproc->num_rmems; i++) {
+-		dev_addr = kproc->rmem[i].dev_addr;
+-		size = kproc->rmem[i].size;
+-
+-		if (da >= dev_addr && ((da + len) <= (dev_addr + size))) {
+-			offset = da - dev_addr;
+-			va = kproc->rmem[i].cpu_addr + offset;
+-			return (__force void *)va;
+-		}
+-	}
+-
+-	return NULL;
+-}
+-
+ static int k3_m4_rproc_of_get_memories(struct platform_device *pdev,
+ 				       struct k3_rproc *kproc)
+ {
+@@ -222,7 +166,7 @@ static const struct rproc_ops k3_m4_rproc_ops = {
+ 	.attach = k3_rproc_attach,
+ 	.detach = k3_rproc_detach,
+ 	.kick = k3_rproc_kick,
+-	.da_to_va = k3_m4_rproc_da_to_va,
++	.da_to_va = k3_rproc_da_to_va,
+ 	.get_loaded_rsc_table = k3_get_loaded_rsc_table,
+ };
+ 
+-- 
+2.39.5 (Apple Git-154)
+

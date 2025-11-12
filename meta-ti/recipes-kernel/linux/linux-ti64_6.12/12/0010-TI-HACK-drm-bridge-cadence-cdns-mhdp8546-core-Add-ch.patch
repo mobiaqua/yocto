@@ -1,0 +1,41 @@
+From d6588d8c567970e39cbf87c025eac94bb90598cb Mon Sep 17 00:00:00 2001
+From: Harikrishna Shenoy <h-shenoy@ti.com>
+Date: Thu, 16 Oct 2025 16:45:42 +0530
+Subject: [PATCH 010/102] TI: HACK: drm/bridge: cadence: cdns-mhdp8546-core:
+ Add check for pointer validity
+
+Add a check for mhdp->connector is not NULL, before accessing the
+connector dev. This avoids NULL pointer dereference in bridge detect
+hook with DBANC case when connector is not initialized by bridge driver.
+
+Signed-off-by: Harikrishna Shenoy <h-shenoy@ti.com>
+Acked-by: Swamil Jain <s-jain1@ti.com>>
+---
+ drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
+index a34d739d5566..64d8c67220d2 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
++++ b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
+@@ -2101,7 +2101,7 @@ static enum drm_connector_status cdns_mhdp_bridge_detect(struct drm_bridge *brid
+ 	if (mhdp->no_hpd) {
+ 		int ret = cdns_mhdp_update_link_status(mhdp);
+ 
+-		if (mhdp->connector->dev) {
++		if (mhdp->connector && mhdp->connector->dev) {
+ 			if (ret < 0)
+ 				schedule_work(&mhdp->modeset_retry_work);
+ 			else
+@@ -2286,7 +2286,7 @@ static void cdns_mhdp_modeset_retry_fn(struct work_struct *work)
+ 
+ 	mhdp = container_of(work, typeof(*mhdp), modeset_retry_work);
+ 
+-	if (mhdp->connector->dev) {
++	if (mhdp->connector && mhdp->connector->dev) {
+ 		conn = mhdp->connector;
+ 		/* Grab the locks before changing connector property */
+ 		mutex_lock(&conn->dev->mode_config.mutex);
+-- 
+2.51.1
+

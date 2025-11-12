@@ -1,0 +1,182 @@
+From 17c84dc5ceea4e087b995d0fe6cdbd29a3a1e1da Mon Sep 17 00:00:00 2001
+From: Kendall Willis <k-willis@ti.com>
+Date: Mon, 9 Jun 2025 14:22:24 -0500
+Subject: [PATCH 10/16] PENDING: firmware: ti_sci: Enable abort handling of
+ entry to LPM
+
+Introduce LPM abort call that enables the ti_sci driver to support
+aborting entry to a low power mode.
+
+The following power management operation defined in the TISCI
+Low Power Mode API [1] is implemented to enable aborting entry to LPM:
+
+TISCI_MSG_LPM_ABORT
+Abort the current low power mode entry by clearing the current mode
+selection.
+
+Additionally, add LPM abort message in ti_sci_suspend and
+ti_sci_suspend_noirq if there is a failure.
+
+[1] https://software-dl.ti.com/tisci/esd/latest/2_tisci_msgs/pm/lpm.html
+
+Signed-off-by: Kendall Willis <k-willis@ti.com>
+---
+ drivers/firmware/ti_sci.c              | 69 ++++++++++++++++++++++++--
+ drivers/firmware/ti_sci.h              |  3 +-
+ include/linux/soc/ti/ti_sci_protocol.h |  2 +
+ 3 files changed, 69 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/firmware/ti_sci.c b/drivers/firmware/ti_sci.c
+index 82c91daadac7..41534daf5371 100644
+--- a/drivers/firmware/ti_sci.c
++++ b/drivers/firmware/ti_sci.c
+@@ -2,7 +2,7 @@
+ /*
+  * Texas Instruments System Control Interface Protocol Driver
+  *
+- * Copyright (C) 2015-2024 Texas Instruments Incorporated - https://www.ti.com/
++ * Copyright (C) 2015-2025 Texas Instruments Incorporated - https://www.ti.com/
+  *	Nishanth Menon
+  */
+ 
+@@ -2022,6 +2022,58 @@ static int ti_sci_cmd_set_latency_constraint(const struct ti_sci_handle *handle,
+ 	return ret;
+ }
+ 
++/**
++ * ti_sci_cmd_lpm_abort() - Abort entry to LPM
++ * @handle:     pointer to TI SCI handle
++ *
++ * Return: 0 if all went well, else returns appropriate error value.
++ */
++static int ti_sci_cmd_lpm_abort(const struct ti_sci_handle *handle)
++{
++	struct ti_sci_info *info;
++	struct ti_sci_msg_hdr *req;
++	struct ti_sci_msg_hdr *resp;
++	struct ti_sci_xfer *xfer;
++	struct device *dev;
++	int ret = 0;
++
++	if (IS_ERR(handle))
++		return PTR_ERR(handle);
++	if (!handle)
++		return -EINVAL;
++
++	info = handle_to_ti_sci_info(handle);
++	dev = info->dev;
++
++	xfer = ti_sci_get_one_xfer(info, TI_SCI_MSG_LPM_ABORT,
++				   TI_SCI_FLAG_REQ_ACK_ON_PROCESSED,
++				   sizeof(*req), sizeof(*resp));
++	if (IS_ERR(xfer)) {
++		ret = PTR_ERR(xfer);
++		dev_err(dev, "Message alloc failed(%d)\n", ret);
++		return ret;
++	}
++	req = (struct ti_sci_msg_hdr *)xfer->xfer_buf;
++
++	ret = ti_sci_do_xfer(info, xfer);
++	if (ret) {
++		dev_err(dev, "Mbox send fail %d\n", ret);
++		goto fail;
++	}
++
++	resp = (struct ti_sci_msg_hdr *)xfer->xfer_buf;
++
++	if (!ti_sci_is_response_ack(resp))
++		ret = -ENODEV;
++	else
++		ret = 0;
++
++fail:
++	ti_sci_put_one_xfer(&info->minfo, xfer);
++
++	return ret;
++}
++
+ static int ti_sci_cmd_core_reboot(const struct ti_sci_handle *handle)
+ {
+ 	struct ti_sci_info *info;
+@@ -3209,6 +3261,7 @@ static void ti_sci_setup_ops(struct ti_sci_info *info)
+ 		pmops->lpm_wake_reason = ti_sci_msg_cmd_lpm_wake_reason;
+ 		pmops->set_device_constraint = ti_sci_cmd_set_device_constraint;
+ 		pmops->set_latency_constraint = ti_sci_cmd_set_latency_constraint;
++		pmops->lpm_abort = ti_sci_cmd_lpm_abort;
+ 	}
+ 
+ 	rm_core_ops->get_range = ti_sci_cmd_get_resource_range;
+@@ -3703,9 +3756,13 @@ static int __maybe_unused ti_sci_suspend(struct device *dev)
+ 	}
+ 
+ 	ret = ti_sci_prepare_system_suspend(info);
+-	if (ret)
++	if (ret) {
++		dev_err(dev, "%s: Failed to prepare sleep. Abort entering low power mode.\n",
++				__func__);
++		if (ti_sci_cmd_lpm_abort(&info->handle))
++			dev_err(dev, "%s: Failed to abort.\n", __func__);
+ 		return ret;
+-
++	}
+ 	return 0;
+ }
+ 
+@@ -3715,8 +3772,12 @@ static int __maybe_unused ti_sci_suspend_noirq(struct device *dev)
+ 	int ret = 0;
+ 
+ 	ret = ti_sci_cmd_set_io_isolation(&info->handle, TISCI_MSG_VALUE_IO_ENABLE);
+-	if (ret)
++	if (ret) {
++		dev_err(dev, "%s: Failed to suspend. Abort entering low power mode.\n", __func__);
++		if (ti_sci_cmd_lpm_abort(&info->handle))
++			dev_err(dev, "%s: Failed to abort.\n", __func__);
+ 		return ret;
++	}
+ 
+ 	return 0;
+ }
+diff --git a/drivers/firmware/ti_sci.h b/drivers/firmware/ti_sci.h
+index dec9e20cbe5d..6da13df05320 100644
+--- a/drivers/firmware/ti_sci.h
++++ b/drivers/firmware/ti_sci.h
+@@ -6,7 +6,7 @@
+  * The system works in a message response protocol
+  * See: https://software-dl.ti.com/tisci/esd/latest/index.html for details
+  *
+- * Copyright (C)  2015-2024 Texas Instruments Incorporated - https://www.ti.com/
++ * Copyright (C)  2015-2025 Texas Instruments Incorporated - https://www.ti.com/
+  */
+ 
+ #ifndef __TI_SCI_H
+@@ -42,6 +42,7 @@
+ #define TI_SCI_MSG_SET_IO_ISOLATION	0x0307
+ #define TI_SCI_MSG_LPM_SET_DEVICE_CONSTRAINT	0x0309
+ #define TI_SCI_MSG_LPM_SET_LATENCY_CONSTRAINT	0x030A
++#define TI_SCI_MSG_LPM_ABORT	0x0311
+ 
+ /* Resource Management Requests */
+ #define TI_SCI_MSG_GET_RESOURCE_RANGE	0x1500
+diff --git a/include/linux/soc/ti/ti_sci_protocol.h b/include/linux/soc/ti/ti_sci_protocol.h
+index fd104b666836..d5c00b2661a4 100644
+--- a/include/linux/soc/ti/ti_sci_protocol.h
++++ b/include/linux/soc/ti/ti_sci_protocol.h
+@@ -214,6 +214,7 @@ struct ti_sci_clk_ops {
+  * @set_latency_constraint: Set LPM resume latency constraint
+  *		- latency: maximum acceptable latency to wake up from low power mode
+  *		- state: The desired state of latency constraint: set or clear.
++ * @lpm_abort: Abort entry to LPM
+  */
+ struct ti_sci_pm_ops {
+ 	int (*lpm_wake_reason)(const struct ti_sci_handle *handle,
+@@ -222,6 +223,7 @@ struct ti_sci_pm_ops {
+ 				     u32 id, u8 state);
+ 	int (*set_latency_constraint)(const struct ti_sci_handle *handle,
+ 				      u16 latency, u8 state);
++	int (*lpm_abort)(const struct ti_sci_handle *handle);
+ };
+ 
+ /**
+-- 
+2.51.1
+

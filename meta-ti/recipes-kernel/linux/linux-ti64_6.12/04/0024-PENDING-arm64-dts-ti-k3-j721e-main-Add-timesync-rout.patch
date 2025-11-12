@@ -1,0 +1,38 @@
+From 67d5b2b69d26ba7d18fd65b1250024f33d5a95f5 Mon Sep 17 00:00:00 2001
+From: Chintan Vankar <c-vankar@ti.com>
+Date: Wed, 5 Mar 2025 23:17:13 +0530
+Subject: [PATCH 024/181] PENDING: arm64: dts: ti: k3-j721e-main: Add timesync
+ router node
+
+TI's J721E SoC has a Timesync Router which provides a mechanism to mux
+single input to multiple recipients. Add "timesync_router" node which can
+be used to map input signal received by Timesync Router to corresponding
+output.
+
+Reviewed-by: Siddharth Vadapalli <s-vadapalli@ti.com>
+Signed-off-by: Chintan Vankar <c-vankar@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index eb7112e5e729..e6a9015afd96 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -2337,6 +2337,13 @@ c71_0: dsp@64800000 {
+ 		status = "disabled";
+ 	};
+ 
++	timesync_router: mux-controller@a40000 {
++		compatible = "reg-mux";
++		reg = <0x0 0xa40000 0x0 0x800>;
++		#mux-control-cells = <1>;
++		status = "disabled";
++	};
++
+ 	icssg0: icssg@b000000 {
+ 		compatible = "ti,j721e-icssg";
+ 		reg = <0x00 0xb000000 0x00 0x80000>;
+-- 
+2.49.0
+

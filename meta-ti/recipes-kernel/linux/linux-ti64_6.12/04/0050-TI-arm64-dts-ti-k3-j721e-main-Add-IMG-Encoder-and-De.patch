@@ -1,0 +1,46 @@
+From 6827ba5c05652074e4cfa51e9df3c4ee5b15929b Mon Sep 17 00:00:00 2001
+From: Brandon Brnich <b-brnich@ti.com>
+Date: Thu, 6 Mar 2025 11:31:00 -0600
+Subject: [PATCH 050/181] TI: arm64: dts: ti: k3-j721e-main: Add IMG Encoder
+ and Decoder
+
+TI's J721e SoC supports Imagination's VXE384 H264 encoder and D5520
+H264/H265 decoder.
+
+Add support for both nodes.
+
+Signed-off-by: Brandon Brnich <b-brnich@ti.com>
+---
+ arch/arm64/boot/dts/ti/k3-j721e-main.dtsi | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+index e6a9015afd96..eef37c1bd031 100644
+--- a/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
++++ b/arch/arm64/boot/dts/ti/k3-j721e-main.dtsi
+@@ -1845,6 +1845,22 @@ main_i2c6: i2c@2060000 {
+ 		status = "disabled";
+ 	};
+ 
++	vxe384: video-encoder@4200000 {
++		compatible = "img,vxe384";
++		reg = <0x00 0x04200000>,
++			<0x00 0x100000>;
++		power-domains = <&k3_pds 153 TI_SCI_PD_EXCLUSIVE>;
++		interrupts = <GIC_SPI 181 IRQ_TYPE_LEVEL_HIGH>;
++	};
++
++	d5520: video-decoder@4300000 {
++		compatible = "img,d5500-vxd";
++		reg = <0x00 0x04300000>,
++			<0x00 0x100000>;
++		power-domains = <&k3_pds 144 TI_SCI_PD_EXCLUSIVE>;
++		interrupts = <GIC_SPI 180 IRQ_TYPE_LEVEL_HIGH>;
++	};
++
+ 	ufs_wrapper: ufs-wrapper@4e80000 {
+ 		compatible = "ti,j721e-ufs";
+ 		reg = <0x0 0x4e80000 0x0 0x100>;
+-- 
+2.49.0
+

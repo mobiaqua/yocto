@@ -1,0 +1,63 @@
+From 4953302a63da660f81a5deddb4b19ab6f4b7bf7d Mon Sep 17 00:00:00 2001
+From: Jayesh Choudhary <j-choudhary@ti.com>
+Date: Tue, 28 Jan 2025 11:41:03 +0530
+Subject: [PATCH 152/406] FROMLIST: drm: bridge: cdns-mhdp8546: Fix possible
+ null pointer dereference
+
+For the cases we have DRM_BRIDGE_ATTACH_NO_CONNECTOR flag set,
+the connector structure is not initialised in the bridge. That's done
+by encoder. So in case of some failure in cdns_mhdp_atomic_enable,
+when we schedule work for modeset_retry_work, we will use the mutex
+of connector which will result in NULL pointer dereference.
+Handle it by adding condition for the connector. Otherwise, since
+the modeset_retry_work tries to set the connector status as bad,
+set the mhdp->plugged as false which would give the connector
+status as disconnected in detect hook.
+
+Link: https://lore.kernel.org/all/20250116111636.157641-1-j-choudhary@ti.com/
+Fixes: fb43aa0acdfd ("drm: bridge: Add support for Cadence MHDP8546 DPI/DP bridge")
+Signed-off-by: Jayesh Choudhary <j-choudhary@ti.com>
+Reviewed-by: Devarsh Thakkar <devarsht@ti.com>
+---
+ .../drm/bridge/cadence/cdns-mhdp8546-core.c   | 24 ++++++++++---------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
+index 41f72d458487..7fe7d588f358 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
++++ b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
+@@ -2363,18 +2363,20 @@ static void cdns_mhdp_modeset_retry_fn(struct work_struct *work)
+ 
+ 	mhdp = container_of(work, typeof(*mhdp), modeset_retry_work);
+ 
+-	conn = &mhdp->connector;
+-
+-	/* Grab the locks before changing connector property */
+-	mutex_lock(&conn->dev->mode_config.mutex);
+-
+-	/*
+-	 * Set connector link status to BAD and send a Uevent to notify
+-	 * userspace to do a modeset.
+-	 */
+-	drm_connector_set_link_status_property(conn, DRM_MODE_LINK_STATUS_BAD);
+-	mutex_unlock(&conn->dev->mode_config.mutex);
++	if (mhdp->connector.dev) {
++		conn = &mhdp->connector;
++		/* Grab the locks before changing connector property */
++		mutex_lock(&conn->dev->mode_config.mutex);
+ 
++		/*
++		 * Set connector link status to BAD and send a Uevent to notify
++		 * userspace to do a modeset.
++		 */
++		drm_connector_set_link_status_property(conn, DRM_MODE_LINK_STATUS_BAD);
++		mutex_unlock(&conn->dev->mode_config.mutex);
++	} else {
++		mhdp->plugged = false;
++	}
+ 	/* Send Hotplug uevent so userspace can reprobe */
+ 	drm_kms_helper_hotplug_event(mhdp->bridge.dev);
+ }
+-- 
+2.39.5 (Apple Git-154)
+

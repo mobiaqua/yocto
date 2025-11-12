@@ -1,0 +1,41 @@
+From aff8c43556fe2dc261d7050370424601e21cd6f3 Mon Sep 17 00:00:00 2001
+From: Yemike Abhilash Chandra <y-abhilashchandra@ti.com>
+Date: Thu, 19 Dec 2024 20:29:13 +0530
+Subject: [PATCH 019/406] TI: HACK: media: i2c: imx390: Remove
+ V4L2_SUBDEV_FL_STREAMS flag to fix probe failure
+
+After kernel v6.6, a check was introduced that enforces implementation
+of the .enable_streams() and .disable_streams() callbacks
+when the V4L2_SUBDEV_FL_STREAMS flag is set.
+
+The IMX390 driver currently sets this flag but does not implement
+the required APIs, causing probe failure.
+
+This patch removes the V4L2_SUBDEV_FL_STREAMS flag as a temporary
+workaround to allow the driver to function on v6.12.
+
+A clean solution will involve implementing the .enable_streams()
+and .disable_streams() APIs in the future.
+
+Signed-off-by: Yemike Abhilash Chandra <y-abhilashchandra@ti.com>
+---
+ drivers/media/i2c/imx390.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/media/i2c/imx390.c b/drivers/media/i2c/imx390.c
+index 6fdf4b88fc39..340367eb9d14 100644
+--- a/drivers/media/i2c/imx390.c
++++ b/drivers/media/i2c/imx390.c
+@@ -664,8 +664,7 @@ static int imx390_probe(struct i2c_client *client)
+ 	sd->internal_ops = &imx390_internal_ops;
+ 
+ 	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE |
+-		     V4L2_SUBDEV_FL_HAS_EVENTS |
+-		     V4L2_SUBDEV_FL_STREAMS;
++		     V4L2_SUBDEV_FL_HAS_EVENTS;
+ 
+ 	/* Initialize the media entity. */
+ 	imx390->pad.flags = MEDIA_PAD_FL_SOURCE;
+-- 
+2.39.5 (Apple Git-154)
+

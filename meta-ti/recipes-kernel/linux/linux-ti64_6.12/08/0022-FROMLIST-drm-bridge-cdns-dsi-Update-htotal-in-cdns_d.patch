@@ -1,0 +1,58 @@
+From 4c947cac1cb591eb2e3e0c39ab62cffdb38a92b1 Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Date: Fri, 20 Jun 2025 17:29:30 +0530
+Subject: [PATCH 22/73] FROMLIST: drm/bridge: cdns-dsi: Update htotal in
+ cdns_dsi_mode2cfg()
+
+cdns_dsi_mode2cfg() calculates the dsi timings, but for some reason
+doesn't set the htotal based on those timings. It is set only later, in
+cdns_dsi_adjust_phy_config().
+
+As cdns_dsi_mode2cfg() is the logical place to calculate it, let's move
+it there. Especially as the following patch will remove
+cdns_dsi_adjust_phy_config().
+
+Link: https://lore.kernel.org/all/20250618-cdns-dsi-impro-v4-10-862c841dbe02@ideasonboard.com/
+Reviewed-by: Aradhya Bhatia <aradhya.bhatia@linux.dev>
+Tested-by: Parth Pancholi <parth.pancholi@toradex.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Signed-off-by: Harikrishna Shenoy <h-shenoy@ti.com>
+---
+ drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
+index d4ae9aa218e7..b2c03f31c503 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
++++ b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
+@@ -498,6 +498,13 @@ static int cdns_dsi_mode2cfg(struct cdns_dsi *dsi,
+ 	dsi_cfg->hfp = dpi_to_dsi_timing(mode->hsync_start - mode->hdisplay,
+ 					 bpp, DSI_HFP_FRAME_OVERHEAD);
+ 
++	dsi_cfg->htotal = dsi_cfg->hbp + DSI_HBP_FRAME_OVERHEAD;
++	if (output->dev->mode_flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE)
++		dsi_cfg->htotal += dsi_cfg->hsa + DSI_HSA_FRAME_OVERHEAD;
++
++	dsi_cfg->htotal += dsi_cfg->hact;
++	dsi_cfg->htotal += dsi_cfg->hfp + DSI_HFP_FRAME_OVERHEAD;
++
+ 	return 0;
+ }
+ 
+@@ -514,12 +521,7 @@ static int cdns_dsi_adjust_phy_config(struct cdns_dsi *dsi,
+ 	unsigned int dsi_hfp_ext;
+ 	unsigned int lanes = output->dev->lanes;
+ 
+-	dsi_htotal = dsi_cfg->hbp + DSI_HBP_FRAME_OVERHEAD;
+-	if (output->dev->mode_flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE)
+-		dsi_htotal += dsi_cfg->hsa + DSI_HSA_FRAME_OVERHEAD;
+-
+-	dsi_htotal += dsi_cfg->hact;
+-	dsi_htotal += dsi_cfg->hfp + DSI_HFP_FRAME_OVERHEAD;
++	dsi_htotal = dsi_cfg->htotal;
+ 
+ 	/*
+ 	 * Make sure DSI htotal is aligned on a lane boundary when calculating
+-- 
+2.51.1
+

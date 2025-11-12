@@ -1,0 +1,102 @@
+From 7b5a02b502c0d14abe4c07992edaa46b7442b97f Mon Sep 17 00:00:00 2001
+From: Jai Luthra <jai.luthra@ideasonboard.com>
+Date: Mon, 10 Mar 2025 15:42:29 +0530
+Subject: [PATCH 074/181] PENDING: media: ti: j721e-csi2rx: Use pm_notifier
+ instead of suspend/resume hooks
+
+We need to stop all on-going streams before system suspend and enable
+them back when the system wakes up from sleep. Using .suspend/.resume
+callbacks is not optimal, as the order of those callbacks amongst
+various devices in the camera pipeline (like sensor, CSI bridge etc.) is
+hard to enforce, and can lead to situations where all dependencies are
+not yet woken up when we request to start streaming again in the .resume
+hook.
+
+Thus, we register a notifier with the PM framework that gets triggered
+with events when the system is fully functional, i.e. before any drivers
+are suspended, and after all of them have resumed, where we can cleanly
+stop or start the streams.
+
+Signed-off-by: Jai Luthra <jai.luthra@ideasonboard.com>
+[Ported to ti-linux-6.12.y-cicd]
+Signed-off-by: Rishikesh Donadkar <r-donadkar@ti.com>
+---
+ .../platform/ti/j721e-csi2rx/j721e-csi2rx.c   | 33 ++++++++++++++++++-
+ 1 file changed, 32 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+index 78f814b1481b..801e9a04cbd5 100644
+--- a/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
++++ b/drivers/media/platform/ti/j721e-csi2rx/j721e-csi2rx.c
+@@ -14,6 +14,7 @@
+ #include <linux/of_platform.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm_runtime.h>
++#include <linux/suspend.h>
+ 
+ #include <media/mipi-csi2.h>
+ #include <media/v4l2-device.h>
+@@ -123,6 +124,7 @@ struct ti_csi2rx_dev {
+ 	struct v4l2_subdev		*source;
+ 	struct v4l2_subdev		subdev;
+ 	struct ti_csi2rx_ctx		ctx[TI_CSI2RX_MAX_CTX];
++	struct notifier_block		pm_notifier;
+ 	/* Buffer to drain stale data from PSI-L endpoint */
+ 	struct {
+ 		void			*vaddr;
+@@ -1598,8 +1600,29 @@ static int ti_csi2rx_runtime_resume(struct device *dev)
+ 	return 0;
+ }
+ 
++static int ti_csi2rx_pm_notifier(struct notifier_block *nb, unsigned long action,
++			  void *data)
++{
++	struct ti_csi2rx_dev *csi =
++		container_of(nb, struct ti_csi2rx_dev, pm_notifier);
++
++	switch (action) {
++	case PM_HIBERNATION_PREPARE:
++	case PM_SUSPEND_PREPARE:
++	case PM_RESTORE_PREPARE:
++		ti_csi2rx_suspend(csi->dev);
++		break;
++	case PM_POST_SUSPEND:
++	case PM_POST_HIBERNATION:
++	case PM_POST_RESTORE:
++		ti_csi2rx_resume(csi->dev);
++		break;
++	}
++
++	return NOTIFY_DONE;
++}
++
+ static const struct dev_pm_ops ti_csi2rx_pm_ops = {
+-	SET_SYSTEM_SLEEP_PM_OPS(ti_csi2rx_suspend, ti_csi2rx_resume)
+ 	SET_RUNTIME_PM_OPS(ti_csi2rx_runtime_suspend, ti_csi2rx_runtime_resume,
+ 			   NULL)
+ };
+@@ -1671,6 +1694,13 @@ static int ti_csi2rx_probe(struct platform_device *pdev)
+ 		goto err_notifier;
+ 	}
+ 
++	csi->pm_notifier.notifier_call = ti_csi2rx_pm_notifier;
++	ret = register_pm_notifier(&csi->pm_notifier);
++	if (ret) {
++		dev_err(csi->dev, "Failed to create PM notifier: %d\n", ret);
++		goto err_notifier;
++	}
++
+ 	pm_runtime_set_active(csi->dev);
+ 	pm_runtime_enable(csi->dev);
+ 	pm_request_idle(csi->dev);
+@@ -1699,6 +1729,7 @@ static void ti_csi2rx_remove(struct platform_device *pdev)
+ 	for (i = 0; i < csi->num_ctx; i++)
+ 		ti_csi2rx_cleanup_ctx(&csi->ctx[i]);
+ 
++	unregister_pm_notifier(&csi->pm_notifier);
+ 	ti_csi2rx_cleanup_notifier(csi);
+ 	ti_csi2rx_cleanup_v4l2(csi);
+ 	mutex_destroy(&csi->mutex);
+-- 
+2.49.0
+

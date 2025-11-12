@@ -1,0 +1,61 @@
+From d21be51bf4c4d6c194825e072ed5b26e21082be1 Mon Sep 17 00:00:00 2001
+From: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Date: Fri, 20 Jun 2025 17:29:28 +0530
+Subject: [PATCH 20/73] FROMLIST: drm/bridge: cdns-dsi: Remove broken fifo
+ emptying check
+
+The driver checks if "DPI(HFP) > DSI(HSS+HSA+HSE+HBP)", and rejects the
+mode if not.
+
+However, testing shows that this doesn't hold at all. I can set the hfp
+to very small values, with no errors. The feedback from the HW team also
+was that the check is not right, although it's not clear if there's a
+way to validate the FIFO emptying.
+
+The check rejects quite a lot of modes, apparently for no good reason,
+so drop the check.
+
+Link: https://lore.kernel.org/all/20250618-cdns-dsi-impro-v4-8-862c841dbe02@ideasonboard.com/
+Tested-by: Parth Pancholi <parth.pancholi@toradex.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ideasonboard.com>
+Signed-off-by: Harikrishna Shenoy <h-shenoy@ti.com>
+---
+ drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c | 15 ---------------
+ 1 file changed, 15 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
+index e43721ca16df..dd41ac4f45f1 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
++++ b/drivers/gpu/drm/bridge/cadence/cdns-dsi-core.c
+@@ -553,7 +553,6 @@ static int cdns_dsi_check_conf(struct cdns_dsi *dsi,
+ {
+ 	struct cdns_dsi_output *output = &dsi->output;
+ 	struct phy_configure_opts_mipi_dphy *phy_cfg = &output->phy_opts.mipi_dphy;
+-	unsigned long dsi_hss_hsa_hse_hbp;
+ 	unsigned int nlanes = output->dev->lanes;
+ 	int ret;
+ 
+@@ -575,20 +574,6 @@ static int cdns_dsi_check_conf(struct cdns_dsi *dsi,
+ 	if (ret)
+ 		return ret;
+ 
+-	dsi_hss_hsa_hse_hbp = dsi_cfg->hbp + DSI_HBP_FRAME_OVERHEAD;
+-	if (output->dev->mode_flags & MIPI_DSI_MODE_VIDEO_SYNC_PULSE)
+-		dsi_hss_hsa_hse_hbp += dsi_cfg->hsa + DSI_HSA_FRAME_OVERHEAD;
+-
+-	/*
+-	 * Make sure DPI(HFP) > DSI(HSS+HSA+HSE+HBP) to guarantee that the FIFO
+-	 * is empty before we start a receiving a new line on the DPI
+-	 * interface.
+-	 */
+-	if ((u64)phy_cfg->hs_clk_rate *
+-	    (mode->hsync_start - mode->hdisplay) * nlanes <
+-	    (u64)dsi_hss_hsa_hse_hbp * mode->clock  * 1000)
+-		return -EINVAL;
+-
+ 	return 0;
+ }
+ 
+-- 
+2.51.1
+

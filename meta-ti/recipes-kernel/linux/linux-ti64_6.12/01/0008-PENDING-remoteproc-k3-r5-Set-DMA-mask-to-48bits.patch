@@ -1,0 +1,31 @@
+From a0d0fc032d5008ca46825a2baf6bfe8141e99951 Mon Sep 17 00:00:00 2001
+From: Rahul T R <r-ravikumar@ti.com>
+Date: Wed, 2 Oct 2024 17:26:40 -0500
+Subject: [PATCH 08/27] PENDING: remoteproc: k3-r5: Set DMA mask to 48bits
+
+The K3 R5Fs can address 48bits using RAT.
+
+Signed-off-by: Rahul T R <r-ravikumar@ti.com>
+Signed-off-by: Andrew Davis <afd@ti.com>
+---
+ drivers/remoteproc/ti_k3_r5_remoteproc.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/remoteproc/ti_k3_r5_remoteproc.c b/drivers/remoteproc/ti_k3_r5_remoteproc.c
+index 747ee467da88..bd789a1fb24e 100644
+--- a/drivers/remoteproc/ti_k3_r5_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_r5_remoteproc.c
+@@ -1243,6 +1243,10 @@ static int k3_r5_cluster_rproc_init(struct platform_device *pdev)
+ 			goto out;
+ 		}
+ 
++		ret = dma_coerce_mask_and_coherent(&rproc->dev, DMA_BIT_MASK(48));
++		if (ret)
++			dev_warn(dev, "Failed to set DMA mask (%d)\n", ret);
++
+ 		/* K3 R5s have a Region Address Translator (RAT) but no MMU */
+ 		rproc->has_iommu = false;
+ 		/* error recovery is not supported at present */
+-- 
+2.39.5 (Apple Git-154)
+

@@ -1,0 +1,45 @@
+From 9c5f89b5147da07e3572e92f73db082ab045ad8a Mon Sep 17 00:00:00 2001
+From: Harikrishna Shenoy <h-shenoy@ti.com>
+Date: Fri, 17 Oct 2025 13:28:42 +0530
+Subject: [PATCH 011/102] TI: HACK: drm: bridge: cdns-mhdp8546-core: Remove
+ no_hpd
+
+Mhdp bridge detect hook is polled by drm framework. The polling seems
+to regress some graphics tests, so remove the polling for no_hpd
+by removing no_hpd block in cdns_mhdp_bridge_detect.
+
+Patch cleanly reverts-
+commit 703338fc1284 ("TI: HACK: drm: bridge: cdns-mhdp8546-core: Add polling support for no-hpd")
+
+Signed-off-by: Harikrishna Shenoy <h-shenoy@ti.com>
+---
+ drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c | 13 -------------
+ 1 file changed, 13 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
+index 64d8c67220d2..92b84d7e4292 100644
+--- a/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
++++ b/drivers/gpu/drm/bridge/cadence/cdns-mhdp8546-core.c
+@@ -2098,19 +2098,6 @@ static enum drm_connector_status cdns_mhdp_bridge_detect(struct drm_bridge *brid
+ {
+ 	struct cdns_mhdp_device *mhdp = bridge_to_mhdp(bridge);
+ 
+-	if (mhdp->no_hpd) {
+-		int ret = cdns_mhdp_update_link_status(mhdp);
+-
+-		if (mhdp->connector && mhdp->connector->dev) {
+-			if (ret < 0)
+-				schedule_work(&mhdp->modeset_retry_work);
+-			else
+-				drm_kms_helper_hotplug_event(mhdp->bridge.dev);
+-		} else {
+-			drm_bridge_hpd_notify(&mhdp->bridge, cdns_mhdp_detect(mhdp));
+-		}
+-	}
+-
+ 	return cdns_mhdp_detect(mhdp);
+ }
+ 
+-- 
+2.51.1
+

@@ -1,0 +1,12 @@
+diff --git a/drivers/media/common/videobuf2/Kconfig b/drivers/media/common/videobuf2/Kconfig
+index d2223a12c..2fb2a211d 100644
+--- a/drivers/media/common/videobuf2/Kconfig
++++ b/drivers/media/common/videobuf2/Kconfig
+@@ -14,6 +14,7 @@ config VIDEOBUF2_DMA_CONTIG
+ 	tristate
+ 	select VIDEOBUF2_CORE
+ 	select VIDEOBUF2_MEMOPS
++	select VIDEOBUF2_DMA_SG
+ 	select DMA_SHARED_BUFFER
+ 
+ config VIDEOBUF2_VMALLOC

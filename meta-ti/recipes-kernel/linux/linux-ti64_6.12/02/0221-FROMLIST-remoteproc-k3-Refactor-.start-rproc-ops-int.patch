@@ -1,0 +1,126 @@
+From fc70fd7c5214fc3cba663a0dbd03fceef6a9d583 Mon Sep 17 00:00:00 2001
+From: Beleswar Padhi <b-padhi@ti.com>
+Date: Mon, 3 Feb 2025 14:10:01 +0530
+Subject: [PATCH 221/406] FROMLIST: remoteproc: k3: Refactor .start rproc ops
+ into common driver
+
+The k3_dsp_rproc_start() function sets the boot address and releases the
+reset on the remote processor. Whereas, the k3_m4_rproc_start() function
+only needs to release the reset. Refactor the k3_m4_rproc_start() into
+ti_k3_common.c as k3_rproc_start() and align the DSP and M4 drivers to
+invoke this common function when releasing the reset on the remote
+processor.
+
+Further, do not override the .start ops with NULL when operating in
+IPC-only mode in ti_k3_dsp_remoteproc.c, as .start is never invoked in
+rproc_attach routine.
+
+Link: https://lore.kernel.org/all/20250103101231.1508151-12-b-padhi@ti.com/
+Signed-off-by: Beleswar Padhi <b-padhi@ti.com>
+---
+ drivers/remoteproc/ti_k3_common.c         | 15 +++++++++++++++
+ drivers/remoteproc/ti_k3_common.h         |  1 +
+ drivers/remoteproc/ti_k3_dsp_remoteproc.c |  4 ++--
+ drivers/remoteproc/ti_k3_m4_remoteproc.c  | 22 +---------------------
+ 4 files changed, 19 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_common.c b/drivers/remoteproc/ti_k3_common.c
+index e548beb817ca..e2c7da357ab5 100644
+--- a/drivers/remoteproc/ti_k3_common.c
++++ b/drivers/remoteproc/ti_k3_common.c
+@@ -268,5 +268,20 @@ int k3_rproc_unprepare(struct rproc *rproc)
+ }
+ EXPORT_SYMBOL_GPL(k3_rproc_unprepare);
+ 
++/*
++ * Power up the remote processor.
++ *
++ * This function will be invoked only after the firmware for this rproc
++ * was loaded, parsed successfully, and all of its resource requirements
++ * were met. This callback is invoked only in remoteproc mode.
++ */
++int k3_rproc_start(struct rproc *rproc)
++{
++	struct k3_rproc *kproc = rproc->priv;
++
++	return k3_rproc_release(kproc);
++}
++EXPORT_SYMBOL_GPL(k3_rproc_start);
++
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("TI K3 common Remoteproc code");
+diff --git a/drivers/remoteproc/ti_k3_common.h b/drivers/remoteproc/ti_k3_common.h
+index fff6aea9da2a..80acdf1c37d6 100644
+--- a/drivers/remoteproc/ti_k3_common.h
++++ b/drivers/remoteproc/ti_k3_common.h
+@@ -93,4 +93,5 @@ int k3_rproc_release(struct k3_rproc *kproc);
+ int k3_rproc_request_mbox(struct rproc *rproc);
+ int k3_rproc_prepare(struct rproc *rproc);
+ int k3_rproc_unprepare(struct rproc *rproc);
++int k3_rproc_start(struct rproc *rproc);
+ #endif /* REMOTEPROC_TI_K3_COMMON_H */
+diff --git a/drivers/remoteproc/ti_k3_dsp_remoteproc.c b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+index 59b536538be2..22f78d187944 100644
+--- a/drivers/remoteproc/ti_k3_dsp_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_dsp_remoteproc.c
+@@ -50,7 +50,8 @@ static int k3_dsp_rproc_start(struct rproc *rproc)
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = k3_rproc_release(kproc);
++	/* Call the K3 common start function after doing DSP specific stuff */
++	ret = k3_rproc_start(rproc);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -413,7 +414,6 @@ static int k3_dsp_rproc_probe(struct platform_device *pdev)
+ 		dev_info(dev, "configured DSP for IPC-only mode\n");
+ 		rproc->state = RPROC_DETACHED;
+ 		/* override rproc ops with only required IPC-only mode ops */
+-		rproc->ops->start = NULL;
+ 		rproc->ops->stop = NULL;
+ 		rproc->ops->attach = k3_dsp_rproc_attach;
+ 		rproc->ops->detach = k3_dsp_rproc_detach;
+diff --git a/drivers/remoteproc/ti_k3_m4_remoteproc.c b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+index bc36a94b988c..6eebbe671d0d 100644
+--- a/drivers/remoteproc/ti_k3_m4_remoteproc.c
++++ b/drivers/remoteproc/ti_k3_m4_remoteproc.c
+@@ -246,26 +246,6 @@ static void k3_m4_release_tsp(void *data)
+ 	ti_sci_proc_release(tsp);
+ }
+ 
+-/*
+- * Power up the M4 remote processor.
+- *
+- * This function will be invoked only after the firmware for this rproc
+- * was loaded, parsed successfully, and all of its resource requirements
+- * were met. This callback is invoked only in remoteproc mode.
+- */
+-static int k3_m4_rproc_start(struct rproc *rproc)
+-{
+-	struct k3_rproc *kproc = rproc->priv;
+-	struct device *dev = kproc->dev;
+-	int ret;
+-
+-	ret = k3_rproc_release(kproc);
+-	if (ret)
+-		dev_err(dev, "local-reset deassert failed, ret = %d\n", ret);
+-
+-	return ret;
+-}
+-
+ /*
+  * Stop the M4 remote processor.
+  *
+@@ -306,7 +286,7 @@ static int k3_m4_rproc_detach(struct rproc *rproc)
+ static const struct rproc_ops k3_m4_rproc_ops = {
+ 	.prepare = k3_rproc_prepare,
+ 	.unprepare = k3_rproc_unprepare,
+-	.start = k3_m4_rproc_start,
++	.start = k3_rproc_start,
+ 	.stop = k3_m4_rproc_stop,
+ 	.attach = k3_m4_rproc_attach,
+ 	.detach = k3_m4_rproc_detach,
+-- 
+2.39.5 (Apple Git-154)
+

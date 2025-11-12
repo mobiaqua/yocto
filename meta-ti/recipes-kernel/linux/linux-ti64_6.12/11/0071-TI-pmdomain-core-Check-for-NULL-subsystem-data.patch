@@ -1,0 +1,40 @@
+From 61d0061687e3d333eb59237e5e312f21cc738fe9 Mon Sep 17 00:00:00 2001
+From: Vignesh Raghavendra <vigneshr@ti.com>
+Date: Wed, 24 Sep 2025 10:16:49 +0530
+Subject: [PATCH 071/110] TI: pmdomain: core: Check for NULL subsystem data
+
+genpd_runtime_suspend() seems to have a race condition with callers of
+dev_pm_put_subsys_data() leading to dereferencing of already freed
+dev->power.subsys_data. Therefore add a NULL check in
+genpd_drop_performance_state() before dereferencing the same.
+
+This issue is only observed on PREEMPT_RT kernel (ti_rt.config applied)
+
+Signed-off-by: Vignesh Raghavendra <vigneshr@ti.com>
+---
+ drivers/pmdomain/core.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/pmdomain/core.c b/drivers/pmdomain/core.c
+index 2643525a572b..ea8217966a29 100644
+--- a/drivers/pmdomain/core.c
++++ b/drivers/pmdomain/core.c
+@@ -490,7 +490,14 @@ static int genpd_set_performance_state(struct device *dev, unsigned int state)
+ 
+ static int genpd_drop_performance_state(struct device *dev)
+ {
+-	unsigned int prev_state = dev_gpd_data(dev)->performance_state;
++	unsigned int prev_state;
++
++	if (!dev->power.subsys_data) {
++		dev_dbg(dev, "Trying to drop performance state with NULL subsys_data\n");
++		return 0;
++	}
++
++	prev_state = dev_gpd_data(dev)->performance_state;
+ 
+ 	if (!genpd_set_performance_state(dev, 0))
+ 		return prev_state;
+-- 
+2.51.1
+

@@ -1,0 +1,41 @@
+From 23b634e5611b738cd455dd53339d782142f82ad8 Mon Sep 17 00:00:00 2001
+From: Harikrishna Shenoy <h-shenoy@ti.com>
+Date: Tue, 29 Jul 2025 17:29:42 +0530
+Subject: [PATCH 34/64] PENDING: drivers: phy: cadence: cdns-dphy: Enabling
+ lower resolutions in dphy
+
+The patch enables cdns dphy for hs_clk_rate in range between
+80Mbps to 160 Mbps by setting the pll_opdiv field to 16.
+This change enables lower resolutions like 640x480 at 60Hz.
+
+Signed-off-by: Harikrishna Shenoy <h-shenoy@ti.com>
+Reviewed-by: Udit Kumar <u-kumar1@ti.com>
+---
+ drivers/phy/cadence/cdns-dphy.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/phy/cadence/cdns-dphy.c b/drivers/phy/cadence/cdns-dphy.c
+index a558c6daf9b1..978ebcd337a4 100644
+--- a/drivers/phy/cadence/cdns-dphy.c
++++ b/drivers/phy/cadence/cdns-dphy.c
+@@ -133,7 +133,7 @@ static int cdns_dphy_get_pll_cfg(struct cdns_dphy *dphy,
+ 
+ 	dlane_bps = opts->hs_clk_rate;
+ 
+-	if (dlane_bps > 2500000000UL || dlane_bps < 160000000UL)
++	if (dlane_bps > 2500000000UL || dlane_bps < 80000000UL)
+ 		return -EINVAL;
+ 	else if (dlane_bps >= 1250000000)
+ 		cfg->pll_opdiv = 1;
+@@ -143,6 +143,8 @@ static int cdns_dphy_get_pll_cfg(struct cdns_dphy *dphy,
+ 		cfg->pll_opdiv = 4;
+ 	else if (dlane_bps >= 160000000)
+ 		cfg->pll_opdiv = 8;
++	else if (dlane_bps >= 80000000)
++		cfg->pll_opdiv = 16;
+ 
+ 	cfg->pll_fbdiv = DIV_ROUND_UP_ULL(dlane_bps * 2 * cfg->pll_opdiv *
+ 					  cfg->pll_ipdiv,
+-- 
+2.51.1
+

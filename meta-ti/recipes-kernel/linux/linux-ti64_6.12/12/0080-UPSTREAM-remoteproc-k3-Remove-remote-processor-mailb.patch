@@ -1,0 +1,72 @@
+From eb11fcc883733c23ed3d119b96fcccb419682ca6 Mon Sep 17 00:00:00 2001
+From: Hiago De Franco <hiago.franco@toradex.com>
+Date: Wed, 5 Nov 2025 04:58:04 -0600
+Subject: [PATCH 080/102] UPSTREAM: remoteproc: k3: Remove remote processor
+ mailbox ping
+
+As of today, pinging the remote processor during k3_rproc_request_mbox()
+does not have any functional effect. This behavior was originally based on
+the OMAP remoteproc driver, where the idea was to send messages such as
+suspend requests (among others) to the remote processor, but this was
+never upstreamed.
+
+Currently, the ping message has no effect in upstream usage and causes an
+unread message to remain in the mailbox, which ultimately prevents the
+system from entering suspend mode:
+
+Freezing remaining freezable tasks completed (elapsed 0.001 seconds)
+printk: Suspending console(s) (use no_console_suspend to debug)
+omap-mailbox 29000000.mailbox: fifo 1 has unexpected unread messages
+omap-mailbox 29000000.mailbox: PM: dpm_run_callback(): platform_pm_suspend returns -16
+omap-mailbox 29000000.mailbox: PM: failed to suspend: error -16
+
+The ping is only replied if the remote core firmware is capable of doing
+it, otherwise the unread message stays into the mailbox.
+
+Remove the ping and fix the suspend issue.
+
+Suggested-by: Andrew Davis <afd@ti.com>
+Signed-off-by: Hiago De Franco <hiago.franco@toradex.com>
+Acked-by: Andrew Davis <afd@ti.com>
+Link: https://lore.kernel.org/r/20250806-v1-fix-am62-hmp-suspend-v1-1-1c4a81bb5dde@toradex.com
+Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
+---
+ drivers/remoteproc/ti_k3_common.c | 15 ---------------
+ 1 file changed, 15 deletions(-)
+
+diff --git a/drivers/remoteproc/ti_k3_common.c b/drivers/remoteproc/ti_k3_common.c
+index a70d4879a8be..89969cf74c23 100644
+--- a/drivers/remoteproc/ti_k3_common.c
++++ b/drivers/remoteproc/ti_k3_common.c
+@@ -230,7 +230,6 @@ int k3_rproc_request_mbox(struct rproc *rproc)
+ 	struct k3_rproc *kproc = rproc->priv;
+ 	struct mbox_client *client = &kproc->client;
+ 	struct device *dev = kproc->dev;
+-	int ret;
+ 
+ 	client->dev = dev;
+ 	client->tx_done = NULL;
+@@ -243,20 +242,6 @@ int k3_rproc_request_mbox(struct rproc *rproc)
+ 		return dev_err_probe(dev, PTR_ERR(kproc->mbox),
+ 				     "mbox_request_channel failed\n");
+ 
+-	/*
+-	 * Ping the remote processor, this is only for sanity-sake for now;
+-	 * there is no functional effect whatsoever.
+-	 *
+-	 * Note that the reply will _not_ arrive immediately: this message
+-	 * will wait in the mailbox fifo until the remote processor is booted.
+-	 */
+-	ret = mbox_send_message(kproc->mbox, (void *)RP_MBOX_ECHO_REQUEST);
+-	if (ret < 0) {
+-		dev_err(dev, "mbox_send_message failed (%pe)\n", ERR_PTR(ret));
+-		mbox_free_channel(kproc->mbox);
+-		return ret;
+-	}
+-
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(k3_rproc_request_mbox);
+-- 
+2.51.1
+
