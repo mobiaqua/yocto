@@ -14,6 +14,7 @@ SRCREV = "910264e565095115c4889cc0c5428b3165d15e3f"
 PV = "${PN}+git${SRCPV}"
 SRC_URI = "git://github.com/mikebrady/shairport-sync.git;branch=master;protocol=https \
            file://shairport-sync.d \
+           file://shairport-sync \
            file://ffmpeg7-fixes.patch"
 
 S = "${WORKDIR}/git"
@@ -28,5 +29,7 @@ do_install:append() {
         install -d ${D}${sysconfdir}/rcS.d
         install -m 0755 ${WORKDIR}/shairport-sync.d ${D}${sysconfdir}/init.d/shairport-sync
         ln -sf ../init.d/${INITSCRIPT_NAME} ${D}${sysconfdir}/rcS.d/S51${INITSCRIPT_NAME}
+        install -d ${D}${sysconfdir}/default
+        install -m 0644 ${WORKDIR}/shairport-sync ${D}${sysconfdir}/default/shairport-sync
     fi
 }

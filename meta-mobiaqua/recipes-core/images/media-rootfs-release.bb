@@ -10,7 +10,7 @@ INSTALL_PKGS += "\
 libegl-mesa libgles1-mesa libgles2-mesa \
 wireless-regdb-static libavcodec libavformat \
 libavutil libswscale libswresample kmscube \
-mpv-mini mpv-config mpv-gui \
+shairport-sync avahi-daemon mpv-mini mpv-config mpv-gui \
 "
 
 INSTALL_PKGS:append = " ${INSTALL_PKGS_RELEASE}"

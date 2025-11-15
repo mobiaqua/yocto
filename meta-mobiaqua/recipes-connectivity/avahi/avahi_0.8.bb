@@ -24,6 +24,8 @@ SRC_URI = "${GITHUB_BASE_URI}/download/v${PV}/avahi-${PV}.tar.gz \
            file://99avahi-autoipd \
            file://avahi-dnsconfd \
            file://avahi-daemon \
+           file://default-avahi-daemon \
+           file://default-avahi-dnsconfd \
            file://initscript.patch \
            file://0001-Fix-opening-etc-resolv.conf-error.patch \
            file://skip-gobject-introspection.patch \
@@ -155,6 +157,7 @@ FILES:avahi-daemon = "${sbindir}/avahi-daemon \
                       ${sysconfdir}/avahi/services \
                       ${sysconfdir}/dbus-1 \
                       ${sysconfdir}/init.d/avahi-daemon \
+                      ${sysconfdir}/default/avahi-daemon \
                       ${sysconfdir}/rcS.d/* \
                       ${datadir}/dbus-1/interfaces \
                       ${datadir}/avahi/avahi-service.dtd \
@@ -164,6 +167,7 @@ FILES:libavahi-client = "${libdir}/libavahi-client.so.*"
 FILES:avahi-dnsconfd = "${sbindir}/avahi-dnsconfd \
                         ${sysconfdir}/avahi/avahi-dnsconfd.action \
                         ${sysconfdir}/init.d/avahi-dnsconfd \
+                        ${sysconfdir}/default/avahi-dnsconfd \
                         ${sysconfdir}/rcS.d/*"
 FILES:libavahi-glib = "${libdir}/libavahi-glib.so.*"
 FILES:libavahi-gobject = "${libdir}/libavahi-gobject.so.*  ${libdir}/girepository-1.0/Avahi*.typelib"
@@ -215,6 +219,9 @@ do_install:append() {
         install -m 0755 ${WORKDIR}/avahi-dnsconfd ${D}${sysconfdir}/init.d/avahi-dnsconfd
         ln -sf ../init.d/avahi-daemon ${D}${sysconfdir}/rcS.d/S40avahi-daemon
         ln -sf ../init.d/avahi-dnsconfd ${D}${sysconfdir}/rcS.d/S41avahi-dnsconfd
+        install -d ${D}${sysconfdir}/default
+        install -m 0755 ${WORKDIR}/default-avahi-daemon ${D}${sysconfdir}/default/avahi-daemon
+        install -m 0755 ${WORKDIR}/default-avahi-dnsconfd ${D}${sysconfdir}/default/avahi-dnsconfd
     fi
 }
 

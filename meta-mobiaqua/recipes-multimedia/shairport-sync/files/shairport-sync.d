@@ -30,7 +30,12 @@ SCRIPTNAME=/etc/init.d/$NAME
 [ -x "$DAEMON" ] || exit 0
 
 # Read configuration variable file if it is present
+SHAIRPORT_START=1
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+if [ "$SHAIRPORT_START" != "1" -a "$1" != "stop" ]; then
+    exit 0
+fi
 
 # LSB log_* functions
 . /etc/init.d/functions
