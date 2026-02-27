@@ -10,11 +10,10 @@ RDEPENDS:${PN} = "libgomp liblzma"
 
 SRC_URI = "git://github.com/ptitSeb/box64.git;branch=main;protocol=https \
            file://support_hw_tso.patch \
-           file://add_omp_set_num_threads.patch \
            file://no_logs.patch \
 "
 
-SRCREV = "691259ec0d612d45b77c0544d947a5a15e4becaa"
+SRCREV = "dee9a747aec23a109d6caa8ec90ea272ef4df09b"
 
 S = "${WORKDIR}/git"
 
