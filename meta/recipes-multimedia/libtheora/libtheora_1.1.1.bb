@@ -16,6 +16,10 @@ SRC_URI[sha256sum] = "b6ae1ee2fa3d42ac489287d3ec34c5885730b1296f0801ae577a35193d
 
 UPSTREAM_CHECK_REGEX = "libtheora-(?P<pver>\d+(\.\d)+)\.(tar\.gz|tgz)"
 
+CVE_PRODUCT = "theora"
+
 inherit autotools pkgconfig
 
 EXTRA_OECONF = "--disable-examples"
+
+CVE_STATUS[CVE-2024-56431] = "fixed-version:branch 1.1 is not affected, vulnerable code is not present yet"

@@ -20,6 +20,27 @@ SRC_URI += "\
     file://CVE-2025-4674.patch \
     file://CVE-2025-47907-pre.patch \
     file://CVE-2025-47907.patch \
+    file://CVE-2025-47906.patch \
+    file://CVE-2025-58185.patch \
+    file://CVE-2025-58187-1.patch \
+    file://CVE-2025-58187-2.patch \
+    file://CVE-2025-58188.patch \
+    file://CVE-2025-58189.patch \
+    file://CVE-2025-47912.patch \
+    file://CVE-2025-61723.patch \
+    file://CVE-2025-61724.patch \
+    file://CVE-2025-61727.patch \
+    file://CVE-2025-61729.patch \
+    file://CVE-2025-61730.patch \
+    file://CVE-2025-61726.patch \
+    file://CVE-2025-61728.patch \
+    file://CVE-2025-61731.patch \
+    file://CVE-2025-68119-dependent.patch \
+    file://CVE-2025-68119.patch \
+    file://CVE-2025-61732.patch \
+    file://CVE-2025-68121_p1.patch \
+    file://CVE-2025-68121_p2.patch \
+    file://CVE-2025-68121_p3.patch \
 "
 SRC_URI[main.sha256sum] = "012a7e1f37f362c0918c1dfa3334458ac2da1628c4b9cf4d9ca02db986e17d71"
 

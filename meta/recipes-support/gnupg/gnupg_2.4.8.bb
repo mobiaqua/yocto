@@ -18,6 +18,7 @@ SRC_URI = "${GNUPG_MIRROR}/${BPN}/${BPN}-${PV}.tar.bz2 \
            file://0002-use-pkgconfig-instead-of-npth-config.patch \
            file://0004-autogen.sh-fix-find-version-for-beta-checking.patch \
            file://0001-Woverride-init-is-not-needed-with-gcc-9.patch \
+           file://CVE-2025-68973.patch \
            "
 SRC_URI:append:class-native = " file://0001-configure.ac-use-a-custom-value-for-the-location-of-.patch \
                                 file://relocate.patch"
@@ -82,3 +83,4 @@ BBCLASSEXTEND = "native nativesdk"
 lcl_maybe_fortify:mipsarch = ""
 
 CVE_STATUS[CVE-2022-3219] = "upstream-wontfix: Upstream doesn't seem to be keen on merging the proposed commit - https://dev.gnupg.org/T5993"
+CVE_STATUS[CVE-2025-30258] = "cpe-stable-backport: fir for this CVE was backported to version 2.4.8"

@@ -13,6 +13,39 @@ SRC_URI = "${GITHUB_BASE_URI}/download/R_${VERSION_TAG}/expat-${PV}.tar.bz2  \
            file://0001-tests-Cover-indirect-entity-recursion.patch;striplevel=2 \
            file://CVE-2024-8176-01.patch;striplevel=2 \
            file://CVE-2024-8176-02.patch;striplevel=2 \
+           file://CVE-2024-8176-03.patch \
+           file://CVE-2024-8176-04.patch \
+           file://CVE-2024-8176-05.patch \
+           file://CVE-2025-59375-00.patch \
+           file://CVE-2025-59375-01.patch \
+           file://CVE-2025-59375-02.patch \
+           file://CVE-2025-59375-03.patch \
+           file://CVE-2025-59375-04.patch \
+           file://CVE-2025-59375-05.patch \
+           file://CVE-2025-59375-06.patch \
+           file://CVE-2025-59375-07.patch \
+           file://CVE-2025-59375-08.patch \
+           file://CVE-2025-59375-09.patch \
+           file://CVE-2025-59375-10.patch \
+           file://CVE-2025-59375-11.patch \
+           file://CVE-2025-59375-12.patch \
+           file://CVE-2025-59375-13.patch \
+           file://CVE-2025-59375-14.patch \
+           file://CVE-2025-59375-15.patch \
+           file://CVE-2025-59375-16.patch \
+           file://CVE-2025-59375-17.patch \
+           file://CVE-2025-59375-18.patch \
+           file://CVE-2025-59375-19.patch \
+           file://CVE-2025-59375-20.patch \
+           file://CVE-2025-59375-21.patch \
+           file://CVE-2025-59375-22.patch \
+           file://CVE-2025-59375-23.patch \
+           file://CVE-2025-59375-24.patch \
+           file://CVE-2026-24515-01.patch \
+           file://CVE-2026-24515-02.patch \
+           file://CVE-2026-25210-01.patch \
+           file://CVE-2026-25210-02.patch \
+           file://CVE-2026-25210-03.patch \
            "
 
 GITHUB_BASE_URI = "https://github.com/libexpat/libexpat/releases/"

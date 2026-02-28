@@ -25,6 +25,13 @@ SRC_URI = " \
     file://CVE-2024-11053-0003.patch \
     file://CVE-2025-0167.patch \
     file://CVE-2025-9086.patch \
+    file://CVE-2025-10148.patch \
+    file://CVE-2025-14017.patch \
+    file://CVE-2025-14524.patch \
+    file://0001-build-enable-Wcast-qual-fix-or-silence-compiler-warn.patch \
+    file://CVE-2025-14819.patch \
+    file://CVE-2025-15079.patch \
+    file://CVE-2025-15224.patch \
 "
 
 SRC_URI:append:class-nativesdk = " \
@@ -39,6 +46,7 @@ CVE_STATUS[CVE-2024-32928] = "ignored: CURLOPT_SSL_VERIFYPEER was disabled on go
 
 CVE_STATUS[CVE-2025-0725] = "not-applicable-config: gzip decompression of content-encoded HTTP responses with the `CURLOPT_ACCEPT_ENCODING` option, using zlib 1.2.0.3 or older"
 CVE_STATUS[CVE-2025-5025] = "${@bb.utils.contains('PACKAGECONFIG', 'openssl', 'not-applicable-config: applicable only with wolfssl','unpatched',d)}"
+CVE_STATUS[CVE-2025-10966] = "${@bb.utils.contains('PACKAGECONFIG', 'openssl', 'not-applicable-config: applicable only with wolfssl','unpatched',d)}"
 
 
 inherit autotools pkgconfig binconfig multilib_header ptest
@@ -91,12 +99,19 @@ PACKAGECONFIG[verbose] = "--enable-verbose,--disable-verbose"
 PACKAGECONFIG[zlib] = "--with-zlib=${STAGING_LIBDIR}/../,--without-zlib,zlib"
 PACKAGECONFIG[zstd] = "--with-zstd,--without-zstd,zstd"
 
+# Use host certificates for non-target builds. As libcurl doesn't honor any of the env vars (like
+# for example CURL_CA_PATH) that curl-cli does, we need to explicitly set '--with-ca-bundle'
+# accordingly, so that there is a working, built-in default even for those tools that use libcurl,
+# but don't have custom env var handling implemented (like opkg).
+CURL_CA_BUNDLE_BASE_DIR ?= "/etc"
+CURL_CA_BUNDLE_BASE_DIR:class-target = "${sysconfdir}"
+
 EXTRA_OECONF = " \
     --disable-libcurl-option \
     --disable-ntlm-wb \
-    --with-ca-bundle=${sysconfdir}/ssl/certs/ca-certificates.crt \
     --without-libpsl \
     --enable-optimize \
+    --with-ca-bundle=${CURL_CA_BUNDLE_BASE_DIR}/ssl/certs/ca-certificates.crt \
     ${@'--without-ssl' if (bb.utils.filter('PACKAGECONFIG', 'gnutls mbedtls openssl', d) == '') else ''} \
 "
 
