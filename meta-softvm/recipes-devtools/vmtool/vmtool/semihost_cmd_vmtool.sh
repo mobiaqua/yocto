@@ -45,6 +45,9 @@ if [ ! -z "$TOOLS" ]; then
     VIRTIOFS_TOOLS=${TOOLS}
     VM_ARGS_TOOLS="--toolsfs=$VIRTIOFS_TOOLS"
 fi
+if [ "$SOFTVM_VM_ROSETTA" = "1" ]; then
+    VM_ROSETTA_ARG="--rosetta"
+fi
 VIRTIOFS_WORKSPACE=${SOFTVM_WORKSPACE:=$PWD}
 VIRTIOFS_CURRENT=$PWD
 
@@ -56,8 +59,9 @@ VM_BIN=${SOFTVM_INSTALL_PATH}/tools/vmtool
 $VM_BIN \
     --cpu=$CPU \
     --mem=$RAM \
+    $VM_ROSETTA_ARG \
     --rootfs=$VIRTIOFS_ROOTFS \
-    $VM_ARGS_TOOLS\
+    $VM_ARGS_TOOLS \
     --workspacefs=$VIRTIOFS_WORKSPACE \
     --currentfs=$VIRTIOFS_CURRENT \
     --kernel=${SOFTVM_INSTALL_PATH}/kernels/Image \

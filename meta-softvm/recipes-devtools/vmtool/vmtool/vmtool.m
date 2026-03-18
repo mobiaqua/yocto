@@ -77,6 +77,8 @@ static void help(void)
 			"\t-r, --currentfs=CURRENT_FS\n"
 			"\t\t create virtiofs with given path\n"
 			"\t\t and append kernel cmdline argument: \"cdir=<current path>\"\n\n"
+			"\t-s, --rosetta\n"
+			"\t\t enable Rosetta\n"
 			);
 }
 
@@ -109,43 +111,6 @@ int main(int argc, char *argv[]) {
 		uint min_mem = (uint)(VZVirtualMachineConfiguration.minimumAllowedMemorySize / 1024 / 1024);
 		uint max_mem = (uint)(VZVirtualMachineConfiguration.maximumAllowedMemorySize / 1024 / 1024);
 
-		VZLinuxRosettaAvailability rosettaAvailability = VZLinuxRosettaDirectoryShare.availability;
-		switch (rosettaAvailability) {
-			case VZLinuxRosettaAvailabilityNotSupported:
-				fprintf(stderr, "\nRosetta not available.\n\n");
-				break;
-			case VZLinuxRosettaAvailabilityNotInstalled:
-				fprintf(stderr, "\nRosetta not installed.\n\n");
-				[VZLinuxRosettaDirectoryShare installRosettaWithCompletionHandler:^(NSError *error) {
-					if (!error) {
-						fprintf(stdout, "\nRosetta installed.\n\n");
-						rosetta_enabled = true;
-					} else {
-						switch (error.code) {
-							case VZErrorNetworkError:
-								fprintf(stderr, "\nFailed to download rosetta.\n\n");
-								break;
-							case VZErrorOutOfDiskSpace:
-								fprintf(stderr, "\nFailed to install rosetta. Not enough disk space.\n\n");
-								break;
-							case VZErrorOperationCancelled:
-								fprintf(stderr, "\nThe installation rosetta cancelled.\n\n");
-								break;
-							case VZErrorNotSupported:
-								fprintf(stderr, "\nRosetta is not supported.\n\n");
-								break;
-							default:
-								fprintf(stderr, "\nFailed to install rosetta.\n\n");
-								break;
-						}
-					}
-				}];
-				break;
-			case VZLinuxRosettaAvailabilityInstalled:
-				rosetta_enabled = true;
-				break;
-		}
-
 		static struct option long_options[] = {
 			{"kernel",       required_argument, NULL, 'k'},
 			{"append",       required_argument, NULL, 'a'},
@@ -155,12 +120,13 @@ int main(int argc, char *argv[]) {
 			{"toolsfs",      required_argument, NULL, 't'},
 			{"workspacefs",  required_argument, NULL, 'w'},
 			{"currentfs",    required_argument, NULL, 'c'},
+			{"rosetta",      no_argument,       NULL, 's'},
 			{"help",         no_argument,       NULL, 'h'},
 			{NULL,           0,                 NULL,  0 }
 		};
 
 		int option, option_index = 0;
-		while ((option = getopt_long(argc, argv, "k:a:p:m:r:t:w:c:h", long_options, &option_index)) != -1) {
+		while ((option = getopt_long(argc, argv, "k:a:p:m:r:t:w:c:s:h", long_options, &option_index)) != -1) {
 			switch (option) {
 				case 'k':
 					kernel_path = [NSString stringWithUTF8String:optarg];
@@ -220,6 +186,9 @@ int main(int argc, char *argv[]) {
 					}
 					append_virtiofs = [append_virtiofs stringByAppendingFormat:@" cdir=%@", current_path];
 					break;
+				case 's':
+					rosetta_enabled = true;
+					break;
 				case 'h':
 					help();
 					return EXIT_SUCCESS;
@@ -227,6 +196,45 @@ int main(int argc, char *argv[]) {
 				default:
 					help();
 					return EXIT_FAILURE;
+			}
+		}
+
+		if (rosetta_enabled) {
+			VZLinuxRosettaAvailability rosettaAvailability = VZLinuxRosettaDirectoryShare.availability;
+			switch (rosettaAvailability) {
+				case VZLinuxRosettaAvailabilityNotSupported:
+					fprintf(stderr, "\nRosetta not available.\n\n");
+					break;
+				case VZLinuxRosettaAvailabilityNotInstalled:
+					fprintf(stderr, "\nRosetta not installed.\n\n");
+					[VZLinuxRosettaDirectoryShare installRosettaWithCompletionHandler:^(NSError *error) {
+						if (!error) {
+							fprintf(stdout, "\nRosetta installed.\n\n");
+							rosetta_enabled = true;
+						} else {
+							switch (error.code) {
+								case VZErrorNetworkError:
+									fprintf(stderr, "\nFailed to download rosetta.\n\n");
+									break;
+								case VZErrorOutOfDiskSpace:
+									fprintf(stderr, "\nFailed to install rosetta. Not enough disk space.\n\n");
+									break;
+								case VZErrorOperationCancelled:
+									fprintf(stderr, "\nThe installation rosetta cancelled.\n\n");
+									break;
+								case VZErrorNotSupported:
+									fprintf(stderr, "\nRosetta is not supported.\n\n");
+									break;
+								default:
+									fprintf(stderr, "\nFailed to install rosetta.\n\n");
+									break;
+							}
+						}
+					}];
+					break;
+				case VZLinuxRosettaAvailabilityInstalled:
+					rosetta_enabled = true;
+					break;
 			}
 		}
 
