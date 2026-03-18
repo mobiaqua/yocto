@@ -27,8 +27,12 @@ if [ ! -d ${QUARTUS_ROOT}/tools ]; then
     mkdir -p ${QUARTUS_ROOT}/tools
 fi
 
+grep "12.0" ${QUARTUS_ROOT}/tools/altera/quartus/readme.txt > /dev/null 2>&1
+if [ $? = 0 ]; then MODE="--64bit"; BOX64=1; fi
+grep "12.1" ${QUARTUS_ROOT}/tools/altera/quartus/readme.txt > /dev/null 2>&1
+if [ $? = 0 ]; then MODE="--64bit"; BOX64=1; fi
 grep "13.0" ${QUARTUS_ROOT}/tools/altera/quartus/readme.txt > /dev/null 2>&1
-if [ $? = 0 ]; then MODE="--64bit"; fi
+if [ $? = 0 ]; then MODE="--64bit"; BOX64=1; fi
 
 CMD=`basename $0`
 
@@ -46,7 +50,8 @@ if [ $CMD = "quartus_pgm" ]; then
         -device usb-host,vendorid=0x09fb,productid=0x6810"
     ${SOFTVM_INSTALL_PATH}/tools/semihost_cmd_qemu.sh ${QUARTUS_ROOT}/tools "/opt/tools/altera/quartus/bin/$CMD $@ $MODE"
 else
-    ${SOFTVM_INSTALL_PATH}/tools/semihost_cmd_vmtool.sh ${QUARTUS_ROOT}/tools "export UNAME_ARCH=x86_64;/opt/tools/altera/quartus/bin/$CMD $@ $MODE"
+    #export SOFTVM_VM_ROSETTA=1
+    ${SOFTVM_INSTALL_PATH}/tools/semihost_cmd_vmtool.sh ${QUARTUS_ROOT}/tools "export UNAME_ARCH=x86_64;export BOX64;/opt/tools/altera/quartus/bin/$CMD $@ $MODE"
 fi
 
 exit $?

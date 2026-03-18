@@ -37,20 +37,23 @@ else
 fi
 
 if [ -z "$NFSROOT" ]; then
-    mount -t virtiofs ROSETTA /rosetta
-# Quartus 13 crash with Rosetta
-#    if [ -f /rosetta/rosetta ]; then
-#        /usr/sbin/update-binfmts --install rosetta /rosetta/rosetta \
-#            --magic "\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x3e\x00" \
-#            --mask "\xff\xff\xff\xff\xff\xfe\xfe\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff" \
-#            --credentials yes --preserve yes --fix-binary yes
-#    fi
-    /usr/sbin/update-binfmts --install box64 /usr/bin/box64 \
-        --magic "\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x3e\x00" \
-        --mask "\xff\xff\xff\xff\xff\xfe\xfe\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
-    /usr/sbin/update-binfmts --install box32 /usr/bin/box64 \
-        --magic "\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x03\x00" \
-        --mask "\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff"
+    mount -t binfmt_misc none /proc/sys/fs/binfmt_misc 2>/dev/null
+    mount -t virtiofs ROSETTA /rosetta 2>/dev/null
+
+    if [ -f /proc/sys/fs/binfmt_misc/box32 ]; then echo -1 > /proc/sys/fs/binfmt_misc/box32 2>/dev/null; fi
+    if [ -f /proc/sys/fs/binfmt_misc/box64 ]; then echo -1 > /proc/sys/fs/binfmt_misc/box64 2>/dev/null; fi
+    if [ -f /proc/sys/fs/binfmt_misc/rosetta ]; then echo -1 > /proc/sys/fs/binfmt_misc/rosetta 2>/dev/null; fi
+
+    if [ -f /rosetta/rosetta ]; then
+        echo ':rosetta:M::\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x3e\x00:\xff\xff\xff\xff\xff\xfe\xfe\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/rosetta/rosetta:OCF' > /proc/sys/fs/binfmt_misc/register
+    fi
+
+    if [ -f /usr/bin/box64 ]; then
+        if [ ! -f /rosetta/rosetta ]; then
+            echo ':box64:M::\x7fELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x3e\x00:\xff\xff\xff\xff\xff\xfe\xfe\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/box64:' > /proc/sys/fs/binfmt_misc/register
+        fi
+        echo ':box32:M::\x7fELF\x01\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x03\x00:\xff\xff\xff\xff\xff\xff\xff\x00\xff\xff\xff\xff\xff\xff\xff\xff\xfe\xff\xff\xff:/usr/bin/box64:' > /proc/sys/fs/binfmt_misc/register
+    fi
 fi
 
 if [ ! -z $NFSROOT ]; then

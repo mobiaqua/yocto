@@ -9,4 +9,5 @@ do_install() {
 	sed -i 's/^null::respawn/#null::respawn/' ${D}${sysconfdir}/inittab
 	sed -i 's/^null::sysinit:\/sbin\/swapon/#null::sysinit:\/sbin\/swapon/' ${D}${sysconfdir}/inittab
 	sed -i 's/^null::sysinit:\/etc\/init.d\/rcS/null::sysinit:\/etc\/init.d\/rcS > \/dev\/console 2>\&1/' ${D}${sysconfdir}/inittab
+	sed -i '/mount -t proc proc \/proc/a null::sysinit:/bin/mount -t binfmt_misc none /proc/sys/fs/binfmt_misc' ${D}${sysconfdir}/inittab
 }
