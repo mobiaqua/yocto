@@ -1,6 +1,6 @@
 #!/bin/sh
 
-version=17.0.0.595
+version=13.0.0.156
 
 CMD=`basename $0`
 
@@ -29,9 +29,9 @@ export SOFTVM_WORKSPACE=`pwd`
 CMD="./install-quartus-expect.sh $version"
 
 echo
-echo " --- Installing Quartus Prime Lite Edition $version ---"
+echo " --- Installing Quartus II Software $version ---"
 echo
-echo "It will take about 16 minutes to complete..."
+echo "It will take about 12 minutes to complete..."
 
 if [ ! -d ${QUARTUS_ROOT}/tools ]; then
     mkdir -p ${QUARTUS_ROOT}/tools
