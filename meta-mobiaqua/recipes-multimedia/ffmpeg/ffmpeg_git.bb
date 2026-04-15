@@ -18,7 +18,7 @@ LICENSE:libswscale = "GPL-2.0-or-later"
 
 LIC_FILES_CHKSUM = "file://COPYING.GPLv2;md5=b234ee4d69f5fce4486a80fdaf4a4263 \
                     file://COPYING.GPLv3;md5=d32239bcb673463ab874e80d47fae504 \
-                    file://COPYING.LGPLv2.1;md5=bd7a443320af8c812e4c18d1b79df004 \
+                    file://COPYING.LGPLv2.1;md5=eed22b3456132611e3d4aa7a7ec64dac \
                     file://COPYING.LGPLv3;md5=e6a600fd5e1d9cbde2d983680233ad02"
 
 # MobiAqua: custom ffpmeg
@@ -26,9 +26,9 @@ DEFAULT_PREFERENCE = "99"
 
 DEPENDS = "openssl"
 
-SRCREV = "8f77695e65a69c8009804e9d457762d2d394403d"
+SRCREV = "5a1f107b4c78318f318897900acad1b6c6aa3f9d"
 
-PV = "7.1.2+git${SRCPV}"
+PV = "7.1.3+git${SRCPV}"
 PR = "r1"
 
 SRC_URI = "git://source.ffmpeg.org/ffmpeg.git;branch=release/7.1 \
